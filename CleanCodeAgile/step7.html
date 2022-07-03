@@ -1,0 +1,323 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+</style>
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 id="ch7"><a id="page_103"></a><strong>7<br>Error Handling</strong></h2>
+        <p class="chapauthor">by Michael Feathers</p>
+        <p class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136083238/files/images/103fig01.jpg" alt="Image" width="350" height="177"></p>
+        <p>It might seem odd to have a section about error handling in a book about clean code. Error handling is just one of those things that we all have to do when we program. Input can be abnormal and devices can fail. In short, things can go wrong, and when they do, we as programmers are responsible for making sure that our code does what it needs to do.</p>
+        <p>The connection to clean code, however, should be clear. Many code bases are completely dominated by error handling. When I say dominated, I don’t mean that error handling is all that they do. I mean that it is nearly impossible to see what the code does because of all of the scattered error handling. Error handling is important, <em>but if it obscures logic, it’s wrong</em>.</p>
+        <p>In this chapter I’ll outline a number of techniques and considerations that you can use to write code that is both clean and robust—code that handles errors with grace and style.</p>
+        <h3 id="ch7lev1sec1"><a id="page_104"></a><strong>Use Exceptions Rather Than Return Codes</strong></h3>
+        <p>Back in the distant past there were many languages that didn’t have exceptions. In those languages the techniques for handling and reporting errors were limited. You either set an error flag or returned an error code that the caller could check. The code in <a href="#ch7lt1">Listing 7-1</a> illustrates these approaches.</p>
+        <p><a id="ch7lt1"></a></p>
+        <p class="caption"><strong>Listing 7-1 <code>DeviceController.java</code></strong></p>
+        <p class="codelink"><a id="pp0104_01a" href="chapter07_ima.xhtml#pp0104_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public class DeviceController {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;…<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void sendShutDown() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DeviceHandle handle = getHandle(DEV1);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Check the state of the device<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (handle != DeviceHandle.INVALID) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Save the device status to the record field<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;retrieveDeviceRecord(handle);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// If not suspended, shut down<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (record.getStatus() != DEVICE_SUSPENDED) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pauseDevice(handle);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;clearDeviceWorkQueue(handle);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;closeDevice(handle);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} else {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.log("Device suspended.&nbsp;&nbsp;Unable to shut down");<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} else {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.log("Invalid handle for: " + DEV1.toString());<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;…<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>The problem with these approaches is that they clutter the caller. The caller must check for errors immediately after the call. Unfortunately, it’s easy to forget. For this reason it is better to throw an exception when you encounter an error. The calling code is cleaner. Its logic is not obscured by error handling.</p>
+        <p><a href="#ch7lt2">Listing 7-2</a> shows the code after we’ve chosen to throw exceptions in methods that can detect errors.</p>
+        <p><a id="ch7lt2"></a></p>
+        <p class="caption"><strong>Listing 7-2 <code>DeviceController.java (with exceptions)</code></strong></p>
+        <p class="codelink"><a id="pp0104_02a" href="chapter07_ima.xhtml#pp0104_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public class DeviceController {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;…<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void sendShutDown() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tryToShutDown();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} catch (DeviceShutDownError e) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.log(e);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        <a id="page_105"></a><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;private void tryToShutDown() throws DeviceShutDownError {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DeviceHandle handle = getHandle(DEV1);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DeviceRecord record = retrieveDeviceRecord(handle);<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pauseDevice(handle);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;clearDeviceWorkQueue(handle);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;closeDevice(handle);<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private DeviceHandle getHandle(DeviceID id) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;…<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new DeviceShutDownError(“Invalid handle for: ” + id.toString());<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;…<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;…<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>Notice how much cleaner it is. This isn’t just a matter of aesthetics. The code is better because two concerns that were tangled, the algorithm for device shutdown and error handling, are now separated. You can look at each of those concerns and understand them independently.</p>
+        <h3 id="ch7lev1sec2"><strong>Write Your <code>Try-Catch-Finally</code> Statement First</strong></h3>
+        <p>One of the most interesting things about exceptions is that they <em>define a scope</em> within your program. When you execute code in the <code>try</code> portion of a <code>try-catch-finally</code> statement, you are stating that execution can abort at any point and then resume at the <code>catch</code>.</p>
+        <p>In a way, <code>try</code> blocks are like transactions. Your <code>catch</code> has to leave your program in a consistent state, no matter what happens in the <code>try</code>. For this reason it is good practice to start with a <code>try-catch-finally</code> statement when you are writing code that could throw exceptions. This helps you define what the user of that code should expect, no matter what goes wrong with the code that is executed in the <code>try</code>.</p>
+        <p>Let’s look at an example. We need to write some code that accesses a file and reads some serialized objects.</p>
+        <p>We start with a unit test that shows that we’ll get an exception when the file doesn’t exist:</p>
+        <p class="codelink"><a id="pp0105_01a" href="chapter07_ima.xhtml#pp0105_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;@Test(expected = StorageException.class)<br>
+        &nbsp;&nbsp;&nbsp;public void retrieveSectionShouldThrowOnInvalidFileName() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sectionStore.retrieveSection(“invalid - file”);<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>The test drives us to create this stub:</p>
+        <p class="codelink"><a id="pp0105_02a" href="chapter07_ima.xhtml#pp0105_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public List&lt;RecordedGrip&gt; retrieveSection(String sectionName) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// dummy return until we have a real implementation<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return new ArrayList&lt;RecordedGrip&gt;();<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p><a id="page_106"></a>Our test fails because it doesn’t throw an exception. Next, we change our implementation so that it attempts to access an invalid file. This operation throws an exception:</p>
+        <p class="codelink"><a id="pp0106_01a" href="chapter07_ima.xhtml#pp0106_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public List&lt;RecordedGrip&gt; retrieveSection(String sectionName) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FileInputStream stream = new FileInputStream(sectionName)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} catch (Exception e) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new StorageException(“retrieval error”, e);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return new ArrayList&lt;RecordedGrip&gt;();<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>Our test passes now because we’ve caught the exception. At this point, we can refactor. We can narrow the type of the exception we catch to match the type that is actually thrown from the <code>FileInputStream</code> constructor: <code>FileNotFoundException</code>:</p>
+        <p class="codelink"><a id="pp0106_02a" href="chapter07_ima.xhtml#pp0106_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public List&lt;RecordedGrip&gt; retrieveSection(String sectionName) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FileInputStream stream = new FileInputStream(sectionName);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;stream.close();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} catch (FileNotFoundException e) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new StorageException(“retrieval error”, e);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return new ArrayList&lt;RecordedGrip&gt;();<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>Now that we’ve defined the scope with a <code>try-catch</code> structure, we can use TDD to build up the rest of the logic that we need. That logic will be added between the creation of the <code>FileInputStream</code> and the <code>close</code>, and can pretend that nothing goes wrong.</p>
+        <p>Try to write tests that force exceptions, and then add behavior to your handler to satisfy your tests. This will cause you to build the transaction scope of the <code>try</code> block first and will help you maintain the transaction nature of that scope.</p>
+        <h3 id="ch7lev1sec3"><strong>Use Unchecked Exceptions</strong></h3>
+        <p>The debate is over. For years Java programmers have debated over the benefits and liabilities of checked exceptions. When checked exceptions were introduced in the first version of Java, they seemed like a great idea. The signature of every method would list all of the exceptions that it could pass to its caller. Moreover, these exceptions were part of the type of the method. Your code literally wouldn’t compile if the signature didn’t match what your code could do.</p>
+        <p>At the time, we thought that checked exceptions were a great idea; and yes, they can yield <em>some</em> benefit. However, it is clear now that they aren’t necessary for the production of robust software. C# doesn’t have checked exceptions, and despite valiant attempts, C++ doesn’t either. Neither do Python or Ruby. Yet it is possible to write robust software in all of these languages. Because that is the case, we have to decide—really—whether checked exceptions are worth their price.</p>
+        <p><a id="page_107"></a>What price? The price of checked exceptions is an Open/Closed Principle<sup>1</sup> violation. If you throw a checked exception from a method in your code and the <code>catch</code> is three levels above, <em>you must declare that exception in the signature of each method between you and the <code>catch</code></em>. This means that a change at a low level of the software can force signature changes on many higher levels. The changed modules must be rebuilt and redeployed, even though nothing they care about changed.</p>
+        <p class="footnote">1. [<a id="iMartin"></a><a href="#Martin">Martin</a>].</p>
+        <p>Consider the calling hierarchy of a large system. Functions at the top call functions below them, which call more functions below them, ad infinitum. Now let’s say one of the lowest level functions is modified in such a way that it must throw an exception. If that exception is checked, then the function signature must add a <code>throws</code> clause. But this means that every function that calls our modified function must also be modified either to catch the new exception or to append the appropriate <code>throws</code> clause to its signature. Ad infinitum. The net result is a cascade of changes that work their way from the lowest levels of the software to the highest! Encapsulation is broken because all functions in the path of a throw must know about details of that low-level exception. Given that the purpose of exceptions is to allow you to handle errors at a distance, it is a shame that checked exceptions break encapsulation in this way.</p>
+        <p>Checked exceptions can sometimes be useful if you are writing a critical library: You must catch them. But in general application development the dependency costs outweigh the benefits.</p>
+        <h3 id="ch7lev1sec4"><strong>Provide Context with Exceptions</strong></h3>
+        <p>Each exception that you throw should provide enough context to determine the source and location of an error. In Java, you can get a stack trace from any exception; however, a stack trace can’t tell you the intent of the operation that failed.</p>
+        <p>Create informative error messages and pass them along with your exceptions. Mention the operation that failed and the type of failure. If you are logging in your application, pass along enough information to be able to log the error in your <code>catch</code>.</p>
+        <h3 id="ch7lev1sec5"><strong>Define Exception Classes in Terms of a Caller’s Needs</strong></h3>
+        <p>There are many ways to classify errors. We can classify them by their source: Did they come from one component or another? Or their type: Are they device failures, network failures, or programming errors? However, when we define exception classes in an application, our most important concern should be <em>how they are caught</em>.</p>
+        <p><a id="page_108"></a>Let’s look at an example of poor exception classification. Here is a <code>try-catch-finally</code> statement for a third-party library call. It covers all of the exceptions that the calls can throw:</p>
+        <p class="codelink"><a id="pp0108_01a" href="chapter07_ima.xhtml#pp0108_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;ACMEPort port = new ACMEPort(12);<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;try {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;port.open();<br>
+        &nbsp;&nbsp;&nbsp;} catch (DeviceResponseException e) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;reportPortError(e);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.log(“Device response exception”, e);<br>
+        &nbsp;&nbsp;&nbsp;} catch (ATM1212UnlockedException e) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;reportPortError(e);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.log(“Unlock exception”, e);<br>
+        &nbsp;&nbsp;&nbsp;} catch (GMXError e) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;reportPortError(e);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.log(“Device response exception”);<br>
+        &nbsp;&nbsp;&nbsp;} finally {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;…<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>That statement contains a lot of duplication, and we shouldn’t be surprised. In most exception handling situations, the work that we do is relatively standard regardless of the actual cause. We have to record an error and make sure that we can proceed.</p>
+        <p>In this case, because we know that the work that we are doing is roughly the same regardless of the exception, we can simplify our code considerably by wrapping the API that we are calling and making sure that it returns a common exception type:</p>
+        <p class="codelink"><a id="pp0108_02a" href="chapter07_ima.xhtml#pp0108_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;LocalPort port = new LocalPort(12);<br>
+        &nbsp;&nbsp;&nbsp;try {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;port.open();<br>
+        &nbsp;&nbsp;&nbsp;} catch (PortDeviceFailure e) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;reportError(e);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logger.log(e.getMessage(), e);<br>
+        &nbsp;&nbsp;&nbsp;} finally {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;…<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>Our <code>LocalPort</code> class is just a simple wrapper that catches and translates exceptions thrown by the <code>ACMEPort</code> class:</p>
+        <p class="codelink"><a id="pp0108_03a" href="chapter07_ima.xhtml#pp0108_03">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public class LocalPort {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private ACMEPort innerPort;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public LocalPort(int portNumber) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;innerPort = new ACMEPort(portNumber);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void open() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;innerPort.open();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} catch (DeviceResponseException e) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new PortDeviceFailure(e);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} catch (ATM1212UnlockedException e) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new PortDeviceFailure(e);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} catch (GMXError e) {<a id="page_109"></a><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new PortDeviceFailure(e);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;…<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>Wrappers like the one we defined for <code>ACMEPort</code> can be very useful. In fact, wrapping third-party APIs is a best practice. When you wrap a third-party API, you minimize your dependencies upon it: You can choose to move to a different library in the future without much penalty. Wrapping also makes it easier to mock out third-party calls when you are testing your own code.</p>
+        <p>One final advantage of wrapping is that you aren’t tied to a particular vendor’s API design choices. You can define an API that you feel comfortable with. In the preceding example, we defined a single exception type for <code>port</code> device failure and found that we could write much cleaner code.</p>
+        <p>Often a single exception class is fine for a particular area of code. The information sent with the exception can distinguish the errors. Use different classes only if there are times when you want to catch one exception and allow the other one to pass through.</p>
+        <h3 id="ch7lev1sec6"><strong>Define the Normal Flow</strong></h3>
+        <p>If you follow the advice in the preceding sections, you’ll end up with a good amount of separation between your business logic and your error handling. The bulk of your code will start to look like a clean unadorned algorithm. However, the process of doing this pushes error detection to the edges of your program. You wrap external APIs so that you can throw your own exceptions, and you define a handler above your code so that you can deal with any aborted computation. Most of the time this is a great approach, but there are some times when you may not want to abort.</p>
+        <p class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136083238/files/images/103fig02.jpg" alt="Image" width="200" height="123"></p>
+        <p>Let’s take a look at an example. Here is some awkward code that sums expenses in a billing application:</p>
+        <p class="codelink"><a id="pp0109_01a" href="chapter07_ima.xhtml#pp0109_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;try {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MealExpenses expenses = expenseReportDAO.getMeals(employee.getID());<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;m_total += expenses.getTotal();<br>
+        &nbsp;&nbsp;&nbsp;} catch(MealExpensesNotFound e) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;m_total += getMealPerDiem();<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>In this business, if meals are expensed, they become part of the total. If they aren’t, the employee gets a meal <em>per diem</em> amount for that day. The exception clutters the logic. Wouldn’t it be better if we didn’t have to deal with the special case? If we didn’t, our code would look much simpler. It would look like this:</p>
+        <p class="codelink"><a id="pp0109_02a" href="chapter07_ima.xhtml#pp0109_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;MealExpenses expenses = expenseReportDAO.getMeals(employee.getID());<br>
+        &nbsp;&nbsp;&nbsp;m_total += expenses.getTotal();</p>
+        <p><a id="page_110"></a>Can we make the code that simple? It turns out that we can. We can change the <code>ExpenseReportDAO</code> so that it always returns a <code>MealExpense</code> object. If there are no meal expenses, it returns a <code>MealExpense</code> object that returns the <em>per diem</em> as its total:</p>
+        <p class="codelink"><a id="pp0110_01a" href="chapter07_ima.xhtml#pp0110_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public class PerDiemMealExpenses implements MealExpenses {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public int getTotal() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// return the per diem default<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>This is called the S<small>PECIAL</small> C<small>ASE</small> P<small>ATTERN</small> [Fowler]. You create a class or configure an object so that it handles a special case for you. When you do, the client code doesn’t have to deal with exceptional behavior. That behavior is encapsulated in the special case object.</p>
+        <h3 id="ch7lev1sec7"><strong>Don’t Return Null</strong></h3>
+        <p>I think that any discussion about error handling should include mention of the things we do that invite errors. The first on the list is returning <code>null</code>. I can’t begin to count the number of applications I’ve seen in which nearly every other line was a check for <code>null</code>. Here is some example code:</p>
+        <p class="codelink"><a id="pp0110_02a" href="chapter07_ima.xhtml#pp0110_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public void registerItem(Item item) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (item != null) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ItemRegistry registry = peristentStore.getItemRegistry();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (registry != null) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Item existing = registry.getItem(item.getID());<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (existing.getBillingPeriod().hasRetailOwner()) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;existing.register(item);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>If you work in a code base with code like this, it might not look all that bad to you, but it is bad! When we return <code>null</code>, we are essentially creating work for ourselves and foisting problems upon our callers. All it takes is one missing <code>null</code> check to send an application spinning out of control.</p>
+        <p>Did you notice the fact that there wasn’t a <code>null</code> check in the second line of that nested <code>if</code> statement? What would have happened at runtime if <code>persistentStore</code> were <code>null</code>? We would have had a <code>NullPointerException</code> at runtime, and either someone is catching <code>NullPointerException</code> at the top level or they are not. Either way it’s <em>bad</em>. What exactly should you do in response to a <code>NullPointerException</code> thrown from the depths of your application?</p>
+        <p>It’s easy to say that the problem with the code above is that it is missing a <code>null</code> check, but in actuality, the problem is that it has <em>too many</em>. If you are tempted to return <code>null</code> from a method, consider throwing an exception or returning a S<small>PECIAL</small> C<small>ASE</small> object instead. If you are calling a <code>null</code>-returning method from a third-party API, consider wrapping that method with a method that either throws an exception or returns a special case object.</p>
+        <p><a id="page_111"></a>In many cases, special case objects are an easy remedy. Imagine that you have code like this:</p>
+        <p class="codelink"><a id="pp0111_01a" href="chapter07_ima.xhtml#pp0111_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;List&lt;Employee&gt; employees = getEmployees();<br>
+        &nbsp;&nbsp;&nbsp;if (employees != null) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for(Employee e : employees) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;totalPay += e.getPay();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>Right now, <code>getEmployees</code> can return <code>null</code>, but does it have to? If we change <code>getEmployee</code> so that it returns an empty list, we can clean up the code:</p>
+        <p class="codelink"><a id="pp0111_02a" href="chapter07_ima.xhtml#pp0111_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;List&lt;Employee&gt; employees = getEmployees();<br>
+        &nbsp;&nbsp;&nbsp;for(Employee e : employees) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;totalPay += e.getPay();<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>Fortunately, Java has <code>Collections.emptyList()</code>, and it returns a predefined immutable list that we can use for this purpose:</p>
+        <p class="codelink"><a id="pp0111_03a" href="chapter07_ima.xhtml#pp0111_03">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public List&lt;Employee&gt; getEmployees() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if( .. there are no employees .. )<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Collections.emptyList();<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>If you code this way, you will minimize the chance of <code>NullPointerExceptions</code> and your code will be cleaner.</p>
+        <h3 id="ch7lev1sec8"><strong>Don’t Pass Null</strong></h3>
+        <p>Returning <code>null</code> from methods is bad, but passing <code>null</code> into methods is worse. Unless you are working with an API which expects you to pass <code>null</code>, you should avoid passing <code>null</code> in your code whenever possible.</p>
+        <p>Let’s look at an example to see why. Here is a simple method which calculates a metric for two points:</p>
+        <p class="codelink"><a id="pp0111_04a" href="chapter07_ima.xhtml#pp0111_04">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public class MetricsCalculator<br>
+        &nbsp;&nbsp;&nbsp;{<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public double xProjection(Point p1, Point p2) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return (p2.x – p1.x) * 1.5;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;…<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>What happens when someone passes <code>null</code> as an argument?</p>
+        <p class="codelink"><a id="pp0111_05a" href="chapter07_ima.xhtml#pp0111_05">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;calculator.xProjection(null, new Point(12, 13));</p>
+        <p>We’ll get a <code>NullPointerException</code>, of course.</p>
+        <p>How can we fix it? We could create a new exception type and throw it:</p>
+        <p class="codelink"><a id="pp0111_06a" href="chapter07_ima.xhtml#pp0111_06">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public class MetricsCalculator<br>
+        &nbsp;&nbsp;&nbsp;{<a id="page_112"></a><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;public double xProjection(Point p1, Point p2) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (p1 == null || p2 == null) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw InvalidArgumentException(<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;“Invalid argument for MetricsCalculator.xProjection”);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return (p2.x – p1.x) * 1.5;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>Is this better? It might be a little better than a <code>null</code> pointer exception, but remember, we have to define a handler for <code>InvalidArgumentException</code>. What should the handler do? Is there any good course of action?</p>
+        <p>There is another alternative. We could use a set of assertions:</p>
+        <p class="codelink"><a id="pp0112_01a" href="chapter07_ima.xhtml#pp0112_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public class MetricsCalculator<br>
+        &nbsp;&nbsp;&nbsp;{<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public double xProjection(Point p1, Point p2) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assert p1 != null : “p1 should not be null”;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assert p2 != null : “p2 should not be null”;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return (p2.x – p1.x) * 1.5;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>It’s good documentation, but it doesn’t solve the problem. If someone passes <code>null</code>, we’ll still have a runtime error.</p>
+        <p>In most programming languages there is no good way to deal with a <code>null</code> that is passed by a caller accidentally. Because this is the case, the rational approach is to forbid passing <code>null</code> by default. When you do, you can code with the knowledge that a <code>null</code> in an argument list is an indication of a problem, and end up with far fewer careless mistakes.</p>
+        <h3 id="ch7lev1sec9"><strong>Conclusion</strong></h3>
+        <p>Clean code is readable, but it must also be robust. These are not conflicting goals. We can write robust clean code if we see error handling as a separate concern, something that is viewable independently of our main logic. To the degree that we are able to do that, we can reason about it independently, and we can make great strides in the maintainability of our code.</p>
+        <h3 id="ch7lev1sec10"><strong>Bibliography</strong></h3>
+        <p><a id="Martin"></a></p>
+        <p class="bibentry"><strong>[<a href="#iMartin">Martin</a>]</strong>: <em>Agile Software Development: Principles, Patterns, and Practices,</em> Robert C. Martin, Prentice Hall, 2002.</p>
+        </div></div><link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136083238/files/9780136083252.css" crossorigin="anonymous"></div></div></section>
+</div>
+

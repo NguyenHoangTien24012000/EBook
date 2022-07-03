@@ -1,0 +1,1164 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+</style>
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 10. Modules"><div class="chapter" id="modules">
+        <h1><span class="label">Chapter 10. </span>Modules</h1>
+        
+        
+        <p>The<a data-type="indexterm" data-primary="modules" data-secondary="purpose of" id="idm46198532583176"></a> goal of modular programming is to allow large programs to be
+        assembled using modules of code from disparate authors and sources
+        and for all of that code to run correctly even in the presence of code
+        that the various module authors did not anticipate. As a practical
+        matter, modularity is mostly about encapsulating or hiding private
+        implementation details and keeping the global namespace tidy so that
+        modules cannot accidentally modify the variables, functions, and
+        classes defined by other <span class="keep-together">modules.</span></p>
+        
+        <p>Until<a data-type="indexterm" data-primary="modules" data-secondary="overview of" id="idm46198532580360"></a> recently, JavaScript had no built-in support for modules, and
+        programmers working on large code bases did their best to use the weak
+        modularity available through classes, objects, and
+        closures. Closure-based modularity, with support from code-bundling
+        tools, led to a practical form of modularity based on a <code>require()</code>
+        function, which was adopted by Node. <code>require()</code>-based modules are a
+        fundamental part of the Node programming environment but were never
+        adopted as an official part of the JavaScript language. Instead, ES6
+        defines modules using <code>import</code> and <code>export</code> keywords. Although
+        <code>import</code> and <code>export</code> have been part of the language for years, they
+        were only implemented by web browsers and Node relatively
+        recently. And, as a practical matter, JavaScript modularity still
+        depends on code-bundling tools.</p>
+        
+        <p>The sections that follow cover:</p>
+        
+        <ul>
+        <li>
+        <p>Do-it-yourself modules with classes, objects, and closures</p>
+        </li>
+        <li>
+        <p>Node modules using <code>require()</code></p>
+        </li>
+        <li>
+        <p>ES6 modules using <code>export</code>, <code>import</code>, and <code>import()</code></p>
+        </li>
+        </ul>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="10.1 Modules with Classes, Objects, and Closures"><div class="sect1" id="idm46198531350328">
+        <h1>10.1 Modules with Classes, Objects, and Closures</h1>
+        
+        <p>Though<a data-type="indexterm" data-primary="objects" data-secondary="modular programming with" id="idm46198531348568"></a><a data-type="indexterm" data-primary="classes" data-secondary="modular programming with" id="idm46198531347544"></a><a data-type="indexterm" data-primary="modules" data-secondary="with classes, objects, and closures" id="Mclass10"></a> it may be obvious, it is worth pointing out that one of the
+        important features of classes is that they act as modules for their
+        methods. Think back to <a data-type="xref" href="ch09.html#sets.js">Example&nbsp;9-8</a>. That example defined a number of
+        different classes, all of which had a method named <code>has()</code>. But you
+        would have no problem writing a program that used multiple set classes
+        from that example: there is no danger that the implementation of
+        <code>has()</code> from SingletonSet will overwrite the <code>has()</code> method of BitSet,
+        for example.</p>
+        
+        <p>The reason that the methods of one class are independent of the
+        methods of other, unrelated classes is that the methods of each class
+        are defined as properties of independent prototype objects. The reason
+        that classes are modular is that objects are modular: defining a
+        property in a JavaScript object is a lot like declaring a variable,
+        but adding properties to objects does not affect the global namespace
+        of a program, nor does it affect the properties of other
+        objects. JavaScript defines quite a few mathematical functions and
+        constants, but instead of defining them all globally, they are grouped
+        as properties of a single global Math object. This same technique
+        could have been used in <a data-type="xref" href="ch09.html#sets.js">Example&nbsp;9-8</a>. Instead of defining global
+        classes with names like SingletonSet and BitSet, that example could
+        have been written to define only a single global Sets object, with
+        properties referencing the various classes. Users of this Sets library
+        could then refer to the classes with names like <code>Sets.Singleton</code> and
+        <code>Sets.Bit</code>.</p>
+        
+        <p>Using classes and objects for modularity is a common and useful
+        technique in JavaScript programming, but it doesn’t go far enough. In
+        particular, it doesn’t offer us any way to hide internal
+        implementation details inside the module. Consider <a data-type="xref" href="ch09.html#sets.js">Example&nbsp;9-8</a>
+        again. If we were writing that example as a module, maybe we would
+        have wanted to keep the various abstract classes internal to the
+        module, only making the concrete subclasses available to users of the
+        module. Similarly, in the BitSet class, the
+        <code>_valid()</code> and <code>_has()</code> methods are internal utilities that should not
+        really be exposed to users of the class. And <code>BitSet.bits</code> and
+        <code>BitSet.masks</code> are implementation details that would be better off
+        hidden.</p>
+        
+        <p>As we saw in <a data-type="xref" href="ch08.html#closures">§8.6</a>, local variables and nested functions
+        declared within a function are private to that function. This means
+        that we can use immediately invoked function expressions to achieve a
+        kind of modularity by leaving the implementation details and utility
+        functions hidden within the enclosing function but making the public
+        API of the module the return value of the function. In the case of the
+        BitSet class, we might structure the module like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">const</code> <code class="nx">BitSet</code> <code class="o">=</code> <code class="p">(</code><code class="kd">function</code><code class="p">()</code> <code class="p">{</code> <code class="c1">// Set BitSet to the return value of this function</code>
+            <code class="c1">// Private implementation details here</code>
+            <code class="kd">function</code> <code class="nx">isValid</code><code class="p">(</code><code class="nx">set</code><code class="p">,</code> <code class="nx">n</code><code class="p">)</code> <code class="p">{</code> <code class="p">...</code> <code class="p">}</code>
+            <code class="kd">function</code> <code class="nx">has</code><code class="p">(</code><code class="nx">set</code><code class="p">,</code> <code class="kr">byte</code><code class="p">,</code> <code class="nx">bit</code><code class="p">)</code> <code class="p">{</code> <code class="p">...</code> <code class="p">}</code>
+            <code class="kr">const</code> <code class="nx">BITS</code> <code class="o">=</code> <code class="k">new</code> <code class="nx">Uint8Array</code><code class="p">([</code><code class="mi">1</code><code class="p">,</code> <code class="mi">2</code><code class="p">,</code> <code class="mi">4</code><code class="p">,</code> <code class="mi">8</code><code class="p">,</code> <code class="mi">16</code><code class="p">,</code> <code class="mi">32</code><code class="p">,</code> <code class="mi">64</code><code class="p">,</code> <code class="mi">128</code><code class="p">]);</code>
+            <code class="kr">const</code> <code class="nx">MASKS</code> <code class="o">=</code> <code class="k">new</code> <code class="nx">Uint8Array</code><code class="p">([</code><code class="o">~</code><code class="mi">1</code><code class="p">,</code> <code class="o">~</code><code class="mi">2</code><code class="p">,</code> <code class="o">~</code><code class="mi">4</code><code class="p">,</code> <code class="o">~</code><code class="mi">8</code><code class="p">,</code> <code class="o">~</code><code class="mi">16</code><code class="p">,</code> <code class="o">~</code><code class="mi">32</code><code class="p">,</code> <code class="o">~</code><code class="mi">64</code><code class="p">,</code> <code class="o">~</code><code class="mi">128</code><code class="p">]);</code>
+        
+            <code class="c1">// The public API of the module is just the BitSet class, which we define</code>
+            <code class="c1">// and return here. The class can use the private functions and constants</code>
+            <code class="c1">// defined above, but they will be hidden from users of the class</code>
+            <code class="k">return</code> <code class="kr">class</code> <code class="nx">BitSet</code> <code class="kr">extends</code> <code class="nx">AbstractWritableSet</code> <code class="p">{</code>
+                <code class="c1">// ... implementation omitted ...</code>
+            <code class="p">};</code>
+        <code class="p">}());</code></pre>
+        
+        <p>This approach to modularity becomes a little more interesting when the
+        module has more than one item in it. The following code, for example,
+        defines a mini statistics module that exports <code>mean()</code> and <code>stddev()</code>
+        functions while leaving the implementation details hidden:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="c1">// This is how we could define a stats module</code>
+        <code class="kr">const</code> <code class="nx">stats</code> <code class="o">=</code> <code class="p">(</code><code class="kd">function</code><code class="p">()</code> <code class="p">{</code>
+            <code class="c1">// Utility functions private to the module</code>
+            <code class="kr">const</code> <code class="nx">sum</code> <code class="o">=</code> <code class="p">(</code><code class="nx">x</code><code class="p">,</code> <code class="nx">y</code><code class="p">)</code> <code class="o">=&gt;</code> <code class="nx">x</code> <code class="o">+</code> <code class="nx">y</code><code class="p">;</code>
+            <code class="kr">const</code> <code class="nx">square</code> <code class="o">=</code> <code class="nx">x</code> <code class="o">=&gt;</code> <code class="nx">x</code> <code class="o">*</code> <code class="nx">x</code><code class="p">;</code>
+        
+            <code class="c1">// A public function that will be exported</code>
+            <code class="kd">function</code> <code class="nx">mean</code><code class="p">(</code><code class="nx">data</code><code class="p">)</code> <code class="p">{</code>
+                <code class="k">return</code> <code class="nx">data</code><code class="p">.</code><code class="nx">reduce</code><code class="p">(</code><code class="nx">sum</code><code class="p">)</code><code class="o">/</code><code class="nx">data</code><code class="p">.</code><code class="nx">length</code><code class="p">;</code>
+            <code class="p">}</code>
+        
+            <code class="c1">// A public function that we will export</code>
+            <code class="kd">function</code> <code class="nx">stddev</code><code class="p">(</code><code class="nx">data</code><code class="p">)</code> <code class="p">{</code>
+                <code class="kd">let</code> <code class="nx">m</code> <code class="o">=</code> <code class="nx">mean</code><code class="p">(</code><code class="nx">data</code><code class="p">);</code>
+                <code class="k">return</code> <code class="nb">Math</code><code class="p">.</code><code class="nx">sqrt</code><code class="p">(</code>
+                    <code class="nx">data</code><code class="p">.</code><code class="nx">map</code><code class="p">(</code><code class="nx">x</code> <code class="o">=&gt;</code> <code class="nx">x</code> <code class="o">-</code> <code class="nx">m</code><code class="p">).</code><code class="nx">map</code><code class="p">(</code><code class="nx">square</code><code class="p">).</code><code class="nx">reduce</code><code class="p">(</code><code class="nx">sum</code><code class="p">)</code><code class="o">/</code><code class="p">(</code><code class="nx">data</code><code class="p">.</code><code class="nx">length</code><code class="o">-</code><code class="mi">1</code><code class="p">)</code>
+                <code class="p">);</code>
+            <code class="p">}</code>
+        
+            <code class="c1">// We export the public function as properties of an object</code>
+            <code class="k">return</code> <code class="p">{</code> <code class="nx">mean</code><code class="p">,</code> <code class="nx">stddev</code> <code class="p">};</code>
+        <code class="p">}());</code>
+        
+        <code class="c1">// And here is how we might use the module</code>
+        <code class="nx">stats</code><code class="p">.</code><code class="nx">mean</code><code class="p">([</code><code class="mi">1</code><code class="p">,</code> <code class="mi">3</code><code class="p">,</code> <code class="mi">5</code><code class="p">,</code> <code class="mi">7</code><code class="p">,</code> <code class="mi">9</code><code class="p">])</code>   <code class="c1">// =&gt; 5</code>
+        <code class="nx">stats</code><code class="p">.</code><code class="nx">stddev</code><code class="p">([</code><code class="mi">1</code><code class="p">,</code> <code class="mi">3</code><code class="p">,</code> <code class="mi">5</code><code class="p">,</code> <code class="mi">7</code><code class="p">,</code> <code class="mi">9</code><code class="p">])</code> <code class="c1">// =&gt; Math.sqrt(10)</code></pre>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="10.1.1 Automating Closure-Based Modularity"><div class="sect2" id="idm46198531232840">
+        <h2>10.1.1 Automating Closure-Based Modularity</h2>
+        
+        <p>Note<a data-type="indexterm" data-primary="closures" data-secondary="modular programming with" id="idm46198531231464"></a><a data-type="indexterm" data-primary="modules" data-secondary="automating closure-based modularity" id="idm46198531230488"></a> that it is a fairly mechanical process to transform a file of
+        JavaScript code into this kind of module by inserting some text at the
+        beginning and end of the file. All that is needed is some convention
+        for the file of JavaScript code to indicate which values are to be
+        exported and which are not.</p>
+        
+        <p>Imagine a tool that takes a set of files, wraps the content of each of
+        those files within an immediately invoked function expression, keeps
+        track of the return value of each function, and concatenates
+        everything into one big file. The result might look something like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">const</code> <code class="nx">modules</code> <code class="o">=</code> <code class="p">{};</code>
+        <code class="kd">function</code> <code class="nx">require</code><code class="p">(</code><code class="nx">moduleName</code><code class="p">)</code> <code class="p">{</code> <code class="k">return</code> <code class="nx">modules</code><code class="p">[</code><code class="nx">moduleName</code><code class="p">];</code> <code class="p">}</code>
+        
+        <code class="nx">modules</code><code class="p">[</code><code class="s2">"sets.js"</code><code class="p">]</code> <code class="o">=</code> <code class="p">(</code><code class="kd">function</code><code class="p">()</code> <code class="p">{</code>
+            <code class="kr">const</code> <code class="nx">exports</code> <code class="o">=</code> <code class="p">{};</code>
+        
+            <code class="c1">// The contents of the sets.js file go here:</code>
+            <code class="nx">exports</code><code class="p">.</code><code class="nx">BitSet</code> <code class="o">=</code> <code class="kr">class</code> <code class="nx">BitSet</code> <code class="p">{</code> <code class="p">...</code> <code class="p">};</code>
+        
+            <code class="k">return</code> <code class="nx">exports</code><code class="p">;</code>
+        <code class="p">}());</code>
+        
+        <code class="nx">modules</code><code class="p">[</code><code class="s2">"stats.js"</code><code class="p">]</code> <code class="o">=</code> <code class="p">(</code><code class="kd">function</code><code class="p">()</code> <code class="p">{</code>
+            <code class="kr">const</code> <code class="nx">exports</code> <code class="o">=</code> <code class="p">{};</code>
+        
+            <code class="c1">// The contents of the stats.js file go here:</code>
+            <code class="kr">const</code> <code class="nx">sum</code> <code class="o">=</code> <code class="p">(</code><code class="nx">x</code><code class="p">,</code> <code class="nx">y</code><code class="p">)</code> <code class="o">=&gt;</code> <code class="nx">x</code> <code class="o">+</code> <code class="nx">y</code><code class="p">;</code>
+            <code class="kr">const</code> <code class="nx">square</code> <code class="o">=</code> <code class="nx">x</code> <code class="o">=</code> <code class="o">&gt;</code> <code class="nx">x</code> <code class="o">*</code> <code class="nx">x</code><code class="p">;</code>
+            <code class="nx">exports</code><code class="p">.</code><code class="nx">mean</code> <code class="o">=</code> <code class="kd">function</code><code class="p">(</code><code class="nx">data</code><code class="p">)</code> <code class="p">{</code> <code class="p">...</code> <code class="p">};</code>
+            <code class="nx">exports</code><code class="p">.</code><code class="nx">stddev</code> <code class="o">=</code> <code class="kd">function</code><code class="p">(</code><code class="nx">data</code><code class="p">)</code> <code class="p">{</code> <code class="p">...</code> <code class="p">};</code>
+        
+            <code class="k">return</code> <code class="nx">exports</code><code class="p">;</code>
+        <code class="p">}());</code></pre>
+        
+        <p>With modules bundled up into a single file like the one shown in the preceding example,
+        you can imagine writing code like the following to make use of those
+        modules:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="c1">// Get references to the modules (or the module content) that we need</code>
+        <code class="kr">const</code> <code class="nx">stats</code> <code class="o">=</code> <code class="nx">require</code><code class="p">(</code><code class="s2">"stats.js"</code><code class="p">);</code>
+        <code class="kr">const</code> <code class="nx">BitSet</code> <code class="o">=</code> <code class="nx">require</code><code class="p">(</code><code class="s2">"sets.js"</code><code class="p">).</code><code class="nx">BitSet</code><code class="p">;</code>
+        
+        <code class="c1">// Now write code using those modules</code>
+        <code class="kd">let</code> <code class="nx">s</code> <code class="o">=</code> <code class="k">new</code> <code class="nx">BitSet</code><code class="p">(</code><code class="mi">100</code><code class="p">);</code>
+        <code class="nx">s</code><code class="p">.</code><code class="nx">insert</code><code class="p">(</code><code class="mi">10</code><code class="p">);</code>
+        <code class="nx">s</code><code class="p">.</code><code class="nx">insert</code><code class="p">(</code><code class="mi">20</code><code class="p">);</code>
+        <code class="nx">s</code><code class="p">.</code><code class="nx">insert</code><code class="p">(</code><code class="mi">30</code><code class="p">);</code>
+        <code class="kd">let</code> <code class="nx">average</code> <code class="o">=</code> <code class="nx">stats</code><code class="p">.</code><code class="nx">mean</code><code class="p">([...</code><code class="nx">s</code><code class="p">]);</code> <code class="c1">// average is 20</code></pre>
+        
+        <p>This code is a rough sketch of how code-bundling tools (such as
+        webpack and Parcel) for web browsers work, and it’s also a simple
+        introduction to the <code>require()</code> function like the one used in Node
+        programs.<a data-type="indexterm" data-primary="" data-startref="Mclass10" id="idm46198531061624"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" class="less_space pagebreak-before" data-pdf-bookmark="10.2 Modules in Node"><div class="sect1" id="nodemodules">
+        <h1>10.2 Modules in Node</h1>
+        
+        <p>In<a data-type="indexterm" data-primary="Node" data-secondary="modules in" id="Nmod10"></a><a data-type="indexterm" data-primary="modules" data-secondary="in Node" data-secondary-sortas="Node" id="Mnode10"></a> Node programming, it is normal to split programs into as many files
+        as seems natural. These files of JavaScript code are assumed to all
+        live on a fast filesystem. Unlike web browsers, which have to
+        read files of JavaScript over a relatively slow network connection,
+        there is no need or benefit to bundling a Node program into a single
+        JavaScript file.</p>
+        
+        <p>In Node, each file is an independent module with a private
+        namespace. Constants, variables, functions, and classes defined in one
+        file are private to that file unless the file exports them. And values
+        exported by one module are only visible in another module if that
+        module explicitly imports them.</p>
+        
+        <p>Node modules import other modules with the <code>require()</code> function and
+        export their public API by setting properties of the Exports object
+        or by replacing the <span class="keep-together"><code>module.exports</code></span>object entirely.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="10.2.1 Node Exports"><div class="sect2" id="idm46198531052712">
+        <h2>10.2.1 Node Exports</h2>
+        
+        <p>Node<a data-type="indexterm" data-primary="modules" data-secondary="in Node" data-tertiary="Node exports" data-secondary-sortas="Node" id="idm46198531051144"></a> defines a global <code>exports</code> object that is always defined. If you
+        are writing a Node module that exports multiple values, you can simply
+        assign them to the properties of this object:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">const</code> <code class="nx">sum</code> <code class="o">=</code> <code class="p">(</code><code class="nx">x</code><code class="p">,</code> <code class="nx">y</code><code class="p">)</code> <code class="o">=&gt;</code> <code class="nx">x</code> <code class="o">+</code> <code class="nx">y</code><code class="p">;</code>
+        <code class="kr">const</code> <code class="nx">square</code> <code class="o">=</code> <code class="nx">x</code> <code class="o">=&gt;</code> <code class="nx">x</code> <code class="o">*</code> <code class="nx">x</code><code class="p">;</code>
+        
+        <code class="nx">exports</code><code class="p">.</code><code class="nx">mean</code> <code class="o">=</code> <code class="nx">data</code> <code class="o">=&gt;</code> <code class="nx">data</code><code class="p">.</code><code class="nx">reduce</code><code class="p">(</code><code class="nx">sum</code><code class="p">)</code><code class="o">/</code><code class="nx">data</code><code class="p">.</code><code class="nx">length</code><code class="p">;</code>
+        <code class="nx">exports</code><code class="p">.</code><code class="nx">stddev</code> <code class="o">=</code> <code class="kd">function</code><code class="p">(</code><code class="nx">d</code><code class="p">)</code> <code class="p">{</code>
+            <code class="kd">let</code> <code class="nx">m</code> <code class="o">=</code> <code class="nx">exports</code><code class="p">.</code><code class="nx">mean</code><code class="p">(</code><code class="nx">d</code><code class="p">);</code>
+            <code class="k">return</code> <code class="nb">Math</code><code class="p">.</code><code class="nx">sqrt</code><code class="p">(</code><code class="nx">d</code><code class="p">.</code><code class="nx">map</code><code class="p">(</code><code class="nx">x</code> <code class="o">=&gt;</code> <code class="nx">x</code> <code class="o">-</code> <code class="nx">m</code><code class="p">).</code><code class="nx">map</code><code class="p">(</code><code class="nx">square</code><code class="p">).</code><code class="nx">reduce</code><code class="p">(</code><code class="nx">sum</code><code class="p">)</code><code class="o">/</code><code class="p">(</code><code class="nx">d</code><code class="p">.</code><code class="nx">length</code><code class="o">-</code><code class="mi">1</code><code class="p">));</code>
+        <code class="p">};</code></pre>
+        
+        <p>Often, however, you want to define a module that exports only a
+        single function or class rather than an object full of functions or
+        classes. To do this, you simply assign the
+        single value you want to export to <code>module.exports</code>:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="nx">module</code><code class="p">.</code><code class="nx">exports</code> <code class="o">=</code> <code class="kr">class</code> <code class="nx">BitSet</code> <code class="kr">extends</code> <code class="nx">AbstractWritableSet</code> <code class="p">{</code>
+            <code class="c1">// implementation omitted</code>
+        <code class="p">};</code></pre>
+        
+        <p>The default value of <code>module.exports</code> is the same object that
+        <code>exports</code> refers to. In the previous stats module, we could have assigned
+        the mean function to <span class="keep-together"><code>module.exports.mean</code></span> instead of
+        <code>exports.mean</code>. Another approach with modules like the stats module
+        is to export a single object at the end of the module rather than
+        exporting functions one by one as you go:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="c1">// Define all the functions, public and private</code>
+        <code class="kr">const</code> <code class="nx">sum</code> <code class="o">=</code> <code class="p">(</code><code class="nx">x</code><code class="p">,</code> <code class="nx">y</code><code class="p">)</code> <code class="o">=&gt;</code> <code class="nx">x</code> <code class="o">+</code> <code class="nx">y</code><code class="p">;</code>
+        <code class="kr">const</code> <code class="nx">square</code> <code class="o">=</code> <code class="nx">x</code> <code class="o">=&gt;</code> <code class="nx">x</code> <code class="o">*</code> <code class="nx">x</code><code class="p">;</code>
+        <code class="kr">const</code> <code class="nx">mean</code> <code class="o">=</code> <code class="nx">data</code> <code class="o">=&gt;</code> <code class="nx">data</code><code class="p">.</code><code class="nx">reduce</code><code class="p">(</code><code class="nx">sum</code><code class="p">)</code><code class="o">/</code><code class="nx">data</code><code class="p">.</code><code class="nx">length</code><code class="p">;</code>
+        <code class="kr">const</code> <code class="nx">stddev</code> <code class="o">=</code> <code class="nx">d</code> <code class="o">=&gt;</code> <code class="p">{</code>
+            <code class="kd">let</code> <code class="nx">m</code> <code class="o">=</code> <code class="nx">mean</code><code class="p">(</code><code class="nx">d</code><code class="p">);</code>
+            <code class="k">return</code> <code class="nb">Math</code><code class="p">.</code><code class="nx">sqrt</code><code class="p">(</code><code class="nx">d</code><code class="p">.</code><code class="nx">map</code><code class="p">(</code><code class="nx">x</code> <code class="o">=&gt;</code> <code class="nx">x</code> <code class="o">-</code> <code class="nx">m</code><code class="p">).</code><code class="nx">map</code><code class="p">(</code><code class="nx">square</code><code class="p">).</code><code class="nx">reduce</code><code class="p">(</code><code class="nx">sum</code><code class="p">)</code><code class="o">/</code><code class="p">(</code><code class="nx">d</code><code class="p">.</code><code class="nx">length</code><code class="o">-</code><code class="mi">1</code><code class="p">));</code>
+        <code class="p">};</code>
+        
+        <code class="c1">// Now export only the public ones</code>
+        <code class="nx">module</code><code class="p">.</code><code class="nx">exports</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">mean</code><code class="p">,</code> <code class="nx">stddev</code> <code class="p">};</code></pre>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="10.2.2 Node Imports"><div class="sect2" id="idm46198530492136">
+        <h2>10.2.2 Node Imports</h2>
+        
+        <p>A<a data-type="indexterm" data-primary="require() function" id="idm46198530323016"></a><a data-type="indexterm" data-primary="modules" data-secondary="in Node" data-tertiary="Node imports" data-secondary-sortas="Node" id="idm46198530322392"></a> Node module imports another module by calling the <code>require()</code>
+        function. The argument to this function is the name of the module to
+        be imported, and the return value is whatever value (typically a
+        function, class, or object) that module exports.</p>
+        
+        <p>If you want to import a system module built in to Node or a module
+        that you have installed on your system via a package manager, then you
+        simply use the unqualified name of the module, without any “/”
+        characters that would turn it into a filesystem path:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="c1">// These modules are built in to Node</code>
+        <code class="kr">const</code> <code class="nx">fs</code> <code class="o">=</code> <code class="nx">require</code><code class="p">(</code><code class="s2">"fs"</code><code class="p">);</code>           <code class="c1">// The built-in filesystem module</code>
+        <code class="kr">const</code> <code class="nx">http</code> <code class="o">=</code> <code class="nx">require</code><code class="p">(</code><code class="s2">"http"</code><code class="p">);</code>       <code class="c1">// The built-in HTTP module</code>
+        
+        <code class="c1">// The Express HTTP server framework is a third-party module.</code>
+        <code class="c1">// It is not part of Node but has been installed locally</code>
+        <code class="kr">const</code> <code class="nx">express</code> <code class="o">=</code> <code class="nx">require</code><code class="p">(</code><code class="s2">"express"</code><code class="p">);</code></pre>
+        
+        <p>When you want to import a module of your own code, the module name
+        should be the path to the file that contains that code, relative to
+        the current module’s file. It is legal to use absolute paths that
+        begin with a <em>/</em> character, but typically, when importing modules that
+        are part of your own program, the module names will begin with <em>./</em> or
+        sometimes <em>../</em> to indicate that they are relative to the current
+        directory or the parent directory. For example:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">const</code> <code class="nx">stats</code> <code class="o">=</code> <code class="nx">require</code><code class="p">(</code><code class="s1">'./stats.js'</code><code class="p">);</code>
+        <code class="kr">const</code> <code class="nx">BitSet</code> <code class="o">=</code> <code class="nx">require</code><code class="p">(</code><code class="s1">'./utils/bitset.js'</code><code class="p">);</code></pre>
+        
+        <p>(You can also omit the <em>.js</em> suffix on the files you’re importing and
+        Node will still find the files, but it is common to see these file
+        extensions explicitly included.)</p>
+        
+        <p>When a module exports just a single function or class, all you have to
+        do is require it. When a module exports an object with multiple
+        properties, you have a choice: you can import the entire object, or
+        just import the specific properties (using destructuring assignment)
+        of the object that you plan to use. Compare these two approaches:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="c1">// Import the entire stats object, with all of its functions</code>
+        <code class="kr">const</code> <code class="nx">stats</code> <code class="o">=</code> <code class="nx">require</code><code class="p">(</code><code class="s1">'./stats.js'</code><code class="p">);</code>
+        
+        <code class="c1">// We've got more functions than we need, but they're neatly</code>
+        <code class="c1">// organized into a convenient "stats" namespace.</code>
+        <code class="kd">let</code> <code class="nx">average</code> <code class="o">=</code> <code class="nx">stats</code><code class="p">.</code><code class="nx">mean</code><code class="p">(</code><code class="nx">data</code><code class="p">);</code>
+        
+        <code class="c1">// Alternatively, we can use idiomatic destructuring assignment to import</code>
+        <code class="c1">// exactly the functions we want directly into the local namespace:</code>
+        <code class="kr">const</code> <code class="p">{</code> <code class="nx">stddev</code> <code class="p">}</code> <code class="o">=</code> <code class="nx">require</code><code class="p">(</code><code class="s1">'./stats.js'</code><code class="p">);</code>
+        
+        <code class="c1">// This is nice and succinct, though we lose a bit of context</code>
+        <code class="c1">// without the 'stats' prefix as a namspace for the stddev() function.</code>
+        <code class="kd">let</code> <code class="nx">sd</code> <code class="o">=</code> <code class="nx">stddev</code><code class="p">(</code><code class="nx">data</code><code class="p">);</code></pre>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="10.2.3 Node-Style Modules on the Web"><div class="sect2" id="idm46198530177208">
+        <h2>10.2.3 Node-Style Modules on the Web</h2>
+        
+        <p>Modules<a data-type="indexterm" data-primary="modules" data-secondary="in Node" data-tertiary="Node-style modules on the web" data-secondary-sortas="Node" id="idm46198530148040"></a> with an Exports object and a <code>require()</code> function are
+        built in to Node. But if you’re willing to process your code with a
+        bundling tool like webpack, then it is also possible to use this style
+        of modules for code that is intended to run in web browsers. Until
+        recently, this was a very common thing to do, and you may see
+        lots of web-based code that still does it.</p>
+        
+        <p>Now that JavaScript has its own standard module syntax, however,
+        developers who use bundlers are more likely to use the official
+        JavaScript modules with <code>import</code> and <code>export</code> statements.<a data-type="indexterm" data-primary="" data-startref="Nmod10" id="idm46198530144248"></a><a data-type="indexterm" data-primary="" data-startref="Mnode10" id="idm46198530143240"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="10.3 Modules in ES6"><div class="sect1" id="es6modules">
+        <h1>10.3 Modules in ES6</h1>
+        
+        <p>ES6<a data-type="indexterm" data-primary="modules" data-secondary="in ES6" data-tertiary="overview of" data-secondary-sortas="ES6" id="idm46198530139848"></a><a data-type="indexterm" data-primary="ES6" data-secondary="modules in" data-tertiary="overview of" id="idm46198530138296"></a><a data-type="indexterm" data-primary="keywords" data-secondary="import keyword" id="idm46198530137080"></a><a data-type="indexterm" data-primary="keywords" data-secondary="export keyword" id="idm46198530136136"></a><a data-type="indexterm" data-primary="export keyword" id="idm46198530135192"></a><a data-type="indexterm" data-primary="import keyword" id="idm46198530134520"></a> adds <code>import</code> and <code>export</code> keywords to JavaScript and finally
+        supports real modularity as a core language feature. ES6 modularity is
+        conceptually the same as Node modularity: each file is its own module,
+        and constants, variables, functions, and classes defined within a file
+        are private to that module unless they are explicitly exported. Values
+        that are exported from one module are available for use in modules
+        that explicitly import them. ES6 modules differ from Node modules in
+        the syntax used for exporting and importing and also in the way that
+        modules are defined in web browsers. The sections that follow explain
+        these things in detail.</p>
+        
+        <p>First, though, note that ES6 modules are also different from regular
+        JavaScript “scripts” in some important ways. The most obvious
+        difference is the modularity itself: in regular scripts, top-level
+        declarations of variables, functions, and classes go into a single
+        global context shared by all scripts. With modules, each file has its
+        own private context and can use the <code>import</code> and <code>export</code> statements,
+        which is the whole point, after all. But there are other differences
+        between modules and scripts as well. Code<a data-type="indexterm" data-primary="strict mode" data-secondary="default application of" id="idm46198530129992"></a><a data-type="indexterm" data-primary="use strict directive" data-secondary="default application of strict mode" id="idm46198530129016"></a> inside an ES6 module (like
+        code inside any ES6 <code>class</code> definition) is automatically in strict
+        mode (see <a data-type="xref" href="ch05.html#strictmode">§5.6.3</a>). This means that, when you start using ES6
+        modules, you’ll never have to write <code>"use strict"</code> again. And it means
+        that code in modules cannot use the <code>with</code> statement or the
+        <code>arguments</code> object or undeclared variables. ES6 modules are even
+        slightly stricter than strict mode: in strict mode, in functions
+        invoked as functions, <code>this</code> is <code>undefined</code>. In modules, <code>this</code> is
+        <code>undefined</code> even in top-level code. (By contrast, scripts in web browsers
+        and Node set <code>this</code> to the global object.)</p>
+        <div data-type="note" epub:type="note"><h1>ES6 Modules on the Web and in Node</h1>
+        <p>ES6 modules have been in use on the web for years with the help of
+        code bundlers like webpack, which combine independent modules of
+        JavaScript code into large, non-modular bundles suitable for inclusion
+        into web pages. At the time of this writing, however, ES6 modules are
+        finally supported natively by all web browsers other than Internet
+        Explorer. When used natively, ES6 modules are added into HTML pages
+        with a special <code>&lt;script type="module"&gt;</code> tag, described later in this chapter.</p>
+        
+        <p>And meanwhile, having pioneered JavaScript modularity, Node finds
+        itself in the awkward position of having to support two
+        not entirely compatible module systems. Node 13 supports ES6 modules,
+        but for now, the vast majority of Node programs still use Node modules.</p>
+        </div>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="10.3.1 ES6 Exports"><div class="sect2" id="idm46198530120456">
+        <h2>10.3.1 ES6 Exports</h2>
+        
+        <p>To<a data-type="indexterm" data-primary="modules" data-secondary="in ES6" data-tertiary="exports" data-secondary-sortas="ES6" id="idm46198530118856"></a><a data-type="indexterm" data-primary="ES6" data-secondary="modules in" data-tertiary="exports" id="idm46198530117304"></a> export a constant, variable, function, or class from an ES6 module,
+        simply add the keyword <code>export</code> before the declaration:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">export</code> <code class="kr">const</code> <code class="nx">PI</code> <code class="o">=</code> <code class="nb">Math</code><code class="p">.</code><code class="nx">PI</code><code class="p">;</code>
+        
+        <code class="kr">export</code> <code class="kd">function</code> <code class="nx">degreesToRadians</code><code class="p">(</code><code class="nx">d</code><code class="p">)</code> <code class="p">{</code> <code class="k">return</code> <code class="nx">d</code> <code class="o">*</code> <code class="nx">PI</code> <code class="o">/</code> <code class="mi">180</code><code class="p">;</code> <code class="p">}</code>
+        
+        <code class="kr">export</code> <code class="kr">class</code> <code class="nx">Circle</code> <code class="p">{</code>
+            <code class="nx">constructor</code><code class="p">(</code><code class="nx">r</code><code class="p">)</code> <code class="p">{</code> <code class="k">this</code><code class="p">.</code><code class="nx">r</code> <code class="o">=</code> <code class="nx">r</code><code class="p">;</code> <code class="p">}</code>
+            <code class="nx">area</code><code class="p">()</code> <code class="p">{</code> <code class="k">return</code> <code class="nx">PI</code> <code class="o">*</code> <code class="k">this</code><code class="p">.</code><code class="nx">r</code> <code class="o">*</code> <code class="k">this</code><code class="p">.</code><code class="nx">r</code><code class="p">;</code> <code class="p">}</code>
+        <code class="p">}</code></pre>
+        
+        <p>As an alternative to scattering <code>export</code> keywords throughout your
+        module, you can define your constants, variables, functions, and
+        classes as you normally would, with no <code>export</code> statement, and then
+        (typically at the end of your module) write a single <code>export</code>
+        statement that declares exactly what is exported in a single place. So
+        instead of writing three individual exports in the preceding code, we
+        could have equivalently written a single line at the end:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">export</code> <code class="p">{</code> <code class="nx">Circle</code><code class="p">,</code> <code class="nx">degreesToRadians</code><code class="p">,</code> <code class="nx">PI</code> <code class="p">};</code></pre>
+        
+        <p>This syntax looks like the <code>export</code> keyword followed by an object
+        literal (using shorthand notation). But in this case, the curly braces
+        do not actually define an object literal. This export syntax simply
+        requires a comma-separated list of identifiers within curly braces.</p>
+        
+        <p>It is common to write modules that export only one value (typically a
+        function or class), and in this case, we usually use <code>export default</code>
+        instead of <code>export</code>:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">export</code> <code class="k">default</code> <code class="kr">class</code> <code class="nx">BitSet</code> <code class="p">{</code>
+            <code class="c1">// implementation omitted</code>
+        <code class="p">}</code></pre>
+        
+        <p>Default exports are slightly easier to import than non-default
+        exports, so when there is only one exported value, using <code>export
+        default</code> makes things easier for the modules that use your exported
+        value.</p>
+        
+        <p>Regular exports with <code>export</code> can only be done on declarations that
+        have a name. Default exports with <code>export default</code> can export any
+        expression including anonymous function expressions and anonymous
+        class expressions. This means that if you use <code>export default</code>, you can
+        export object literals. So unlike the <code>export</code> syntax, if you see
+        curly braces after <code>export default</code>, it really is an object literal
+        that is being exported.</p>
+        
+        <p>It is legal, but somewhat uncommon, for modules to have a set of
+        regular exports and also a default export. If a module has a default
+        export, it can only have one.</p>
+        
+        <p>Finally, note that the <code>export</code> keyword can only appear at the top
+        level of your JavaScript code. You may not export a value from within
+        a class, function, loop, or conditional. (This is an important feature
+        of the ES6 module system and enables static analysis: a modules
+        export will be the same on every run, and the symbols exported can be
+        determined before the module is actually run.)</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="10.3.2 ES6 Imports"><div class="sect2" id="ch10_ES6_imports">
+        <h2>10.3.2 ES6 Imports</h2>
+        
+        <p>You<a data-type="indexterm" data-primary="modules" data-secondary="in ES6" data-tertiary="imports" data-secondary-sortas="ES6" id="Mesimp10"></a><a data-type="indexterm" data-primary="ES6" data-secondary="modules in" data-tertiary="imports" id="ESmimp10"></a> import values that have been exported by other modules with the
+        <code>import</code> keyword. The simplest form of import is used for modules that
+        define a default export:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">import</code> <code class="nx">BitSet</code> <code class="nx">from</code> <code class="s1">'./bitset.js'</code><code class="p">;</code></pre>
+        
+        <p>This is the <code>import</code> keyword, followed by an identifier, followed by
+        the <code>from</code> keyword, followed by a string literal that names the module
+        whose default export we are importing. The default export value of the
+        specified module becomes the value of the specified identifier in the
+        current module.</p>
+        
+        <p>The identifier to which the imported value is assigned is a constant,
+        as if it had been declared with the <code>const</code> keyword. Like exports,
+        imports can only appear at the top level of a module and are not
+        allowed within classes, functions, loops, or conditionals. By
+        near-universal convention, the imports needed by a module are placed
+        at the start of the module. Interestingly, however, this is not
+        required: like function declarations, imports are “hoisted” to the top,
+        and all imported values are available for any of the module’s code runs.</p>
+        
+        <p>The module from which a value is imported is specified as a constant
+        string literal in single quotes or double quotes. (You may not use a
+        variable or other expression whose value is a string, and you may not
+        use a string within backticks because template literals can interpolate
+        variables and do not always have constant values.) In web browsers,
+        this string is interpreted as a URL relative to the location of the
+        module that is doing the importing. (In Node, or when using a bundling
+        tool, the string is interpreted as a filename relative to the current
+        module, but this makes little difference in practice.) A <em>module
+        specifier</em> string must be an absolute path starting with “/”, or a
+        relative path starting with “./” or “../”, or a complete URL a with
+        protocol and hostname. The ES6 specification does not allow
+        unqualified module specifier strings like “util.js” because it is
+        ambiguous whether this is intended to name a module in the same
+        directory as the current one or some kind of system module that is
+        installed in some special location. (This restriction against “bare
+        module specifiers” is not honored by code-bundling tools like webpack,
+        which can easily be configured to find bare modules in a library
+        directory that you specify.) A future version of the language may
+        allow “bare module specifiers,” but for now, they are not allowed. If
+        you want to import a module from the same directory as the current
+        one, simply place “./” before the module name and import from
+        “./util.js” instead of “util.js”.</p>
+        
+        <p>So far, we’ve only considered the case of importing a single value
+        from a module that uses <code>export default</code>. To import values from a
+        module that exports multiple values, we use a slightly different
+        syntax:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">import</code> <code class="p">{</code> <code class="nx">mean</code><code class="p">,</code> <code class="nx">stddev</code> <code class="p">}</code> <code class="nx">from</code> <code class="s2">"./stats.js"</code><code class="p">;</code></pre>
+        
+        <p>Recall that default exports do not need to have a name in the module
+        that defines them. Instead, we provide a local name when we import
+        those values. But non-default exports of a module do have names in the
+        exporting module, and when we import those values, we refer to them by
+        those names. The exporting module can export any number of named
+        value. An <code>import</code> statement that references that module can import
+        any subset of those values simply by listing their names within curly
+        braces. The curly braces make this kind of <code>import</code> statement look
+        something like a destructuring assignment, and destructuring
+        assignment is actually a good analogy for what this style of import is
+        doing. The identifiers within curly braces are all hoisted to the top
+        of the importing module and behave like constants.</p>
+        
+        <p>Style guides sometimes recommend that you explicitly import every
+        symbol that your module will use. When importing from a module that
+        defines many exports, however, you can easily import everything with
+        an <code>import</code> statement like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">import</code> <code class="o">*</code> <code class="nx">as</code> <code class="nx">stats</code> <code class="nx">from</code> <code class="s2">"./stats.js"</code><code class="p">;</code></pre>
+        
+        <p>An <code>import</code> statement like this creates an object and assigns it to a
+        constant named <code>stats</code>. Each of the non-default exports of the module
+        being imported becomes a property of this <code>stats</code>
+        object. Non-default exports always have names, and those are used as
+        property names within the object. Those properties are effectively
+        constants: they cannot be overwritten or deleted. With the wildcard
+        import shown in the previous example, the importing module would use the imported
+        <code>mean()</code> and <code>stddev()</code> functions through the <code>stats</code> object, invoking
+        them as <code>stats.mean()</code> and <code>stats.stddev()</code>.</p>
+        
+        <p>Modules typically define either one default export or multiple named
+        exports. It is legal, but somewhat uncommon, for a module to use both
+        <code>export</code> and <code>export default</code>. But when a module does that, you can
+        import both the default value and the named values with an <code>import</code>
+        statement like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">import</code> <code class="nx">Histogram</code><code class="p">,</code> <code class="p">{</code> <code class="nx">mean</code><code class="p">,</code> <code class="nx">stddev</code> <code class="p">}</code> <code class="nx">from</code> <code class="s2">"./histogram-stats.js"</code><code class="p">;</code></pre>
+        
+        <p>So far, we’ve seen how to import from modules with a default export
+        and from modules with non-default or named exports. But there is one
+        other form of the <code>import</code> statement that is used with modules that
+        have no exports at all. To include a no-exports module into your
+        program, simply use the <code>import</code> keyword with the module specifier:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">import</code> <code class="s2">"./analytics.js"</code><code class="p">;</code></pre>
+        
+        <p>A module like this runs the first time it is imported. (And subsequent
+        imports do nothing.) A module that just defines functions is only
+        useful if it exports at least one of those functions. But if a module
+        runs some code, then it can be useful to import even without
+        symbols. An analytics module for a web application might run code to
+        register various event handlers and then use those event handlers to
+        send telemetry data back to the server at appropriate times. The
+        module is self-contained and does not need to export anything, but we
+        still need to <code>import</code> it so that it does actually run as part of our
+        program.</p>
+        
+        <p>Note that you can use this import-nothing <code>import</code> syntax even with
+        modules that do have exports. If a module defines useful behavior
+        independent of the values it exports, and if your program does not
+        need any of those exported values, you can still import the module
+        . just for that default behavior.<a data-type="indexterm" data-primary="" data-startref="ESmimp10" id="idm46198529804888"></a><a data-type="indexterm" data-primary="" data-startref="Mesimp10" id="idm46198529803944"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="10.3.3 Imports and Exports with Renaming"><div class="sect2" id="idm46198530020280">
+        <h2>10.3.3 Imports and Exports with Renaming</h2>
+        
+        <p>If<a data-type="indexterm" data-primary="modules" data-secondary="in ES6" data-tertiary="imports and exports with renaming" data-secondary-sortas="ES6" id="idm46198529801336"></a><a data-type="indexterm" data-primary="ES6" data-secondary="modules in" data-tertiary="imports and exports with renaming" id="idm46198529778632"></a> two modules export two different values using the same name and
+        you want to import both of those values, you will have to rename one
+        or both of the values when you import it. Similarly, if you want to
+        import a value whose name is already in use in your module, you will
+        need to rename the imported value. You can use the <code>as</code> keyword with
+        named imports to rename them as you import them:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">import</code> <code class="p">{</code> <code class="nx">render</code> <code class="nx">as</code> <code class="nx">renderImage</code> <code class="p">}</code> <code class="nx">from</code> <code class="s2">"./imageutils.js"</code><code class="p">;</code>
+        <code class="kr">import</code> <code class="p">{</code> <code class="nx">render</code> <code class="nx">as</code> <code class="nx">renderUI</code> <code class="p">}</code> <code class="nx">from</code> <code class="s2">"./ui.js"</code><code class="p">;</code></pre>
+        
+        <p>These lines import two functions into the current module. The
+        functions are both named <code>render()</code> in the modules that define them
+        but are imported with the more descriptive and disambiguating
+        names <code>renderImage()</code> and <code>renderUI()</code>.</p>
+        
+        <p>Recall that default exports do not have a name. The importing module
+        always chooses the name when importing a default export. So there is
+        no need for a special syntax for renaming in that case.</p>
+        
+        <p>Having said that, however, the possibility of renaming on import
+        provides another way of importing from modules that define both a
+        default export and named exports. Recall the “./histogram-stats.js”
+        module from the previous section. Here is another way to import both the default
+        and named exports of that module:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">import</code> <code class="p">{</code> <code class="k">default</code> <code class="nx">as</code> <code class="nx">Histogram</code><code class="p">,</code> <code class="nx">mean</code><code class="p">,</code> <code class="nx">stddev</code> <code class="p">}</code> <code class="nx">from</code> <code class="s2">"./histogram-stats.js"</code><code class="p">;</code></pre>
+        
+        <p>In this case, the JavaScript keyword <code>default</code> serves as a placeholder
+        and allows us to indicate that we want to import and provide a name
+        for the default export of the module.</p>
+        
+        <p>It is also possible to rename values as you export them, but only when
+        using the curly brace variant of the <code>export</code> statement. It is not
+        common to need to do this, but if you chose short, succinct names for
+        use inside your module, you might prefer to export your values with
+        more descriptive names that are less likely to conflict with other
+        modules. As with imports, you use the <code>as</code> keyword to do this:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">export</code> <code class="p">{</code>
+            <code class="nx">layout</code> <code class="nx">as</code> <code class="nx">calculateLayout</code><code class="p">,</code>
+            <code class="nx">render</code> <code class="nx">as</code> <code class="nx">renderLayout</code>
+        <code class="p">};</code></pre>
+        
+        <p>Keep in mind that, although the curly braces look something like object
+        literals, they are not, and the <code>export</code> keyword expects a single
+        identifier before the <code>as</code>, not an expression. This means,
+        unfortunately, that you cannot use export renaming like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">export</code> <code class="p">{</code> <code class="nb">Math</code><code class="p">.</code><code class="nx">sin</code> <code class="nx">as</code> <code class="nx">sin</code><code class="p">,</code> <code class="nb">Math</code><code class="p">.</code><code class="nx">cos</code> <code class="nx">as</code> <code class="nx">cos</code> <code class="p">};</code> <code class="c1">// SyntaxError</code></pre>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="10.3.4 Re-Exports"><div class="sect2" id="idm46198529692088">
+        <h2>10.3.4 Re-Exports</h2>
+        
+        <p>Throughout<a data-type="indexterm" data-primary="modules" data-secondary="in ES6" data-tertiary="re-exports" data-secondary-sortas="ES6" id="idm46198529625000"></a><a data-type="indexterm" data-primary="ES6" data-secondary="modules in" data-tertiary="re-exports" id="idm46198529623448"></a> this chapter, we’ve discussed a hypothetical “./stats.js” module
+        that exports <code>mean()</code> and <code>stddev()</code> functions. If we were writing
+        such a module and we thought that many users of the module would want
+        only one function or the other, then we might want to define <code>mean()</code>
+        in a “./stats/mean.js” module and define <code>stddev()</code> in
+        “./stats/stddev.js”. That way, programs only need to import exactly
+        the functions they need and are not bloated by importing code they do
+        not need.</p>
+        
+        <p>Even if we had defined these statistical functions in individual
+        modules, however, we might expect that there would be plenty of
+        programs that want both functions and would appreciate a convenient
+        “./stats.js” module from which they could import both on one line.</p>
+        
+        <p>Given that the implementations are now in separate files, defining
+        this “./stat.js” module is simple:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">import</code> <code class="p">{</code> <code class="nx">mean</code> <code class="p">}</code> <code class="nx">from</code> <code class="s2">"./stats/mean.js"</code><code class="p">;</code>
+        <code class="kr">import</code> <code class="p">{</code> <code class="nx">stddev</code> <code class="p">}</code> <code class="nx">from</code> <code class="s2">"./stats/stddev.js"</code><code class="p">;</code>
+        <code class="kr">export</code> <code class="p">{</code> <code class="nx">mean</code><code class="p">,</code> <code class="nx">stdev</code> <code class="p">};</code></pre>
+        
+        <p>ES6 modules anticipate this use case and provide a special syntax
+        for it. Instead of importing a symbol simply to export it again, you
+        can combine the import and the export steps into a single “re-export”
+        statement that uses the <code>export</code> keyword and the <code>from</code> keyword:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">export</code> <code class="p">{</code> <code class="nx">mean</code> <code class="p">}</code> <code class="nx">from</code> <code class="s2">"./stats/mean.js"</code><code class="p">;</code>
+        <code class="kr">export</code> <code class="p">{</code> <code class="nx">stddev</code> <code class="p">}</code> <code class="nx">from</code> <code class="s2">"./stats/stddev.js"</code><code class="p">;</code></pre>
+        
+        <p>Note that the names <code>mean</code> and <code>stddev</code> are not actually used in this
+        code. If we are not being selective with a re-export and simply want to
+        export all of the named values from another module, we can use a
+        wildcard:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">export</code> <code class="o">*</code> <code class="nx">from</code> <code class="s2">"./stats/mean.js"</code><code class="p">;</code>
+        <code class="kr">export</code> <code class="o">*</code> <code class="nx">from</code> <code class="s2">"./stats/stddev.js"</code><code class="p">;</code></pre>
+        
+        <p>Re-export syntax allows renaming with <code>as</code> just as regular <code>import</code> and
+        <code>export</code> statements do. Suppose we wanted to re-export the <code>mean()</code>
+        function but also define <span class="keep-together"><code>average()</code></span> as another name for the
+        function. We could do that like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">export</code> <code class="p">{</code> <code class="nx">mean</code><code class="p">,</code> <code class="nx">mean</code> <code class="nx">as</code> <code class="nx">average</code> <code class="p">}</code> <code class="nx">from</code> <code class="s2">"./stats/mean.js"</code><code class="p">;</code>
+        <code class="kr">export</code> <code class="p">{</code> <code class="nx">stddev</code> <code class="p">}</code> <code class="nx">from</code> <code class="s2">"./stats/stddev.js"</code><code class="p">;</code></pre>
+        
+        <p>All of the re-exports in this example assume that the “./stats/mean.js” and
+        “./stats/stddev.js” modules export their functions using <code>export</code>
+        instead of <code>export default</code>. In fact, however, since these are modules
+        with only a single export, it would have made sense to define them
+        with <code>export default</code>. If we had done so, then the re-export syntax is
+        a little more complicated because it needs to define a name for the
+        unnamed default exports. We can do that like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">export</code> <code class="p">{</code> <code class="k">default</code> <code class="nx">as</code> <code class="nx">mean</code> <code class="p">}</code> <code class="nx">from</code> <code class="s2">"./stats/mean.js"</code><code class="p">;</code>
+        <code class="kr">export</code> <code class="p">{</code> <code class="k">default</code> <code class="nx">as</code> <code class="nx">stddev</code> <code class="p">}</code> <code class="nx">from</code> <code class="s2">"./stats/stddev.js"</code><code class="p">;</code></pre>
+        
+        <p>If you want to re-export a named symbol from another module as the
+        default export of your module, you could do an <code>import</code> followed by an
+        <code>export default</code>, or you could combine the two statements like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="c1">// Import the mean() function from ./stats.js and make it the</code>
+        <code class="c1">// default export of this module</code>
+        <code class="kr">export</code> <code class="p">{</code> <code class="nx">mean</code> <code class="nx">as</code> <code class="k">default</code> <code class="p">}</code> <code class="nx">from</code> <code class="s2">"./stats.js"</code></pre>
+        
+        <p>And finally, to re-export the default export of another module as the
+        default export of your module (though it is unclear why you would want
+        to do this, since users could simply import the other module directly),
+        you can write:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="c1">// The average.js module simply re-exports the stats/mean.js default export</code>
+        <code class="kr">export</code> <code class="p">{</code> <code class="k">default</code> <code class="p">}</code> <code class="nx">from</code> <code class="s2">"./stats/mean.js"</code></pre>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="10.3.5 JavaScript Modules on the Web"><div class="sect2" id="es6modules-script">
+        <h2>10.3.5 JavaScript Modules on the Web</h2>
+        
+        <p>The<a data-type="indexterm" data-primary="modules" data-secondary="in ES6" data-tertiary="JavaScript modules on the web" data-secondary-sortas="ES6" id="Mesweb10"></a><a data-type="indexterm" data-primary="ES6" data-secondary="modules in" data-tertiary="JavaScript modules on the web" id="ESmodweb10"></a> preceding sections have described ES6 modules and their <code>import</code> and
+        <code>export</code> declarations in a somewhat abstract manner. In this section
+        and the next, we’ll be discussing how they actually work in web
+        browsers, and if you are not already an experienced web developer, you
+        may find the rest of this chapter easier to understand after you have
+        read <a data-type="xref" href="ch15.html#clientside">Chapter&nbsp;15</a>.</p>
+        
+        <p>As of early 2020, production code using ES6 modules is still generally
+        bundled with a tool like webpack. There are trade-offs to doing
+        this,<sup><a data-type="noteref" id="idm46198529362824-marker" href="ch10.html#idm46198529362824">1</a></sup>
+        but on the whole, code <span class="keep-together">bundling</span> tends to give better performance. That
+        may well change in the future as network speeds grow and browser
+        vendors continue to optimize their ES6 module <span class="keep-together">implementations.</span></p>
+        
+        <p>Even though bundling tools may still be desirable in production, they
+        are no longer required in development since all current browsers
+        provide native support for JavaScript modules. Recall<a data-type="indexterm" data-primary="strict mode" data-secondary="default application of" id="idm46198529333752"></a><a data-type="indexterm" data-primary="use strict directive" data-secondary="default application of strict mode" id="idm46198529332776"></a> that modules use
+        strict mode by default, <code>this</code> does not refer to a global object, and
+        top-level declarations are not shared globally by default. Since
+        modules must be executed differently than legacy non-module code,
+        their introduction requires changes to HTML as well as JavaScript. If
+        you want to natively use <code>import</code> directives in a web browser, you
+        must tell the web browser that your code is a module by using a
+        <code>&lt;script type="module"&gt;</code> tag.</p>
+        
+        <p>One of the nice features of ES6 modules is that each module has a
+        static set of imports. So given a single starting module, a web browser
+        can load all of its imported modules and then load all of the modules
+        imported by that first batch of modules, and so on, until a complete
+        program has been loaded. We’ve seen that the module specifier in an
+        <code>import</code> statement can be treated as a relative URL. A <code>&lt;script
+        type="module"&gt;</code> tag marks the starting point of a modular
+        program. None of the modules it imports are expected to be in
+        <code>&lt;script&gt;</code> tags, however: instead, they are loaded on demand as
+        regular JavaScript files and are executed in strict mode as regular
+        ES6 modules.  Using a <code>&lt;script type="module"&gt;</code> tag to define the main
+        entry point for a modular JavaScript program can be as simple as this:</p>
+        
+        <pre data-type="programlisting" data-code-language="html"><code class="nt">&lt;script </code><code class="na">type=</code><code class="s">"module"</code><code class="nt">&gt;</code><code class="kr">import</code> <code class="s2">"./main.js"</code><code class="p">;</code><code class="nt">&lt;/script&gt;</code></pre>
+        
+        <p>Code inside an inline <code>&lt;script type="module"&gt;</code> tag is an ES6 module,
+        and as such can use the <code>export</code> statement. There is not any point in
+        doing so, however, because the HTML <code>&lt;script&gt;</code> tag syntax does not
+        provide any way to define a name for inline modules, so even if such a
+        module does export a value, there is no way for another module to
+        import it.</p>
+        
+        <p>Scripts with the <code>type="module"</code> attribute are loaded and executed
+        like scripts with the <code>defer</code> attribute. Loading of the code begins as
+        soon as the HTML parser encounters the <code>&lt;script&gt;</code> tag (in the case of
+        modules, this code-loading step may be a recursive process that loads
+        multiple JavaScript files). But code execution does not begin until
+        HTML parsing is complete. And once HTML parsing is complete, scripts
+        (both modular and non) are executed in the order in which they appear
+        in the HTML <span class="keep-together">document.</span></p>
+        
+        <p>You can modify the execution time of modules with the <code>async</code>
+        attribute, which works the same way for modules that it does for
+        regular scripts. An <code>async</code> module will execute as soon as the code is
+        loaded, even if HTML parsing is not complete and even if this changes
+        the relative ordering of the scripts.</p>
+        
+        <p>Web<a data-type="indexterm" data-primary="web browser host environment" data-secondary="module-aware browsers" id="idm46198529303688"></a> browsers that support <code>&lt;script type="module"&gt;</code> must also support
+        <code>&lt;script nomodule&gt;</code>. Browsers that are module-aware
+        ignore any script with the <code>nomodule</code> attribute and will not execute
+        it. Browsers that do not support modules will not recognize the
+        <code>nomodule</code> attribute, so they will ignore it and run the script. This
+        provides a powerful technique for dealing with browser compatibility
+        issues. Browsers that support ES6 modules also support other
+        modern JavaScript features like classes, arrow functions, and the
+        <code>for/of</code> loop. If you write modern JavaScript and load it with
+        <code>&lt;script type="module"&gt;</code>, you know that it will only be loaded by
+        browsers that can support it. And<a data-type="indexterm" data-primary="ES6" data-secondary="IE11 workaround" id="idm46198529299608"></a><a data-type="indexterm" data-primary="ES5" data-secondary="IE11 workaround" id="idm46198529298632"></a> as a fallback for IE11 (which, in
+        2020, is effectively the only remaining browser that does not support
+        ES6), you can use tools like Babel and webpack to transform your code
+        into non-modular ES5 code, then load that less-efficient
+        transformed code via <code>&lt;script nomodule&gt;</code>.</p>
+        
+        <p>Another important difference between regular scripts and module
+        scripts has to do with cross-origin loading. A regular <code>&lt;script&gt;</code> tag
+        will load a file of JavaScript code from any server on the internet,
+        and the internet’s infrastructure of advertising, analytics, and
+        tracking code depends on that fact. But <code>&lt;script type="module"&gt;</code>
+        provides an opportunity to tighten this up, and modules can only be
+        loaded from the same origin as the containing HTML document or when
+        proper CORS headers are in place to securely allow cross-origin loads.
+        An unfortunate side effect of this new security restriction is that it
+        makes it difficult to test ES6 modules in development mode using
+        <code>file:</code> URLs. When using ES6 modules, you will likely need to set up a
+        static web server for testing.</p>
+        
+        <p>Some programmers like to use the filename extension <code>.mjs</code> to
+        distinguish their modular JavaScript files from their regular,
+        non-modular JavaScript files with the traditional <code>.js</code> extension. For
+        the purposes of web browsers and <code>&lt;script&gt;</code> tags, the file extension is
+        actually irrelevant. (The MIME type is relevant, however, so if you
+        use <code>.mjs</code> files, you may need to configure your web server to serve
+        them with the same MIME type as <code>.js</code> files.) Node’s support for ES6
+        does use the filename extension as a hint to distinguish which module
+        system is used by each file it loads. So if you are writing ES6
+        modules and want them to be usable with Node, then it may be helpful
+        to adopt the <code>.mjs</code> naming convention.<a data-type="indexterm" data-primary="" data-startref="ESmodweb10" id="idm46198529271176"></a><a data-type="indexterm" data-primary="" data-startref="Mesweb10" id="idm46198529270168"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="10.3.6 Dynamic Imports with import()"><div class="sect2" id="dynamicimports">
+        <h2>10.3.6 Dynamic Imports with import()</h2>
+        
+        <p>We’ve<a data-type="indexterm" data-primary="modules" data-secondary="in ES6" data-tertiary="dynamic imports with import()" data-secondary-sortas="ES6" id="idm46198529267416"></a><a data-type="indexterm" data-primary="ES6" data-secondary="modules in" data-tertiary="dynamic imports with import()" id="idm46198529265896"></a><a data-type="indexterm" data-primary="import() function" id="idm46198529264712"></a> seen that the ES6 <code>import</code> and <code>export</code> directives are
+        completely static and enable JavaScript interpreters and other
+        JavaScript tools to determine the relationships between modules with
+        simple text analysis while the modules are being loaded without having
+        to actually execute any of the code in the modules. With statically
+        imported modules, you are guaranteed that the values you import into a
+        module will be ready for use before any of the code in your module
+        begins to run.</p>
+        
+        <p>On the web, code has to be transferred over a network instead of being
+        read from the filesystem. And once transfered, that code is often
+        executed on mobile devices with relatively slow CPUs. This is not the
+        kind of environment where static module imports—which require an
+        entire program to be loaded before any of it runs—make a lot of sense.</p>
+        
+        <p>It is common for web applications to initially load only enough of
+        their code to render the first page displayed to the user. Then, once
+        the user has some preliminary content to interact with, they can begin
+        to load the often much larger amount of code needed for the rest of
+        the web app. Web browsers make it easy to dynamically load code by
+        using the DOM API to inject a new <code>&lt;script&gt;</code> tag into the current HTML
+        document, and web apps have been doing this for many years.</p>
+        
+        <p>Although<a data-type="indexterm" data-primary="ES2020" data-secondary="import() function" id="idm46198529243496"></a> dynamic loading has been possible for a long time, it has not
+        been part of the language itself. That changes with the introduction
+        of <code>import()</code> in ES2020 (as of early 2020, dynamic import is supported by
+        all browsers that support ES6 modules). You pass a module specifier to
+        <code>import()</code> and it returns a Promise object that represents the
+        asynchronous process of loading and running the specified module. When
+        the dynamic import is complete, the Promise is “fulfilled” (see
+        <a data-type="xref" href="ch13.html#async">Chapter&nbsp;13</a> for complete details on asynchronous programming and
+        Promises) and produces an object like the one you would get with the
+        <code>import * as</code> form of the static import statement.</p>
+        
+        <p>So instead of importing the “./stats.js” module statically, like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">import</code> <code class="o">*</code> <code class="nx">as</code> <code class="nx">stats</code> <code class="nx">from</code> <code class="s2">"./stats.js"</code><code class="p">;</code></pre>
+        
+        <p>we might import it and use it dynamically, like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kr">import</code><code class="p">(</code><code class="s2">"./stats.js"</code><code class="p">).</code><code class="nx">then</code><code class="p">(</code><code class="nx">stats</code> <code class="o">=&gt;</code> <code class="p">{</code>
+            <code class="kd">let</code> <code class="nx">average</code> <code class="o">=</code> <code class="nx">stats</code><code class="p">.</code><code class="nx">mean</code><code class="p">(</code><code class="nx">data</code><code class="p">);</code>
+        <code class="p">})</code></pre>
+        
+        <p>Or, in an <code>async</code> function (again, you may need to read <a data-type="xref" href="ch13.html#async">Chapter&nbsp;13</a>
+        before you’ll understand this code), we can simplify the code with
+        <code>await</code>:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="nx">async</code> <code class="nx">analyzeData</code><code class="p">(</code><code class="nx">data</code><code class="p">)</code> <code class="p">{</code>
+            <code class="kd">let</code> <code class="nx">stats</code> <code class="o">=</code> <code class="nx">await</code> <code class="kr">import</code><code class="p">(</code><code class="s2">"./stats.js"</code><code class="p">);</code>
+            <code class="k">return</code> <code class="p">{</code>
+                <code class="nx">average</code><code class="o">:</code> <code class="nx">stats</code><code class="p">.</code><code class="nx">mean</code><code class="p">(</code><code class="nx">data</code><code class="p">),</code>
+                <code class="nx">stddev</code><code class="o">:</code> <code class="nx">stats</code><code class="p">.</code><code class="nx">stddev</code><code class="p">(</code><code class="nx">data</code><code class="p">)</code>
+            <code class="p">};</code>
+        <code class="p">}</code></pre>
+        
+        <p>The argument to <code>import()</code> should be a module specifier, exactly like
+        one you’d use with a static <code>import</code> directive. But with <code>import()</code>,
+        you are not constrained to use a constant string literal: any
+        expression that evaluates to a string in the proper form will do.</p>
+        
+        <p>Dynamic <code>import()</code> looks like a function invocation, but it actually
+        is not. Instead, <code>import()</code> is an operator and the parentheses are a
+        required part of the operator syntax. The reason for this unusual bit
+        of syntax is that <code>import()</code> needs to be able to resolve module
+        specifiers as URLs relative to the currently running module, and this
+        requires a bit of implementation magic that would not be legal to put
+        in a JavaScript function. The function versus operator distinction
+        rarely makes a difference in practice, but you’ll notice it if you try
+        writing code like <code>console.log(import);</code> or <code>let require = import;</code>.</p>
+        
+        <p>Finally, note that dynamic <code>import()</code> is not just for web
+        browsers. Code-packaging tools like webpack can also make good use of
+        it. The most straightforward way to use a code bundler is to tell it
+        the main entry point for your program and let it find all the static
+        <code>import</code> directives and assemble everything into one large file. By
+        strategically using dynamic <code>import()</code> calls, however, you can break
+        that one monolithic bundle up into a set of smaller bundles that can
+        be loaded on demand.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="10.3.7 import.meta.url"><div class="sect2" id="idm46198529268760">
+        <h2>10.3.7 import.meta.url</h2>
+        
+        <p>There<a data-type="indexterm" data-primary="ES6" data-secondary="modules in" data-tertiary="import.meta.url" id="idm46198529125384"></a><a data-type="indexterm" data-primary="import.meta.url" id="idm46198529124104"></a><a data-type="indexterm" data-primary="modules" data-secondary="in ES6" data-tertiary="import.meta.url" data-secondary-sortas="ES6" id="idm46198529123432"></a> is one final feature of the ES6 module system to discuss. Within
+        an ES6 module (but not within a regular <code>&lt;script&gt;</code> or a Node module
+        loaded with <code>require()</code>), the special syntax <code>import.meta</code> refers to an
+        object that contains metadata about the currently executing
+        module. The <code>url</code> property of this object is the URL from which the
+        module was loaded. (In Node, this will be a <code>file://</code> URL.)</p>
+        
+        <p>The primary use case of <code>import.meta.url</code> is to be able to refer to
+        images, data files, or other resources that are stored in the same
+        directory as (or relative to) the module. The <code>URL()</code> constructor
+        makes it easy to resolve a relative URL against an absolute URL like
+        <code>import.meta.url</code>. Suppose, for example, that you have written a
+        module that includes strings that need to be localized and that the
+        localization files are stored in an <code>l10n/</code> directory, which is in the
+        same directory as the module itself. Your module could load its
+        strings using a URL created with a function, like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="js"><code class="kd">function</code> <code class="nx">localStringsURL</code><code class="p">(</code><code class="nx">locale</code><code class="p">)</code> <code class="p">{</code>
+            <code class="k">return</code> <code class="k">new</code> <code class="nx">URL</code><code class="p">(</code><code class="sb">`l10n/</code><code class="si">${</code><code class="nx">locale</code><code class="si">}</code><code class="sb">.json`</code><code class="p">,</code> <code class="kr">import</code><code class="p">.</code><code class="nx">meta</code><code class="p">.</code><code class="nx">url</code><code class="p">);</code>
+        <code class="p">}</code></pre>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="10.4 Summary"><div class="sect1" id="idm46198530141576">
+        <h1>10.4 Summary</h1>
+        
+        <p>The goal of modularity is to allow programmers to hide the implementation
+        details of their code so that chunks of code from various sources can
+        be assembled into large programs without worrying that one chunk will
+        overwrite functions or variables of another. This chapter has
+        explained three different JavaScript module systems:</p>
+        
+        <ul>
+        <li>
+        <p>In the early days of JavaScript, modularity could only be achieved
+        through the clever use of immediately invoked function expressions.</p>
+        </li>
+        <li>
+        <p>Node added its own module system on top of the JavaScript
+        language. Node modules are imported with <code>require()</code> and define
+        their exports by setting properties of the Exports object, or by
+        setting the <code>module.exports</code> property.</p>
+        </li>
+        <li>
+        <p>In ES6, JavaScript finally got its own module system with <code>import</code>
+        and <code>export</code> keywords, and ES2020 is adding support for dynamic
+        imports with <code>import()</code>.</p>
+        </li>
+        </ul>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        <div data-type="footnotes"><p data-type="footnote" id="idm46198529362824"><sup><a href="ch10.html#idm46198529362824-marker">1</a></sup> For example: web apps that have frequent incremental updates and users who make frequent return visits may find that using small modules instead of large bundles can result in better average load times because of better utilization of the user’s browser cache.</p></div></div></section></div></div><link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781491952016/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+ <!-- https://learning.oreilly.com -->

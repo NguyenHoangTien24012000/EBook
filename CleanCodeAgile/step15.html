@@ -1,0 +1,647 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+</style>
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 id="ch15"><a id="page_251"></a><strong>15<br>JUnit Internals</strong></h2>
+        <p class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136083238/files/images/15_1fig_martin.jpg" alt="Image" width="400" height="467"></p>
+        <p>JUnit is one of the most famous of all Java frameworks. As frameworks go, it is simple in conception, precise in definition, and elegant in implementation. But what does the code look like? In this chapter we’ll critique an example drawn from the JUnit framework.</p>
+        <h3 id="ch15lev1sec1"><a id="page_252"></a><strong>The JUnit Framework</strong></h3>
+        <p>JUnit has had many authors, but it began with Kent Beck and Eric Gamma together on a plane to Atlanta. Kent wanted to learn Java, and Eric wanted to learn about Kent’s Smalltalk testing framework. “What could be more natural to a couple of geeks in cramped quarters than to pull out our laptops and start coding?”<sup>1</sup> After three hours of high-altitude work, they had written the basics of JUnit.</p>
+        <p class="footnote">1. <em>JUnit Pocket Guide</em>, Kent Beck, O’Reilly, 2004, p. <a href="chapter03.xhtml#page_43">43</a>.</p>
+        <p>The module we’ll look at is the clever bit of code that helps identify string comparison errors. This module is called <code>ComparisonCompactor</code>. Given two strings that differ, such as <code>ABCDE</code> and <code>ABXDE</code>, it will expose the difference by generating a string such as <code>&lt;…B[X]D…&gt;</code>.</p>
+        <p>I could explain it further, but the test cases do a better job. So take a look at <a href="#ch15lt1">Listing 15-1</a> and you will understand the requirements of this module in depth. While you are at it, critique the structure of the tests. Could they be simpler or more obvious?</p>
+        <p><a id="ch15lt1"></a></p>
+        <p class="caption"><strong>Listing 15-1 <code>ComparisonCompactorTest.java</code></strong></p>
+        <p class="codelink"><a id="pp0252_01a" href="chapter15_ima.xhtml#pp0252_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;package junit.tests.framework;<br>
+        &nbsp;&nbsp;&nbsp;import junit.framework.ComparisonCompactor;<br>
+        &nbsp;&nbsp;&nbsp;import junit.framework.TestCase;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;public class ComparisonCompactorTest extends TestCase {<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void testMessage() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(0, “b”, “c”).compact(“a”);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertTrue(“a expected:&lt;[b]&gt; but was:&lt;[c]&gt;”.equals(failure));<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void testStartSame() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(1, “ba”, “bc”).compact(null);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;b[a]&gt; but was:&lt;b[c]&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void testEndSame() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(1, “ab”, “cb”).compact(null);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;[a]b&gt; but was:&lt;[c]b&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void testSame() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(1, “ab”, “ab”).compact(null);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;ab&gt; but was:&lt;ab&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void testNoContextStartAndEndSame() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(0, “abc”, “adc”).compact(null);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;…[b]…&gt; but was:&lt;…[d]…&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<a id="page_253"></a><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void testStartAndEndContext() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(1, “abc”, “adc”).compact(null);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;a[b]c&gt; but was:&lt;a[d]c&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void testStartAndEndContextWithEllipses() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;new ComparisonCompactor(1, “abcde”, “abfde”).compact(null);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;…b[c]d…&gt; but was:&lt;…b[f]d…&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void testComparisonErrorStartSameComplete() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(2, “ab”, “abc”).compact(null);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;ab[]&gt; but was:&lt;ab[c]&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void testComparisonErrorEndSameComplete() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(0, “bc”, “abc”).compact(null);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;[]…&gt; but was:&lt;[a]…&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void testComparisonErrorEndSameCompleteContext() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(2, “bc”, “abc”).compact(null);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;[]bc&gt; but was:&lt;[a]bc&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void testComparisonErrorOverlapingMatches() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(0, “abc”, “abbc”).compact(null);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;…[]…&gt; but was:&lt;…[b]…&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void testComparisonErrorOverlapingMatchesContext() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(2, “abc”, “abbc”).compact(null);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;ab[]c&gt; but was:&lt;ab[b]c&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void testComparisonErrorOverlapingMatches2() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(0, “abcdde”,<br>
+        &nbsp;&nbsp;“abcde”).compact(null);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;…[d]…&gt; but was:&lt;…[]…&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void testComparisonErrorOverlapingMatches2Context() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;new ComparisonCompactor(2, “abcdde”, “abcde”).compact(null);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;…cd[d]e&gt; but was:&lt;…cd[]e&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void testComparisonErrorWithActualNull() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(0, “a”, null).compact(null);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;a&gt; but was:&lt;null&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void testComparisonErrorWithActualNullContext() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(2, “a”, null).compact(null);<a id="page_254"></a><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;a&gt; but was:&lt;null&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;public void testComparisonErrorWithExpectedNull() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(0, null, “a”).compact(null);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;null&gt; but was:&lt;a&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;public void testComparisonErrorWithExpectedNullContext() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(2, null, “a”).compact(null);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;null&gt; but was:&lt;a&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;public void testBug609972() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String failure= new ComparisonCompactor(10, “S&amp;P500”, “0”).compact(null);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(“expected:&lt;[S&amp;P50]0&gt; but was:&lt;[]0&gt;”, failure);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;}</p>
+        <p>I ran a code coverage analysis on the <code>ComparisonCompactor</code> using these tests. The code is 100 percent covered. Every line of code, every <code>if</code> statement and <code>for</code> loop, is executed by the tests. This gives me a high degree of confidence that the code works and a high degree of respect for the craftsmanship of the authors.</p>
+        <p>The code for <code>ComparisonCompactor</code> is in <a href="#ch15lt2">Listing 15-2</a>. Take a moment to look over this code. I think you’ll find it to be nicely partitioned, reasonably expressive, and simple in structure. Once you are done, then we’ll pick the nits together.</p>
+        <p><a id="ch15lt2"></a></p>
+        <p class="caption"><strong>Listing 15-2 <code>ComparisonCompactor.java (Original)</code></strong></p>
+        <p class="codelink"><a id="pp0254_01a" href="chapter15_ima.xhtml#pp0254_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;package junit.framework;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;public class ComparisonCompactor {<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private static final String ELLIPSIS = “…”;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private static final String DELTA_END = “]”;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private static final String DELTA_START = “[”;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private int fContextLength;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private String fExpected;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private String fActual;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private int fPrefix;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private int fSuffix;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public ComparisonCompactor(int contextLength,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String expected,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String actual) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fContextLength = contextLength;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fExpected = expected;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fActual = actual;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<a id="page_255"></a><br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public String compact(String message) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (fExpected == null || fActual == null || areStringsEqual())<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, fExpected, fActual);<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;findCommonPrefix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;findCommonSuffix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String expected = compactString(fExpected);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String actual = compactString(fActual);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, expected, actual);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private String compactString(String source) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String result = DELTA_START + <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;source.substring(fPrefix, source.length() - fSuffix + 1) + DELTA_END;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (fPrefix &gt; 0)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = computeCommonPrefix() + result;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (fSuffix &gt; 0)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = result + computeCommonSuffix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return result;<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;private void findCommonPrefix() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fPrefix = 0;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int end = Math.min(fExpected.length(), fActual.length());<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (; fPrefix &lt; end; fPrefix++) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (fExpected.charAt(fPrefix) != fActual.charAt(fPrefix))<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;private void findCommonSuffix() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int expectedSuffix = fExpected.length() - 1;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int actualSuffix = fActual.length() - 1;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;actualSuffix &gt;= fPrefix &amp;&amp; expectedSuffix &gt;= fPrefix;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;actualSuffix--, expectedSuffix--) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (fExpected.charAt(expectedSuffix) != fActual.charAt(actualSuffix))<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fSuffix = fExpected.length() - expectedSuffix;<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;private String computeCommonPrefix() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return (fPrefix &gt; fContextLength ? ELLIPSIS : “”) +<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fExpected.substring(Math.max(0, fPrefix - fContextLength),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fPrefix);<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;private String computeCommonSuffix() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int end = Math.min(fExpected.length() - fSuffix + 1 + fContextLength,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fExpected.length());<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return fExpected.substring(fExpected.length() - fSuffix + 1, end) +<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fExpected.length() - fSuffix + 1 &lt; fExpected.length() -&nbsp;&nbsp;fContextLength ? ELLIPSIS : “”);<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;}<a id="page_256"></a><br>
+        <br>
+        &nbsp;&nbsp;&nbsp;private boolean areStringsEqual() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return fExpected.equals(fActual);<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;}</p>
+        <p>You might have a few complaints about this module. There are some long expressions and some strange <code>+1</code>s and so forth. But overall this module is pretty good. After all, it might have looked like <a href="#ch15lt3">Listing 15-3</a>.</p>
+        <p><a id="ch15lt3"></a></p>
+        <p class="caption"><strong>Listing 15-3 <code>ComparisonCompator.java (defactored)</code></strong></p>
+        <p class="codelink"><a id="pp0256_01a" href="chapter15_ima.xhtml#pp0256_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;package junit.framework;<br>
+        &nbsp;&nbsp;&nbsp;public class&nbsp;&nbsp;ComparisonCompactor {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private int ctxt;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private String s1;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private String s2;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private int pfx;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private int sfx;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public ComparisonCompactor(int ctxt, String s1, String s2) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.ctxt = ctxt;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.s1 = s1;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.s2 = s2;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public String compact(String msg) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (s1 == null || s2 == null || s1.equals(s2))<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(msg, s1, s2);<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pfx = 0;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (; pfx &lt; Math.min(s1.length(), s2.length()); pfx++) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (s1.charAt(pfx) != s2.charAt(pfx))<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int sfx1 = s1.length() - 1;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int sfx2 = s2.length() - 1;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (; sfx2 &gt;= pfx &amp;&amp; sfx1 &gt;= pfx; sfx2--, sfx1--) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (s1.charAt(sfx1) != s2.charAt(sfx2))<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sfx = s1.length() - sfx1;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String cmp1 = compactString(s1);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String cmp2 = compactString(s2);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(msg, cmp1, cmp2);<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;private String compactString(String s) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String result =<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;“[“ + s.substring(pfx, s.length() - sfx + 1) + “]”;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (pfx &gt; 0)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = (pfx &gt; ctxt ? “…” : “”) +<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s1.substring(Math.max(0, pfx - ctxt), pfx) + result;<a id="page_257"></a><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (sfx &gt; 0) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int end = Math.min(s1.length() - sfx + 1 + ctxt, s1.length());<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = result + (s1.substring(s1.length() - sfx + 1, end) +<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s1.length() - sfx + 1 &lt; s1.length() - ctxt ? “…” : “”));<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return result;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;}</p>
+        <p>Even though the authors left this module in very good shape, the <em>Boy Scout Rule</em><sup>2</sup> tells us we should leave it cleaner than we found it. So, how can we improve on the original code in <a href="#ch15lt2"></a>Listing 15-2?</p>
+        <p class="footnote">2. See “<a href="chapter01.xhtml#ch1lev1sec6">The Boy Scout Rule</a>” on page <a href="chapter01.xhtml#page_14">14</a>.</p>
+        <p>The first thing I don’t care for is the <code>f</code> prefix for the member variables [N6]. Today’s environments make this kind of scope encoding redundant. So let’s eliminate all the <code>f</code>’s.</p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;private int contextLength;<br>
+        &nbsp;&nbsp;&nbsp;private String expected;<br>
+        &nbsp;&nbsp;&nbsp;private String actual;<br>
+        &nbsp;&nbsp;&nbsp;private int prefix;<br>
+        &nbsp;&nbsp;&nbsp;private int suffix;<br>
+        </p>
+        <p>Next, we have an unencapsulated conditional at the beginning of the <code>compact</code> function [G28].</p>
+        <p class="codelink"><a id="pp0257_01a" href="chapter15_ima.xhtml#pp0257_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public String compact(String message) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>if (expected == null || actual == null || areStringsEqual())</strong><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, expected, actual);<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;findCommonPrefix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;findCommonSuffix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String expected = compactString(this.expected);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String actual = compactString(this.actual);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, expected, actual);<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>This conditional should be encapsulated to make our intent clear. So let’s extract a method that explains it.</p>
+        <p class="codelink"><a id="pp0257_02a" href="chapter15_ima.xhtml#pp0257_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public String compact(String message) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (<strong>shouldNotCompact()</strong>)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, expected, actual);<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;findCommonPrefix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;findCommonSuffix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String expected = compactString(this.expected);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String actual = compactString(this.actual);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, expected, actual);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<a id="page_258"></a><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>private boolean shouldNotCompact() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return expected == null || actual == null || areStringsEqual();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</strong></p>
+        <p>I don’t much care for the <code>this.expected</code> and <code>this.actual</code> notation in the <code>compact</code> function. This happened when we changed the name of <code>fExpected</code> to <code>expected</code>. Why are there variables in this function that have the same names as the member variables? Don’t they represent something else [N4]? We should make the names unambiguous.</p>
+        <p class="codelink"><a id="pp0258_01a" href="chapter15_ima.xhtml#pp0258_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;String <strong>compactExpected</strong> = compactString(<strong>expected</strong>);<br>
+        &nbsp;&nbsp;&nbsp;String <strong>compactActual</strong> = compactString(<strong>actual</strong>);</p>
+        <p>Negatives are slightly harder to understand than positives [G29]. So let’s turn that <code>if</code> statement on its head and invert the sense of the conditional.</p>
+        <p class="codelink"><a id="pp0258_02a" href="chapter15_ima.xhtml#pp0258_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public String compact(String message) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (<strong>canBeCompacted</strong>()) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;findCommonPrefix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;findCommonSuffix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String compactExpected = compactString(expected);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String compactActual = compactString(actual);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, compactExpected, compactActual);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} else {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, expected, actual);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;private boolean <strong>canBeCompacted</strong>() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return expected <strong>!=</strong> null <strong>&amp;&amp;</strong> actual <strong>!=</strong> null <strong>&amp;&amp; !</strong> areStringsEqual();<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        </p>
+        <p>The name of the function is strange [N7]. Although it does compact the strings, it actually might not compact the strings if <code>canBeCompacted</code> returns <code>false</code>. So naming this function <code>compact</code> hides the side effect of the error check. Notice also that the function returns a formatted message, not just the compacted strings. So the name of the function should really be <code>formatCompactedComparison</code>. That makes it read a lot better when taken with the function argument:</p>
+        <p class="codelink"><a id="pp0258_03a" href="chapter15_ima.xhtml#pp0258_03">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public String formatCompactedComparison(String message) {</p>
+        <p>The body of the <code>if</code> statement is where the true compacting of the expected and actual strings is done. We should extract that as a method named <code>compactExpectedAndActual</code>. However, we want the <code>formatCompactedComparison</code> function to do all the formatting. The <code>compact</code>… function should do nothing but compacting [G30]. So let’s split it up as follows:</p>
+        <p class="codelink"><a id="pp0258_04a" href="chapter15_ima.xhtml#pp0258_04">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;…<br>
+        <strong>&nbsp;&nbsp;&nbsp;&nbsp;private String compactExpected;</strong><br>
+        <strong>&nbsp;&nbsp;&nbsp;&nbsp;private String compactActual;</strong> <br>
+        &nbsp;&nbsp;…<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;public String formatCompactedComparison(String message) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (canBeCompacted()) {<br>
+        &nbsp;&nbsp;<strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;compactExpectedAndActual();</strong><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, compactExpected, compactActual);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} else { <a id="page_259"></a><br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, expected, actual);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;private void <strong>compactExpectedAndActual</strong>() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;findCommonPrefix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;findCommonSuffix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;compactExpected = compactString(expected);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;compactActual = compactString(actual);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}</p>
+        <p>Notice that this required us to promote <code>compactExpected</code> and <code>compactActual</code> to member variables. I don’t like the way that the last two lines of the new function return variables, but the first two don’t. They aren’t using consistent conventions [G11]. So we should change <code>findCommonPrefix</code> and <code>findCommonSuffix</code> to return the prefix and suffix values.</p>
+        <p class="codelink"><a id="pp0259_01a" href="chapter15_ima.xhtml#pp0259_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;private void compactExpectedAndActual() {<br>
+        &nbsp;<strong>&nbsp;&nbsp;&nbsp;prefixIndex =</strong> findCommonPrefix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<strong>suffixIndex =</strong> findCommonSuffix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;compactExpected = compactString(expected);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;compactActual = compactString(actual);<br>
+        &nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;private <strong>int</strong> findCommonPrefix() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<strong>int</strong> prefix<strong>Index</strong> = 0;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;int end = Math.min(expected.length(), actual.length());<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;for (; prefix<strong>Index</strong> &lt; end; prefix<strong>Index</strong>++) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (expected.charAt(prefix<strong>Index</strong>) != actual.charAt(prefix<strong>Index</strong>))<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<strong>return prefixIndex;</strong><br>
+        &nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;private <strong>int</strong> findCommonSuffix() {&nbsp;&nbsp;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;int expectedSuffix = expected.length() - 1;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;int actualSuffix = actual.length() - 1;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;for (; actualSuffix &gt;= prefix<strong>Index</strong> &amp;&amp; expectedSuffix &gt;= prefixIndex;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;actualSuffix--, expectedSuffix--) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (expected.charAt(expectedSuffix) != actual.charAt(actualSuffix))<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<strong>return</strong> expected.length() - expectedSuffix;<br>
+        &nbsp;&nbsp;}</p>
+        <p>We should also change the names of the member variables to be a little more accurate [N1]; after all, they are both indices.</p>
+        <p>Careful inspection of <code>findCommonSuffix</code> exposes a <em>hidden temporal coupling</em> [G31]; it depends on the fact that <code>prefixIndex</code> is calculated by <code>findCommonPrefix</code>. If these two functions were called out of order, there would be a difficult debugging session ahead. So, to expose this temporal coupling, let’s have <code>findCommonSuffix</code> take the <code>prefixIndex</code> as an argument.</p>
+        <p class="codelink"><a id="pp0259_02a" href="chapter15_ima.xhtml#pp0259_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;private void compactExpectedAndActual() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;prefixIndex = findCommonPrefix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;suffixIndex = findCommonSuffix(<strong>prefixIndex</strong>);<a id="page_260"></a><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;compactExpected = compactString(expected);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;compactActual = compactString(actual);<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;private int findCommonSuffix(<strong>int prefixIndex</strong>) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int expectedSuffix = expected.length() - 1;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int actualSuffix = actual.length() - 1;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (; actualSuffix &gt;= prefixIndex &amp;&amp; expectedSuffix &gt;= prefixIndex;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;actualSuffix--, expectedSuffix--) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (expected.charAt(expectedSuffix) != actual.charAt(actualSuffix))<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return expected.length() - expectedSuffix;<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        </p>
+        <p>I’m not really happy with this. The passing of the <code>prefixIndex</code> argument is a bit arbitrary [G32]. It works to establish the ordering but does nothing to explain the need for that ordering. Another programmer might undo what we have done because there’s no indication that the parameter is really needed. So let’s take a different tack.</p>
+        <p class="codelink"><a id="pp0260_01a" href="chapter15_ima.xhtml#pp0260_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;private void compactExpectedAndActual() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>findCommonPrefixAndSuffix();</strong><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;compactExpected = compactString(expected);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;compactActual = compactString(actual);<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;private <strong>void</strong> <strong>findCommonPrefixAndSuffix</strong>() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>findCommonPrefix();</strong><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int expectedSuffix = expected.length() - 1;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int actualSuffix = actual.length() - 1;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;actualSuffix &gt;= prefixIndex &amp;&amp; expectedSuffix &gt;= prefixIndex;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;actualSuffix--, expectedSuffix-- <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)&nbsp;&nbsp;{<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (expected.charAt(expectedSuffix) != actual.charAt(actualSuffix))<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;suffixIndex = expected.length() - expectedSuffix;<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;private <strong>void</strong> findCommonPrefix() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;prefixIndex = 0;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int end = Math.min(expected.length(), actual.length());<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (;&nbsp;&nbsp;&nbsp;prefixIndex &lt; end; prefixIndex++)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (expected.charAt(prefixIndex) != actual.charAt(prefixIndex))<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        </p>
+        <p>We put <code>findCommonPrefix</code> and <code>findCommonSuffix</code> back the way they were, changing the name of <code>findCommonSuffix</code> to <code>findCommon<strong>PrefixAnd</strong> Suffix</code> and having it call <code>findCommon-Prefix</code> before doing anything else. That establishes the temporal nature of the two functions in a much more dramatic way than the previous solution. It also points out how ugly <code>findCommonPrefixAndSuffix</code> is. Let’s clean it up now.</p>
+        <p class="codelink"><a id="pp0260_02a" href="chapter15_ima.xhtml#pp0260_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;private void findCommonPrefixAndSuffix() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;findCommonPrefix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int suffixLength = 1; <a id="page_261"></a><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (; !suffixOverlapsPrefix(suffixLength); suffixLength++) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (charFromEnd(expected, suffixLength) !=<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;charFromEnd(actual, suffixLength))<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;suffixIndex = suffixLength;<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;private char charFromEnd(String s, int i) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return s.charAt(s.length()-i);}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;private boolean suffixOverlapsPrefix(int suffixLength) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return actual.length() - suffixLength &lt; prefixLength ||<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expected.length() - suffixLength &lt; prefixLength;<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        </p>
+        <p>This is much better. It exposes that the <code>suffixIndex</code> is really the length of the suffix and is not well named. The same is true of the <code>prefixIndex</code>, though in that case “index” and “length” are synonymous. Even so, it is more consistent to use “length.” The problem is that the <code>suffixIndex</code> variable is not zero based; it is 1 based and so is not a true length. This is also the reason that there are all those <code>+1</code>s in <code>computeCommonSuffix</code> [G33]. So let’s fix that. The result is in <a href="#ch15lt4">Listing 15-4</a>.</p>
+        <p><a id="ch15lt4"></a></p>
+        <p class="caption"><strong>Listing 15-4 <code>ComparisonCompactor.java (interim)</code></strong></p>
+        <p class="codelink"><a id="pp0261_01a" href="chapter15_ima.xhtml#pp0261_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public class ComparisonCompactor {<br>
+        &nbsp;&nbsp;&nbsp;…<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private int <strong>suffixLength</strong>;<br>
+        &nbsp;&nbsp;&nbsp;…<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private void findCommonPrefixAndSuffix() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;findCommonPrefix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>suffixLength = 0;</strong><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (; !suffixOverlapsPrefix(suffixLength); suffixLength++) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (charFromEnd(expected, suffixLength) !=<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;charFromEnd(actual, suffixLength))<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;private char charFromEnd(String s, int i) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return s.charAt(s.length() - i <strong>- 1</strong>);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;private boolean suffixOverlapsPrefix(int suffixLength) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return actual.length() - suffixLength <strong>&lt;=</strong> prefixLength ||<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expected.length() - suffixLength <strong>&lt;=</strong> prefixLength;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;…<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;private String compactString(String source) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String result =<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DELTA_START +<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;source.substring(prefixLength, source.length() - <strong>suffixLength</strong>) +<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DELTA_END;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (prefixLength &gt; 0)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = computeCommonPrefix() + result;<a id="page_262"></a> <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (<strong>suffixLength</strong> &gt; 0)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = result + computeCommonSuffix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return result;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;…<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;private String computeCommonSuffix() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int end = Math.min(expected.length() - <strong>suffixLength</strong> +<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;contextLength, expected.length()<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expected.substring(expected.length() - <strong>suffixLength</strong>, end) +<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(expected.length() - <strong>suffixLength</strong> &lt;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expected.length() - contextLength ?<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ELLIPSIS : “”);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}</p>
+        <p>We replaced the <code>+1</code>s in <code>computeCommonSuffix</code> with a <code>-1</code> in <code>charFromEnd</code>, where it makes perfect sense, and two <code>&lt;=</code> operators in <code>suffixOverlapsPrefix</code>, where they also make perfect sense. This allowed us to change the name of <code>suffixIndex</code> to <code>suffixLength</code>, greatly enhancing the readability of the code.</p>
+        <p>There is a problem however. As I was eliminating the +1s, I noticed the following line in <code>compactString</code>:</p>
+        <p class="pre">&nbsp;&nbsp;if (suffixLength &gt; 0)</p>
+        <p>Take a look at it in <a href="#ch15lt4">Listing 15-4</a>. By rights, because <code>suffixLength</code> is now one less than it used to be, I should change the <code>&gt;</code> operator to a <code>&gt;=</code> operator. But that makes no sense. It makes sense <em>now!</em> This means that it didn’t use to make sense and was probably a bug. Well, not quite a bug. Upon further analysis we see that the <code>if</code> statement now prevents a zero length suffix from being appended. Before we made the change, the <code>if</code> statement was nonfunctional because <code>suffixIndex</code> could never be less than one!</p>
+        <p>This calls into question <em>both</em> <code>if</code> statements in <code>compactString</code>! It looks as though they could both be eliminated. So let’s comment them out and run the tests. They passed! So let’s restructure <code>compactString</code> to eliminate the extraneous <code>if</code> statements and make the function much simpler [G9].</p>
+        <p class="codelink"><a id="pp0262_01a" href="chapter15_ima.xhtml#pp0262_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;private String compactString(String source) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;computeCommonPrefix() +<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DELTA_START +<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;source.substring(prefixLength, source.length() - suffixLength) +<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DELTA_END +<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;computeCommonSuffix();<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        </p>
+        <p>This is much better! Now we see that the <code>compactString</code> function is simply composing the fragments together. We can probably make this even clearer. Indeed, there are lots of little <a id="page_263"></a>cleanups we could do. But rather than drag you through the rest of the changes, I’ll just show you the result in <a href="#ch15lt5">Listing 15-5</a>.</p>
+        <p><a id="ch15lt5"></a></p>
+        <p class="caption"><strong>Listing 15-5 <code>ComparisonCompactor.java (final)</code></strong></p>
+        <p class="codelink"><a id="pp0263_01a" href="chapter15_ima.xhtml#pp0263_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;package junit.framework;<br>
+        &nbsp;&nbsp;&nbsp;public class ComparisonCompactor {<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private static final String ELLIPSIS = “…”;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private static final String DELTA_END = “]”;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private static final String DELTA_START = “[”;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private int contextLength;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private String expected;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private String actual;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private int prefixLength;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private int suffixLength;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public ComparisonCompactor(<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int contextLength, String expected, String actual<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.contextLength = contextLength;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.expected = expected;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.actual = actual;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public String formatCompactedComparison(String message) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String compactExpected = expected;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String compactActual = actual;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (shouldBeCompacted()) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;findCommonPrefixAndSuffix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;compactExpected = compact(expected);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;compactActual = compact(actual);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Assert.format(message, compactExpected, compactActual);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;private boolean shouldBeCompacted() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return !shouldNotBeCompacted();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;private boolean shouldNotBeCompacted() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return expected == null ||<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;actual == null ||<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expected.equals(actual);<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;private void findCommonPrefixAndSuffix() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;findCommonPrefix();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;suffixLength = 0;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (; !suffixOverlapsPrefix(); suffixLength++) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (charFromEnd(expected, suffixLength) !=<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;charFromEnd(actual, suffixLength)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<a id="page_264"></a><br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;private char charFromEnd(String s, int i) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return s.charAt(s.length() - i - 1);<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;private boolean suffixOverlapsPrefix() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return actual.length() - suffixLength &lt;= prefixLength ||<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expected.length() - suffixLength &lt;= prefixLength;<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;private void findCommonPrefix() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;prefixLength = 0;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int end = Math.min(expected.length(), actual.length());<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (; prefixLength &lt; end; prefixLength++)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (expected.charAt(prefixLength) != actual.charAt(prefixLength))<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;private String compact(String s) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return new StringBuilder()<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(startingEllipsis())<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(startingContext())<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(DELTA_START)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(delta(s))<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(DELTA_END)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(endingContext())<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.append(endingEllipsis())<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.toString();<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;private String startingEllipsis() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return prefixLength &gt; contextLength ? ELLIPSIS : “”;<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;private String startingContext() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int contextStart = Math.max(0, prefixLength - contextLength);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int contextEnd = prefixLength;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return expected.substring(contextStart, contextEnd);<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;private String delta(String s) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int deltaStart = prefixLength;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int deltaEnd = s.length() - suffixLength;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return s.substring(deltaStart, deltaEnd);<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;private String endingContext() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int contextStart = expected.length() - suffixLength;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int contextEnd =<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Math.min(contextStart + contextLength, expected.length());<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return expected.substring(contextStart, contextEnd);<br>
+        &nbsp;&nbsp;&nbsp;}<a id="page_265"></a><br>
+        &nbsp;&nbsp;&nbsp;private String endingEllipsis() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return (suffixLength &gt; contextLength ? ELLIPSIS : “”);<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;}</p>
+        <p>This is actually quite pretty. The module is separated into a group of analysis functions and another group of synthesis functions. They are topologically sorted so that the definition of each function appears just after it is used. All the analysis functions appear first, and all the synthesis functions appear last.</p>
+        <p>If you look carefully, you will notice that I reversed several of the decisions I made earlier in this chapter. For example, I inlined some extracted methods back into <code>formatCompactedComparison</code>, and I changed the sense of the <code>shouldNotBeCompacted</code> expression. This is typical. Often one refactoring leads to another that leads to the undoing of the first. Refactoring is an iterative process full of trial and error, inevitably converging on something that we feel is worthy of a professional.</p>
+        <h3 id="ch15lev1sec2"><strong>Conclusion</strong></h3>
+        <p>And so we have satisfied the Boy Scout Rule. We have left this module a bit cleaner than we found it. Not that it wasn’t clean already. The authors had done an excellent job with it. But no module is immune from improvement, and each of us has the responsibility to leave the code a little better than we found it.</p>
+        </div></div><link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136083238/files/9780136083252.css" crossorigin="anonymous"></div></div></section>
+</div>
+
