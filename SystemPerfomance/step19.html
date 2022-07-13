@@ -1,0 +1,275 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section epub:type="chapter">
+        <h2 class="h2b" id="appc"><span epub:type="pagebreak" id="page_803"></span><span class="pd_ash">Appendix C</span></h2>
+        <p class="chap_ttl">bpftrace One-Liners</p>
+        <p class="noindent">This appendix contains some handy bpftrace one-liners. Apart from being useful in themselves, they can help you learn bpftrace, one line at a time. Most of these were included in previous chapters. Many may not work right away: They may depend on the presence of certain tracepoints or functions, or on a specific kernel version or configuration.</p>
+        <p class="noindent">See <a href="ch15.xhtml#ch15">Chapter 15</a>, <a href="ch15.xhtml#ch15lev2">Section 15.2</a>, for an introduction to bpftrace.</p>
+        <section>
+        <h3 class="h3" id="appclev1">CPUs</h3>
+        <p class="noindent">Trace new processes with arguments:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg803-1a" id="pg803-1">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'tracepoint:syscalls:sys_enter_execve { join(args-&gt;argv); }'</pre>
+        <p class="noindent">Count syscalls by process:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg803-2a" id="pg803-2">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'tracepoint:raw_syscalls:sys_enter { @[pid, comm] = count(); }'</pre>
+        <p class="noindent">Count syscalls by syscall probe name:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg803-3a" id="pg803-3">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'tracepoint:syscalls:sys_enter_* { @[probe] = count(); }'</pre>
+        <p class="noindent">Sample running process names at 99 Hertz:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg803-4a" id="pg803-4">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'profile:hz:99 { @[comm] = count(); }'</pre>
+        <p class="noindent">Sample user and kernel stacks at 49 Hertz, system wide, with the process name:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg803-5a" id="pg803-5">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'profile:hz:49 { @[kstack, ustack, comm] = count(); }'</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_804"></span>Sample user-level stacks at 49 Hertz, for PID 189:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg803-6a" id="pg803-6">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'profile:hz:49 /pid == 189/ { @[ustack] = count(); }'</pre>
+        <p class="noindent">Sample user-level stacks 5 frames deep at 49 Hertz, for PID 189:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg803-7a" id="pg803-7">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'profile:hz:49 /pid == 189/ { @[ustack(5)] = count(); }'</pre>
+        <p class="noindent">Sample user-level stacks at 49 Hertz, for processes named “mysqld”:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg804-1a" id="pg804-1">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'profile:hz:49 /comm == "mysqld"/ { @[ustack] = count(); }'</pre>
+        <p class="noindent">Count kernel CPU scheduler tracepoints:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg804-2a" id="pg804-2">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'tracepont:sched:* { @[probe] = count(); }'</pre>
+        <p class="noindent">Count off-CPU kernel stacks for context switch events:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg804-3a" id="pg804-3">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'tracepont:sched:sched_switch { @[kstack] = count(); }'</pre>
+        <p class="noindent">Count kernel function calls beginning with “vfs_”:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg804-4a" id="pg804-4">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'kprobe:vfs_* { @[func] = count(); }'</pre>
+        <p class="noindent">Trace new threads via pthread_create():</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg804-5a" id="pg804-5">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'u:/lib/x86_64-linux-gnu/libpthread-2.27.so:pthread_create {
+            printf("%s by %s (%d)\n", probe, comm, pid); }'</pre>
+        </section>
+        <section>
+        <h3 class="h3" id="appclev2">Memory</h3>
+        <p class="noindent">Sum libc malloc() request bytes by user stack and process (high overhead):</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg804-6a" id="pg804-6">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'u:/lib/x86_64-linux-gnu/libc.so.6:malloc {
+            @[ustack, comm] = sum(arg0); }'</pre>
+        <p class="noindent">Sum libc malloc() request bytes by user stack for PID 181 (high overhead):</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg804-7a" id="pg804-7">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'u:/lib/x86_64-linux-gnu/libc.so.6:malloc /pid == 181/ {
+            @[ustack] = sum(arg0); }'</pre>
+        <p class="noindent">Show libc malloc() request bytes by user stack for PID 181 as a power-of-2 histogram (high overhead):</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg804-8a" id="pg804-8">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'u:/lib/x86_64-linux-gnu/libc.so.6:malloc /pid == 181/ {
+            @[ustack] = hist(arg0); }'</pre>
+        <p class="noindent">Sum kernel kmem cache allocation bytes by kernel stack trace:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg804-9a" id="pg804-9">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:kmem:kmem_cache_alloc { @bytes[kstack] = sum(args-&gt;bytes_alloc); }'</pre>
+        <p class="noindent">Count process heap expansion (brk(2)) by code path:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg804-10a" id="pg804-10">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'tracepoint:syscalls:sys_enter_brk { @[ustack, comm] = count(); }'</pre>
+        <p class="noindent">Count page faults by process:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg804-11a" id="pg804-11">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'software:page-fault:1 { @[comm, pid] = count(); }'</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_805"></span>Count user page faults by user-level stack trace:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg805-1a" id="pg805-1">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:exceptions:page_fault_user { @[ustack, comm] = count(); }'</pre>
+        <p class="noindent">Count vmscan operations by tracepoint:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg805-2a" id="pg805-2">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'tracepoint:vmscan:* { @[probe]++; }'</pre>
+        <p class="noindent">Count swapins by process:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg805-3a" id="pg805-3">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'kprobe:swap_readpage { @[comm, pid] = count(); }'</pre>
+        <p class="noindent">Count page migrations:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg805-4a" id="pg805-4">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'tracepoint:migrate:mm_migrate_pages { @ = count(); }'</pre>
+        <p class="noindent">Trace compaction events:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg805-5a" id="pg805-5">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:compaction:mm_compaction_begin { time(); }'</pre>
+        <p class="noindent">List USDT probes in libc:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg805-6a" id="pg805-6">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -l 'usdt:/lib/x86_64-linux-gnu/libc.so.6:*'</pre>
+        <p class="noindent">List kernel kmem tracepoints:</p>
+        <pre class="preash">bpftrace -l 't:kmem:*'</pre>
+        <p class="noindent">List all memory subsystem (mm) tracepoints:</p>
+        <pre class="preash">bpftrace -l 't:*:mm_*'</pre>
+        </section>
+        <section>
+        <h3 class="h3" id="appclev3">File Systems</h3>
+        <p class="noindent">Trace files opened via openat(2) with process name:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg805-7a" id="pg805-7">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:syscalls:sys_enter_openat { printf("%s %s\n", comm,
+            str(args-&gt;filename)); }'</pre>
+        <p class="noindent">Count read syscalls by syscall type:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg805-8a" id="pg805-8">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'tracepoint:syscalls:sys_enter_*read* { @[probe] = count(); }'</pre>
+        <p class="noindent">Count write syscalls by syscall type:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg805-9a" id="pg805-9">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'tracepoint:syscalls:sys_enter_*write* { @[probe] = count(); }'</pre>
+        <p class="noindent">Show the distribution of read() syscall request sizes:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg805-10a" id="pg805-10">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'tracepoint:syscalls:sys_enter_read { @ = hist(args-&gt;count); }'</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_806"></span>Show the distribution of read() syscall read bytes (and errors):</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg806-1a" id="pg806-1">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'tracepoint:syscalls:sys_exit_read { @ = hist(args-&gt;ret); }'</pre>
+        <p class="noindent">Count read() syscall errors by error code:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg806-2a" id="pg806-2">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:syscalls:sys_exit_read /args-&gt;ret &lt; 0/ { @[- args-&gt;ret] = count(); }'</pre>
+        <p class="noindent">Count VFS calls:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg806-3a" id="pg806-3">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'kprobe:vfs_* { @[probe] = count(); }'</pre>
+        <p class="noindent">Count VFS calls for PID 181:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg806-4a" id="pg806-4">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'kprobe:vfs_* /pid == 181/ { @[probe] = count(); }'</pre>
+        <p class="noindent">Count ext4 tracepoints:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg806-5a" id="pg806-5">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'tracepoint:ext4:* { @[probe] = count(); }'</pre>
+        <p class="noindent">Count xfs tracepoints:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg806-6a" id="pg806-6">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'tracepoint:xfs:* { @[probe] = count(); }'</pre>
+        <p class="noindent">Count ext4 file reads by process name and user-level stack:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg806-7a" id="pg806-7">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'kprobe:ext4_file_read_iter { @[ustack, comm] = count(); }'</pre>
+        <p class="noindent">Trace ZFS spa_sync() times:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg806-8a" id="pg806-8">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'kprobe:spa_sync { time("%H:%M:%S ZFS spa_sync()\n"); }'</pre>
+        <p class="noindent">Count dcache references by process name and PID:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg806-9a" id="pg806-9">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'kprobe:lookup_fast { @[comm, pid] = count(); }'</pre>
+        </section>
+        <section>
+        <h3 class="h3" id="appclev4">Disks</h3>
+        <p class="noindent">Count block I/O tracepoints events:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg806-10a" id="pg806-10">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'tracepoint:block:* { @[probe] = count(); }'</pre>
+        <p class="noindent">Summarize block I/O size as a histogram:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg806-11a" id="pg806-11">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:block:block_rq_issue { @bytes = hist(args-&gt;bytes); }'</pre>
+        <p class="noindent">Count block I/O request user stack traces:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg806-12a" id="pg806-12">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:block:block_rq_issue { @[ustack] = count(); }'</pre>
+        <p class="noindent">Count block I/O type flags:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg806-13a" id="pg806-13">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:block:block_rq_issue { @[args-&gt;rwbs] = count(); }'</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_807"></span>Trace block I/O errors with device and I/O type:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg807-1a" id="pg807-1">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:block:block_rq_complete /args-&gt;error/ {
+            printf("dev %d type %s error %d\n", args-&gt;dev, args-&gt;rwbs, args-&gt;error); }'</pre>
+        <p class="noindent">Count SCSI opcodes:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg807-2a" id="pg807-2">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:scsi:scsi_dispatch_cmd_start { @opcode[args-&gt;opcode] =
+            count(); }'</pre>
+        <p class="noindent">Count SCSI result codes:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg807-3a" id="pg807-3">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:scsi:scsi_dispatch_cmd_done { @result[args-&gt;result] = count(); }'</pre>
+        <p class="noindent">Count SCSI driver function calls:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg807-4a" id="pg807-4">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'kprobe:scsi* { @[func] = count(); }'</pre>
+        </section>
+        <section>
+        <h3 class="h3" id="appclev5">Networking</h3>
+        <p class="noindent">Count socket accept(2)s by PID and process name:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg807-5a" id="pg807-5">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:syscalls:sys_enter_accept* { @[pid, comm] = count(); }'</pre>
+        <p class="noindent">Count socket connect(2)s by PID and process name:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg807-6a" id="pg807-6">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:syscalls:sys_enter_connect { @[pid, comm] = count(); }'</pre>
+        <p class="noindent">Count socket connect(2)s by user stack trace:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg807-7a" id="pg807-7">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:syscalls:sys_enter_connect { @[ustack, comm] = count(); }'</pre>
+        <p class="noindent">Count socket send/receives by direction, on-CPU PID, and process name:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg807-8a" id="pg807-8">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'k:sock_sendmsg,k:sock_recvmsg { @[func, pid, comm] = count(); }'</pre>
+        <p class="noindent">Count socket send/receive bytes by on-CPU PID and process name:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg807-9a" id="pg807-9">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'kr:sock_sendmsg,kr:sock_recvmsg /(int32)retval &gt; 0/ { @[pid, comm] =
+            sum((int32)retval); }'</pre>
+        <p class="noindent">Count TCP connects by on-CPU PID and process name:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg807-10a" id="pg807-10">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'k:tcp_v*_connect { @[pid, comm] = count(); }'</pre>
+        <p class="noindent">Count TCP accepts by on-CPU PID and process name:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg807-11a" id="pg807-11">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'k:inet_csk_accept { @[pid, comm] = count(); }'</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_808"></span>Count TCP send/receives by on-CPU PID and process name:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg808-1a" id="pg808-1">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'k:tcp_sendmsg,k:tcp_recvmsg { @[func, pid, comm] = count(); }'</pre>
+        <p class="noindent">TCP send bytes as a histogram:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg808-2a" id="pg808-2">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'k:tcp_sendmsg { @send_bytes = hist(arg2); }'</pre>
+        <p class="noindent">TCP receive bytes as a histogram:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg808-3a" id="pg808-3">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'kr:tcp_recvmsg /retval &gt;= 0/ { @recv_bytes = hist(retval); }'</pre>
+        <p class="noindent">Count TCP retransmits by type and remote host (assumes IPv4):</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg808-4a" id="pg808-4">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:tcp:tcp_retransmit_* { @[probe, ntop(2, args-&gt;saddr)] = count(); }'</pre>
+        <p class="noindent">Count all TCP functions (adds high overhead to TCP):</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg808-5a" id="pg808-5">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'k:tcp_* { @[func] = count(); }'</pre>
+        <p class="noindent">Count UDP send/receives by on-CPU PID and process name:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg808-6a" id="pg808-6">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'k:udp*_sendmsg,k:udp*_recvmsg { @[func, pid, comm] = count(); }'</pre>
+        <p class="noindent">UDP send bytes as a histogram:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg808-7a" id="pg808-7">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'k:udp_sendmsg { @send_bytes = hist(arg2); }'</pre>
+        <p class="noindent">UDP receive bytes as a histogram:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg808-8a" id="pg808-8">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'kr:udp_recvmsg /retval &gt;= 0/ { @recv_bytes = hist(retval); }'</pre>
+        <p class="noindent">Count transmit kernel stack traces:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg808-9a" id="pg808-9">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:net:net_dev_xmit { @[kstack] = count(); }'</pre>
+        <p class="noindent">Show receive CPU histogram for each device:</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg808-10a" id="pg808-10">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:net:netif_receive_skb { @[str(args-&gt;name)] = lhist(cpu, 0, 128, 1); }'</pre>
+        <p class="noindent">Count ieee80211 layer functions (adds high overhead to packets):</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg808-11a" id="pg808-11">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'k:ieee80211_* { @[func] = count()'</pre>
+        <p class="noindent">Count all ixgbevf device driver functions (adds high overhead to ixgbevf):</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg808-12a" id="pg808-12">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 'k:ixgbevf_* { @[func] = count(); }'</pre>
+        <p class="noindent">Count all iwl device driver tracepoints (adds high overhead to iwl):</p>
+        <p class="codelink"><a href="appc_images.xhtml#pg808-13a" id="pg808-13">Click here to view code image</a></p>
+        <pre class="preash">bpftrace -e 't:iwlwifi:*,t:iwlwifi_io:* { @[probe] = count(); }'</pre>
+        </section>
+        </section>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780136821694/files/9780136821656.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

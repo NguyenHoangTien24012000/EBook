@@ -1,0 +1,1222 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section epub:type="chapter">
+        <h2 class="h2b" id="ch13"><span epub:type="pagebreak" id="page_671"></span><span class="pd_ash">Chapter 13</span></h2>
+        <p class="chap_ttl">perf</p>
+        <p class="noindent">perf(1) is the official Linux profiler and is in the Linux kernel source under tools/perf.<sup><a id="ch13fn1a" href="ch13.xhtml#ch13fn1">1</a></sup> It is a multi-tool that has profiling, tracing, and scripting capabilities, and is the front-end to the kernel perf_events observability subsystem. perf_events is also known as Performance Counters for Linux (PCL) or Linux Performance Events (LPE). perf_events and the perf(1) front-end began with performance monitoring counter (PMC) capabilities, but have since grown to support event-based tracing sources as well: tracepoints, kprobes, uprobes, and USDT.</p>
+        <p class="footnote"><sup><a id="ch13fn1" href="ch13.xhtml#ch13fn1a">1</a></sup>perf(1) is unusual in that it is a large, complex user-level program that is in the Linux kernel source tree. Maintainer Arnaldo Carvalho de Melo described this situation to me as an “experiment.” While this has been beneficial to perf(1) and Linux as they have been developed in lockstep, some are uncomfortable with its inclusion, and it may remain the only complex user software ever to be included in the Linux source.</p>
+        <p class="noindent">This chapter, along with <a href="ch14.xhtml#ch14">Chapter 14</a>, <a href="ch14.xhtml#ch14">Ftrace</a>, and <a href="ch15.xhtml#ch15">Chapter 15</a>, <a href="ch15.xhtml#ch15">BPF</a>, are optional reading for those who wish to learn one or more system tracers in more detail.</p>
+        <p class="noindent">Compared with other tracers, perf(1) is especially suited for CPU analysis: profiling (sampling) CPU stack traces, tracing CPU scheduler behavior, and examining PMCs to understand micro-architectural level CPU performance including cycle behavior. Its tracing capabilities allow it to analyze other targets as well, including disk I/O and software functions.</p>
+        <p class="noindent">perf(1) can be used to answer questions such as:</p>
+        <ul class="sq">
+        <li><p class="bull">Which code paths are consuming CPU resources?</p></li>
+        <li><p class="bull">Are the CPUs stalled on memory loads/stores?</p></li>
+        <li><p class="bull">For what reasons are threads leaving the CPU?</p></li>
+        <li><p class="bull">What is the pattern of disk I/O?</p></li>
+        </ul>
+        <p class="noindent">The following sections are structured to introduce perf(1), show event sources, and then show the subcommands that use them. The sections are:</p>
+        <ul class="sq">
+        <li><p class="bull"><a href="ch13.xhtml#ch13lev1">13.1: Subcommands Overview</a></p></li>
+        <li><p class="bull"><a href="ch13.xhtml#ch13lev2">13.2: Example One-Liners</a></p></li>
+        <li><p class="bull">Events:</p>
+        <ul class="sq-i">
+        <li><p class="bull"><a href="ch13.xhtml#ch13lev3">13.3: Events Overview</a></p></li>
+        <li><p class="bull"><a href="ch13.xhtml#ch13lev4">13.4: Hardware Events</a></p></li>
+        <li><p class="bull"><span epub:type="pagebreak" id="page_672"></span><a href="ch13.xhtml#ch13lev5">13.5: Software Events</a></p></li>
+        <li><p class="bull"><a href="ch13.xhtml#ch13lev3">13.6: Tracepoints</a></p></li>
+        <li><p class="bull"><a href="ch13.xhtml#ch13lev7">13.7: Probe Events</a></p></li>
+        </ul></li>
+        <li><p class="bull">Commands:</p>
+        <ul class="sq-i">
+        <li><p class="bull"><a href="ch13.xhtml#ch13lev8">13.8: perf stat</a></p></li>
+        <li><p class="bull"><a href="ch13.xhtml#ch13lev9">13.9: perf record</a></p></li>
+        <li><p class="bull"><a href="ch13.xhtml#ch13lev10">13.10: perf report</a></p></li>
+        <li><p class="bull"><a href="ch13.xhtml#ch13lev11">13.11: perf script</a></p></li>
+        <li><p class="bull"><a href="ch13.xhtml#ch13lev12">13.12: perf trace</a></p></li>
+        <li><p class="bull"><a href="ch13.xhtml#ch13lev13">13.13: Other Commands</a></p></li>
+        </ul></li>
+        <li><p class="bull"><a href="ch13.xhtml#ch13lev14">13.14: Documentation</a></p></li>
+        <li><p class="bull"><a href="ch13.xhtml#ch13lev15">13.15: References</a></p></li>
+        </ul>
+        <p class="noindent">Prior chapters show how to use perf(1) for the analysis of specific targets. This chapter focuses on perf(1) itself.</p>
+        <section>
+        <h3 class="h3" id="ch13lev1">13.1 Subcommands Overview</h3>
+        <p class="noindent">perf(1)’s capabilities are invoked via subcommands. As a common usage example, the following uses two subcommands: <code>record</code> to instrument events and save them to a file, and then <code>report</code> to summarize the contents of the file. These subcommands are explained in <a href="ch13.xhtml#ch13lev9">Section 13.9</a>, <a href="ch13.xhtml#ch13lev9">perf record</a>, and <a href="ch13.xhtml#ch13lev10">Section 13.10</a>, <a href="ch13.xhtml#ch13lev10">perf report</a>.</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg672-01a" id="pg672-01">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf record -F 99 -a -- sleep 30</strong>
+        [ perf record: Woken up 193 times to write data ]
+        [ perf record: Captured and wrote 48.916 MB perf.data (11880 samples) ]
+        # <strong>perf report --stdio</strong>
+        [...]
+        # Overhead  Command          Shared Object              Symbol
+        # ........  ...............  .........................  ............................
+        #
+            21.10%  swapper          [kernel.vmlinux]           [k] native_safe_halt
+             6.39%  mysqld           [kernel.vmlinux]           [k] _raw_spin_unlock_irqrest
+             4.66%  mysqld           mysqld                     [.] _Z8ut_delaym
+             2.64%  mysqld           [kernel.vmlinux]           [k] finish_task_switch
+        [...]</pre>
+        <p class="noindent">This particular example sampled any program running on any CPU at 99 Hertz for 30 seconds, and then showed the most frequently sampled functions.</p>
+        <p class="noindent">Selected subcommands from a recent perf(1) version (from Linux 5.6) are listed in <a href="ch13.xhtml#ch13tab01">Table 13.1</a>.</p>
+        <figure class="table" id="ch13tab01">
+        <figcaption>
+        <p class="title-t"><span epub:type="pagebreak" id="page_673"></span><span class="pd_ashf">Table 13.1</span> <strong>Selected perf subcommands</strong></p>
+        </figcaption>
+        <table class="all">
+        <thead>
+        <tr>
+        <th class="th"><p class="thead"><strong>Section</strong></p></th>
+        <th class="th"><p class="thead"><strong>Command</strong></p></th>
+        <th class="th"><p class="thead"><strong>Description</strong></p></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td class="border"><p class="tab-para">-</p></td>
+        <td class="border"><p class="tab-para"><code>annotate</code></p></td>
+        <td class="border"><p class="tab-para">Read perf.data (created by perf record) and display annotated code.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">-</p></td>
+        <td class="border"><p class="tab-para"><code>archive</code></p></td>
+        <td class="border"><p class="tab-para">Create a portable perf.data file containing debug and symbol info.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">-</p></td>
+        <td class="border"><p class="tab-para"><code>bench</code></p></td>
+        <td class="border"><p class="tab-para">System microbenchmarks.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">-</p></td>
+        <td class="border"><p class="tab-para"><code>buildid-cache</code></p></td>
+        <td class="border"><p class="tab-para">Manage build-id cache (used by USDT probes).</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">-</p></td>
+        <td class="border"><p class="tab-para"><code>c2c</code></p></td>
+        <td class="border"><p class="tab-para">Cache line analysis tools.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">-</p></td>
+        <td class="border"><p class="tab-para"><code>diff</code></p></td>
+        <td class="border"><p class="tab-para">Read two perf.data files and display the differential profile.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">-</p></td>
+        <td class="border"><p class="tab-para"><code>evlist</code></p></td>
+        <td class="border"><p class="tab-para">List the event names in a perf.data file.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><a href="ch14.xhtml#ch14lev12">14.12</a></p></td>
+        <td class="border"><p class="tab-para"><code>ftrace</code></p></td>
+        <td class="border"><p class="tab-para">A perf(1) interface to the Ftrace tracer.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">-</p></td>
+        <td class="border"><p class="tab-para"><code>inject</code></p></td>
+        <td class="border"><p class="tab-para">Filter to augment the events stream with additional information.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">-</p></td>
+        <td class="border"><p class="tab-para"><code>kmem</code></p></td>
+        <td class="border"><p class="tab-para">Trace/measure kernel memory (slab) properties.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><a href="ch11.xhtml#ch11lev3sec3">11.3.3</a></p></td>
+        <td class="border"><p class="tab-para"><code>kvm</code></p></td>
+        <td class="border"><p class="tab-para">Trace/measure kvm guest instances.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><a href="ch13.xhtml#ch13lev3">13.3</a></p></td>
+        <td class="border"><p class="tab-para"><code>list</code></p></td>
+        <td class="border"><p class="tab-para">List event types.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">-</p></td>
+        <td class="border"><p class="tab-para"><code>lock</code></p></td>
+        <td class="border"><p class="tab-para">Analyze lock events.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">-</p></td>
+        <td class="border"><p class="tab-para"><code>mem</code></p></td>
+        <td class="border"><p class="tab-para">Profile memory access.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><a href="ch13.xhtml#ch13lev7">13.7</a></p></td>
+        <td class="border"><p class="tab-para"><code>probe</code></p></td>
+        <td class="border"><p class="tab-para">Define new dynamic tracepoints.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><a href="ch13.xhtml#ch13lev9">13.9</a></p></td>
+        <td class="border"><p class="tab-para"><code>record</code></p></td>
+        <td class="border"><p class="tab-para">Run a command and record its profile into perf.data.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><a href="ch13.xhtml#ch13lev10">13.10</a></p></td>
+        <td class="border"><p class="tab-para"><code>report</code></p></td>
+        <td class="border"><p class="tab-para">Read perf.data (created by <code>perf record</code>) and display the profile.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><a href="ch06.xhtml#ch06lev6sec13">6.6.13</a></p></td>
+        <td class="border"><p class="tab-para"><code>sched</code></p></td>
+        <td class="border"><p class="tab-para">Trace/measure scheduler properties (latencies).</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><a href="ch05.xhtml#ch05lev5sec1">5.5.1</a></p></td>
+        <td class="border"><p class="tab-para"><code>script</code></p></td>
+        <td class="border"><p class="tab-para">Read perf.data (created by <code>perf record</code>) and display trace output.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><a href="ch13.xhtml#ch13lev8">13.8</a></p></td>
+        <td class="border"><p class="tab-para"><code>stat</code></p></td>
+        <td class="border"><p class="tab-para">Run a command and gather performance counter statistics.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">-</p></td>
+        <td class="border"><p class="tab-para"><code>timechart</code></p></td>
+        <td class="border"><p class="tab-para">Visualize total system behavior during a workload.</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">-</p></td>
+        <td class="border"><p class="tab-para"><code>top</code></p></td>
+        <td class="border"><p class="tab-para">System profiling tool with real-time screen updates.</p></td>
+        </tr>
+        <tr>
+        <td><p class="tab-para"><a href="ch13.xhtml#ch13lev12">13.12</a></p></td>
+        <td><p class="tab-para"><code>trace</code></p></td>
+        <td><p class="tab-para">A live tracer (system calls by default).</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </figure>
+        <p class="noindent"><a href="ch13.xhtml#ch13fig01">Figure 13.1</a> shows commonly used perf subcommands with their data sources and types of output.</p>
+        <figure class="image-c" id="ch13fig01">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/13fig01.jpg" alt="Images" width="775" height="489">
+        <figcaption>
+        <p class="title-f"><span epub:type="pagebreak" id="page_674"></span><span class="pd_ashf">Figure 13.1</span> Commonly used perf subcommands</p>
+        </figcaption>
+        </figure>
+        <p class="noindent">Many of these and other subcommands are explained in the following sections. Some subcommands were covered in prior chapters, as shown in <a href="ch13.xhtml#ch13tab01">Table 13.1</a>.</p>
+        <p class="noindent">Future versions of perf(1) may add more capabilities: run <code>perf</code> with no arguments for the full list of subcommands for your system.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch13lev2">13.2 One-Liners</h3>
+        <p class="noindent">The following one-liners show various perf(1) capabilities by example. These are from a larger list that I have published online <a href="ch13.xhtml#ch13ref8">[Gregg 20h]</a>, which has proven to be an effective way to explain perf(1) capabilities. The syntax of these is covered in later sections and in the man pages for perf(1).</p>
+        <p class="noindent">Note that many of these one-liners use <code>-a</code> to specify all CPUs, but this became the default in Linux 4.11 and can be elided in that and later kernels.</p>
+        <section>
+        <h5 class="h5" id="ch13lev3_1">Listing Events</h5>
+        <p class="noindent">List all currently known events:</p>
+        <pre class="preash">perf list</pre>
+        <p class="noindent">List sched tracepoints:</p>
+        <pre class="preash">perf list 'sched:*'</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_675"></span>List events with names containing the string “block”:</p>
+        <pre class="preash">perf list block</pre>
+        <p class="noindent">List currently available dynamic probes:</p>
+        <pre class="preash">perf probe -l</pre>
+        </section>
+        <section>
+        <h5 class="h5" id="ch13lev3_2">Counting Events</h5>
+        <p class="noindent">Show PMC statistics for the specified command:</p>
+        <pre class="preash">perf stat <em>command</em></pre>
+        <p class="noindent">Show PMC statistics for the specified PID, until Ctrl-C:</p>
+        <pre class="preash">perf stat -p <em>PID</em></pre>
+        <p class="noindent">Show PMC statistics for the entire system, for 5 seconds:</p>
+        <pre class="preash">perf stat -a sleep 5</pre>
+        <p class="noindent">Show CPU last level cache (LLC) statistics for the command:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg675-01a" id="pg675-01">Click here to view code image</a></p>
+        <pre class="preash">perf stat -e LLC-loads,LLC-load-misses,LLC-stores,LLC-prefetches command</pre>
+        <p class="noindent">Count unhalted core cycles using a raw PMC specification (Intel):</p>
+        <pre class="preash">perf stat -e r003c -a sleep 5</pre>
+        <p class="noindent">Count front-end stalls using a verbose PMC raw specification (Intel):</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg675-02a" id="pg675-02">Click here to view code image</a></p>
+        <pre class="preash">perf stat -e cpu/event=0x0e,umask=0x01,inv,cmask=0x01/ -a sleep 5</pre>
+        <p class="noindent">Count syscalls per second system-wide:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg675-03a" id="pg675-03">Click here to view code image</a></p>
+        <pre class="preash">perf stat -e raw_syscalls:sys_enter -I 1000 -a</pre>
+        <p class="noindent">Count system calls by type for the specified PID:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg675-04a" id="pg675-04">Click here to view code image</a></p>
+        <pre class="preash">perf stat -e 'syscalls:sys_enter_*' -p <em>PID</em></pre>
+        <p class="noindent">Count block device I/O events for the entire system, for 10 seconds:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg675-05a" id="pg675-05">Click here to view code image</a></p>
+        <pre class="preash">perf stat -e 'block:*' -a sleep 10</pre>
+        </section>
+        <section>
+        <h5 class="h5" id="ch13lev3_3">Profiling</h5>
+        <p class="noindent">Sample on-CPU functions for the specified command, at 99 Hertz:</p>
+        <pre class="preash">perf record -F 99 <em>command</em></pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_676"></span>Sample CPU stack traces (via frame pointers) system-wide for 10 seconds:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg676-1a" id="pg676-1">Click here to view code image</a></p>
+        <pre class="preash">perf record -F 99 -a -g sleep 10</pre>
+        <p class="noindent">Sample CPU stack traces for the PID, using dwarf (debuginfo) to unwind stacks:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg676-2a" id="pg676-2">Click here to view code image</a></p>
+        <pre class="preash">perf record -F 99 -p PID --call-graph dwarf sleep 10</pre>
+        <p class="noindent">Sample CPU stack traces for a container by its /sys/fs/cgroup/perf_event cgroup:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg676-3a" id="pg676-3">Click here to view code image</a></p>
+        <pre class="preash">perf record -F 99 -e cpu-clock --cgroup=docker/1d567f439319...etc... -a sleep 10</pre>
+        <p class="noindent">Sample CPU stack traces for the entire system, using last branch record (LBR; Intel):</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg676-4a" id="pg676-4">Click here to view code image</a></p>
+        <pre class="preash">perf record -F 99 -a --call-graph lbr sleep 10</pre>
+        <p class="noindent">Sample CPU stack traces, once every 100 last-level cache misses, for 5 seconds:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg676-5a" id="pg676-5">Click here to view code image</a></p>
+        <pre class="preash">perf record -e LLC-load-misses -c 100 -ag sleep 5</pre>
+        <p class="noindent">Sample on-CPU user instructions precisely (e.g., using Intel PEBS), for 5 seconds:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg676-6a" id="pg676-6">Click here to view code image</a></p>
+        <pre class="preash">perf record -e cycles:up -a sleep 5</pre>
+        <p class="noindent">Sample CPUs at 49 Hertz, and show top process names and segments, live:</p>
+        <pre class="preash">perf top -F 49 -ns comm,dso</pre>
+        </section>
+        <section>
+        <h5 class="h5" id="ch13lev3_4">Static Tracing</h5>
+        <p class="noindent">Trace new processes, until Ctrl-C:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg676-7a" id="pg676-7">Click here to view code image</a></p>
+        <pre class="preash">perf record -e sched:sched_process_exec -a</pre>
+        <p class="noindent">Sample a subset of context switches with stack traces for 1 second:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg676-8a" id="pg676-8">Click here to view code image</a></p>
+        <pre class="preash">perf record -e context-switches -a -g sleep 1</pre>
+        <p class="noindent">Trace all context switches with stack traces for 1 second:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg676-9a" id="pg676-9">Click here to view code image</a></p>
+        <pre class="preash">perf record -e sched:sched_switch -a -g sleep 1</pre>
+        <p class="noindent">Trace all context switches with 5-level-deep stack traces for 1 second:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg676-10a" id="pg676-10">Click here to view code image</a></p>
+        <pre class="preash">perf record -e sched:sched_switch/max-stack=5/ -a sleep 1</pre>
+        <p class="noindent">Trace connect(2) calls (outbound connections) with stack traces, until Ctrl-C:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg676-11a" id="pg676-11">Click here to view code image</a></p>
+        <pre class="preash">perf record -e syscalls:sys_enter_connect -a -g</pre>
+        <p class="noindent">Sample at most 100 block device requests per second, until Ctrl-C:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg676-12a" id="pg676-12">Click here to view code image</a></p>
+        <pre class="preash">perf record -F 100 -e block:block_rq_issue -a</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_677"></span>Trace all block device issues and completions (has timestamps), until Ctrl-C:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg677-1a" id="pg677-1">Click here to view code image</a></p>
+        <pre class="preash">perf record -e block:block_rq_issue,block:block_rq_complete -a</pre>
+        <p class="noindent">Trace all block requests, of size at least 64 Kbytes, until Ctrl-C:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg677-2a" id="pg677-2">Click here to view code image</a></p>
+        <pre class="preash">perf record -e block:block_rq_issue --filter 'bytes &gt;= 65536'</pre>
+        <p class="noindent">Trace all ext4 calls, and write to a non-ext4 location, until Ctrl-C:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg677-3a" id="pg677-3">Click here to view code image</a></p>
+        <pre class="preash">perf record -e 'ext4:*' -o /tmp/perf.data -a</pre>
+        <p class="noindent">Trace the http__server__request USDT event (from Node.js; Linux 4.10+):</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg677-4a" id="pg677-4">Click here to view code image</a></p>
+        <pre class="preash">perf record -e sdt_node:http__server__request -a</pre>
+        <p class="noindent">Trace block device requests with live output (no perf.data) until Ctrl-C:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg677-5a" id="pg677-5">Click here to view code image</a></p>
+        <pre class="preash">perf trace -e block:block_rq_issue</pre>
+        <p class="noindent">Trace block device requests and completions with live output:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg677-6a" id="pg677-6">Click here to view code image</a></p>
+        <pre class="preash">perf trace -e block:block_rq_issue,block:block_rq_complete</pre>
+        <p class="noindent">Trace system calls system-wide with live output (verbose):</p>
+        <pre class="preash">perf trace</pre>
+        </section>
+        <section>
+        <h5 class="h5" id="ch13lev3_5">Dynamic Tracing</h5>
+        <p class="noindent">Add a probe for the kernel tcp_sendmsg() function entry (<code>--add</code> optional):</p>
+        <pre class="preash">perf probe --add tcp_sendmsg</pre>
+        <p class="noindent">Remove the tcp_sendmsg() tracepoint (or <code>-d</code>):</p>
+        <pre class="preash">perf probe --del tcp_sendmsg</pre>
+        <p class="noindent">List available variables for tcp_sendmsg(), plus externals (needs kernel debuginfo):</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg677-7a" id="pg677-7">Click here to view code image</a></p>
+        <pre class="preash">perf probe -V tcp_sendmsg --externs</pre>
+        <p class="noindent">List available line probes for tcp_sendmsg() (needs debuginfo):</p>
+        <pre class="preash">perf probe -L tcp_sendmsg</pre>
+        <p class="noindent">List available variables for tcp_sendmsg() at line number 81 (needs debuginfo):</p>
+        <pre class="preash">perf probe -V tcp_sendmsg:81</pre>
+        <p class="noindent">Add a probe for tcp_sendmsg() with entry argument registers (processor-specific):</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg677-8a" id="pg677-8">Click here to view code image</a></p>
+        <pre class="preash">perf probe 'tcp_sendmsg %ax %dx %cx'</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_678"></span>Add a probe for tcp_sendmsg(), with an alias (“bytes”) for the %cx register:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg678-1a" id="pg678-1">Click here to view code image</a></p>
+        <pre class="preash">perf probe 'tcp_sendmsg bytes=%cx'</pre>
+        <p class="noindent">Trace previously created probe when bytes (alias) is greater than 100:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg678-2a" id="pg678-2">Click here to view code image</a></p>
+        <pre class="preash">perf record -e probe:tcp_sendmsg --filter 'bytes &gt; 100'</pre>
+        <p class="noindent">Add a tracepoint for tcp_sendmsg() return, and capture the return value:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg678-3a" id="pg678-3">Click here to view code image</a></p>
+        <pre class="preash">perf probe 'tcp_sendmsg%return $retval'</pre>
+        <p class="noindent">Add a tracepoint for tcp_sendmsg(), with size and socket state (needs debuginfo):</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg678-4a" id="pg678-4">Click here to view code image</a></p>
+        <pre class="preash">perf probe 'tcp_sendmsg size sk-&gt;__sk_common.skc_state'</pre>
+        <p class="noindent">Add a tracepoint for do_sys_open() with the filename as a string (needs debuginfo):</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg678-5a" id="pg678-5">Click here to view code image</a></p>
+        <pre class="preash">perf probe 'do_sys_open filename:string'</pre>
+        <p class="noindent">Add a tracepoint for the user-level fopen(3) function from libc:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg678-6a" id="pg678-6">Click here to view code image</a></p>
+        <pre class="preash">perf probe -x /lib/x86_64-linux-gnu/libc.so.6 --add fopen</pre>
+        </section>
+        <section>
+        <h5 class="h5" id="ch13lev3_6">Reporting</h5>
+        <p class="noindent">Show perf.data in an ncurses browser (TUI) if possible:</p>
+        <pre class="preash">perf report</pre>
+        <p class="noindent">Show perf.data as a text report, with data coalesced and counts and percentages:</p>
+        <pre class="preash">perf report -n --stdio</pre>
+        <p class="noindent">List all perf.data events, with data header (recommended):</p>
+        <pre class="preash">perf script --header</pre>
+        <p class="noindent">List all perf.data events, with my recommended fields (needs <code>record -a</code>; Linux &lt; 4.1 used <code>-f</code> instead of <code>-F</code>):</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg678-7a" id="pg678-7">Click here to view code image</a></p>
+        <pre class="preash">perf script --header -F comm,pid,tid,cpu,time,event,ip,sym,dso</pre>
+        <p class="noindent">Generate a flame graph visualization (Linux 5.8+):</p>
+        <pre class="preash">perf script report flamegraph</pre>
+        <p class="noindent">Disassemble and annotate instructions with percentages (needs some debuginfo):</p>
+        <pre class="preash">perf annotate --stdio</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_679"></span>This is my selection of one-liners; there are more capabilities not covered here. See the subcommands in the previous section, and also later sections in this and other chapters for more perf(1) commands.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch13lev3">13.3 perf Events</h3>
+        <p class="noindent">Events can be listed using <code>perf list</code>. I’ve included a selection here from Linux 5.8 to show the different types of events, highlighted:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg679a" id="pg679">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf list</strong>
+        
+        List of pre-defined events (to be used in -e):
+        
+          branch-instructions OR branches                    [<strong>Hardware event</strong>]
+          branch-misses                                      [<strong>Hardware event</strong>]
+          bus-cycles                                         [<strong>Hardware event</strong>]
+          cache-misses                                       [<strong>Hardware event</strong>]
+        [...]
+          context-switches OR cs                             [<strong>Software event</strong>]
+          cpu-clock                                          [<strong>Software event</strong>]
+        [...]
+          L1-dcache-load-misses                              [<strong>Hardware cache event</strong>]
+          L1-dcache-loads                                    [<strong>Hardware cache event</strong>]
+        [...]
+          branch-instructions OR cpu/branch-instructions/    [<strong>Kernel PMU event</strong>]
+          branch-misses OR cpu/branch-misses/                [<strong>Kernel PMU event</strong>]
+        [...]
+        <strong>cache</strong>:
+          l1d.replacement
+               [L1D data line replacements] [...]
+        <strong>floating point</strong>:
+          fp_arith_inst_retired.128b_packed_double
+               [Number of SSE/AVX computational 128-bit packed double precision [...]
+        <strong>frontend</strong>:
+          dsb2mite_switches.penalty_cycles
+               [Decode Stream Buffer (DSB)-to-MITE switch true penalty cycles] [...]
+        <strong>memory</strong>:
+          cycle_activity.cycles_l3_miss
+               [Cycles while L3 cache miss demand load is outstanding] [...]
+          offcore_response.demand_code_rd.l3_miss.any_snoop
+               [DEMAND_CODE_RD &amp; L3_MISS &amp; ANY_SNOOP] [...]
+        <span epub:type="pagebreak" id="page_680"></span><strong>other</strong>:
+          hw_interrupts.received
+               [Number of hardware interrupts received by the processor]
+        <strong>pipeline</strong>:
+          arith.divider_active
+               [Cycles when divide unit is busy executing divide or square root [...]
+        <strong>uncore</strong>:
+          unc_arb_coh_trk_requests.all
+               [Unit: uncore_arb Number of entries allocated. Account for Any type:
+                e.g. Snoop, Core aperture, etc]
+        [...]
+          rNNN                                               [<strong>Raw hardware event descriptor</strong>]
+          cpu/t1=v1[,t2=v2,t3 ...]/modifier                  [<strong>Raw hardware event descriptor</strong>]
+           (see 'man perf-list' on how to encode it)
+          mem:&lt;addr&gt;[/len][:access]                          [<strong>Hardware breakpoint</strong>]
+          alarmtimer:alarmtimer_cancel                       [<strong>Tracepoint event</strong>]
+          alarmtimer:alarmtimer_fired                        [<strong>Tracepoint event</strong>]
+        [...]
+          probe:do_nanosleep                                 [<strong>Tracepoint event</strong>]
+        [...]
+          sdt_hotspot:class__initialization__clinit          [<strong>SDT event</strong>]
+          sdt_hotspot:class__initialization__concurrent      [<strong>SDT event</strong>]
+        [...]
+        List of pre-defined events (to be used in --<strong>pfm-events</strong>):
+        
+        ix86arch:
+          UNHALTED_CORE_CYCLES
+            [count core clock cycles whenever the clock signal on the specific core is
+        running (not halted)]
+          INSTRUCTION_RETIRED
+        [...]</pre>
+        <p class="noindent">The output has been heavily truncated in many places, as the full output is 4,402 lines on this test system. The event types are:</p>
+        <ul class="sq">
+        <li><p class="bull"><strong>Hardware event</strong>: Mostly processor events (implemented using PMCs)</p></li>
+        <li><p class="bull"><strong>Software event</strong>: A kernel counter event</p></li>
+        <li><p class="bull"><strong>Hardware cache event</strong>: Processor cache events (PMCs)</p></li>
+        <li><p class="bull"><strong>Kernel PMU event</strong>: Performance Monitoring Unit (PMU) events (PMCs)</p></li>
+        <li><p class="bull"><strong>cache</strong>, <strong>floating point</strong>...: Processor vendor events (PMCs) and brief descriptions</p></li>
+        <li><p class="bull"><strong>Raw hardware event descriptor</strong>: PMCs specified using raw codes</p></li>
+        <li><p class="bull"><strong>Hardware breakpoint</strong>: Processor breakpoint event</p></li>
+        <li><p class="bull"><span epub:type="pagebreak" id="page_681"></span><strong>Tracepoint event</strong>: Kernel static instrumentation events</p></li>
+        <li><p class="bull"><strong>SDT event</strong>: User-level static instrumentation events (USDT)</p></li>
+        <li><p class="bull"><strong>pfm-events</strong>: libpfm events (added in Linux 5.8)</p></li>
+        </ul>
+        <p class="noindent">The tracepoint and SDT events mostly list static instrumentation points, but if you have created some dynamic instrumentation probes, those will be listed as well. I included an example in the output: probe:do_nanosleep is described as a “Tracepoint event” that is based on a kprobe.</p>
+        <p class="noindent">The <code>perf list</code> command accepts a search substring as an argument. For example, listing events containing “mem_load_l3” with events highlighted in bold:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg681a" id="pg681">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf list mem_load_l3</strong>
+        
+        List of pre-defined events (to be used in -e):
+        
+        cache:
+          <strong>mem_load_l3_hit_retired.xsnp_hit</strong>
+               [Retired load instructions which data sources were L3 and cross-core snoop
+        hits in on-pkg core cache Supports address when precise (Precise event)]
+          <strong>mem_load_l3_hit_retired.xsnp_hitm</strong>
+               [Retired load instructions which data sources were HitM responses from shared
+        L3 Supports address when precise (Precise event)]
+          <strong>mem_load_l3_hit_retired.xsnp_miss</strong>
+               [Retired load instructions which data sources were L3 hit and cross-core snoop
+        missed in on-pkg core cache Supports address when precise (Precise event)]
+          <strong>mem_load_l3_hit_retired.xsnp_none</strong>
+               [Retired load instructions which data sources were hits in L3 without snoops
+        required Supports address when precise (Precise event)]
+        [...]</pre>
+        <p class="noindent">These are hardware events (PMC-based), and the output includes brief descriptions. The <code>(Precise event)</code> refers to precise event-based sampling (PEBS) capable events.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch13lev4">13.4 Hardware Events</h3>
+        <p class="noindent">Hardware events were introduced in <a href="ch04.xhtml#ch04">Chapter 4</a>, <a href="ch04.xhtml#ch04">Observability Tools</a>, <a href="ch04.xhtml#ch04lev3sec9">Section 4.3.9</a>, <a href="ch04.xhtml#ch04lev3sec9">Hardware Counters (PMCs)</a>. They are typically implemented using PMCs, which are configured using codes specific for the processor; for example, branch instructions on Intel processors can typically be instrumented with perf(1) by using the raw hardware event descriptor “r00c4,” short for the register codes: umask 0x0 and event select 0xc4. These codes are published in the processor manuals <a href="ch13.xhtml#ch13ref4">[Intel 16]</a><a href="ch13.xhtml#ch13ref5">[AMD 18]</a><a href="ch13.xhtml#ch13ref6">[ARM 19]</a>; Intel also makes them available as JSON files <a href="ch13.xhtml#ch13ref11">[Intel 20c]</a>.</p>
+        <p class="noindent">You are not expected to remember these codes, and you will only refer to them in the processor manuals if needed. For ease of use, perf(1) provides human-readable mappings that can be used instead. For example, the event “branch-instructions” will hopefully map to the branch <span epub:type="pagebreak" id="page_682"></span>instructions PMC on your system.<sup><a id="ch13fn2a" href="ch13.xhtml#ch13fn2">2</a></sup> Some of these human-readable names are visible in the previous list (the hardware and PMU events).</p>
+        <p class="footnote"><sup><a id="ch13fn2" href="ch13.xhtml#ch13fn2a">2</a></sup>I’ve encountered issues with the mappings in the past, where the human-readable name is not mapping to the correct PMC. This is difficult to identify from the perf(1) output alone: you need prior experience with the PMC and have expectations on what is normal, in order to spot the abnormal. Be aware of this possibility. With the speed of processor updates, I would expect bugs with future mappings as well.</p>
+        <p class="noindent">There are many processor types, and new versions are released regularly. It is possible that human-readable mappings for your processor are not yet available in perf(1) or are in a newer kernel version. Some PMCs may never be exposed via a human-readable name. I regularly have to switch from human-readable names to raw event descriptors once I move to deeper PMCs that lack mappings. There may also be bugs in the mappings, and if you ever encounter a suspicious PMC result, you may wish to try the raw event descriptor to double-check.</p>
+        <section>
+        <h4 class="h4" id="ch13lev4sec1">13.4.1 Frequency Sampling</h4>
+        <p class="noindent">When using <code>perf record</code> with PMCs, a default sample frequency is used so that not every event is recorded. For example, recording the cycles event:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg682a" id="pg682">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf record -vve cycles -a sleep 1</strong>
+        Using CPUID GenuineIntel-6-8E
+        intel_pt default config: tsc,mtc,mtc_period=3,psb_period=3,pt,branch
+        ------------------------------------------------------------
+        perf_event_attr:
+          size                             112
+          { sample_period, sample_freq }   <strong>4000</strong>
+          sample_type                      IP|TID|TIME|CPU|PERIOD
+          disabled                         1
+          inherit                          1
+          mmap                             1
+          comm                             1
+          freq                             <strong>1</strong>
+        [...]
+        [ perf record: Captured and wrote 3.360 MB perf.data (3538 samples) ]</pre>
+        <p class="noindent">The output shows that <em>frequency sampling</em> is enabled (<code>freq 1</code>) with a sample frequency of 4000. This tells the kernel to adjust the rate of sampling so that roughly 4,000 events per second per CPU are captured. This is desirable, since some PMCs instrument events that can occur billions of times per second (e.g., CPU cycles) and the overhead of recording every event would be prohibitive.<sup><a id="ch13fn3a" href="ch13.xhtml#ch13fn3">3</a></sup> But this is also a gotcha: the default output of perf(1) (without the very verbose option: <code>-vv</code>) does not say that frequency sampling is in use, and you may be expecting to record all events. This event frequency only affects the <code>record</code> subcommand; <code>stat</code> counts all events.</p>
+        <p class="footnote"><sup><a id="ch13fn3" href="ch13.xhtml#ch13fn3a">3</a></sup>Although the kernel will throttle the sampling rate and drop events to protect itself. Always check for lost events to see if this occurred (e.g., check the summary counters from: perf <code>report -D | tail -20</code>).</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_683"></span>The event frequency can be modified using the <code>-F</code> option, or changed to a <em>period</em> using <code>-c</code>, which captures one-in-every-period events (also known as <em>overflow sampling</em>). As an example of using <code>-F</code>:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg683-01a" id="pg683-01">Click here to view code image</a></p>
+        <pre class="pretab"><strong>perf record -F 99 -e cycles -a sleep 1</strong></pre>
+        <p class="noindent">This samples at a target rate of 99 Hertz (events per second). It is similar to the profiling one-liners in <a href="ch13.xhtml#ch13lev2">Section 13.2</a>, <a href="ch13.xhtml#ch13lev2">One-Liners</a>: they do not specify the event (no <code>-e cycles</code>), which causes perf(1) to default to cycles if PMCs are available, or to the cpu-clock software event. See <a href="ch13.xhtml#ch13lev9sec2">Section 13.9.2</a>, <a href="ch13.xhtml#ch13lev9sec2">CPU Profiling</a>, for more details.</p>
+        <p class="noindent">Note that there is a limit to the frequency rate, as well as a CPU utilization percent limit for perf(1), which can be viewed and set using sysctl(8):</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg683-02a" id="pg683-02">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>sysctl kernel.perf_event_max_sample_rate</strong>
+        kernel.perf_event_max_sample_rate = 15500
+        # <strong>sysctl kernel.perf_cpu_time_max_percent</strong>
+        kernel.perf_cpu_time_max_percent = 25</pre>
+        <p class="noindent">This shows the maximum sample rate on this system to be 15,500 Hertz, and the maximum CPU utilization allowed by perf(1) (specifically the PMU interrupt) to be 25%.</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch13lev5">13.5 Software Events</h3>
+        <p class="noindent">These are events that typically map to hardware events, but are instrumented in software. Like hardware events, they may have a default sample frequency, typically 4000, so that only a subset is captured when using the <code>record</code> subcommand.</p>
+        <p class="noindent">Note the following difference between the context-switches software event, and the equivalent tracepoint. Starting with the software event:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg683-03a" id="pg683-03">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf record -vve context-switches -a -- sleep 1</strong>
+        [...]
+        ------------------------------------------------------------
+        perf_event_attr:
+          type                             1
+          size                             112
+          config                           0x3
+          { sample_period, sample_freq }   <strong>4000</strong>
+          sample_type                      IP|TID|TIME|CPU|PERIOD
+        [...]
+          freq                             <strong>1</strong>
+        [...]
+        [ perf record: Captured and wrote 3.227 MB perf.data (660 samples) ]</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_684"></span>This output shows that the software event has defaulted to frequency sampling at a rate of 4000 Hertz. Now the equivalent tracepoint:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg684-01a" id="pg684-01">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf record -vve sched:sched_switch -a sleep 1</strong>
+        [...]
+        ------------------------------------------------------------
+        perf_event_attr:
+          type                             2
+          size                             112
+          config                           0x131
+          { sample_period, sample_freq }   <strong>1</strong>
+          sample_type                      IP|TID|TIME|CPU|PERIOD|RAW
+        [...]
+        [ perf record: Captured and wrote 3.360 MB perf.data (3538 samples) ]</pre>
+        <p class="noindent">This time, period sampling is used (no <code>freq 1</code>), with a sample period of 1 (equivalent to <code>-c 1</code>). This captures every event. You can do the same with software events by specifying <code>-c 1</code>, for example:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg684-02a" id="pg684-02">Click here to view code image</a></p>
+        <pre class="pretab"><strong>perf record -vve context-switches -a -c 1 -- sleep 1</strong></pre>
+        <p class="noindent">Be careful with the volume of recording every event and the overheads involved, especially for context switches, which can be frequent. You can use <code>perf stat</code> to check their frequency: see <a href="ch13.xhtml#ch13lev8">Section 13.8</a>, perf stat.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch13lev6">13.6 Tracepoint Events</h3>
+        <p class="noindent">Tracepoints were introduced in <a href="ch04.xhtml#ch04">Chapter 4</a>, <a href="ch04.xhtml#ch04">Observability Tools</a>, <a href="ch04.xhtml#ch04lev3sec5">Section 4.3.5</a>, <a href="ch04.xhtml#ch04lev3sec5">Tracepoints</a>, which includes examples of instrumenting them using perf(1). To recap, I used the block:block_rq_issue tracepoint and the following examples.</p>
+        <p class="noindent">Tracing system-wide for 10 seconds and printing the events:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg684-03a" id="pg684-03">Click here to view code image</a></p>
+        <pre class="pretab"><strong>perf record -e block:block_rq_issue -a sleep 10; perf script</strong></pre>
+        <p class="noindent">Printing arguments to this tracepoint and its format string (metadata summary):</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg684-04a" id="pg684-04">Click here to view code image</a></p>
+        <pre class="pretab"><strong>cat /sys/kernel/debug/tracing/events/block/block_rq_issue/format</strong></pre>
+        <p class="noindent">Filtering block I/O to only those larger than 65536 bytes:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg684-05a" id="pg684-05">Click here to view code image</a></p>
+        <pre class="pretab"><strong>perf record -e block:block_rq_issue --filter 'bytes &gt; 65536' -a sleep 10</strong></pre>
+        <p class="noindent">There are additional examples of perf(1) and tracepoints in <a href="ch13.xhtml#ch13lev2">Section 13.2</a>, <a href="ch13.xhtml#ch13lev2">One-Liners</a>, and in other chapters of this book.</p>
+        <p class="noindent">Note that <code>perf list</code> will show initialized probe events including kprobes (dynamic kernel instrumentation) as “Tracepoint event”; see <a href="ch13.xhtml#ch13lev7">Section 13.7</a>, <a href="ch13.xhtml#ch13lev7">Probe Events</a>.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch13lev7"><span epub:type="pagebreak" id="page_685"></span>13.7 Probe Events</h3>
+        <p class="noindent">perf(1) uses the term <em>probe events</em> to refer to kprobes, uprobes, and USDT probes. These are “dynamic” and must first be initialized before they can be traced: they are not present in the output of <code>perf list</code> by default (some USDT probes may be present because they have been auto-initialized). Once initialized, they are listed as “Tracepoint event.”</p>
+        <section>
+        <h4 class="h4" id="ch13lev7sec1">13.7.1 kprobes</h4>
+        <p class="noindent">kprobes were introduced in <a href="ch04.xhtml#ch04">Chapter 4</a>, <a href="ch04.xhtml#ch04">Observability Tools</a>, <a href="ch04.xhtml#ch04lev3sec6">Section 4.3.6</a>, <a href="ch04.xhtml#ch04lev3sec6">kprobes</a>. Here is a typical workflow for creating and using a kprobe, in this example for instrumenting the do_nanosleep() kernel function:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg685-01a" id="pg685-01">Click here to view code image</a></p>
+        <pre class="pretab"><strong>perf probe --add do_nanosleep</strong>
+        <strong>perf record -e probe:do_nanosleep -a sleep 5</strong>
+        <strong>perf script</strong>
+        <strong>perf probe --del do_nanosleep</strong></pre>
+        <p class="noindent">The kprobe is created using the <code>probe</code> subcommand and <code>--add</code> (<code>--add</code> is optional), and when it is no longer needed, it is deleted using <code>probe</code> and <code>--del</code>. Here is output from this sequence, including listing the probe event:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg685-02a" id="pg685-02">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf probe --add do_nanosleep</strong>
+        Added new event:
+          probe:do_nanosleep   (on do_nanosleep)
+        
+        You can now use it in all perf tools, such as:
+        
+                perf record -e probe:do_nanosleep -aR sleep 1
+        
+        # <strong>perf list probe:do_nanosleep</strong>
+        
+        List of pre-defined events (to be used in -e):
+        
+          probe:do_nanosleep                                 [Tracepoint event]
+        
+        # <strong>perf record -e probe:do_nanosleep -aR sleep 1</strong>
+        [ perf record: Woken up 1 times to write data ]
+        [ perf record: Captured and wrote 3.368 MB perf.data (604 samples) ]
+        <strong># perf script</strong>
+                   sleep 11898 [002] 922215.458572: probe:do_nanosleep: (ffffffff83dbb6b0)
+         SendControllerT 15713 [002] 922215.459871: probe:do_nanosleep: (ffffffff83dbb6b0)
+         SendControllerT  5460 [001] 922215.459942: probe:do_nanosleep: (ffffffff83dbb6b0)
+        [...]
+        <span epub:type="pagebreak" id="page_686"></span># <strong>perf probe --del probe:do_nanosleep</strong>
+        Removed event: probe:do_nanosleep</pre>
+        <p class="noindent">The output of perf script shows the do_nanosleep() calls that occurred while tracing, first from a sleep(1) command (likely the sleep(1) command that perf(1) ran) followed by calls by SendControllerT (truncated).</p>
+        <p class="noindent">The return of functions can be instrumented by adding <code>%return</code>:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg686-01a" id="pg686-01">Click here to view code image</a></p>
+        <pre class="pretab"><strong>perf probe --add do_nanosleep%return</strong></pre>
+        <p class="noindent">This uses a kretprobe.</p>
+        <section>
+        <h5 class="h5" id="ch13lev3_7">kprobe Arguments</h5>
+        <p class="noindent">There are at least four different ways to instrument the arguments to kernel functions.</p>
+        <p class="noindent">First, if kernel debuginfo is available, then information about function variables, including arguments, is available to perf(1). Listing variables for the do_nanosleep() kprobe using the <code>--vars</code> option:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg686-02a" id="pg686-02">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf probe --vars do_nanosleep</strong>
+        Available variables at do_nanosleep
+                @&lt;do_nanosleep+0&gt;
+                        enum hrtimer_mode       mode
+                        struct hrtimer_sleeper* t</pre>
+        <p class="noindent">This output shows variables named mode and t, which are the entry arguments to do_nanosleep(). These can be added when creating the probe so that they are included when recorded. For example, adding mode:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg686-03a" id="pg686-03">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf probe 'do_nanosleep mode'</strong>
+        [...]
+        # <strong>perf record -e probe:do_nanosleep -a</strong>
+        [...]
+        # <strong>perf script</strong>
+                  svscan  1470 [012] 4731125.216396: probe:do_nanosleep: (ffffffffa8e4e440)
+        mode=0x1</pre>
+        <p class="noindent">This output shows <code>mode=0x1.</code></p>
+        <p class="noindent">Second, if kernel debuginfo is not available (as I often find in production), then arguments can be read via their register locations. One trick is to use an identical system (same hardware and kernel) and install kernel debuginfo on it for reference. This reference system can then be queried to find the register locations using the <code>-n</code> (dry run) and <code>-v</code> (verbose) options to perf probe:</p>
+        <p class="codelink"><span epub:type="pagebreak" id="page_687"></span><a href="ch13_images.xhtml#pg687-01a" id="pg687-01">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf probe -nv 'do_nanosleep mode'</strong>
+        [...]
+        Writing event: p:probe/do_nanosleep _text+10806336 <strong>mode=%si:x32</strong>
+        [...]</pre>
+        <p class="noindent">Since it is a dry run, it does not create the event. But the output shows the location of the mode variable (highlighted in bold): it is in register <code>%si</code> and is printed as a 32-bit hexadecimal number (<code>x32</code>). (This syntax is explained in the next section on uprobes.) This can now be used on the debuginfo-less system by copying and pasting the mode declaration string (<code>mode=%si:x32</code>):</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg687-02a" id="pg687-02">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf probe 'do_nanosleep mode=%si:x32'</strong>
+        [...]
+        # <strong>perf record -e probe:do_nanosleep -a</strong>
+        [...]
+        # <strong>perf script</strong>
+                  svscan  1470 [000] 4732120.231245: probe:do_nanosleep: (ffffffffa8e4e440)
+        mode=0x1</pre>
+        <p class="noindent">This only works if the systems have the same processor ABI and kernel versions, otherwise the wrong register locations may be instrumented.</p>
+        <p class="noindent">Third, if you know the processor ABI, you can determine the register locations yourself. An example of this for uprobes is given in the following section.</p>
+        <p class="noindent">Fourth, there is a new source of kernel debug information: BPF type format (BTF). This is more likely to be available by default, and a future version of perf(1) should support it as an alternate debuginfo source.</p>
+        <p class="noindent">For the return of do_nanosleep, instrumented using a kretprobe, the return value can be read using the special <code>$retval</code> variable:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg687-03a" id="pg687-03">Click here to view code image</a></p>
+        <pre class="pretab"><strong>perf probe 'do_nanosleep%return $retval'</strong></pre>
+        <p class="noindent">See the kernel source code to determine what the return value contains.</p>
+        </section>
+        </section>
+        <section>
+        <h4 class="h4" id="ch13lev7sec2">13.7.2 uprobes</h4>
+        <p class="noindent">uprobes were introduced in <a href="ch04.xhtml#ch04">Chapter 4</a>, <a href="ch04.xhtml#ch04">Observability Tools</a>, <a href="ch04.xhtml#ch04lev3sec7">Section 4.3.7</a>, <a href="ch04.xhtml#ch04lev3sec7">uprobes</a>. uprobes are created similarly to kprobes when using perf(1). For example, to create a uprobe for the libc file open function, fopen(3):</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg687-04a" id="pg687-04">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf probe -x /lib/x86_64-linux-gnu/libc.so.6 --add fopen</strong>
+        Added new event:
+          probe_libc:fopen     (on fopen in /lib/x86_64-linux-gnu/libc-2.27.so)
+        <span epub:type="pagebreak" id="page_688"></span>You can now use it in all perf tools, such as:
+        
+                perf record -e probe_libc:fopen -aR sleep 1</pre>
+        <p class="noindent">The binary path is specified using <code>-x</code>. The uprobe, named probe_libc:fopen, can now be used with <code>perf record</code> to record events.</p>
+        <p class="noindent">When you are finished with the uprobe, you can remove it using <code>--del</code>:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg688-01a" id="pg688-01">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf probe --del probe_libc:fopen</strong>
+        Removed event: probe_libc:fopen</pre>
+        <p class="noindent">The return of the function can be instrumented by adding <code>%return</code>:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg688-02a" id="pg688-02">Click here to view code image</a></p>
+        <pre class="pretab"><strong>perf probe -x /lib/x86_64-linux-gnu/libc.so.6 --add fopen%return</strong></pre>
+        <p class="noindent">This uses a uretprobe.</p>
+        <section>
+        <h5 class="h5" id="ch13lev3_8">uprobe Arguments</h5>
+        <p class="noindent">If your system has debuginfo for the target binary, then variable information, including arguments, may be available. This can be listed using <code>--vars</code>:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg688-03a" id="pg688-03">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf probe -x /lib/x86_64-linux-gnu/libc.so.6 --vars fopen</strong>
+        Available variables at fopen
+                @&lt;_IO_vfscanf+15344&gt;
+                        char*   filename
+                        char*   mode</pre>
+        <p class="noindent">The output shows that fopen(3) has filename and mode variables. These can be added when creating the probe:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg688-04a" id="pg688-04">Click here to view code image</a></p>
+        <pre class="pretab"><strong>perf probe -x /lib/x86_64-linux-gnu/libc.so.6 --add 'fopen filename mode'</strong></pre>
+        <p class="noindent">Debuginfo may be provided via a -dbg or -dbgsym package. If that is unavailable on the target system but is on another, the other system can be used as a reference system, as was shown in the previous section on kprobes.</p>
+        <p class="noindent">Even if debuginfo is not available anywhere, you still have options. One is to recompile the software with debuginfo (if the software is open source). Another option is to figure out the register locations yourself, based on the processor ABI. The following example is for x86_64:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg688-5a" id="pg688-5">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf probe -x /lib/x86_64-linux-gnu/libc.so.6 --add 'fopen filename=+0(%di):string
+        mode=%si:u8'</strong>
+        [...]
+        # <strong>perf record -e probe_libc:fopen -a</strong>
+        [...]
+        <span epub:type="pagebreak" id="page_689"></span># <strong>perf script</strong>
+                     run 28882 [013] 4503285.383830: probe_libc:fopen: (7fbe130e6e30)
+        filename="/etc/nsswitch.conf" mode=147
+                     run 28882 [013] 4503285.383997: probe_libc:fopen: (7fbe130e6e30)
+        filename="/etc/passwd" mode=17
+               setuidgid 28882 [013] 4503285.384447: probe_libc:fopen: (7fed1ad56e30)
+        filename="/etc/nsswitch.conf" mode=147
+               setuidgid 28882 [013] 4503285.384589: probe_libc:fopen: (7fed1ad56e30)
+        filename="/etc/passwd" mode=17
+                     run 28883 [014] 4503285.392096: probe_libc:fopen: (7f9be2f55e30)
+        filename="/etc/nsswitch.conf" mode=147
+                     run 28883 [014] 4503285.392251: probe_libc:fopen: (7f9be2f55e30)
+        filename="/etc/passwd" mode=17
+                   mkdir 28884 [015] 4503285.392913: probe_libc:fopen: (7fad6ea0be30)
+        filename="/proc/filesystems" mode=22
+                   chown 28885 [015] 4503285.393536: probe_libc:fopen: (7efcd22d5e30)
+        filename="/etc/nsswitch.conf" mode=147
+        [...]</pre>
+        <p class="noindent">The output includes a number of fopen(3) calls, showing filenames of /etc/nsswitch.conf, /etc/passwd, etc.</p>
+        <p class="noindent">Decomposing the syntax I used:</p>
+        <ul class="sq">
+        <li><p class="bull"><strong><code>filename=</code></strong>: This is an alias (“filename”) used to annotate the output.</p></li>
+        <li><p class="bull"><strong><code>%di</code></strong>, <strong>%si</strong>: On x86_64, registers containing the first two function arguments, according to the AMD64 ABI <a href="ch13.xhtml#ch13ref2">[Matz 13]</a>.</p></li>
+        <li><p class="bull"><strong><code>+0(...)</code></strong>: Dereference the contents at offset zero. Without this, we would accidentally print the address as a string, rather than the contents of the address as a string.</p></li>
+        <li><p class="bull"><strong><code>:string</code></strong>: Print this as a string.</p></li>
+        <li><p class="bull"><strong><code>:u8</code></strong>: Print this as an unsigned 8-bit integer.</p></li>
+        </ul>
+        <p class="noindent">The syntax is documented in the perf-probe(1) man page.</p>
+        <p class="noindent">For the uretprobe, the return value can be read using <code>$retval</code>:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg689-01a" id="pg689-01">Click here to view code image</a></p>
+        <pre class="pretab"><strong>perf probe -x /lib/x86_64-linux-gnu/libc.so.6 --add 'fopen%return $retval'</strong></pre>
+        <p class="noindent">See the application source code to determine what the return value contains.</p>
+        <p class="noindent">While uprobes can provide visibility into application internals, they are an unstable interface as they are instrumenting the binary directly, which can change between software versions. USDT probes are preferred whenever available.</p>
+        </section>
+        </section>
+        <section>
+        <h4 class="h4" id="ch13lev7sec3"><span epub:type="pagebreak" id="page_690"></span>13.7.3 USDT</h4>
+        <p class="noindent">USDT probes were introduced in <a href="ch04.xhtml#ch04">Chapter 4</a>, <a href="ch04.xhtml#ch04">Observability Tools</a>, <a href="ch04.xhtml#ch04lev3sec8">Section 4.3.8</a>, <a href="ch04.xhtml#ch04lev3sec8">USDT</a>. These provide a stable interface for tracing events.</p>
+        <p class="noindent">Given a binary with USDT probes,<sup><a id="ch13fn4a" href="ch13.xhtml#ch13fn4">4</a></sup> perf(1) can be made aware of them using the buildid-cache subcommand. For example, for a Node.js binary compiled with USDT probes (built using: <code>./configure --with-dtrace</code>):</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg690a" id="pg690">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf buildid-cache --add $(which node)</strong></pre>
+        <p class="footnote"><sup><a id="ch13fn4" href="ch13.xhtml#ch13fn4a">4</a></sup>You can run readelf <code>-n</code> on the binary to check for the existence of USDT probes: they are listed in the ELF notes section.</p>
+        <p class="noindent">The USDT probes can then be seen in the output of <code>perf list</code>:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg690-01a" id="pg690-01">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf list | grep sdt_node</strong>
+          sdt_node:gc__done                                  [SDT event]
+          sdt_node:gc__start                                 [SDT event]
+          sdt_node:http__client__request                     [SDT event]
+          sdt_node:http__client__response                    [SDT event]
+          sdt_node:http__server__request                     [SDT event]
+          sdt_node:http__server__response                    [SDT event]
+          sdt_node:net__server__connection                   [SDT event]
+          sdt_node:net__stream__end                          [SDT event]</pre>
+        <p class="noindent">At this point they are SDT events (statically defined tracing events): metadata that describes the location of the event in the program’s instruction text. To actually instrument them, events must be created in the same fashion as uprobes from the previous section (USDT probes also use uprobes to instrument the USDT locations).<sup><a id="ch13fn5a" href="ch13.xhtml#ch13fn5">5</a></sup> For example, for sdt_node:http__server_request:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg690-02a" id="pg690-02">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf probe sdt_node:http__server__request</strong>
+        Added new event:
+          sdt_node:http__server__request (on %http__server__request in
+        home/bgregg/Build/node-v12.4.0/out/Release/node)
+        
+        You can now use it in all perf tools, such as:
+        
+                perf record -e sdt_node:http__server__request -aR sleep 1
+        
+        # <strong>perf list | grep http__server__request</strong>
+          sdt_node:http__server__request                     [Tracepoint event]
+          sdt_node:http__server__request                     [SDT event]</pre>
+        <p class="footnote"><sup><a id="ch13fn5" href="ch13.xhtml#ch13fn5a">5</a></sup>In the future this step may become unnecessary: the following perf record command may automatically promote SDT events to tracepoints when needed.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_691"></span>Note that the event now shows as both the SDT event (USDT metadata) and a Tracepoint event (a trace event that can be instrumented using perf(1) and other tools). It might seem odd to see two entries for the same thing, but it is consistent with how other events work. There is a tuple for tracepoints as well, except perf(1) never lists the tracepoints, it only lists the corresponding tracepoint events (if they exist<sup><a id="ch13fn6a" href="ch13.xhtml#ch13fn6">6</a></sup>).</p>
+        <p class="footnote"><sup><a id="ch13fn6" href="ch13.xhtml#ch13fn6a">6</a></sup>The kernel documentation does state that some tracepoints may not have corresponding trace events, although I have yet to encounter a case of this.</p>
+        <p class="noindent">Recording the USDT event:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg691-01a" id="pg691-01">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf record -e sdt_node:http__server__request -a</strong>
+        ^C[ perf record: Woken up 1 times to write data ]
+        [ perf record: Captured and wrote 3.924 MB perf.data (2 samples) ]
+        # <strong>perf script</strong>
+                    node 16282 [006] 510375.595203: sdt_node:http__server__request:
+        (55c3d8b03530) arg1=140725176825920 arg2=140725176825888 arg3=140725176829208
+        arg4=39090 arg5=140725176827096 arg6=140725176826040 arg7=20
+                    node 16282 [006] 510375.844040: sdt_node:http__server__request:
+        (55c3d8b03530) arg1=140725176825920 arg2=140725176825888 arg3=140725176829208
+        arg4=39092 arg5=140725176827096 arg6=140725176826040 arg7=20</pre>
+        <p class="noindent">The output shows that two sdt_node:http__server__request probes fired while recording. It has also printed the arguments to the USDT probe, but some of these are structs and strings, so perf(1) has printed them as pointer addresses. It <em>should</em> be possible to cast arguments to the correct type when creating the probe; for example, to cast the third argument as a string named “address”:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg691-02a" id="pg691-02">Click here to view code image</a></p>
+        <pre class="pretab"><strong>perf probe --add 'sdt_node:http__server__request address=+0(arg3):string'</strong></pre>
+        <p class="noindent">At the time of writing, this does not work.</p>
+        <p class="noindent">A common problem, which has been fixed since Linux 4.20, is that some USDT probes require a semaphore in the process address space to be incremented to activate them properly. sdt_node:http__server__request is one such probe, and without incrementing the semaphore it will not record any events.</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch13lev8">13.8 perf stat</h3>
+        <p class="noindent">The <code>perf stat</code> subcommand counts events. This can be used to measure the rate of events, or to check if an event is occurring at all. <code>perf stat</code> is efficient: it counts software events in kernel context and hardware events using PMC registers. This makes it suited to gauge the overhead of a more expensive <code>perf record</code> subcommand by first checking the event rate using <code>perf stat</code>.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_692"></span>For example, counting the tracepoint sched:sched_switch (using <code>-e</code> for the event), system-wide (<code>-a</code>) and for one second (<code>sleep 1</code>: a dummy command):</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg692-01a" id="pg692-01">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf stat -e sched:sched_switch -a -- sleep 1</strong>
+         Performance counter stats for 'system wide':
+        
+                     5,705      sched:sched_switch
+        
+               1.001892925 seconds time elapsed</pre>
+        <p class="noindent">This shows that the sched:sched_switch tracepoint fired 5,705 times during one second.</p>
+        <p class="noindent">I often use a “<code>--”</code> shell separator between the perf(1) command options and the dummy command it runs, although it is not strictly necessary in this case.</p>
+        <p class="noindent">The following sections explain options and usage examples.</p>
+        <section>
+        <h4 class="h4" id="ch13lev8sec1">13.8.1 Options</h4>
+        <p class="noindent">The <code>stat</code> subcommand supports many options, including:</p>
+        <ul class="sq">
+        <li><p class="bull"><strong><code>-a</code></strong>: Record across all CPUs (this became the default in Linux 4.11)</p></li>
+        <li><p class="bull"><strong><code>-e <em>event</em></code></strong>: Record this event(s)</p></li>
+        <li><p class="bull"><strong><code>--filter <em>filter</em></code></strong>: Set a Boolean filter expression for an event</p></li>
+        <li><p class="bull"><strong><code>-p <em>PID</em></code></strong>: Record this PID only</p></li>
+        <li><p class="bull"><strong><code>-t <em>TID</em></code></strong>: Record this thread ID only</p></li>
+        <li><p class="bull"><strong><code>-G <em>cgroup</em></code></strong>: Record this cgroup only (used for containers)</p></li>
+        <li><p class="bull"><strong><code>-A</code></strong>: Show per-CPU counts</p></li>
+        <li><p class="bull"><strong><code>-I <em>interval_ms</em></code></strong>: Print output every interval (milliseconds)</p></li>
+        <li><p class="bull"><strong><code>-v</code></strong>: Show verbose messages; <strong><code>-vv</code></strong> for more messages</p></li>
+        </ul>
+        <p class="noindent">The events can be tracepoints, software events, hardware events, kprobes, uprobes, and USDT probes (see <a href="ch13.xhtml#ch13lev3">Sections 13.3</a> to <a href="ch13.xhtml#ch13lev7">13.7</a>). Wildcards can be used to match multiple events of the file globbing style (“<code>*</code>” matches anything, and “<code>?</code>” matches any one character). For example, the following matches all tracepoints of type sched:</p>
+        <pre class="pretab"># <strong>perf stat -e 'sched:*' -a</strong></pre>
+        <p class="noindent">Multiple <code>-e</code> options can be used to match multiple event descriptions. For example, to count both sched and block tracepoints, either of the following can be used:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg692-02a" id="pg692-02">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf stat -e 'sched:*' -e 'block:*' -a</strong>
+        # <strong>perf stat -e 'sched:*,block:*' -a</strong></pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_693"></span>If no events are specified, perf stat will default to the architectural PMCs: you can see an example of this in <a href="ch04.xhtml#ch04">Chapter 4</a>, <a href="ch04.xhtml#ch04">Observability Tools</a>, <a href="ch04.xhtml#ch04lev3sec9">Section 4.3.9</a>, <a href="ch04.xhtml#ch04lev3sec9">Hardware Counters (PMCs)</a>.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch13lev8sec2">13.8.2 Interval Statistics</h4>
+        <p class="noindent">Per-interval statistics can be printed using the <code>-I</code> option. For example, printing the sched:sched_switch count every 1000 milliseconds:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg693-01a" id="pg693-01">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf stat -e sched:sched_switch -a -I 1000</strong>
+        #           time             counts unit events
+             1.000791768              5,308      sched:sched_switch
+             2.001650037              4,879      sched:sched_switch
+             3.002348559              5,112      sched:sched_switch
+             4.003017555              5,335      sched:sched_switch
+             5.003760359              5,300      sched:sched_switch
+        ^C     5.217339333              1,256      sched:sched_switch</pre>
+        <p class="noindent">The <code>counts</code> column shows the number of events since the previous interval. Browsing this column can show time-based variation. The last line shows the count between the previous line and the time I typed Ctrl-C to end perf(1). That time was 0.214 seconds, as seen by the delta in the time column.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch13lev8sec3">13.8.3 Per-CPU Balance</h4>
+        <p class="noindent">The balance across CPUs may be examined using the <code>-A</code> option:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg693-02a" id="pg693-02">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf stat -e sched:sched_switch -a -A -I 1000</strong>
+        #           time CPU                counts unit events
+             1.000351429 CPU0                 1,154      sched:sched_switch
+             1.000351429 CPU1                   555      sched:sched_switch
+             1.000351429 CPU2                   492      sched:sched_switch
+             1.000351429 CPU3                   925      sched:sched_switch
+        [...]</pre>
+        <p class="noindent">This prints the event delta per interval per logical CPU separately.</p>
+        <p class="noindent">There are also <code>--per-socket</code> and <code>--per-core</code> options for CPU socket and core aggregation.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch13lev8sec4">13.8.4 Event Filters</h4>
+        <p class="noindent">A filter may be provided for some event types (Tracepoint events) to test event arguments with a Boolean expression. The event will only be counted if the expression is true. For example, counting the sched:sched_switch event when the previous PID is 25467:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg693-3a" id="pg693-3">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf stat -e sched:sched_switch --filter 'prev_pid == 25467' -a -I 1000</strong>
+        #           time             counts unit events
+             1.000346518                131      sched:sched_switch
+        <span epub:type="pagebreak" id="page_694"></span>     2.000937838                145      sched:sched_switch
+             3.001370500                 11      sched:sched_switch
+             4.001905444                217      sched:sched_switch
+        [...]</pre>
+        <p class="noindent">See Tracepoint Arguments in <a href="ch04.xhtml#ch04">Chapter 4</a>, <a href="ch04.xhtml#ch04">Observability Tools</a>, <a href="ch04.xhtml#ch04lev3sec5">Section 4.3.5</a>, <a href="ch04.xhtml#ch04lev3sec5">Tracepoints</a>, for an explanation of these arguments. They are custom for each event, and may be listed from the format file in /sys/kernel/debug/tracing/events.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch13lev8sec5">13.8.5 Shadow Statistics</h4>
+        <p class="noindent">perf(1) has a variety of shadow statistics that will be printed when certain combinations of events are instrumented. For example, when instrumenting the PMCs for cycles and instructions, the <em>instructions per cycle</em> (IPC) statistic is printed:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg694-01a" id="pg694-01">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf stat -e cycles,instructions -a</strong>
+        ^C
+         Performance counter stats for 'system wide':
+        
+             2,895,806,892      cycles
+             6,452,798,206      instructions              #    <strong>2.23  insn per cycle</strong>
+        
+               1.040093176 seconds time elapsed</pre>
+        <p class="noindent">In this output, IPC was 2.23. These shadow statistics are printed on the right, after a hash. The output of <code>perf stat</code> with no events has several of these shadow statistics (see <a href="ch04.xhtml#ch04">Chapter 4</a>, <a href="ch04.xhtml#ch04">Observability Tools</a>, <a href="ch04.xhtml#ch04lev3sec9">Section 4.3.9</a>, <a href="ch04.xhtml#ch04lev3sec9">Hardware Counters (PMCs)</a>, for an example).</p>
+        <p class="noindent">To examine events in more detail, <code>perf record</code> can be used to capture them.</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch13lev9">13.9 perf record</h3>
+        <p class="noindent">The <code>perf record</code> subcommand records events to a file for later analysis. Events are specified after <code>-e</code>, and multiple events can be recorded simultaneously (either using multiple <code>-e</code> or separated by commas).</p>
+        <p class="noindent">By default the output filename is perf.data. For example:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg694-02a" id="pg694-02">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf record -e sched:sched_switch -a</strong>
+        ^C[ perf record: Woken up 9 times to write data ]
+        [ perf record: Captured and wrote 6.060 MB perf.data (23526 samples) ]</pre>
+        <p class="noindent">Note that the output includes the size of the perf.data file (6.060 Mbytes), the number of samples it contains (23,526), and the number of times perf(1) woke up to record data (9 times). The data is passed from the kernel to user-space via per-CPU ring buffers, and to keep context-switch overheads to a minimum perf(1) is woken up an infrequent and dynamic number of times to read them.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_695"></span>The previous command recorded until Ctrl-C was typed. A dummy sleep(1) command (or any command) can be used to set the duration (as it was with <code>perf stat</code> earlier). For example:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg695-01a" id="pg695-01">Click here to view code image</a></p>
+        <pre class="pretab">perf record -e tracepoint -a -- <strong>sleep 1</strong></pre>
+        <p class="noindent">This command records the tracepoint system-wide (<code>-a</code>) for 1 second only.</p>
+        <section>
+        <h4 class="h4" id="ch13lev9sec1">13.9.1 Options</h4>
+        <p class="noindent">The <code>record</code> subcommand supports many options, including:</p>
+        <ul class="sq">
+        <li><p class="bull"><strong><code>-a</code></strong>: Record across all CPUs (this became the default in Linux 4.11)</p></li>
+        <li><p class="bull"><strong><code>-e <em>event</em></code></strong>: Record this event(s)</p></li>
+        <li><p class="bull"><strong><code>--filter <em>filter</em></code></strong>: Set a Boolean filter expression for an event</p></li>
+        <li><p class="bull"><strong><code>-p <em>PID</em></code></strong>: Record this PID only</p></li>
+        <li><p class="bull"><strong><code>-t <em>TID</em></code></strong>: Record this thread ID only</p></li>
+        <li><p class="bull"><strong><code>-G <em>cgroup</em></code></strong>: Record this cgroup only (used for containers)</p></li>
+        <li><p class="bull"><strong><code>-g</code></strong>: Record stack traces</p></li>
+        <li><p class="bull"><strong><code>--call-graph mode</code></strong>: Record stack traces using a given method (fp, dwarf, or lbr)</p></li>
+        <li><p class="bull"><strong><code>-o <em>file</em></code></strong>: Set output file</p></li>
+        <li><p class="bull"><strong><code>-v</code></strong>: Show verbose messages; <code>-vv</code> for more messages</p></li>
+        </ul>
+        <p class="noindent">The same events can be recorded as with <code>perf stat</code> and printed live (as the events occur) with <code>perf trace</code>.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch13lev9sec2">13.9.2 CPU Profiling</h4>
+        <p class="noindent">A frequent use of perf(1) is as a CPU profiler. The following profiling example samples stack traces across all CPUs at 99 Hertz for 30 seconds:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg695-02a" id="pg695-02">Click here to view code image</a></p>
+        <pre class="pretab"><strong>perf record -F 99 -a -g -- sleep 30</strong></pre>
+        <p class="noindent">The event was not specified (no <code>-e</code>), so perf(1) will default to the first of these that are available (many use <em>precise events</em>, introduced in <a href="ch04.xhtml#ch04">Chapter 4</a>, <a href="ch04.xhtml#ch04">Observability Tools</a>, <a href="ch04.xhtml#ch04lev3sec9">Section 4.3.9</a>, <a href="ch04.xhtml#ch04lev3sec9">Hardware Counters (PMCs)</a>):</p>
+        <ol class="number">
+        <li><p class="number"><strong>cycles:ppp</strong>: CPU cycle-based frequency sampling with precise set to zero skid</p></li>
+        <li><p class="number"><strong>cycles:pp</strong>: CPU cycle-based frequency sampling with precise set to requesting zero skid (which may not be zero in practice)</p></li>
+        <li><p class="number"><strong>cycles:p</strong>: CPU cycle-based frequency sampling with precise set to requesting constant skid</p></li>
+        <li><p class="number"><strong>cycles</strong>: CPU cycle-based frequency sampling (no precise)</p></li>
+        <li><p class="number"><strong>cpu-clock</strong>: Software-based CPU frequency sampling</p></li>
+        </ol>
+        <p class="noindent"><span epub:type="pagebreak" id="page_696"></span>The ordering picks the most accurate CPU profiling mechanism available. The <code>:ppp</code>, <code>:pp</code>, and <code>:p</code> syntax activate precise event sampling modes, and can be applied to other events (apart from cycles) that support them. Events may also support different levels of precise. On Intel, precise events use PEBS; on AMD, they use IBS. These were defined in <a href="ch04.xhtml#ch04lev3sec9">Section 4.3.9</a>, under the <a href="ch04.xhtml#ch04lev3_31">PMC Challenges</a> heading.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch13lev9sec3">13.9.3 Stack Walking</h4>
+        <p class="noindent">Instead of using -g to specify recording stack traces, the max-stack configuration option can be used. It has two benefits: the maximum depth of the stack can be specified, and different settings can be used for different events. For example:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg696-01a" id="pg696-01">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf record -e sched:sched_switch/max-stack=5/,sched:sched_wakeup/max-stack=1/ \</strong>
+            <strong>-a -- sleep 1</strong></pre>
+        <p class="noindent">This records sched_switch events with 5-frame stacks, and sched_wakeup events with 1 stack frame only.</p>
+        <p class="noindent">Note that if stack traces appear broken, it may be due to the software not honoring the frame pointer register. This was discussed in <a href="ch05.xhtml#ch05">Chapter 5</a>, <a href="ch05.xhtml#ch05">Applications</a>, <a href="ch05.xhtml#ch05lev6sec2">Section 5.6.2</a>, <a href="ch05.xhtml#ch05lev6sec2">Missing Stacks</a>. Apart from recompiling the software with frame pointers (e.g., gcc(1) <code>-fno-omit-frame-pointer</code>), a different stack walking method may also work, selected using <code>--call-graph</code>. Options include:</p>
+        <ul class="sq">
+        <li><p class="bull"><strong>--call-graph dwarf</strong>: Selects debuginfo-based stack walking, which requires debuginfo for the executable to be available (for some software, it is provided by installing a package with a name ending in “-dbgsym” or “-dbg”).</p></li>
+        <li><p class="bull"><strong>--call-graph lbr</strong>: Selects Intel last branch record (LBR) stack walking, a processor-provided method (although it is typically limited to a stack depth of only 16 frames,<sup><a id="ch13fn7a" href="ch13.xhtml#ch13fn7">7</a></sup> so its usefulness is also limited).</p>
+        <p class="footnote"><sup><a id="ch13fn7" href="ch13.xhtml#ch13fn7a">7</a></sup>A stack depth of 16 since Haswell, and 32 since Skylake.</p></li>
+        <li><p class="bull"><strong>--call-graph fp</strong>: Selects frame pointer-based stack walking (the default).</p></li>
+        </ul>
+        <p class="noindent">Frame pointer-based stack walking is described in <a href="ch03.xhtml#ch03">Chapter 3</a>, <a href="ch03.xhtml#ch03">Operating Systems</a>, <a href="ch03.xhtml#ch03lev2sec7">Section 3.2.7</a>, <a href="ch03.xhtml#ch03lev2sec7">Stacks</a>. Other types (dwarf, LBR, and ORC) are described in <a href="ch02.xhtml#ch02">Chapter 2</a>, Tech, <a href="ch02.xhtml#ch02lev4">Section 2.4</a>, Stack Trace Walking, of <em>BPF Performance Tools</em> [Gregg 19].</p>
+        <p class="noindent">After recording events, the events can be examined using <code>perf report</code> or <code>perf script</code>.</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch13lev10">13.10 perf report</h3>
+        <p class="noindent">The <code>perf report</code> subcommand summarizes the contents of the perf.data file. Options include:</p>
+        <ul class="sq">
+        <li><p class="bull"><strong><code>--tui</code></strong>: Use the TUI interface (default)</p></li>
+        <li><p class="bull"><strong><code>--stdio</code></strong>: Emit a text report</p></li>
+        <li><p class="bull"><strong><code>-i file</code></strong>: Input file</p></li>
+        <li><p class="bull"><span epub:type="pagebreak" id="page_697"></span><strong><code>-n</code></strong>: Include a column for sample counts</p></li>
+        <li><p class="bull"><strong><code>-g <em>options</em></code></strong>: Modify call graph (stack trace) display options</p></li>
+        </ul>
+        <p class="noindent">It is also possible to summarize perf.data using external tools. These tools may process the output of <code>perf script</code>, covered in <a href="ch13.xhtml#ch13lev11">Section 13.11</a>, <a href="ch13.xhtml#ch13lev11">perf script</a>. You may find <code>perf report</code> is sufficient in many situations, and use externals tools only when necessary. <code>perf report</code> summarizes using either an interactive text user interface (TUI) or a text report (STDIO).</p>
+        <section>
+        <h4 class="h4" id="ch13lev10sec1">13.10.1 TUI</h4>
+        <p class="noindent">For example, CPU profiling of the instruction pointer at 99 Hertz for 10 seconds (no stack traces) and launching the TUI:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg697-01a" id="pg697-01">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf record -F 99 -a -- sleep 30</strong>
+        [ perf record: Woken up 193 times to write data ]
+        [ perf record: Captured and wrote 48.916 MB perf.data (11880 samples) ]
+        # <strong>perf report</strong>
+        Samples: 11K of event 'cpu-clock:pppH', Event count (approx.): 119999998800
+        Overhead  Command          Shared Object              Symbol
+          21.10%  swapper          [kernel.vmlinux]           [k] native_safe_halt
+           6.39%  mysqld           [kernel.vmlinux]           [k] _raw_spin_unlock_irqrestor
+           4.66%  mysqld           mysqld                     [.] _Z8ut_delaym
+           2.64%  mysqld           [kernel.vmlinux]           [k] finish_task_switch
+           2.59%  oltp_read_write  [kernel.vmlinux]           [k] finish_task_switch
+           2.03%  mysqld           [kernel.vmlinux]           [k] exit_to_usermode_loop
+           1.68%  mysqld           mysqld                     [.] _Z15row_search_mvccPh15pag
+           1.40%  oltp_read_write  [kernel.vmlinux]           [k] _raw_spin_unlock_irqrestor
+        [...]</pre>
+        <p class="noindent"><code>perf report</code> is an interactive interface where you can navigate the data, selecting functions and threads for more details.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch13lev10sec2">13.10.2 STDIO</h4>
+        <p class="noindent">The same CPU profile was shown in <a href="ch13.xhtml#ch13lev1">Section 13.1</a>, <a href="ch13.xhtml#ch13lev1">Subcommands Overview</a>, using the text-based report (<code>--stdio</code>). It is not interactive, but is suited for redirecting to a file so that the full summary can be saved as text. Such stand-alone text reports can be useful for sharing with others over chat systems, email, and support ticketing systems. I typically use <code>-n</code> to include a column of sample counts.</p>
+        <p class="noindent">As a different STDIO example, the following shows a CPU profile with stack traces (<code>-g</code>):</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg697-2a" id="pg697-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf record -F 99 -a -g -- sleep 30</strong>
+        [ perf record: Woken up 8 times to write data ]
+        [ perf record: Captured and wrote 2.282 MB perf.data (11880 samples) ]
+        # <strong>perf report --stdio</strong>
+        <span epub:type="pagebreak" id="page_698"></span>[...]
+        # Children      Self  Command          Shared Object               Symbol
+        # ........  ........  ...............  ..........................  .................
+        #
+            50.45%     0.00%  mysqld           libpthread-2.27.so          [.] start_thread
+                    |
+                    ---start_thread
+                       |
+                       |--44.75%--pfs_spawn_thread
+                       |          |
+                       |           --44.70%--handle_connection
+                       |                     |
+                       |                      --44.55%--_Z10do_commandP3THD
+                       |                                |
+                       |                                |--42.93%--_Z16dispatch_commandP3THD
+                       |                                |          |
+                       |                                |           --40.92%--_Z19mysqld_stm
+                       |                                |                     |
+        [...]</pre>
+        <p class="noindent">Stack trace samples are merged as a hierarchy, beginning from the root function on the left and moving through child functions down and to the right. The right-most function is that of the event (in this case, the on-CPU function), and to its left is its ancestry. This path shows that the <code>mysqld</code> process (daemon) ran start_thread(), which called pfs_spawn_thread(), which called handle_connection(), and so on. The right-most functions are truncated in this output.</p>
+        <p class="noindent">This left-to-right ordering is called <em>caller</em> by perf(1). You can flip this to <em>callee</em> ordering, where the event function is on the left and its ancestry is down and to the right using: <code>-g callee</code> (it was the default; perf(1) switched to the caller ordering in Linux 4.4).</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch13lev11">13.11 perf script</h3>
+        <p class="noindent">The <code>perf script</code> subcommand by default prints each sample from perf.data, and is useful for spotting patterns over time that may be lost in a report summary. Its output may be used for generating flame graphs, and it also has the ability to run <em>trace scripts</em> that automate recording and reporting events in custom ways. These topics are summarized in this section.</p>
+        <p class="noindent">To begin with, this shows output from the earlier CPU profile, which was collected without stack traces:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg698a" id="pg698">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf script</strong>
+                  mysqld  8631 [000] 4142044.582702:   10101010 cpu-clock:pppH:
+        c08fd9 _Z19close_thread_tablesP3THD+0x49 (/usr/sbin/mysqld)
+                  mysqld  8619 [001] 4142044.582711:   10101010 cpu-clock:pppH:
+        79f81d _ZN5Field10make_fieldEP10Send_field+0x1d (/usr/sbin/mysqld)
+        <span epub:type="pagebreak" id="page_699"></span>          mysqld 22432 [002] 4142044.582713:   10101010 cpu-clock:pppH:
+        ffffffff95530302 get_futex_key_refs.isra.12+0x32 (/lib/modules/5.4.0-rc8-virtua...
+        [...]</pre>
+        <p class="noindent">The output fields are, along with the field contents from the first line of output:</p>
+        <ul class="sq">
+        <li><p class="bull"><strong>Process name</strong>: <code>mysqld</code></p></li>
+        <li><p class="bull"><strong>Thread ID</strong>: <code>8631</code></p></li>
+        <li><p class="bull"><strong>CPU ID</strong>: <code>[000]</code></p></li>
+        <li><p class="bull"><strong>Timestamp</strong>: <code>4142044.582702</code> (seconds)</p></li>
+        <li><p class="bull"><strong>Period</strong>: <code>10101010</code> (derived from -F 99); included in some sampling modes</p></li>
+        <li><p class="bull"><strong>Event name</strong>: cpu-clock<code>:pppH</code></p></li>
+        <li><p class="bull"><strong>Event arguments</strong>: This field and those that follow are the event arguments, which are specific to the event. For the cpu-clock event, they are the instruction pointer, the function name and offset, and segment name. For the origin of these, see <a href="ch04.xhtml#ch04">Chapter 4</a>, <a href="ch04.xhtml#ch04lev3sec5">Section 4.3.5</a>, under <a href="ch04.xhtml#ch04lev3_14">Tracepoints Arguments and Format String</a>.</p></li>
+        </ul>
+        <p class="noindent">These output fields happen to be the current default for this event, but may change in a later version of perf(1). Other events do not include the period field.</p>
+        <p class="noindent">Since it can be important to produce consistent output, especially for post-processing, you can use the <code>-F</code> option to specify the fields. I frequently use it for including the process ID, as it is missing from the default field set. I’d also recommend adding <code>--header</code> to include the perf.data metadata. For example, this time showing a CPU profile with stack traces:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg699a" id="pg699">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf script --header -F comm,pid,tid,cpu,time,event,ip,sym,dso,trace</strong>
+        # ========
+        # captured on    : Sun Jan  5 23:43:56 2020
+        # header version : 1
+        # data offset    : 264
+        # data size      : 2393000
+        # feat offset    : 2393264
+        # hostname : bgregg-mysql
+        # os release : 5.4.0
+        # perf version : 5.4.0
+        # arch : x86_64
+        # nrcpus online : 4
+        # nrcpus avail : 4
+        # cpudesc : Intel(R) Xeon(R) Platinum 8175M CPU @ 2.50GHz
+        # cpuid : GenuineIntel,6,85,4
+        # total memory : 15923672 kB
+        # cmdline : /usr/bin/perf record -F 99 -a -g -- sleep 30
+        # event : name = cpu-clock:pppH, , id = { 5997, 5998, 5999, 6000 }, type = 1, size =
+        112, { sample_period, sample_freq } = 99, sample_ty
+        <span epub:type="pagebreak" id="page_700"></span>[...]
+        # ========
+        #
+        mysqld 21616/8583  [000] 4142769.671581: cpu-clock:pppH:
+                          c36299 [unknown] (/usr/sbin/mysqld)
+                          c3bad4 _ZN13QEP_tmp_table8end_sendEv (/usr/sbin/mysqld)
+                          c3c1a5 _Z13sub_select_opP4JOINP7QEP_TABb (/usr/sbin/mysqld)
+                          c346a8 _ZN4JOIN4execEv (/usr/sbin/mysqld)
+                          ca735a _Z12handle_queryP3THDP3LEXP12Query_resultyy
+        [...]</pre>
+        <p class="noindent">The output includes the header, prefixed with “#”, describing the system and the perf(1) command used to create the perf.data file. If you save this output to file for later use, you’ll be glad you included the header, as it provides a wealth of information you may need later on. These files can be read by other tools for visualization, including for flame graphs.</p>
+        <section>
+        <h4 class="h4" id="ch13lev11sec1">13.11.1 Flame Graphs</h4>
+        <p class="noindent">Flame graphs visualize stack traces. While commonly used for CPU profiles, they can visualize any collection of stack traces collected by perf(1), including on context switch events to see why threads are leaving CPU, and on block I/O creation to see which code paths are creating disk I/O.</p>
+        <p class="noindent">Two commonly used flame graph implementations (my own, and a d3 version) visualize the output of <code>perf script</code>. Flame graph support in perf(1) was added in Linux 5.8. The steps for creating flame graphs using perf(1) are included in <a href="ch06.xhtml#ch06">Chapter 6</a>, <a href="ch06.xhtml#ch06">CPUs</a>, <a href="ch06.xhtml#ch06lev6sec13">Section 6.6.13</a>, <a href="ch06.xhtml#ch06lev6sec13">perf</a>, under the heading <a href="ch06.xhtml#ch06lev3_23">CPU Flame Graphs</a>. The visualization itself is explained in <a href="ch06.xhtml#ch06lev7sec3">Section 6.7.3</a>, <a href="ch06.xhtml#ch06lev7sec3">Flame Graphs</a>.</p>
+        <p class="noindent">FlameScope is another tool for visualizing <code>perf script</code> output, combining a subsecond-offset heat map to study time-based variations with flame graphs. It is also included in <a href="ch06.xhtml#ch06">Chapter 6</a>, <a href="ch06.xhtml#ch06">CPUs</a>, <a href="ch06.xhtml#ch06lev7sec4">Section 6.7.4</a>, <a href="ch06.xhtml#ch06lev7sec4">FlameScope</a>.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch13lev11sec2">13.11.2 Trace Scripts</h4>
+        <p class="noindent">The available perf(1) trace scripts can be listed using <code>-l</code>:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg700a" id="pg700">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf script -l</strong>
+        List of available trace scripts:
+        [...]
+          event_analyzing_sample               analyze all perf samples
+          mem-phys-addr                        resolve physical address samples
+          intel-pt-events                      print Intel PT Power Events and PTWRITE
+          sched-migration                      sched migration overview
+          net_dropmonitor                      display a table of dropped frames
+          syscall-counts-by-pid [comm]         system-wide syscall counts, by pid
+        <span epub:type="pagebreak" id="page_701"></span>  failed-syscalls-by-pid [comm]        system-wide failed syscalls, by pid
+          export-to-sqlite [database name] [columns] [calls] export perf data to a sqlite3
+        database
+          stackcollapse                        produce callgraphs in short form for scripting
+        use</pre>
+        <p class="noindent">These can be executed as arguments to <code>perf script</code>. You can also develop additional trace scripts in either Perl or Python.</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch13lev12">13.12 perf trace</h3>
+        <p class="noindent">The <code>perf trace</code> subcommand will trace system calls by default and print output live (no perf.data file). It was introduced in <a href="ch05.xhtml#ch05">Chapter 5</a>, <a href="ch05.xhtml#ch05">Applications</a>, <a href="ch05.xhtml#ch05lev5sec1">Section 5.5.1</a>, <a href="ch05.xhtml#ch05lev5sec1">perf</a>, as a lower-overhead version of strace(1) that can trace system-wide. <code>perf trace</code> can also inspect any event using similar syntax to <code>perf record</code>.</p>
+        <p class="noindent">For example, tracing disk I/O issues and completions:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg701-01a" id="pg701-01">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf trace -e block:block_rq_issue,block:block_rq_complete</strong>
+             0.000 auditd/391 block:block_rq_issue:259,0 WS 8192 () 16046032 + 16 [auditd]
+             0.566 systemd-journa/28651 block:block_rq_complete:259,0 WS () 16046032 + 16 [0]
+             0.748 jbd2/nvme0n1p1/174 block:block_rq_issue:259,0 WS 61440 () 2100744 + 120
+        [jbd2/nvme0n1p1-]
+             1.436 systemd-journa/28651 block:block_rq_complete:259,0 WS () 2100744 + 120 [0]
+             1.515 kworker/0:1H-k/365 block:block_rq_issue:259,0 FF 0 () 0 + 0 [kworker/0:1H]
+             1.543 kworker/0:1H-k/365 block:block_rq_issue:259,0 WFS 4096 () 2100864 + 8
+        [kworker/0:1H]
+             2.074 sshd/6463 block:block_rq_complete:259,0 WFS () 2100864 + 8 [0]
+             2.077 sshd/6463 block:block_rq_complete:259,0 WFS () 2100864 + 0 [0]
+          1087.562 kworker/0:1H-k/365 block:block_rq_issue:259,0 W 4096 () 16046040 + 8
+        [kworker/0:1H]
+        [...]</pre>
+        <p class="noindent">As with <code>perf record</code>, filters can also be used on events. These filters can include some string constants, generated from kernel headers. For example, tracing mmap(2) syscalls where the flags are MAP_SHARED using the string “SHARED”:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg701-02a" id="pg701-02">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf trace -e syscalls:*enter_mmap --filter='flags==SHARED'</strong>
+             0.000 env/14780 syscalls:sys_enter_mmap(len: 27002, prot: READ, flags: SHARED,
+        fd: 3)
+            16.145 grep/14787 syscalls:sys_enter_mmap(len: 27002, prot: READ, flags: SHARED,
+        fd: 3)
+            18.704 cut/14791 syscalls:sys_enter_mmap(len: 27002, prot: READ, flags: SHARED,
+        fd: 3)
+        [...]</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_702"></span>Note that perf(1) is also using strings to improve readability of the format string: instead of “<code>prot: 1</code>” it has printed “<code>prot: READ</code>”. perf(1) refers to this capability as “beautification.”</p>
+        <section>
+        <h4 class="h4" id="ch13lev12sec1">13.12.1 Kernel Versions</h4>
+        <p class="noindent">Prior to Linux 4.19, <code>perf trace</code> would instrument all syscalls by default (the <code>--syscalls</code> option) in addition to the specified events (<code>-e</code>). To disable tracing other syscalls, specify <code>--no-syscalls</code> (which is now the default). For example:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg702-01a" id="pg702-01">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf trace -e block:block_rq_issue,block:block_rq_complete --no-syscalls</strong></pre>
+        <p class="noindent">Note that tracing across all CPUs (<code>-a</code>) has been the default since Linux 3.8. Filters (<code>--filter</code>) were added in Linux 5.5.</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch13lev13">13.13 Other Commands</h3>
+        <p class="noindent">There are more perf(1) subcommands and functionality, and some are used in other chapters. To recap additional subcommands (see <a href="ch13.xhtml#ch13tab01">Table 13.1</a> for the full list):</p>
+        <ul class="sq">
+        <li><p class="bull"><strong>perf c2c</strong> (Linux 4.10+): Cache-to-cache and cache line false sharing analysis</p></li>
+        <li><p class="bull"><strong>perf kmem</strong>: Kernel memory allocation analysis</p></li>
+        <li><p class="bull"><strong>perf kvm</strong>: KVM guest analysis</p></li>
+        <li><p class="bull"><strong>perf lock</strong>: Lock analysis</p></li>
+        <li><p class="bull"><strong>perf mem</strong>: Memory access analysis</p></li>
+        <li><p class="bull"><strong>perf sched</strong>: Kernel scheduler statistics</p></li>
+        <li><p class="bull"><strong>perf script</strong>: Custom perf tooling</p></li>
+        </ul>
+        <p class="noindent">Advanced additional capabilities include launching BPF programs on events, and using hardware tracing such as Intel processor trace (PT) or ARM CoreSight for per-instruction analysis <a href="ch13.xhtml#ch13ref10">[Hunter 20]</a>.</p>
+        <p class="noindent">The following is a basic example of Intel processor trace. This records user-mode cycles for the date(1) command:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg702-02a" id="pg702-02">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf record -e intel_pt/cyc/u date</strong>
+        Sat Jul 11 05:52:40 PDT 2020
+        [ perf record: Woken up 1 times to write data ]
+        [ perf record: Captured and wrote 0.049 MB perf.data ]</pre>
+        <p class="noindent">This can be printed as an instruction trace (instructions highlighted in bold):</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg702-3a" id="pg702-3">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf script --insn-trace</strong>
+                date 31979 [003] 653971.670163672:      7f3bfbf4d090 _start+0x0 (/lib/x86_64-
+        linux-gnu/ld-2.27.so) <strong>insn: 48 89 e7</strong>
+        <span epub:type="pagebreak" id="page_703"></span>        date 31979 [003] 653971.670163672:      7f3bfbf4d093 _start+0x3 (/lib/x86_64-
+        linux-gnu/ld-2.27.so) <strong>insn: e8 08 0e 00 00</strong>
+        [...]</pre>
+        <p class="noindent">This output includes the instructions as machine code. Installing and using the Intel X86 Encoder Decoder (XED) prints the instructions as assembly <a href="ch13.xhtml#ch13ref7">[Intelxed 19]</a>:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#pg703-01a" id="pg703-01">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf script --insn-trace --xed</strong>
+        date 31979 [003] 653971.670163672: ... (/lib/x86_64-linux-gnu/ld-2.27.so) mov %rsp,
+        %rdi
+        date 31979 [003] 653971.670163672: ... (/lib/x86_64-linux-gnu/ld-2.27.so) callq
+        0x7f3bfbf4dea0
+        date 31979 [003] 653971.670163672: ... (/lib/x86_64-linux-gnu/ld-2.27.so) pushq %rbp
+        [...]
+        date 31979 [003] 653971.670439432: ... (/bin/date) xor %ebp, %ebp
+        date 31979 [003] 653971.670439432: ... (/bin/date) mov %rdx, %r9
+        date 31979 [003] 653971.670439432: ... (/bin/date) popq %rsi
+        date 31979 [003] 653971.670439432: ... (/bin/date) mov %rsp, %rdx
+        date 31979 [003] 653971.670439432: ... (/bin/date) and $0xfffffffffffffff0, %rsp
+        [...]</pre>
+        <p class="noindent">While this is incredible detail, it is also verbose. The full output was 266,105 lines, and that’s just for the date(1) command. See the perf(1) wiki for other examples [Hunter 20].</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch13lev14">13.14 perf Documentation</h3>
+        <p class="noindent">Each subcommand should also have a man page for reference beginning with “perf-”, for example, perf-record(1) for the record subcommand. These are in the Linux source tree under tools/perf/Documentation.</p>
+        <p class="noindent">There is a perf(1) tutorial on <a href="http://wiki.kernel.org">wiki.kernel.org</a> <a href="ch13.xhtml#ch13ref3">[Perf 15]</a>, an unofficial perf(1) page by Vince Weaver <a href="ch13.xhtml#ch13ref1">[Weaver 11]</a>, and another unofficial perf(1) examples page by myself <a href="ch13.xhtml#ch13ref9">[Gregg 20f]</a>.</p>
+        <p class="noindent">My own page contains the full perf(1) one-liner list, as well as many more examples.</p>
+        <p class="noindent">As perf(1) frequently gains new features, check for updates in later kernel versions. A good source is the perf section of the changelog for each kernel published on KernelNewbies <a href="ch13.xhtml#ch13ref12">[KernelNewbies 20]</a>.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch13lev15">13.15 References</h3>
+        <p class="ref" id="ch13ref1"><strong>[Weaver 11]</strong> Weaver, V., “The Unofficial Linux Perf Events Web-Page,” <a href="http://web.eece.maine.edu/~vweaver/projects/perf_events">http://web.eece.maine.edu/~vweaver/projects/perf_events</a>, 2011.</p>
+        <p class="ref" id="ch13ref2"><strong>[Matz 13]</strong> Matz, M., Hubička, J., Jaeger, A., and Mitchell, M., “System V Application Binary Interface, AMD64 Architecture Processor Supplement, Draft Version 0.99.6,” <a href="http://x86-64.org/documentation/abi.pdf">http://x86-64.org/documentation/abi.pdf</a>, 2013.</p>
+        <p class="ref" id="ch13ref3"><span epub:type="pagebreak" id="page_704"></span><strong>[Perf 15]</strong> “Tutorial: Linux kernel profiling with perf,” <em>perf wiki</em>, <a href="https://perf.wiki.kernel.org/index.php/Tutorial">https://perf.wiki.kernel.org/index.php/Tutorial</a>, last updated 2015.</p>
+        <p class="ref" id="ch13ref4"><strong>[Intel 16]</strong> <em>Intel 64 and IA-32 Architectures Software Developer’s Manual Volume 3B: System Programming Guide, Part 2, September 2016,</em> <a href="https://www.intel.com/content/www/us/en/architecture-and-technology/64-ia-32-architectures-software-developer-vol-3b-part-2-manual.html">https://www.intel.com/content/www/us/en/architecture-and-technology/64-ia-32-architectures-software-developer-vol-3b-part-2-manual.html</a>, 2016.</p>
+        <p class="ref" id="ch13ref5"><strong>[AMD 18]</strong> <em>Open-Source Register Reference for AMD Family 17h Processors Models 00h-2Fh</em>, <a href="https://developer.amd.com/resources/developer-guides-manuals">https://developer.amd.com/resources/developer-guides-manuals</a>, 2018.</p>
+        <p class="ref" id="ch13ref6"><strong>[ARM 19]</strong> <em>Arm® Architecture Reference Manual Armv8, for Armv8-A architecture profile</em>, <a href="https://developer.arm.com/architectures/cpu-architecture/a-profile/docs?_ga=2.78191124.1893781712.1575908489-930650904.1559325573">https://developer.arm.com/architectures/cpu-architecture/a-profile/docs?_ga=2.78191124.1893781712.1575908489-930650904.1559325573</a>, 2019.</p>
+        <p class="ref" id="ch13ref7"><strong>[Intelxed 19]</strong> “Intel XED,” <a href="https://intelxed.github.io">https://intelxed.github.io</a>, 2019.</p>
+        <p class="ref" id="ch13ref8"><strong>[Gregg 20h]</strong> Gregg, B., “One-Liners,” <a href="http://www.brendangregg.com/perf.html#OneLiners">http://www.brendangregg.com/perf.html#OneLiners</a>, last updated 2020.</p>
+        <p class="ref" id="ch13ref9"><strong>[Gregg 20f]</strong> Gregg, B., “perf Examples,” <a href="http://www.brendangregg.com/perf.html">http://www.brendangregg.com/perf.html</a>, last updated 2020.</p>
+        <p class="ref" id="ch13ref10"><strong>[Hunter 20]</strong> Hunter, A., “Perf tools support for Intel® Processor Trace,” <a href="https://perf.wiki.kernel.org/index.php/Perf_tools_support_for_Intel%C2%AE_Processor_Trace">https://perf.wiki.kernel.org/index.php/Perf_tools_support_for_Intel%C2%AE_Processor_Trace</a>, last updated 2020.</p>
+        <p class="ref" id="ch13ref11"><strong>[Intel 20c]</strong> “/perfmon/,” <a href="https://download.01.org/perfmon">https://download.01.org/perfmon</a>, accessed 2020.</p>
+        <p class="ref" id="ch13ref12"><strong>[KernelNewbies 20]</strong> “KernelNewbies: LinuxVersions,” <a href="https://kernelnewbies.org/LinuxVersions">https://kernelnewbies.org/LinuxVersions</a>, accessed 2020.</p>
+        </section>
+        </section>
+        </section>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780136821694/files/9780136821656.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

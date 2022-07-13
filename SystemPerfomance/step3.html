@@ -1,0 +1,981 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section epub:type="chapter">
+        <h2 class="h2b" id="ch03"><span epub:type="pagebreak" id="page_89"></span><span class="pd_ash">Chapter 3</span></h2>
+        <p class="chap_ttl">Operating Systems</p>
+        <p class="noindent">An understanding of the operating system and its kernel is essential for systems performance analysis. You will frequently need to develop and then test hypotheses about system behavior, such as how system calls are being performed, how the kernel schedules threads on CPUs, how limited memory could be affecting performance, or how a file system processes I/O. These activities will require you to apply your knowledge of the operating system and the kernel.</p>
+        <p class="noindent">The learning objectives of this chapter are:</p>
+        <ul class="sq">
+        <li><p class="bull">Learn kernel terminology: context switches, swapping, paging, preemption, etc.</p></li>
+        <li><p class="bull">Understand the role of the kernel and system calls.</p></li>
+        <li><p class="bull">Gain a working knowledge of kernel internals, including: interrupts, schedulers, virtual memory, and the I/O stack.</p></li>
+        <li><p class="bull">See how kernel performance features have been added from Unix to Linux.</p></li>
+        <li><p class="bull">Develop a basic understanding of extended BPF.</p></li>
+        </ul>
+        <p class="noindent">This chapter provides an overview of operating systems and kernels and is assumed knowledge for the rest of the book. If you missed operating systems class, you can treat this as a crash course. Keep an eye out for any gaps in your knowledge, as there will be an exam at the end (I’m kidding; it’s just a quiz). For more on kernel internals, see the references at the end of this chapter.</p>
+        <p class="noindent">This chapter has three sections:</p>
+        <ul class="sq">
+        <li><p class="bull"><strong>Terminology</strong> lists essential terms.</p></li>
+        <li><p class="bull"><strong>Background</strong> summarizes key operating system and kernel concepts.</p></li>
+        <li><p class="bull"><strong>Kernels</strong> summarizes implementation specifics of Linux and other kernels.</p></li>
+        </ul>
+        <p class="noindent">Areas related to performance, including CPU scheduling, memory, disks, file systems, networking, and many specific performance tools, are covered in more detail in the chapters that follow.</p>
+        <section>
+        <h3 class="h3" id="ch03lev1"><span epub:type="pagebreak" id="page_90"></span>3.1 Terminology</h3>
+        <p class="noindent">For reference, here is the core operating system terminology used in this book. Many of these are also concepts that are explained in more detail in this and later chapters.</p>
+        <ul class="sq">
+        <li><p class="bull"><strong>Operating system</strong>: This refers to the software and files that are installed on a system so that it can boot and execute programs. It includes the kernel, administration tools, and system libraries.</p></li>
+        <li><p class="bull"><strong><a href="gloss.xhtml#glo_088">Kernel</a></strong>: The kernel is the program that manages the system, including (depending on the kernel model) hardware devices, memory, and CPU scheduling. It runs in a privileged CPU mode that allows direct access to hardware, called <em>kernel mode</em>.</p></li>
+        <li><p class="bull"><strong>Process</strong>: An OS abstraction and environment for executing a program. The program runs in <em>user mode</em>, with access to kernel mode (e.g., for performing device I/O) via system calls or traps into the kernel.</p></li>
+        <li><p class="bull"><strong><a href="gloss.xhtml#glo_176">Thread</a></strong>: An executable context that can be scheduled to run on a CPU. The kernel has multiple threads, and a process contains one or more.</p></li>
+        <li><p class="bull"><strong><a href="gloss.xhtml#glo_173">Task</a></strong>: A Linux runnable entity, which can refer to a process (with a single thread), a thread from a multithreaded process, or kernel threads.</p></li>
+        <li><p class="bull"><strong>BPF program</strong>: A kernel-mode program running in the BPF<sup><a id="ch03fn1a" href="ch03.xhtml#ch03fn1">1</a></sup> execution environment.</p>
+        <p class="footnote"><sup><a id="ch03fn1" href="ch03.xhtml#ch03fn1a">1</a></sup>BPF originally stood for Berkeley Packet Filter, but the technology today has so little to do with Berkeley, packets, or filtering that BPF has become a name in itself rather than an acronym.</p></li>
+        <li><p class="bull"><strong>Main memory</strong>: The physical memory of the system (e.g., RAM).</p></li>
+        <li><p class="bull"><strong><a href="gloss.xhtml#glo_197">Virtual memory</a></strong>: An abstraction of main memory that supports multitasking and oversubscription. It is, practically, an infinite resource.</p></li>
+        <li><p class="bull"><strong>Kernel space</strong>: The virtual memory address space for the kernel.</p></li>
+        <li><p class="bull"><strong>User space</strong>: The virtual memory address space for processes.</p></li>
+        <li><p class="bull"><strong>User land</strong>: User-level programs and libraries (/usr/bin, /usr/lib...).</p></li>
+        <li><p class="bull"><strong>Context switch</strong>: A switch from running one thread or process to another. This is a normal function of the kernel CPU scheduler, and involves switching the set of running CPU registers (the thread context) to a new set.</p></li>
+        <li><p class="bull"><strong>Mode switch</strong>: A switch between kernel and user modes.</p></li>
+        <li><p class="bull"><strong>System call (syscall)</strong>: A well-defined protocol for user programs to request the kernel to perform privileged operations, including device I/O.</p></li>
+        <li><p class="bull"><strong>Processor</strong>: Not to be confused with <em>process</em>, a processor is a physical chip containing one or more CPUs.</p></li>
+        <li><p class="bull"><strong>Trap</strong>: A signal sent to the kernel to request a system routine (privileged action). Trap types include system calls, processor exceptions, and interrupts.</p></li>
+        <li><p class="bull"><span epub:type="pagebreak" id="page_91"></span><strong>Hardware interrupt</strong>: A signal sent by physical devices to the kernel, usually to request servicing of I/O. An interrupt is a type of trap.</p></li>
+        </ul>
+        <p class="noindent">The Glossary includes more terminology for reference if needed for this chapter, including <em><a href="gloss.xhtml#glo_005">address space</a></em>, <em><a href="gloss.xhtml#glo_024">buffer</a></em>, <em><a href="gloss.xhtml#glo_037">CPU</a></em>, <em><a href="gloss.xhtml#glo_060">file descriptor</a></em>, <em><a href="gloss.xhtml#glo_128">POSIX</a></em>, and <em><a href="gloss.xhtml#glo_136">registers</a></em>.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch03lev2">3.2 Background</h3>
+        <p class="noindent">The following sections describe generic operating system and kernel concepts, and will help you understand any operating system. To aid your comprehension, this section includes some Linux implementation details. The next sections, 3.3 Kernels, and 3.4 Linux, focus on Unix, BSD, and Linux kernel implementation specifics.</p>
+        <section>
+        <h4 class="h4" id="ch03lev2sec1">3.2.1 Kernel</h4>
+        <p class="noindent">The kernel is the core software of the operating system. What it does depends on the kernel model: Unix-like operating systems including Linux and BSD have a <em>monolithic</em> kernel that manages CPU scheduling, memory, file systems, network protocols, and system devices (disks, network interfaces, etc.). This kernel model is shown in <a href="ch03.xhtml#ch03fig01">Figure 3.1</a>.</p>
+        <figure class="image-c" id="ch03fig01">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/03fig01.jpg" alt="Images" width="775" height="424">
+        <figcaption>
+        <p class="title-f"><span class="pd_ashf">Figure 3.1</span> Role of a monolithic operating system kernel</p>
+        </figcaption>
+        </figure>
+        <p class="noindent">Also shown are system libraries, which are often used to provide a richer and easier programming interface than the system calls alone. Applications include all running user-level software, including databases, web servers, administration tools, and operating system shells.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_92"></span>System libraries are pictured here as a broken ring to show that applications can call system calls (<em>syscalls</em>) directly.<sup><a id="ch03fn2a" href="ch03.xhtml#ch03fn2">2</a></sup> For example, the Golang runtime has its own syscall layer that doesn’t require the system library, libc. Traditionally, this diagram is drawn with complete rings, which reflect decreasing levels of privilege starting with the kernel at the center (a model that originated in Multics <a href="ch03.xhtml#ch03ref1">[Graham 68]</a>, the predecessor of Unix).</p>
+        <p class="footnote"><sup><a id="ch03fn2" href="ch03.xhtml#ch03fn2a">2</a></sup>There are some exceptions to this model. Kernel bypass technologies, sometimes used for networking, allow userlevel to access hardware directly (see <a href="ch10.xhtml#ch10">Chapter 10</a>, <a href="ch10.xhtml#ch10">Network</a>, <a href="ch10.xhtml#ch10lev4sec3">Section 10.4.3</a>, <a href="ch10.xhtml#ch10lev4sec3">Software</a>, heading Kernel Bypass). I/O to hardware may also be submitted without the expense of the syscall interface (although syscalls are required for initialization), for example, with memory-mapped I/O, major faults (see <a href="ch07.xhtml#ch07">Chapter 7</a>, <a href="ch07.xhtml#ch07">Memory</a>, <a href="ch07.xhtml#ch07lev2sec3">Section 7.2.3</a>, <a href="ch07.xhtml#ch07lev2sec3">Demand Paging</a>), sendfile(2), and Linux io_uring (see <a href="ch05.xhtml#ch05">Chapter 5</a>, <a href="ch05.xhtml#ch05">Applications</a>, <a href="ch05.xhtml#ch05lev2sec6">Section 5.2.6</a>, <a href="ch05.xhtml#ch05lev2sec6">Non-Blocking I/O</a>).</p>
+        <p class="noindent">Other kernel models also exist: <em>microkernels</em> employ a small kernel with functionality moved to user-mode programs; and <em>unikernels</em> compile kernel and application code together as a single program. There are also <em>hybrid kernels</em>, such as the Windows NT kernel, which use approaches from both monolithic kernels and microkernels together. These are summarized in <a href="ch03.xhtml#ch03lev5">Section 3.5</a>, <a href="ch03.xhtml#ch03lev5">Other Topics</a>.</p>
+        <p class="noindent">Linux has recently changed its model by allowing a new software type: Extended BPF, which enables secure kernel-mode applications along with its own kernel API: BPF helpers. This allows some applications and system functions to be rewritten in BPF, providing higher levels of security and performance. This is pictured in <a href="ch03.xhtml#ch03fig02">Figure 3.2</a>.</p>
+        <figure class="image-c" id="ch03fig02">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/03fig02.jpg" alt="Images" width="775" height="251">
+        <figcaption>
+        <p class="title-f"><span class="pd_ashf">Figure 3.2</span> BPF applications</p>
+        </figcaption>
+        </figure>
+        <p class="noindent">Extended BPF is summarized is <a href="ch03.xhtml#ch03lev4sec4">Section 3.4.4</a>, <a href="ch03.xhtml#ch03lev4sec4">Extended BPF</a>.</p>
+        <section>
+        <h5 class="h5" id="ch03lev3_1">Kernel Execution</h5>
+        <p class="noindent">The kernel is a large program, typically millions of lines of code. It primarily executes on demand, when a user-level program makes a system call, or a device sends an interrupt. Some kernel threads operate asynchronously for housekeeping, which may include the kernel clock routine and memory management tasks, but these try to be lightweight and consume very little CPU resources.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_93"></span>Workloads that perform frequent I/O, such as web servers, execute mostly in kernel context. Workloads that are compute-intensive usually run in user mode, uninterrupted by the kernel. It may be tempting to think that the kernel cannot affect the performance of these compute-intensive workloads, but there are many cases where it does. The most obvious is CPU contention, when other threads are competing for CPU resources and the kernel scheduler needs to decide which will run and which will wait. The kernel also chooses which CPU a thread will run on and can choose CPUs with warmer hardware caches or better memory locality for the process, to significantly improve performance.</p>
+        </section>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev2sec2">3.2.2 Kernel and User Modes</h4>
+        <p class="noindent">The kernel runs in a special CPU mode called <em>kernel mode</em>, allowing full access to devices and the execution of privileged instructions. The kernel arbitrates device access to support multitasking, preventing processes and users from accessing each other’s data unless explicitly allowed.</p>
+        <p class="noindent">User programs (processes) run in <em>user mode</em>, where they request privileged operations from the kernel via system calls, such as for I/O.</p>
+        <p class="noindent">Kernel and user mode are implemented on processors using <em>privilege rings</em> (or <em>protection rings</em>) following the model in <a href="ch03.xhtml#ch03fig01">Figure 3.1</a>. For example, x86 processors support four privilege rings, numbered 0 to 3. Typically only two or three are used: for user mode, kernel mode, and the hypervisor if present. Privileged instructions for accessing devices are only allowed in kernel mode; executing them in user mode causes <em>exceptions</em>, which are then handled by the kernel (e.g., to generate a permission denied error).</p>
+        <p class="noindent">In a traditional kernel, a system call is performed by switching to kernel mode and then executing the system call code. This is shown in <a href="ch03.xhtml#ch03fig03">Figure 3.3</a>.</p>
+        <figure class="image-c" id="ch03fig03">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/03fig03.jpg" alt="Images" width="775" height="231">
+        <figcaption>
+        <p class="title-f"><span class="pd_ashf">Figure 3.3</span> System call execution modes</p>
+        </figcaption>
+        </figure>
+        <p class="noindent">Switching between user and kernel modes is a <em>mode switch</em>.</p>
+        <p class="noindent">All system calls mode switch. Some system calls also <em>context switch</em>: those that are blocking, such as for disk and network I/O, will context switch so that another thread can run while the first is blocked.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_94"></span>Since mode and context switches cost a small amount of overhead (CPU cycles),<sup><a id="ch03fn3a" href="ch03.xhtml#ch03fn3">3</a></sup> there are various optimizations to avoid them, including:</p>
+        <p class="footnote"><sup><a id="ch03fn3" href="ch03.xhtml#ch03fn3a">3</a></sup>With the current mitigation for the Meltdown vulnerability, context switches are now more expensive. See <a href="ch03.xhtml#ch03lev4sec3">Section 3.4.3</a> KPTI (Meltdown).</p>
+        <ul class="sq">
+        <li><p class="bull"><strong>User-mode syscalls</strong>: It is possible to implement some syscalls in a user-mode library alone. The Linux kernel does this by exporting a virtual dynamic shared object (vDSO) that is mapped into the process address space, which contains syscalls such as gettimeofday(2) and getcpu(2) <a href="ch03.xhtml#ch03ref19">[Drysdale 14]</a>.</p></li>
+        <li><p class="bull"><strong>Memory mappings</strong>: Used for demand paging (see <a href="ch07.xhtml#ch07">Chapter 7</a>, <a href="ch07.xhtml#ch07">Memory</a>, <a href="ch07.xhtml#ch07lev2sec3">Section 7.2.3</a>, <a href="ch07.xhtml#ch07lev2sec3">Demand Paging</a>), it can also be used for data stores and other I/O, avoiding syscall overheads.</p></li>
+        <li><p class="bull"><strong>Kernel bypass</strong>: This allows user-mode programs to access devices directly, bypassing syscalls and the typical kernel code path. For example, DPDK for networking: the Data Plane Development Kit.</p></li>
+        <li><p class="bull"><strong>Kernel-mode applications</strong>: These include the TUX web server <a href="ch03.xhtml#ch03ref8">[Lever 00]</a>, implemented in-kernel, and more recently the extended BPF technology pictured in <a href="ch03.xhtml#ch03fig02">Figure 3.2</a>.</p></li>
+        </ul>
+        <p class="noindent">Kernel and user mode have their own software execution contexts, including a stack and registers. Some processor architectures (e.g., SPARC) use a separate address space for the kernel, which means the mode switch must also change the virtual memory context.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev2sec3">3.2.3 System Calls</h4>
+        <p class="noindent">System calls request the kernel to perform privileged system routines. There are hundreds of system calls available, but some effort is made by kernel maintainers to keep that number as small as possible, to keep the kernel simple (Unix philosophy; [Thompson 78]). More sophisticated interfaces can be built upon them in user-land as system libraries, where they are easier to develop and maintain. Operating systems generally include a C standard library that provides easier-to-use interfaces for many common syscalls (e.g., the libc or glibc libraries).</p>
+        <p class="noindent">Key system calls to remember are listed in <a href="ch03.xhtml#ch03tab01">Table 3.1</a>.</p>
+        <figure class="table" id="ch03tab01">
+        <figcaption>
+        <p class="title-t"><span class="pd_ashf">Table 3.1</span> <strong>Key system calls</strong></p>
+        </figcaption>
+        <table class="all">
+        <thead>
+        <tr>
+        <th class="th"><p class="thead"><strong>System Call</strong></p></th>
+        <th class="th"><p class="thead"><strong>Description</strong></p></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td class="border"><p class="tab-para">read(2)</p></td>
+        <td class="border"><p class="tab-para">Read bytes</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">write(2)</p></td>
+        <td class="border"><p class="tab-para">Write bytes</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">open(2)</p></td>
+        <td class="border"><p class="tab-para">Open a file</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">close(2)</p></td>
+        <td class="border"><p class="tab-para">Close a file</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">fork(2)</p></td>
+        <td class="border"><p class="tab-para">Create a new process</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">clone(2)</p></td>
+        <td class="border"><p class="tab-para">Create a new process or thread</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">exec(2)</p></td>
+        <td class="border"><p class="tab-para">Execute a new program</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><span epub:type="pagebreak" id="page_95"></span>connect(2)</p></td>
+        <td class="border"><p class="tab-para">Connect to a network host</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">accept(2)</p></td>
+        <td class="border"><p class="tab-para">Accept a network connection</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">stat(2)</p></td>
+        <td class="border"><p class="tab-para">Fetch file statistics</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">ioctl(2)</p></td>
+        <td class="border"><p class="tab-para">Set I/O properties, or other miscellaneous functions</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">mmap(2)</p></td>
+        <td class="border"><p class="tab-para">Map a file to the memory address space</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">brk(2)</p></td>
+        <td class="border"><p class="tab-para">Extend the heap pointer</p></td>
+        </tr>
+        <tr>
+        <td><p class="tab-para">futex(2)</p></td>
+        <td><p class="tab-para">Fast user-space mutex</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </figure>
+        <p class="noindent">System calls are well documented, each having a man page that is usually shipped with the operating system. They also have a generally simple and consistent interface and use error codes to describe errors when needed (e.g., ENOENT for “no such file or directory”).<sup><a id="ch03fn4a" href="ch03.xhtml#ch03fn4">4</a></sup></p>
+        <p class="footnote"><sup><a id="ch03fn4" href="ch03.xhtml#ch03fn4a">4</a></sup>glibc provides these errors in an errno (error number) integer variable.</p>
+        <p class="noindent">Many of these system calls have an obvious purpose. Here are a few whose common usage may be less obvious:</p>
+        <ul class="sq">
+        <li><p class="bull"><strong>ioctl(2)</strong>: This is commonly used to request miscellaneous actions from the kernel, especially for system administration tools, where another (more obvious) system call isn’t suitable. See the example that follows.</p></li>
+        <li><p class="bull"><strong>mmap(2)</strong>: This is commonly used to map executables and libraries to the process address space, and for memory-mapped files. It is sometimes used to allocate the working memory of a process, instead of the brk(2)-based malloc(2), to reduce the syscall rate and improve performance (which doesn’t always work due to the trade-off involved: memory-mapping management).</p></li>
+        <li><p class="bull"><strong>brk(2)</strong>: This is used to extend the heap pointer, which defines the size of the working memory of the process. It is typically performed by a system memory allocation library, when a malloc(3) (memory allocate) call cannot be satisfied from the existing space in the heap. See <a href="ch07.xhtml#ch07">Chapter 7</a>, <a href="ch07.xhtml#ch07">Memory</a>.</p></li>
+        <li><p class="bull"><strong>futex(2)</strong>: This syscall is used to handle part of a user space lock: the part that is likely to block.</p></li>
+        </ul>
+        <p class="noindent">If a system call is unfamiliar, you can learn more in its man page (these are in section 2 of the man pages: syscalls).</p>
+        <p class="noindent">The ioctl(2) syscall may be the most difficult to learn, due to its ambiguous nature. As an example of its usage, the Linux perf(1) tool (introduced in <a href="ch06.xhtml#ch06">Chapter 6</a>, <a href="ch06.xhtml#ch06">CPUs</a>) performs privileged actions to coordinate performance instrumentation. Instead of system calls being added for each action, a single system call is added: perf_event_open(2), which returns a file descriptor for use with ioctl(2). This ioctl(2) can then be called using different arguments to perform the different desired actions. For example, ioctl(fd, PERF_EVENT_IOC_ENABLE) enables instrumentation. The arguments, in this example PERF_EVENT_IOC_ENABLE, can be more easily added and changed by the developer.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev2sec4"><span epub:type="pagebreak" id="page_96"></span>3.2.4 Interrupts</h4>
+        <p class="noindent">An <em>interrupt</em> is a signal to the processor that some event has occurred that needs processing, and interrupts the current execution of the processor to handle it. It typically causes the processor to enter kernel mode if it isn’t already, save the current thread state, and then run an <em>interrupt service routine</em> (ISR) to process the event.</p>
+        <p class="noindent">There are asynchronous interrupts generated by external hardware and synchronous interrupts generated by software instructions. These are pictured in <a href="ch03.xhtml#ch03fig04">Figure 3.4</a>.</p>
+        <figure class="image-c" id="ch03fig04">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/03fig04.jpg" alt="Images" width="775" height="408">
+        <figcaption>
+        <p class="title-f"><span class="pd_ashf">Figure 3.4</span> Interrupt types</p>
+        </figcaption>
+        </figure>
+        <p class="noindent">For simplicity <a href="ch03.xhtml#ch03fig04">Figure 3.4</a> shows all interrupts sent to the kernel for processing; these are sent to the CPU first, which selects the ISR in the kernel to run the event.</p>
+        <section>
+        <h5 class="h5" id="ch03lev3_2">Asynchronous Interrupts</h5>
+        <p class="noindent">Hardware devices can send <em>interrupt service requests</em> (IRQs) to the processor, which arrive asynchronously to the currently running software. Examples of hardware interrupts include:</p>
+        <ul class="sq">
+        <li><p class="bull">Disk devices signaling the completion of disk I/O</p></li>
+        <li><p class="bull">Hardware indicating a failure condition</p></li>
+        <li><p class="bull">Network interfaces signaling the arrival of a packet</p></li>
+        <li><p class="bull">Input devices: keyboard and mouse input</p></li>
+        </ul>
+        <p class="noindent">To explain the concept of asynchronous interrupts, an example scenario is pictured in <a href="ch03.xhtml#ch03fig05">Figure 3.5</a> showing the passage of time as a database (MySQL) running on CPU 0 reads from a file system. The file system contents must be fetched from disk, so the scheduler context switches to another thread (a Java application) while the database is waiting. Sometime later, the disk I/O completes, <span epub:type="pagebreak" id="page_97"></span>but at this point the database is no longer running on CPU 0. The completion interrupt has occurred asynchronously to the database, showed by a dotted line in <a href="ch03.xhtml#ch03fig05">Figure 3.5</a>.</p>
+        <figure class="image-c" id="ch03fig05">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/03fig05.jpg" alt="Images" width="775" height="420">
+        <figcaption>
+        <p class="title-f"><span class="pd_ashf">Figure 3.5</span> Asynchronous interrupt example</p>
+        </figcaption>
+        </figure>
+        </section>
+        <section>
+        <h5 class="h5" id="ch03lev3_3">Synchronous Interrupts</h5>
+        <p class="noindent">Synchronous interrupts are generated by software instructions. The following describes different types of software interrupts using the terms <em>traps</em>, <em>exceptions</em>, and <em>faults</em>; however, these terms are often used interchangeably.</p>
+        <ul class="sq">
+        <li><p class="bull"><strong>Traps</strong>: A deliberate call into the kernel, such as by the int (interrupt) instruction. One implementation of syscalls involves calling the int instruction with a vector for a syscall handler (e.g., int 0x80 on Linux x86). int raises a software interrupt.</p></li>
+        <li><p class="bull"><strong>Exceptions</strong>: A exceptional condition, such as by an instruction performing a divide by zero.</p></li>
+        <li><p class="bull"><strong>Faults</strong>: A term often used for memory events, such as <em>page faults</em> triggered by accessing a memory location without an MMU mapping. See <a href="ch07.xhtml#ch07">Chapter 7</a>, <a href="ch08.xhtml#ch08">Memory</a>.</p></li>
+        </ul>
+        <p class="noindent">For these interrupts, the responsible software and instruction are still on CPU.</p>
+        </section>
+        <section>
+        <h5 class="h5" id="ch03lev3_4">Interrupt Threads</h5>
+        <p class="noindent">Interrupt service routines (ISRs) are designed to operate as quickly as possible, to reduce the effects of interrupting active threads. If an interrupt needs to perform more than a little work, especially if it may block on locks, it can be processed by an interrupt thread that can be scheduled by the kernel. This is pictured in <a href="ch03.xhtml#ch03fig06">Figure 3.6</a>.</p>
+        <figure class="image-c" id="ch03fig06">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/03fig06.jpg" alt="Images" width="775" height="299">
+        <figcaption>
+        <p class="title-f"><span epub:type="pagebreak" id="page_98"></span><span class="pd_ashf">Figure 3.6</span> Interrupt processing</p>
+        </figcaption>
+        </figure>
+        <p class="noindent">How this is implemented depends on the kernel version. On Linux, device drivers can be modeled as two halves, with the top half handling the interrupt quickly, and scheduling work to a bottom half to be processed later <a href="ch03.xhtml#ch03ref12">[Corbet 05]</a>. Handling the interrupt quickly is important as the top half runs in <em>interrupt-disabled</em> mode to postpone the delivery of new interrupts, which can cause latency problems for other threads if it runs for too long. The bottom half can be either <em>tasklets</em> or <em>work queues</em>; the latter are threads that can be scheduled by the kernel and can sleep when necessary.</p>
+        <p class="noindent">Linux network drivers, for example, have a top half to handle IRQs for inbound packets, which calls the bottom half to push the packet up the network stack. The bottom half is implemented as a <em>softirq</em> (software interrupt).</p>
+        <p class="noindent">The time from an interrupt’s arrival to when it is serviced is the <em>interrupt latency</em>, which is dependent on the hardware and implementation. This is a subject of study for real-time or low-latency systems.</p>
+        </section>
+        <section>
+        <h5 class="h5" id="ch03lev3_5">Interrupt Masking</h5>
+        <p class="noindent">Some code paths in the kernel cannot be interrupted safely. An example is kernel code that acquires a spin lock during a system call, for a spin lock that might also be needed by an interrupt. Taking an interrupt with such a lock held could cause a deadlock. To prevent such a situation, the kernel can temporarily mask interrupts by setting the CPU’s <em>interrupt mask</em> register. The interrupt disabled time should be as short as possible, as it can perturb the timely execution of applications that are woken up by other interrupts. This is an important factor for <em>real-time</em> systems—those that have strict response time requirements. Interrupt disabled time is also a target of performance analysis (such analysis is supported directly by the Ftrace irqsoff tracer, mentioned in <a href="ch14.xhtml#ch14">Chapter 14</a>, <a href="ch14.xhtml#ch14">Ftrace</a>).</p>
+        <p class="noindent">Some high-priority events should not be ignored, and so are implemented as <em>non-maskable interrupts</em> (NMIs). For example, Linux can use an Intelligent Platform Management Interface (IPMI) <span epub:type="pagebreak" id="page_99"></span>watchdog timer that checks if the kernel appears to have locked up based on a lack of interrupts during a period of time. If so, the watchdog can issue an NMI interrupt to reboot the system.<sup><a id="ch03fn5a" href="ch03.xhtml#ch03fn5">5</a></sup></p>
+        <p class="footnote"><sup><a id="ch03fn5" href="ch03.xhtml#ch03fn5a">5</a></sup>Linux also has a software NMI watchdog for detecting lockups <a href="ch03.xhtml#ch03ref41">[Linux 20d]</a>.</p>
+        </section>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev2sec5">3.2.5 Clock and Idle</h4>
+        <p class="noindent">A core component of the original Unix kernel is the clock() routine, executed from a timer interrupt. It has historically been executed at 60, 100, or 1,000 times per second<sup><a id="ch03fn6a" href="ch03.xhtml#ch03fn6">6</a></sup> (often expressed in Hertz: cycles per second), and each execution is called a <em>tick.</em><sup><a id="ch03fn7a" href="ch03.xhtml#ch03fn7">7</a></sup> Its functions have included updating the system time, expiring timers and time slices for thread scheduling, maintaining CPU statistics, and executing scheduled kernel routines.</p>
+        <p class="footnote"><sup><a id="ch03fn6" href="ch03.xhtml#ch03fn6a">6</a></sup>Other rates include 250 for Linux 2.6.13, 256 for Ultrix, and 1,024 for OSF/1 <a href="ch03.xhtml#ch03ref7">[Mills 94]</a>.</p>
+        <p class="footnote"><sup><a id="ch03fn7" href="ch03.xhtml#ch03fn7a">7</a></sup>Linux also tracks <em>jiffies</em>, a unit of time similar to ticks.</p>
+        <p class="noindent">There have been performance issues with the clock, improved in later kernels, including:</p>
+        <ul class="sq">
+        <li><p class="bull"><strong>Tick latency</strong>: For 100 Hertz clocks, up to 10 ms of additional latency may be encountered for a timer as it waits to be processed on the next tick. This has been fixed using high-resolution real-time interrupts so that execution occurs immediately.</p></li>
+        <li><p class="bull"><strong>Tick overhead</strong>: Ticks consume CPU cycles and slightly perturb applications, and are one cause of what is known as <em>operating system jitter</em>. Modern processors also have dynamic power features, which can power down parts during idle periods. The clock routine interrupts this idle time, which can consume power needlessly.</p></li>
+        </ul>
+        <p class="noindent">Modern kernels have moved much functionality out of the clock routine to on-demand interrupts, in an effort to create a <em>tickless kernel</em>. This reduces overhead and improves power efficiency by allowing processors to remain in sleep states for longer.</p>
+        <p class="noindent">The Linux clock routine is scheduler_tick(), and Linux has ways to omit calling the clock while there isn’t any CPU load. The clock itself typically runs at 250 Hertz (configured by the CONFIG_HZ Kconfig option and variants), and its calls are reduced by the NO_HZ functionality (configured by CONFIG_NO_HZ and variants), which is now commonly enabled <a href="ch03.xhtml#ch03ref38">[Linux 20a]</a>.</p>
+        <section>
+        <h5 class="h5" id="ch03lev3_6">Idle Thread</h5>
+        <p class="noindent">When there is no work for the CPUs to perform, the kernel schedules a placeholder thread that waits for work, called the <em>idle thread</em>. A simple implementation would check for the availability of new work in a loop. In modern Linux the <em>idle task</em> can call the hlt (halt) instruction to power down the CPU until the next interrupt is received, saving power.</p>
+        </section>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev2sec6">3.2.6 Processes</h4>
+        <p class="noindent">A process is an environment for executing a user-level program. It consists of a memory address space, file descriptors, thread stacks, and registers. In some ways, a process is like a virtual early computer, where only one program is executing with its own registers and stacks.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_100"></span>Processes are multitasked by the kernel, which typically supports the execution of thousands of processes on a single system. They are individually identified by their <em>process ID</em> (PID), which is a unique numeric identifier.</p>
+        <p class="noindent">A process contains one or more <em>threads</em>, which operate in the process address space and share the same file descriptors. A thread is an executable context consisting of a stack, registers, and an instruction pointer (also called a <em>program counter</em>). Multiple threads allow a single process to execute in parallel across multiple CPUs. On Linux, threads and processes are both <em>tasks</em>.</p>
+        <p class="noindent">The first process launched by the kernel is called “init,” from /sbin/init (by default), with PID 1, which launches user space services. In Unix this involved running start scripts from /etc, a method now referred to as SysV (after Unix System V). Linux distributions now commonly use the systemd software to start services and track their dependencies.</p>
+        <section>
+        <h5 class="h5" id="ch03lev3_7">Process Creation</h5>
+        <p class="noindent">Processes are normally created using the fork(2) system call on Unix systems. On Linux, C libraries typically implement the fork function by wrapping around the versatile clone(2) syscall. These syscalls create a duplicate of the process, with its own process ID. The exec(2) system call (or a variant, such as execve(2)) can then be called to begin execution of a different program.</p>
+        <p class="noindent"><a href="ch03.xhtml#ch03fig07">Figure 3.7</a> shows an example process creation for a bash shell (<code>bash</code>) executing the <code>ls</code> command.</p>
+        <figure class="image-c" id="ch03fig07">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/03fig07.jpg" alt="Images" width="775" height="146">
+        <figcaption>
+        <p class="title-f"><span class="pd_ashf">Figure 3.7</span> Process creation</p>
+        </figcaption>
+        </figure>
+        <p class="noindent">The fork(2) or clone(2) syscall may use a copy-on-write (COW) strategy to improve performance. This adds references to the previous address space rather than copying all of the contents. Once either process modifies the multiple-referenced memory, a separate copy is then made for the modifications. This strategy either defers or eliminates the need to copy memory, reducing memory and CPU usage.</p>
+        </section>
+        <section>
+        <h5 class="h5" id="ch03lev3_8">Process Life Cycle</h5>
+        <p class="noindent">The life cycle of a process is shown in <a href="ch03.xhtml#ch03fig08">Figure 3.8</a>. This is a simplified diagram; for modern multithreaded operating systems it is the threads that are scheduled and run, and there are some additional implementation details regarding how these map to process states (see <a href="ch05.xhtml#ch05fig06">Figures 5.6</a> and <a href="ch05.xhtml#ch05fig07">5.7</a> in <a href="ch05.xhtml#ch05">Chapter 5</a> for more detailed diagrams).</p>
+        <figure class="image-c" id="ch03fig08">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/03fig08.jpg" alt="Images" width="775" height="219">
+        <figcaption>
+        <p class="title-f"><span epub:type="pagebreak" id="page_101"></span><span class="pd_ashf">Figure 3.8</span> Process life cycle</p>
+        </figcaption>
+        </figure>
+        <p class="noindent">The on-proc state is for running on a processor (CPU). The ready-to-run state is when the process is runnable but is waiting on a CPU run queue for its turn on a CPU. Most I/O will block, putting the process in the sleep state until the I/O completes and the process is woken up. The zombie state occurs during process termination, when the process waits until its process status has been reaped by the parent process or until it is removed by the kernel.</p>
+        </section>
+        <section>
+        <h5 class="h5" id="ch03lev3_9">Process Environment</h5>
+        <p class="noindent">The process environment is shown in <a href="ch03.xhtml#ch03fig09">Figure 3.9</a>; it consists of data in the address space of the process and metadata (context) in the kernel.</p>
+        <figure class="image-c" id="ch03fig09">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/03fig09.jpg" alt="Images" width="775" height="367">
+        <figcaption>
+        <p class="title-f"><span class="pd_ashf">Figure 3.9</span> Process environment</p>
+        </figcaption>
+        </figure>
+        <p class="noindent">The kernel context consists of various process properties and statistics: its process ID (PID), the owner’s user ID (UID), and various times. These are commonly examined via the ps(1) and top(1) commands. It also has a set of file descriptors, which refer to open files and which are (usually) shared between threads.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_102"></span>This example pictures two threads, each containing some metadata, including a priority in kernel context<sup><a id="ch03fn8a" href="ch03.xhtml#ch03fn8">8</a></sup> and user stack in the user address space. The diagram is not drawn to scale; the kernel context is very small compared to the process address space.</p>
+        <p class="footnote"><sup><a id="ch03fn8" href="ch03.xhtml#ch03fn8a">8</a></sup>The kernel context may be its own full address space (as with SPARC processors) or a restricted range that does not overlap with user addresses (as with x86 processors).</p>
+        <p class="noindent">The user address space contains memory segments of the process: executable, libraries, and heap. For more details, see <a href="ch07.xhtml#ch07">Chapter 7</a>, <a href="ch07.xhtml#ch07">Memory</a>.</p>
+        <p class="noindent">On Linux, each thread has its own user stack and a kernel exception stack<sup><a id="ch03fn9a" href="ch03.xhtml#ch03fn9">9</a></sup> <a href="ch03.xhtml#ch03ref43">[Owens 20]</a>.</p>
+        <p class="footnote"><sup><a id="ch03fn9" href="ch03.xhtml#ch03fn9a">9</a></sup>There are also special-purpose kernel stacks per-CPU, including those used for interrupts.</p>
+        </section>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev2sec7">3.2.7 Stacks</h4>
+        <p class="noindent">A stack is a memory storage area for temporary data, organized as a last-in, first-out (LIFO) list. It is used to store less important data than that which fits in the CPU register set. When a function is called, the return address is saved to the stack. Some registers may be saved to the stack as well if their values are needed after the call.<sup><a id="ch03fn10a" href="ch03.xhtml#ch03fn10">10</a></sup> When the called function has finished, it restores any required registers and, by fetching the return address from the stack, passes execution to the calling function. The stack can also be used for passing parameters to functions. The set of data on a stack related to a function’s execution is called a <em><a href="gloss.xhtml#glo_162">stack frame</a></em>.</p>
+        <p class="footnote"><sup><a id="ch03fn10" href="ch03.xhtml#ch03fn10a">10</a></sup>The calling convention from the processor ABI specifies which registers should retain their values after a function call (they are <em>non-volatile</em>) and are saved to the stack by the called function (“callee-saves”). Other registers are <em>volatile</em> and may be clobbered by the called function; if the caller wishes to retain their values, it must save them to the stack (“caller-saves”).</p>
+        <p class="noindent">The call path to the currently executing function can be seen by examining the saved return addresses across all the stack frames in the thread’s stack (a process called <em>stack walking</em>).<sup><a id="ch03fn11a" href="ch03.xhtml#ch03fn11">11</a></sup> This call path is referred to as a <em>stack back trace</em> or a <em><a href="gloss.xhtml#glo_163">stack trace</a></em>. In performance engineering it is often called just a “stack” for short. These stacks can answer <em>why</em> something is executing, and are an invaluable tool for debugging and performance analysis.</p>
+        <p class="footnote"><sup><a id="ch03fn11" href="ch03.xhtml#ch03fn11a">11</a></sup>For more detail on stack walking and the different possible techniques (which include: frame-pointer based, debuginfo, last branch record, and ORC) see <a href="ch02.xhtml#ch02">Chapter 2</a>, Tech, <a href="ch02.xhtml#ch02lev4">Section 2.4</a>, Stack Trace Walking, of <em>BPF Performance Tools</em> [Gregg 19].</p>
+        <section>
+        <h5 class="h5" id="ch03lev3_10">How to Read a Stack</h5>
+        <p class="noindent">The following example kernel stack (from Linux) shows the path taken for TCP transmission, as printed by a tracing tool:</p>
+        <p class="codelink"><a href="ch03_images.xhtml#pg102a" id="pg102">Click here to view code image</a></p>
+        <pre class="pretb">    tcp_sendmsg+1
+            sock_sendmsg+62
+            SYSC_sendto+319
+            sys_sendto+14
+            do_syscall_64+115
+            entry_SYSCALL_64_after_hwframe+61</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_103"></span>Stacks are usually printed in leaf-to-root order, so the first line printed is the function currently executing, and beneath it is its parent, then its grandparent, and so on. In this example, the tcp_ sendmsg() function was executing, called by sock_sendmsg(). In this stack example, to the right of the function name is the instruction offset, showing the location within a function. The first line shows tcp_sendmsg() offset 1 (which would be the second instruction), called by sock_sendmsg() offset 62. This offset is only useful if you desire a low-level understanding of the code path taken, down to the instruction level.</p>
+        <p class="noindent">By reading down the stack, the full ancestry can be seen: function, parent, grandparent, and so on. Or, by reading bottom-up, you can follow the path of execution to the current function: how we got here.</p>
+        <p class="noindent">Since stacks expose the internal path taken through source code, there is typically no documentation for these functions other than the code itself. For this example stack, this is the Linux kernel source code. An exception to this is where functions are part of an API and are documented.</p>
+        </section>
+        <section>
+        <h5 class="h5" id="ch03lev3_11">User and Kernel Stacks</h5>
+        <p class="noindent">While executing a system call, a process thread has two stacks: a user-level stack and a kernel-level stack. Their scope is pictured in <a href="ch03.xhtml#ch03fig10">Figure 3.10</a>.</p>
+        <figure class="image-c" id="ch03fig10">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/03fig10.jpg" alt="Images" width="775" height="291">
+        <figcaption>
+        <p class="title-f"><span class="pd_ashf">Figure 3.10</span> User and kernel stacks</p>
+        </figcaption>
+        </figure>
+        <p class="noindent">The user-level stack of the blocked thread does not change for the duration of a system call, as the thread is using a separate kernel-level stack while executing in kernel context. (An exception to this may be signal handlers, which may borrow a user-level stack depending on their configuration.)</p>
+        <p class="noindent">On Linux, there are multiple kernel stacks for different purposes. Syscalls use a kernel exception stack associated with each thread, and there are also stacks associated with soft and hard interrupts (IRQs) <a href="ch03.xhtml#ch03ref11">[Bovet 05]</a>.</p>
+        </section>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev2sec8"><span epub:type="pagebreak" id="page_104"></span>3.2.8 Virtual Memory</h4>
+        <p class="noindent">Virtual memory is an abstraction of main memory, providing processes and the kernel with their own, almost infinite,<sup><a id="ch03fn12a" href="ch03.xhtml#ch03fn12">12</a></sup> private view of main memory. It supports multitasking, allowing processes and the kernel to operate on their own private address spaces without worrying about contention. It also supports oversubscription of main memory, allowing the operating system to transparently map virtual memory between main memory and secondary storage (disks) as needed.</p>
+        <p class="footnote"><sup><a id="ch03fn12" href="ch03.xhtml#ch03fn12a">12</a></sup>On 64-bit processors, anyway. For 32-bit processors, virtual memory is limited to 4 Gbytes due to the limits of a 32-bit address (and the kernel may limit it to an even smaller amount).</p>
+        <p class="noindent">The role of virtual memory is shown in <a href="ch03.xhtml#ch03fig11">Figure 3.11</a>. Primary memory is main memory (RAM), and secondary memory is the storage devices (disks).</p>
+        <figure class="image-c" id="ch03fig11">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/03fig11.jpg" alt="Images" width="775" height="358">
+        <figcaption>
+        <p class="title-f"><span class="pd_ashf">Figure 3.11</span> Virtual memory address spaces<sup><a id="ch03fn13a" href="ch03.xhtml#ch03fn13">13</a></sup></p>
+        </figcaption>
+        </figure>
+        <p class="footnote"><sup><a id="ch03fn13" href="ch03.xhtml#ch03fn13a">13</a></sup>Process virtual memory is shown as starting from 0 as a simplification. Kernels today commonly begin a process’s virtual address space at some offset such as 0x10000 or a random address. One benefit is that a common programming error of dereferencing a NULL (0) pointer will then cause the program to crash (SIGSEGV) as the 0 address is invalid. This is generally preferable to dereferencing data at address 0 by mistake, as the program would continue to run with corrupt data.</p>
+        <p class="noindent">Virtual memory is made possible by support in both the processor and operating system. It is not real memory, and most operating systems map virtual memory to real memory only on demand, when the memory is first populated (written).</p>
+        <p class="noindent">See <a href="ch07.xhtml#ch07">Chapter 7</a>, <a href="ch07.xhtml#ch07">Memory</a>, for more about virtual memory.</p>
+        <section>
+        <h5 class="h5" id="ch03lev3_12">Memory Management</h5>
+        <p class="noindent">While virtual memory allows main memory to be extended using secondary storage, the kernel strives to keep the most active data in main memory. There are two kernel schemes for this:</p>
+        <ul class="sq">
+        <li><p class="bull"><strong>Process swapping</strong> moves entire processes between main memory and secondary storage.</p></li>
+        <li><p class="bull"><strong>Paging</strong> moves small units of memory called <a href="gloss.xhtml#glo_116"><em>pages</em></a> (e.g., 4 Kbytes).</p></li>
+        </ul>
+        <p class="noindent"><span epub:type="pagebreak" id="page_105"></span>Process swapping is the original Unix method and can cause severe performance loss. Paging is more efficient and was added to BSD with the introduction of paged virtual memory. In both cases, least recently used (or not recently used) memory is moved to secondary storage and moved back to main memory only when needed again.</p>
+        <p class="noindent">In Linux, the term <em>swapping</em> is used to refer to <em>paging</em>. The Linux kernel does not support the (older) Unix-style process swapping of entire threads and processes.</p>
+        <p class="noindent">For more on paging and swapping, see <a href="ch07.xhtml#ch07">Chapter 7</a>, <a href="ch07.xhtml#ch07">Memory</a>.</p>
+        </section>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev2sec9">3.2.9 Schedulers</h4>
+        <p class="noindent">Unix and its derivatives are time-sharing systems, allowing multiple processes to run at the same time by dividing execution time among them. The scheduling of processes on processors and individual CPUs is performed by the <em>scheduler</em>, a key component of the operating system kernel. The role of the scheduler is pictured in <a href="ch03.xhtml#ch03fig12">Figure 3.12</a>, which shows that the scheduler operates on threads (in Linux, <em>tasks</em>), mapping them to CPUs.</p>
+        <figure class="image-c" id="ch03fig12">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/03fig12.jpg" alt="Images" width="775" height="361">
+        <figcaption>
+        <p class="title-f"><span class="pd_ashf">Figure 3.12</span> Kernel scheduler</p>
+        </figcaption>
+        </figure>
+        <p class="noindent">The basic intent is to divide CPU time among the active processes and threads, and to maintain a notion of <em>priority</em> so that more important work can execute sooner. The scheduler keeps track of all threads in the ready-to-run state, traditionally on per-priority queues called <em>run queues</em> <a href="ch03.xhtml#ch03ref4">[Bach 86]</a>. Modern kernels may implement these queues per CPU and may also use other data structures, apart from queues, to track the threads. When more threads want to run than there are available CPUs, the lower-priority threads wait their turn. Most kernel threads run with a higher priority than user-level processes.</p>
+        <p class="noindent">Process priority can be modified dynamically by the scheduler to improve the performance of certain workloads. Workloads can be categorized as either:</p>
+        <ul class="sq">
+        <li><p class="bull"><span epub:type="pagebreak" id="page_106"></span><strong>CPU-bound</strong>: Applications that perform heavy compute, for example, scientific and mathematical analysis, which are expected to have long runtimes (seconds, minutes, hours, days, or even longer). These become limited by CPU resources.</p></li>
+        <li><p class="bull"><strong>I/O-bound</strong>: Applications that perform I/O, with little compute, for example, web servers, file servers, and interactive shells, where low-latency responses are desirable. When their load increases, they are limited by I/O to storage or network resources.</p></li>
+        </ul>
+        <p class="noindent">A commonly used scheduling policy dating back to UNIX identifies CPU-bound workloads and decreases their priority, allowing I/O-bound workloads—where low-latency responses are more desirable—to run sooner. This can be achieved by calculating the ratio of recent compute time (time executing on-CPU) to real time (elapsed time) and decreasing the priority of processes with a high (compute) ratio [Thompson 78]. This mechanism gives preference to shorter-running processes, which are usually those performing I/O, including human interactive processes.</p>
+        <p class="noindent">Modern kernels support multiple <em>scheduling classes</em> or <em>scheduling policies</em> (Linux) that apply different algorithms for managing priority and runnable threads. These may include <em>real-time scheduling</em>, which uses a priority higher than all noncritical work, including kernel threads. Along with preemption support (described later), real-time scheduling provides predictable and low-latency scheduling for systems that require it.</p>
+        <p class="noindent">See <a href="ch06.xhtml#ch06">Chapter 6</a>, <a href="ch06.xhtml#ch06">CPUs</a>, for more about the kernel scheduler and other scheduling algorithms.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev2sec10">3.2.10 File Systems</h4>
+        <p class="noindent">File systems are an organization of data as files and directories. They have a file-based interface for accessing them, usually based on the POSIX standard. Kernels support multiple file system types and instances. Providing a file system is one of the most important roles of the operating system, once described as <em>the</em> most important role <a href="ch03.xhtml#ch03ref2">[Ritchie 74]</a>.</p>
+        <p class="noindent">The operating system provides a global file namespace, organized as a top-down tree topology starting with the root level (“/”). File systems join the tree by <em>mounting</em>, attaching their own tree to a directory (the <em>mount point</em>). This allows the end user to navigate the file namespace transparently, regardless of the underlying file system type.</p>
+        <p class="noindent">A typical operating system may be organized as shown in <a href="ch03.xhtml#ch03fig13">Figure 3.13</a>.</p>
+        <figure class="image-c" id="ch03fig13">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/03fig13.jpg" alt="Images" width="775" height="260">
+        <figcaption>
+        <p class="title-f"><span class="pd_ashf">Figure 3.13</span> Operating system file hierarchy</p>
+        </figcaption>
+        </figure>
+        <p class="noindent"><span epub:type="pagebreak" id="page_107"></span>The top-level directories include <code>etc</code> for system configuration files, <code>usr</code> for system-supplied user-level programs and libraries, <code>dev</code> for device nodes, <code>var</code> for varying files including system logs, <code>tmp</code> for temporary files, and <code>home</code> for user home directories. In the example pictured, <code>var</code> and <code>home</code> may reside on their own file system instances and separate storage devices; however, they can be accessed like any other component of the tree.</p>
+        <p class="noindent">Most file system types use storage devices (disks) to store their contents. Some file system types are dynamically created by the kernel, such as <code>/proc</code> and <code>/dev</code>.</p>
+        <p class="noindent">Kernels typically provide different ways to isolate processes to a portion of the file namespace, including chroot(8), and, on Linux, mount namespaces, commonly used for containers (see <a href="ch11.xhtml#ch11">Chapter 11</a>, <a href="ch11.xhtml#ch11">Cloud Computing</a>).</p>
+        <section>
+        <h5 class="h5" id="ch03lev3_13">VFS</h5>
+        <p class="noindent">The virtual file system (VFS) is a kernel interface to abstract file system types, originally developed by Sun Microsystems so that the Unix file system (UFS) and the Network file system (NFS) could more easily coexist. Its role is pictured in <a href="ch03.xhtml#ch03fig14">Figure 3.14</a>.</p>
+        <figure class="image-c" id="ch03fig14">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/03fig14.jpg" alt="Images" width="775" height="275">
+        <figcaption>
+        <p class="title-f"><span class="pd_ashf">Figure 3.14</span> Virtual file system</p>
+        </figcaption>
+        </figure>
+        <p class="noindent">The VFS interface makes it easier to add new file system types to the kernel. It also supports providing the global file namespace, pictured earlier, so that user programs and applications can access various file system types transparently.</p>
+        </section>
+        <section>
+        <h5 class="h5" id="ch03lev3_14">I/O Stack</h5>
+        <p class="noindent">For storage-device-based file systems, the path from user-level software to the storage device is called the <em>I/O stack</em>. This is a subset of the entire software stack shown earlier. A generic I/O stack is shown in <a href="ch03.xhtml#ch03fig15">Figure 3.15</a>.</p>
+        <p class="noindent"><a href="ch03.xhtml#ch03fig15">Figure 3.15</a> shows a direct path to block devices on the left, bypassing the file system. This path is sometimes used by administrative tools and databases.</p>
+        <p class="noindent">File systems and their performance are covered in detail in <a href="ch08.xhtml#ch08">Chapter 8</a>, <a href="ch08.xhtml#ch08">File Systems</a>, and the storage devices they are built upon are covered in <a href="ch09.xhtml#ch09">Chapter 9</a>, <a href="ch09.xhtml#ch09">Disks</a>.</p>
+        <figure class="image-c" id="ch03fig15">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/03fig15.jpg" alt="Images" width="775" height="477">
+        <figcaption>
+        <p class="title-f"><span epub:type="pagebreak" id="page_108"></span><span class="pd_ashf">Figure 3.15</span> Generic I/O stack</p>
+        </figcaption>
+        </figure>
+        </section>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev2sec11">3.2.11 Caching</h4>
+        <p class="noindent">Since disk I/O has historically had high latency, many layers of the software stack attempt to avoid it by caching reads and buffering writes. Caches may include those shown in <a href="ch03.xhtml#ch03tab02">Table 3.2</a> (in the order in which they are checked).</p>
+        <figure class="table" id="ch03tab02">
+        <figcaption>
+        <p class="title-t"><span class="pd_ashf">Table 3.2</span> <strong>Example cache layers for disk I/O</strong></p>
+        </figcaption>
+        <table class="all">
+        <thead>
+        <tr>
+        <th class="th"><p class="thead">&nbsp;</p></th>
+        <th class="th"><p class="thead"><strong>Cache</strong></p></th>
+        <th class="th"><p class="thead"><strong>Examples</strong></p></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td class="border"><p class="tab-para">1</p></td>
+        <td class="border"><p class="tab-para">Client cache</p></td>
+        <td class="border"><p class="tab-para">Web browser cache</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">2</p></td>
+        <td class="border"><p class="tab-para">Application cache</p></td>
+        <td class="border"><p class="tab-para">—</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">3</p></td>
+        <td class="border"><p class="tab-para">Web server cache</p></td>
+        <td class="border"><p class="tab-para">Apache cache</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">4</p></td>
+        <td class="border"><p class="tab-para">Caching server</p></td>
+        <td class="border"><p class="tab-para">memcached</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">5</p></td>
+        <td class="border"><p class="tab-para">Database cache</p></td>
+        <td class="border"><p class="tab-para">MySQL buffer cache</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">6</p></td>
+        <td class="border"><p class="tab-para">Directory cache</p></td>
+        <td class="border"><p class="tab-para">dcache</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">7</p></td>
+        <td class="border"><p class="tab-para">File metadata cache</p></td>
+        <td class="border"><p class="tab-para">inode cache</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">8</p></td>
+        <td class="border"><p class="tab-para">Operating system buffer cache</p></td>
+        <td class="border"><p class="tab-para">Buffer cache</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">9</p></td>
+        <td class="border"><p class="tab-para">File system primary cache</p></td>
+        <td class="border"><p class="tab-para">Page cache, ZFS ARC</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">10</p></td>
+        <td class="border"><p class="tab-para">File system secondary cache</p></td>
+        <td class="border"><p class="tab-para">ZFS L2ARC</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">11</p></td>
+        <td class="border"><p class="tab-para">Device cache</p></td>
+        <td class="border"><p class="tab-para">ZFS vdev</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><span epub:type="pagebreak" id="page_109"></span>12</p></td>
+        <td class="border"><p class="tab-para">Block cache</p></td>
+        <td class="border"><p class="tab-para">Buffer cache</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">13</p></td>
+        <td class="border"><p class="tab-para">Disk controller cache</p></td>
+        <td class="border"><p class="tab-para">RAID card cache</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">14</p></td>
+        <td class="border"><p class="tab-para">Storage array cache</p></td>
+        <td class="border"><p class="tab-para">—</p></td>
+        </tr>
+        <tr>
+        <td><p class="tab-para">15</p></td>
+        <td><p class="tab-para">On-disk cache</p></td>
+        <td><p class="tab-para">—</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </figure>
+        <p class="noindent">For example, the buffer cache is an area of main memory that stores recently used disk blocks. Disk reads may be served immediately from the cache if the requested block is present, avoiding the high latency of disk I/O.</p>
+        <p class="noindent">The types of caches present will vary based on the system and environment.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev2sec12">3.2.12 Networking</h4>
+        <p class="noindent">Modern kernels provide a stack of built-in network protocols, allowing the system to communicate via the network and take part in distributed system environments. This is referred to as the <em>networking stack</em> or the <em>TCP/IP stack</em>, after the commonly used TCP and IP protocols. User-level applications access the network through programmable endpoints called <em>sockets</em>.</p>
+        <p class="noindent">The physical device that connects to the network is the <em>network interface</em> and is usually provided on a <em>network interface card</em> (NIC). A historical duty of the system administrator was to associate an IP address with a network interface, so that it can communicate with the network; these mappings are now typically automated via the dynamic host configuration protocol (DHCP).</p>
+        <p class="noindent">Network protocols do not change often, but there is a new transport protocol seeing growing adoption: QUIC (summarized in <a href="ch10.xhtml#ch10">Chapter 10</a>, <a href="ch10.xhtml#ch10">Network</a>). Protocol enhancements and options change more often, such as newer TCP options and TCP congestion control algorithms. Newer protocols and enhancements typically require kernel support (with the exception of user-space protocol implementations). Another change is support for different network interface cards, which require new device drivers for the kernel.</p>
+        <p class="noindent">For more on networking and network performance, see <a href="ch10.xhtml#ch10">Chapter 10</a>, <a href="ch10.xhtml#ch10">Network</a>.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev2sec13">3.2.13 Device Drivers</h4>
+        <p class="noindent">A kernel must communicate with a wide variety of physical devices. Such communication is achieved using <em>device drivers</em>: kernel software for device management and I/O. Device drivers are often provided by the vendors who develop the hardware devices. Some kernels support <em>pluggable</em> device drivers, which can be loaded and unloaded without requiring a system restart.</p>
+        <p class="noindent">Device drivers can provide <em>character</em> and/or <em>block</em> interfaces to their devices. Character devices, also called <em>raw devices</em>, provide unbuffered sequential access of any I/O size down to a single character, depending on the device. Such devices include keyboards and serial ports (and in original Unix, paper tape and line printer devices).</p>
+        <p class="noindent">Block devices perform I/O in units of blocks, which have historically been 512 bytes each. These can be accessed randomly based on their block offset, which begins at 0 at the start of the block <span epub:type="pagebreak" id="page_110"></span>device. In original Unix, the block device interface also provided caching of block device buffers to improve performance, in an area of main memory called the <em>buffer cache</em>. In Linux, this buffer cache is now part of the page cache.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev2sec14">3.2.14 Multiprocessor</h4>
+        <p class="noindent">Multiprocessor support allows the operating system to use multiple CPU instances to execute work in parallel. It is usually implemented as <em>symmetric multiprocessing</em> (SMP) where all CPUs are treated equally. This was technically difficult to accomplish, posing problems for accessing and sharing memory and CPUs among threads running in parallel. On multiprocessor systems there may also be banks of main memory connected to different sockets (physical processors) in a <em>non-uniform memory access</em> (NUMA) architecture, which also pose performance challenges. See <a href="ch06.xhtml#ch06">Chapter 6</a>, <a href="ch06.xhtml#ch06">CPUs</a>, for details, including scheduling and thread synchronization, and <a href="ch07.xhtml#ch07">Chapter 7</a>, <a href="ch07.xhtml#ch07">Memory</a>, for details on memory access and architectures.</p>
+        <section>
+        <h5 class="h5" id="ch03lev3_15">IPIs</h5>
+        <p class="noindent">For a multiprocessor system, there are times when CPUs need to coordinate, such as for cache coherency of memory translation entries (informing other CPUs that an entry, if cached, is now stale). A CPU can request other CPUs, or all CPUs, to immediately perform such work using an inter-processor interrupt (IPI) (also known as an <em>SMP call</em> or a <em><a href="gloss.xhtml#glo_038">CPU cross call</a></em>). IPIs are processor interrupts designed to be executed quickly, to minimize interruption of other threads.</p>
+        <p class="noindent">IPIs can also be used by preemption.</p>
+        </section>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev2sec15">3.2.15 Preemption</h4>
+        <p class="noindent">Kernel preemption support allows high-priority user-level threads to interrupt the kernel and execute. This enables real-time systems that can execute work within a given time constraint, including systems in use by aircraft and medical devices. A kernel that supports preemption is said to be <em>fully preemptible</em>, although practically it will still have some small critical code paths that cannot be interrupted.</p>
+        <p class="noindent">Another approach supported by Linux is <em>voluntary kernel preemption</em>, where logical stopping points in the kernel code can check and perform preemption. This avoids some of the complexity of supporting a fully preemptive kernel and provides low-latency preemption for common workloads. Voluntary kernel preemption is commonly enabled in Linux via the CONFIG_PREEMPT_VOLUNTARY Kconfig option; there is also CONFIG_PREEMPT to allow all kernel code (except critical sections) to be preemptible, and CONFIG_PREEMPT_NONE to disable preemption, improving throughput at the cost of higher latencies.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev2sec16">3.2.16 Resource Management</h4>
+        <p class="noindent">The operating system may provide various configurable controls for fine-tuning access to system resources, such as CPUs, memory, disk, and the network. These are <em>resource controls</em> and can be used to manage performance on systems that run different applications or host multiple tenants (cloud computing). Such controls may impose fixed limits per process (or groups of processes) for resource usage, or a more flexible approach—allowing spare usage to be shared among them.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_111"></span>Early versions of Unix and BSD had basic per-process resource controls, including CPU priorities with nice(1), and some resource limits with ulimit(1).</p>
+        <p class="noindent">For Linux, control groups (cgroups) have been developed and integrated in Linux 2.6.24 (2008), and various additional controls have been added since then. These are documented in the kernel source under Documentation/cgroups. There is also an improved unified hierarchical scheme called <em>cgroup v2</em>, made available in Linux 4.5 (2016) and documented in Documentation/admin-guide/cgroup-v2.rst.</p>
+        <p class="noindent">Specific resource controls are mentioned in later chapters as appropriate. An example use case is described in <a href="ch11.xhtml#ch11">Chapter 11</a>, <a href="ch11.xhtml#ch11">Cloud Computing</a>, for managing the performance of OS-virtualized tenants.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev2sec17">3.2.17 Observability</h4>
+        <p class="noindent">The operating system consists of the kernel, libraries, and programs. These programs include tools to observe system activity and analyze performance, typically installed in /usr/bin and /usr/sbin. Third-party tools may also be installed on the system to provide additional observability.</p>
+        <p class="noindent">Observability tools, and the operating system components upon which they are built, are introduced in <a href="ch04.xhtml#ch04">Chapter 4</a>.</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch03lev3">3.3 Kernels</h3>
+        <p class="noindent">The following sections discuss Unix-like kernel implementation details with a focus on performance. As background, the performance features of earlier kernels are discussed: Unix, BSD, and Solaris. The Linux kernel is discussed in more detail in <a href="ch03.xhtml#ch03lev4">Section 3.4</a>, <a href="ch03.xhtml#ch03lev4">Linux</a>.</p>
+        <p class="noindent">Kernel differences can include the file systems they support (see <a href="ch08.xhtml#ch08">Chapter 8</a>, <a href="ch08.xhtml#ch08">File Systems</a>), the system call (syscall) interfaces, network stack architecture, real-time support, and scheduling algorithms for CPUs, disk I/O, and networking.</p>
+        <p class="noindent"><a href="ch03.xhtml#ch03tab03">Table 3.3</a> shows Linux and other kernel versions for comparison, with syscall counts based on the number of entries in section 2 of the OS man pages. This is a crude comparison, but enough to see some differences.</p>
+        <figure class="table" id="ch03tab03">
+        <figcaption>
+        <p class="title-t"><span class="pd_ashf">Table 3.3</span> <strong>Kernel versions with documented syscall counts</strong></p>
+        </figcaption>
+        <table class="all">
+        <thead>
+        <tr>
+        <th class="th"><p class="thead"><strong>Kernel Version</strong></p></th>
+        <th class="th"><p class="thead"><strong>Syscalls</strong></p></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td class="border"><p class="tab-para">UNIX Version 7</p></td>
+        <td class="border"><p class="tab-para">48</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">SunOS (Solaris) 5.11</p></td>
+        <td class="border"><p class="tab-para">142</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">FreeBSD 12.0</p></td>
+        <td class="border"><p class="tab-para">222</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">Linux 2.6.32-21-server</p></td>
+        <td class="border"><p class="tab-para">408</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">Linux 2.6.32-220.el6.x86_64</p></td>
+        <td class="border"><p class="tab-para">427</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">Linux 3.2.6-3.fc16.x86_64</p></td>
+        <td class="border"><p class="tab-para">431</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">Linux 4.15.0-66-generic</p></td>
+        <td class="border"><p class="tab-para">480</p></td>
+        </tr>
+        <tr>
+        <td><p class="tab-para">Linux 5.3.0-1010-aws</p></td>
+        <td><p class="tab-para">493</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </figure>
+        <p><span epub:type="pagebreak" id="page_112"></span></p>
+        <p class="noindent">These are just the syscalls with documentation; more are usually provided by the kernel for private use by operating system software.</p>
+        <p class="uln">UNIX had twenty system calls at the very first, and today Linux—which is a direct descendant—has over a thousand . . . I just worry about the complexity and the size of things that grow.</p>
+        <p class="uln">Ken Thompson, ACM Turing Centenary Celebration, 2012</p>
+        <p class="noindent">Linux is growing in complexity and exposing this complexity to user-land by adding new system calls or through other kernel interfaces. Extra complexity makes learning, programming, and debugging more time-consuming.</p>
+        <section>
+        <h4 class="h4" id="ch03lev3sec1">3.3.1 Unix</h4>
+        <p class="noindent">Unix was developed by Ken Thompson, Dennis Ritchie, and others at AT&amp;T Bell Labs during 1969 and the years that followed. Its exact origin was described in <em>The UNIX Time-Sharing System</em> [Ritchie 74]:</p>
+        <p class="uln">The first version was written when one of us (Thompson), dissatisfied with the available computer facilities, discovered a little-used PDP-7 and set out to create a more hospitable environment.</p>
+        <p class="noindent">The developers of UNIX had previously worked on the Multiplexed Information and Computer Services (Multics) operating system. UNIX was developed as a <em>lightweight</em> multitasked operating system and kernel, originally named UNiplexed Information and Computing Service (UNICS), as a pun on Multics. From <em>UNIX Implementation</em> <a href="ch03.xhtml#ch03ref3">[Thompson 78]</a>:</p>
+        <p class="uln">The kernel is the only UNIX code that cannot be substituted by a user to his own liking. For this reason, the kernel should make as few real decisions as possible. This does not mean to allow the user a million options to do the same thing. Rather, it means to allow only one way to do one thing, but have that way be the least-common divisor of all the options that might have been provided.</p>
+        <p class="noindent">While the kernel was small, it did provide some features for high performance. Processes had scheduler priorities, reducing run-queue latency for higher-priority work. Disk I/O was performed in large (512-byte) blocks for efficiency and cached in an in-memory per-device buffer cache. Idle processes could be swapped out to storage, allowing busier processes to run in main memory. And the system was, of course, multitasking—allowing multiple processes to run concurrently, improving job throughput.</p>
+        <p class="noindent">To support networking, multiple file systems, paging, and other features we now consider standard, the kernel had to grow. And with multiple derivatives, including BSD, SunOS (Solaris), and later Linux, kernel performance became competitive, which drove the addition of more features and code.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev3sec2"><span epub:type="pagebreak" id="page_113"></span>3.3.2 BSD</h4>
+        <p class="noindent">The Berkeley Software Distribution (BSD) OS began as enhancements to Unix 6th Edition at the University of California, Berkeley, and was first released in 1978. As the original Unix code required an AT&amp;T software license, by the early 1990s this Unix code had been rewritten in BSD under a new BSD license, allowing free distributions including FreeBSD.</p>
+        <p class="noindent">Major BSD kernel developments, especially performance-related, include:</p>
+        <ul class="sq">
+        <li><p class="bull"><strong>Paged virtual memory</strong>: BSD brought paged virtual memory to Unix: instead of swapping out entire processes to free main memory, smaller least-recently-used chunks of memory could be moved (paged). See <a href="ch07.xhtml#ch07">Chapter 7</a>, <a href="ch07.xhtml#ch07">Memory</a>, <a href="ch07.xhtml#ch07lev2sec2">Section 7.2.2</a>, <a href="ch07.xhtml#ch07lev2sec2">Paging</a>.</p></li>
+        <li><p class="bull"><strong>Demand paging</strong>: This defers the mapping of physical memory to virtual memory to when it is first written, avoiding an early and sometimes unnecessary performance and memory cost for pages that may never be used. Demand paging was brought to Unix by BSD. See <a href="ch07.xhtml#ch07">Chapter 7</a>, <a href="ch07.xhtml#ch07">Memory</a>, <a href="ch07.xhtml#ch07lev2sec2">Section 7.2.2</a>, <a href="ch07.xhtml#ch07lev2sec2">Paging</a>.</p></li>
+        <li><p class="bull"><strong>FFS</strong>: The Berkeley Fast File System (FFS) grouped disk allocation into cylinder groups, greatly reducing fragmentation and improving performance on rotational disks, as well as supporting larger disks and other enhancements. FFS became the basis for many other file systems, including UFS. See <a href="ch08.xhtml#ch08">Chapter 8</a>, <a href="ch08.xhtml#ch08">File Systems</a>, <a href="ch08.xhtml#ch08lev4sec5">Section 8.4.5</a>, <a href="ch08.xhtml#ch08lev4sec5">File System Types</a>.</p></li>
+        <li><p class="bull"><strong>TCP/IP network stack</strong>: BSD developed the first high-performance TCP/IP network stack for Unix, included in 4.2BSD (1983). BSD is still known for its performant network stack.</p></li>
+        <li><p class="bull"><strong>Sockets</strong>: Berkeley sockets are an API for connection endpoints. Included in 4.2BSD, they have become a standard for networking. See <a href="ch10.xhtml#ch10">Chapter 10</a>, <a href="ch10.xhtml#ch10">Network</a>.</p></li>
+        <li><p class="bull"><strong>Jails</strong>: Lightweight OS-level virtualization, allowing multiple guests to share one kernel. Jails were first released in FreeBSD 4.0.</p></li>
+        <li><p class="bull"><strong>Kernel TLS</strong>: As transport layer security (TLS) is now commonly used on the Internet, kernel TLS moves much of TLS processing to the kernel, improving performance<sup><a id="ch03fn14a" href="ch03.xhtml#ch03fn14">14</a></sup> <a href="ch03.xhtml#ch03ref26">[Stewart 15]</a>.</p></li>
+        </ul>
+        <p class="footnote"><sup><a id="ch03fn14" href="ch03.xhtml#ch03fn14a">14</a></sup>Developed to improve the performance of the Netflix FreeBSD open connect appliances (OCAs) that are the Netflix CDN.</p>
+        <p class="noindent">While not as popular as Linux, BSD is used for some performance-critical environments, including for the Netflix content delivery network (CDN), as well as file servers from NetApp, Isilon, and others. Netflix summarized FreeBSD performance on its CDN in 2019 as <a href="ch03.xhtml#ch03ref35">[Looney 19]</a>:</p>
+        <p class="uln">“Using FreeBSD and commodity parts, we achieve 90 Gb/s serving TLS-encrypted connections with ~55% CPU on a 16-core 2.6-GHz CPU.”</p>
+        <p class="noindent">There is an excellent reference on the internals of FreeBSD, from the same publisher that brings you this book: <em>The Design and Implementation of the FreeBSD Operating System,</em> 2nd Edition <a href="ch03.xhtml#ch03ref25">[McKusick 15]</a>.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev3sec3"><span epub:type="pagebreak" id="page_114"></span>3.3.3 Solaris</h4>
+        <p class="noindent">Solaris is a Unix and BSD-derived kernel and OS created by Sun Microsystems in 1982. It was originally named SunOS and optimized for Sun workstations. By the late 1980s, AT&amp;T developed a new Unix standard, Unix System V Release 4 (SVR4) based on technologies from SVR3, SunOS, BSD, and Xenix. Sun created a new kernel based on SVR4, and rebranded the OS under the name Solaris.</p>
+        <p class="noindent">Major Solaris kernel developments, especially performance-related, include:</p>
+        <ul class="sq">
+        <li><p class="bull"><strong><a href="gloss.xhtml#glo_196">VFS</a></strong>: The virtual file system (VFS) is an abstraction and interface that allows multiple file systems to easily coexist. Sun initially created it so that NFS and UFS could coexist. VFS is covered in <a href="ch08.xhtml#ch08">Chapter 8</a>, <a href="ch08.xhtml#ch08">File Systems</a>.</p></li>
+        <li><p class="bull"><strong>Fully preemptible kernel</strong>: This provided low latency for high-priority work, including real-time work.</p></li>
+        <li><p class="bull"><strong>Multiprocessor support</strong>: In the early 1990s, Sun invested heavily in multiprocessor operating system support, developing kernel support for both asymmetric and symmetric multiprocessing (ASMP and SMP) <a href="ch03.xhtml#ch03ref10">[Mauro 01]</a>.</p></li>
+        <li><p class="bull"><strong>Slab allocator</strong>: Replacing the SVR4 buddy allocator, the kernel slab memory allocator provided better performance via per-CPU caches of preallocated buffers that could be quickly reused. This allocator type, and its derivatives, has become the standard for kernels including Linux.</p></li>
+        <li><p class="bull"><strong>DTrace</strong>: A static and dynamic tracing framework and tool providing virtually unlimited observability of the entire software stack, in real time and in production. Linux has BPF and bpftrace for this type of observability.</p></li>
+        <li><p class="bull"><strong>Zones</strong>: An OS-based virtualization technology for creating OS instances that share one kernel, similar to the earlier FreeBSD jails technology. OS virtualization is now in widespread use as Linux containers. See <a href="ch11.xhtml#ch11">Chapter 11</a>, <a href="ch11.xhtml#ch11">Cloud Computing</a>.</p></li>
+        <li><p class="bull"><strong><a href="gloss.xhtml#glo_201">ZFS</a></strong>: A file system with enterprise-level features and performance. It is now available for other OSes, including Linux. See <a href="ch08.xhtml#ch08">Chapter 8</a>, <a href="ch08.xhtml#ch08">File Systems</a>.</p></li>
+        </ul>
+        <p class="noindent">Oracle purchased Sun Microsystems in 2010, and Solaris is now called Oracle Solaris. Solaris is covered in more detail in the first edition of this book.</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch03lev4">3.4 Linux</h3>
+        <p class="noindent">Linux was created in 1991 by Linus Torvalds as a free operating system for Intel personal computers. He announced the project in a Usenet post:</p>
+        <p class="uln">I’m doing a (free) operating system (just a hobby, won’t be big and professional like gnu) for 386(486) AT clones. This has been brewing since April, and is starting to get ready. I’d like any feedback on things people like/dislike in minix, as my OS resembles it somewhat (same physical layout of the file-system (due to practical reasons) among other things).</p>
+        <p class="noindent">This refers to the MINIX operating system, which was being developed as a free and small (mini) version of Unix for small computers. BSD was also aiming to provide a free Unix version although at the time it had legal troubles.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_115"></span>The Linux kernel was developed taking general ideas from many ancestors, including:</p>
+        <ul class="sq">
+        <li><p class="bull"><strong>Unix (and Multics)</strong>: Operating system layers, system calls, multitasking, processes, process priorities, virtual memory, global file system, file system permissions, device nodes, buffer cache</p></li>
+        <li><p class="bull"><strong><a href="gloss.xhtml#glo_023">BSD</a></strong>: Paged virtual memory, demand paging, fast file system (FFS), TCP/IP network stack, sockets</p></li>
+        <li><p class="bull"><strong><a href="gloss.xhtml#glo_155">Solaris</a></strong>: VFS, NFS, page cache, unified page cache, slab allocator</p></li>
+        <li><p class="bull"><strong>Plan 9</strong>: Resource forks (rfork), for creating different levels of sharing between processes and threads (<em>tasks</em>)</p></li>
+        </ul>
+        <p class="noindent">Linux now sees widespread use for servers, cloud instances, and embedded devices including mobile phones.</p>
+        <section>
+        <h4 class="h4" id="ch03lev4sec1">3.4.1 Linux Kernel Developments</h4>
+        <p class="noindent">Linux kernel developments, especially those related to performance, include the following (many of these descriptions include the Linux kernel version where they were first introduced):</p>
+        <ul class="sq">
+        <li><p class="bull"><strong>CPU scheduling classes</strong>: Various advanced CPU scheduling algorithms have been developed, including scheduling domains (2.6.7) to make better decisions regarding non-uniform memory access (NUMA). See <a href="ch06.xhtml#ch06">Chapter 6</a>, <a href="ch06.xhtml#ch06">CPUs</a>.</p></li>
+        <li><p class="bull"><strong>I/O scheduling classes</strong>: Different block I/O scheduling algorithms have been developed, including deadline (2.5.39), anticipatory (2.5.75), and completely fair queueing (CFQ) (2.6.6). These are available in kernels up to Linux 5.0, which removed them to support only newer multi-queue I/O schedulers. See <a href="ch09.xhtml#ch09">Chapter 9</a>, <a href="ch09.xhtml#ch09">Disks</a>.</p></li>
+        <li><p class="bull"><strong>TCP congestion algorithms</strong>: Linux allows different TCP congestion control algorithms to be configured, and supports Reno, Cubic, and more in later kernels mentioned in this list. See also <a href="ch10.xhtml#ch10">Chapter 10</a>, <a href="ch10.xhtml#ch10">Network</a>.</p></li>
+        <li><p class="bull"><strong>Overcommit</strong>: Along with the out-of-memory (OOM) killer, this is a strategy for doing more with less main memory. See <a href="ch07.xhtml#ch07">Chapter 7</a>, <a href="ch07.xhtml#ch07">Memory</a>.</p></li>
+        <li><p class="bull"><strong>Futex</strong> (2.5.7): Short for <em>fast user-space mutex</em>, this is used to provide high-performing user-level synchronization primitives.</p></li>
+        <li><p class="bull"><strong>Huge pages</strong> (2.5.36): This provides support for preallocated large memory pages by the kernel and the memory management unit (MMU). See <a href="ch07.xhtml#ch07">Chapter 7</a>, <a href="ch07.xhtml#ch07">Memory</a>.</p></li>
+        <li><p class="bull"><strong>OProfile</strong> (2.5.43): A system profiler for studying CPU usage and other events, for both the kernel and applications.</p></li>
+        <li><p class="bull"><strong><a href="gloss.xhtml#glo_134">RCU</a></strong> (2.5.43): The kernel provides a read-copy update synchronization mechanism that allows multiple reads to occur concurrently with updates, improving performance and scalability for data that is mostly read.</p></li>
+        <li><p class="bull"><strong>epoll</strong> (2.5.46): A system call for efficiently waiting for I/O across many open file descriptors, which improves the performance of server applications.</p></li>
+        <li><p class="bull"><span epub:type="pagebreak" id="page_116"></span><strong>Modular I/O scheduling</strong> (2.6.10): Linux provides pluggable scheduling algorithms for scheduling block device I/O. See <a href="ch09.xhtml#ch09">Chapter 9</a>, <a href="ch09.xhtml#ch09">Disks</a>.</p></li>
+        <li><p class="bull"><strong>DebugFS</strong> (2.6.11): A simple unstructured interface for the kernel to expose data to user level, which is used by some performance tools.</p></li>
+        <li><p class="bull"><strong>Cpusets</strong> (2.6.12): exclusive CPU grouping for processes.</p></li>
+        <li><p class="bull"><strong>Voluntary kernel preemption</strong> (2.6.13): This process provides low-latency scheduling without the complexity of full preemption.</p></li>
+        <li><p class="bull"><strong>inotify</strong> (2.6.13): A framework for monitoring file system events.</p></li>
+        <li><p class="bull"><strong>blktrace</strong> (2.6.17): A framework and tool for tracing block I/O events (later migrated into tracepoints).</p></li>
+        <li><p class="bull"><strong>splice</strong> (2.6.17): A system call to move data quickly between file descriptors and pipes, without a trip through user-space. (The sendfile(2) syscall, which efficiently moves data between file descriptors, is now a wrapper to splice(2).)</p></li>
+        <li><p class="bull"><strong>Delay accounting</strong> (2.6.18): Tracks per-task delay states. See <a href="ch04.xhtml#ch04">Chapter 4</a>, <a href="ch04.xhtml#ch04">Observability Tools</a>.</p></li>
+        <li><p class="bull"><strong>IO accounting</strong> (2.6.20): Measures various storage I/O statistics per process.</p></li>
+        <li><p class="bull"><strong>DynTicks</strong> (2.6.21): Dynamic ticks allow the kernel timer interrupt (clock) to not fire during idle, saving CPU resources and power.</p></li>
+        <li><p class="bull"><strong>SLUB</strong> (2.6.22): A new and simplified version of the slab memory allocator.</p></li>
+        <li><p class="bull"><strong>CFS</strong> (2.6.23): Completely fair scheduler. See <a href="ch06.xhtml#ch06">Chapter 6</a>, <a href="ch06.xhtml#ch06">CPUs</a>.</p></li>
+        <li><p class="bull"><strong>cgroups</strong> (2.6.24): Control groups allow resource usage to be measured and limited for groups of processes.</p></li>
+        <li><p class="bull"><strong>TCP LRO</strong> (2.6.24): TCP Large Receive Offload (LRO) allows network drivers and hardware to aggregate packets into larger sizes before sending them to the network stack. Linux also supports Large Send Offload (LSO) for the send path.</p></li>
+        <li><p class="bull"><strong>latencytop</strong> (2.6.25): Instrumentation and a tool for observing sources of latency in the operating system.</p></li>
+        <li><p class="bull"><strong><a href="gloss.xhtml#glo_181">Tracepoints</a></strong> (2.6.28): Static kernel tracepoints (aka <em>static probes</em>) that instrument logical execution points in the kernel, for use by tracing tools (previously called <em>kernel markers</em>). Tracing tools are introduced in <a href="ch04.xhtml#ch04">Chapter 4</a>, <a href="ch04.xhtml#ch04">Observability Tools</a>.</p></li>
+        <li><p class="bull"><strong>perf</strong> (2.6.31): Linux Performance Events (perf) is a set of tools for performance observability, including CPU performance counter profiling and static and dynamic tracing. See <a href="ch06.xhtml#ch06">Chapter 6</a>, <a href="ch06.xhtml#ch06">CPUs</a>, for an introduction.</p></li>
+        <li><p class="bull"><strong>No BKL</strong> (2.6.37): Final removal of the big kernel lock (BKL) performance bottleneck.</p></li>
+        <li><p class="bull"><strong>Transparent huge pages</strong> (2.6.38): This is a framework to allow easy use of huge (large) memory pages. See <a href="ch07.xhtml#ch07">Chapter 7</a>, <a href="ch07.xhtml#ch07">Memory</a>.</p></li>
+        <li><p class="bull"><strong>KVM</strong>: The Kernel-based Virtual Machine (KVM) technology was developed for Linux by Qumranet, which was purchased by Red Hat in 2008. KVM allows virtual operating system instances to be created, running their own kernel. See <a href="ch11.xhtml#ch11">Chapter 11</a>, <a href="ch11.xhtml#ch11">Cloud Computing</a>.</p></li>
+        <li><p class="bull"><span epub:type="pagebreak" id="page_117"></span><strong>BPF JIT</strong> (3.0): A Just-In-Time (JIT) compiler for the Berkeley Packet Filter (BPF) to improve packet filtering performance by compiling BPF bytecode to native instructions.</p></li>
+        <li><p class="bull"><strong>CFS bandwidth control</strong> (3.2): A CPU scheduling algorithm that supports CPU quotas and throttling.</p></li>
+        <li><p class="bull"><strong>TCP anti-bufferbloat</strong> (3.3+): Various enhancements were made from Linux 3.3 onwards to combat the bufferbloat problem, including Byte Queue Limits (BQL) for the transmission of packet data (3.3), CoDel queue management (3.5), TCP small queues (3.6), and the Proportional Integral controller Enhanced (PIE) packet scheduler (3.14).</p></li>
+        <li><p class="bull"><strong><a href="gloss.xhtml#glo_187">uprobes</a></strong> (3.5): The infrastructure for dynamic tracing of user-level software, used by other tools (perf, SystemTap, etc.).</p></li>
+        <li><p class="bull"><strong>TCP early retransmit</strong> (3.5): RFC 5827 for reducing duplicate acknowledgments required to trigger fast retransmit.</p></li>
+        <li><p class="bull"><strong>TFO</strong> (3.6, 3.7, 3.13): TCP Fast Open (TFO) can reduce the TCP three-way handshake to a single SYN packet with a TFO cookie, improving performance. It was made the default in 3.13.</p></li>
+        <li><p class="bull"><strong>NUMA balancing</strong> (3.8+): This added ways for the kernel to automatically balance memory locations on multi-NUMA systems, reducing CPU interconnect traffic and improving performance.</p></li>
+        <li><p class="bull"><strong>SO_REUSEPORT</strong> (3.9): A socket option to allow multiple listener sockets to bind to the same port, improving multi-threaded scalability.</p></li>
+        <li><p class="bull"><strong>SSD cache devices</strong> (3.9): Device mapper support for an SSD device to be used as a cache for a slower rotating disk.</p></li>
+        <li><p class="bull"><strong>bcache</strong> (3.10): An SSD cache technology for the block interface.</p></li>
+        <li><p class="bull"><strong>TCP TLP</strong> (3.10): TCP Tail Loss Probe (TLP) is a scheme to avoid costly timer-based retransmits by sending new data or the last unacknowledged segment after a shorter probe timeout, to trigger faster recovery.</p></li>
+        <li><p class="bull"><strong>NO_HZ_FULL</strong> (3.10, 3.12): Also known as <em>timerless multitasking</em> or a <em>tickless kernel</em>, this allows non-idle threads to run without clock ticks, avoiding workload perturbations <a href="ch03.xhtml#ch03ref13">[Corbet 13a]</a>.</p></li>
+        <li><p class="bull"><strong>Multiqueue block I/O</strong> (3.13): This provides per-CPU I/O submission queues rather than a single request queue, improving scalability especially for high IOPS SSD devices <a href="ch03.xhtml#ch03ref14">[Corbet 13b]</a>.</p></li>
+        <li><p class="bull"><strong>SCHED_DEADLINE</strong> (3.14): An optional scheduling policy that implements earliest deadline first (EDF) scheduling <a href="ch03.xhtml#ch03ref39">[Linux 20b]</a>.</p></li>
+        <li><p class="bull"><strong>TCP autocorking</strong> (3.14): This allows the kernel to coalesce small writes, reducing the sent packets. An automatic version of the TCP_CORK setsockopt(2).</p></li>
+        <li><p class="bull"><strong>MCS locks and qspinlocks</strong> (3.15): Efficient kernel locks, using techniques such as per-CPU structures. MCS is named after the original lock inventors (Mellor-Crummey and Scott) <a href="ch03.xhtml#ch03ref5">[Mellor-Crummey 91]</a><a href="ch03.xhtml#ch03ref18">[Corbet 14]</a>.</p></li>
+        <li><p class="bull"><span epub:type="pagebreak" id="page_118"></span><strong>Extended BPF</strong> (3.18+): An in-kernel execution environment for running secure kernel-mode programs. The bulk of extended BPF was added in the 4.x series. Support for attached to kprobes was added in 3.19, to tracepoints in 4.7, to software and hardware events in 4.9, and to cgroups in 4.10. Bounded loops were added in 5.3, which also increased the instruction limit to allow complex applications. See <a href="ch03.xhtml#ch03lev4sec4">Section 3.4.4</a>, <a href="ch03.xhtml#ch03lev4sec4">Extended BPF</a>.</p></li>
+        <li><p class="bull"><strong>Overlayfs</strong> (3.18): A union mount file system included in Linux. It creates virtual file systems on top of others, which can also be modified without changing the first. Often used for containers.</p></li>
+        <li><p class="bull"><strong>DCTCP</strong> (3.18): The Data Center TCP (DCTCP) congestion control algorithm, which aims to provide high burst tolerance, low latency, and high throughput <a href="ch03.xhtml#ch03ref16">[Borkmann 14a]</a>.</p></li>
+        <li><p class="bull"><strong>DAX</strong> (4.0): Direct Access (DAX) allows user space to read from persistent-memory storage devices directly, without buffer overheads. ext4 can use DAX.</p></li>
+        <li><p class="bull"><strong>Queued spinlocks</strong> (4.2): Offering better performance under contention, these became the default spinlock kernel implementation in 4.2.</p></li>
+        <li><p class="bull"><strong>TCP lockless listener</strong> (4.4): The TCP listener fast path became lockless, improving performance.</p></li>
+        <li><p class="bull"><strong>cgroup v2</strong> (4.5, 4.15): A unified hierarchy for cgroups was in earlier kernels, and considered stable and exposed in 4.5, named cgroup v2 <a href="ch03.xhtml#ch03ref24">[Heo 15]</a>. The cgroup v2 CPU controller was added in 4.15.</p></li>
+        <li><p class="bull"><strong>epoll scalability</strong> (4.5): For multithreaded scalability, epoll(7) avoids waking up all threads that are waiting on the same file descriptors for each event, which caused a thundering-herd performance issue <a href="ch03.xhtml#ch03ref22">[Corbet 15]</a>.</p></li>
+        <li><p class="bull"><strong>KCM</strong> (4.6): The Kernel Connection Multiplexor (KCM) provides an efficient message-based interface over TCP.</p></li>
+        <li><p class="bull"><strong>TCP NV</strong> (4.8): New Vegas (NV) is a new TCP congestion control algorithm suited for high-bandwidth networks (those that run at 10+ Gbps).</p></li>
+        <li><p class="bull"><strong>XDP</strong> (4.8, 4.18): eXpress Data Path (XDP) is a BPF-based programmable fast path for high-performance networking <a href="ch03.xhtml#ch03ref29">[Herbert 16]</a>. An AF_XDP socket address family that can bypass much of the network stack was added in 4.18.</p></li>
+        <li><p class="bull"><strong>TCP BBR</strong> (4.9): Bottleneck Bandwidth and RTT (BBR) is a TCP congestion control algorithm that provides improved latency and throughput over networks suffering packet loss and bufferbloat <a href="ch03.xhtml#ch03ref27">[Cardwell 16]</a>.</p></li>
+        <li><p class="bull"><strong>Hardware latency tracer</strong> (4.9): An Ftrace tracer that can detect system latency caused by hardware and firmware, including system management interrupts (SMIs).</p></li>
+        <li><p class="bull"><strong>perf c2c</strong> (4.10): The cache-to-cache (c2c) perf subcommand can help identify CPU cache performance issues, including false sharing.</p></li>
+        <li><p class="bull"><strong>Intel CAT</strong> (4.10): Support for Intel Cache Allocation Technology (CAT) allowing tasks to have dedicated CPU cache space. This can be used by containers to help with the noisy neighbor problem.</p></li>
+        <li><p class="bull"><span epub:type="pagebreak" id="page_119"></span><strong>Multiqueue I/O schedulers: BPQ, Kyber</strong> (4.12): The Budget Fair Queueing (BFQ) multiqueue I/O scheduler provides low latency I/O for interactive applications, especially for slower storage devices. BFQ was significantly improved in 5.2. The Kyber I/O scheduler is suited for fast multiqueue devices <a href="ch03.xhtml#ch03ref30">[Corbet 17]</a>.</p></li>
+        <li><p class="bull"><strong>Kernel TLS</strong> (4.13, 4.17): Linux version of kernel TLS <a href="ch03.xhtml#ch03ref23">[Edge 15]</a>.</p></li>
+        <li><p class="bull"><strong>MSG_ZEROCOPY</strong> (4.14): A send(2) flag to avoid extra copies of packet bytes between an application and the network interface <a href="ch03.xhtml#ch03ref40">[Linux 20c]</a>.</p></li>
+        <li><p class="bull"><strong><a href="gloss.xhtml#glo_121">PCID</a></strong> (4.14): Linux added support for process-context ID (PCID), a processor MMU feature to help avoid TLB flushes on context switches. This reduced the performance cost of the kernel page table isolation (KPTI) patches needed to mitigate the meltdown vulnerability. See <a href="ch03.xhtml#ch03lev4sec3">Section 3.4.3</a>, <a href="ch03.xhtml#ch03lev4sec3">KPTI (Meltdown)</a>.</p></li>
+        <li><p class="bull"><strong>PSI</strong> (4.20, 5.2): Pressure stall information (PSI) is a set of new metrics to show time spent stalled on CPU, memory, or I/O. PSI threshold notifications were added in 5.2 to support PSI monitoring.</p></li>
+        <li><p class="bull"><strong>TCP EDT</strong> (4.20): The TCP stack switched to Early Departure Time (EDT): This uses a timing-wheel scheduler for sending packets, providing better CPU efficiency and smaller queues <a href="ch03.xhtml#ch03ref33">[Jacobson 18]</a>.</p></li>
+        <li><p class="bull"><strong>Multi-queue I/O</strong> (5.0): Multi-queue block I/O schedulers became the default in 5.0, and classic schedulers were removed.</p></li>
+        <li><p class="bull"><strong>UDP GRO</strong> (5.0): UDP Generic Receive Offload (GRO) improves performance by allowing packets to be aggregated by the driver and card and passed up stack.</p></li>
+        <li><p class="bull"><strong>io_uring</strong> (5.1): A generic asynchronous interface for fast communication between applications and the kernel, making use of shared ring buffers. Primary uses include fast disk and network I/O.</p></li>
+        <li><p class="bull"><strong>MADV_COLD, MADV_PAGEOUT</strong> (5.4): These madvise(2) flags are hints to the kernel that memory is needed but not anytime soon. MADV_PAGEOUT is also a hint that memory can be reclaimed immediately. These are especially useful for memory-constrained embedded Linux devices.</p></li>
+        <li><p class="bull"><strong>MultiPath TCP</strong> (5.6): Multiple network links (e.g., 3G and WiFi) can be used to improve the performance and reliability of a single TCP connection.</p></li>
+        <li><p class="bull"><strong>Boot-time tracing</strong> (5.6): Allows Ftrace to trace the early boot process. (systemd can provide timing information on the late boot process: see <a href="ch03.xhtml#ch03lev4sec2">Section 3.4.2</a>, <a href="ch03.xhtml#ch03lev4sec2">systemd</a>.)</p></li>
+        <li><p class="bull"><strong>Thermal pressure</strong> (5.7): The scheduler accounts for thermal throttling to make better placement decisions.</p></li>
+        <li><p class="bull"><strong>perf flame graphs</strong> (5.8): perf(1) support for the flame graph visualization.</p></li>
+        </ul>
+        <p class="noindent">Not listed here are the many small performance improvements for locking, drivers, VFS, file systems, asynchronous I/O, memory allocators, NUMA, new processor instruction support, GPUs, and the performance tools perf(1) and Ftrace. System boot time has also been improved by the adoption of systemd.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_120"></span>The following sections describe in more detail three Linux topics important to performance: systemd, KPTI, and extended BPF.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev4sec2">3.4.2 systemd</h4>
+        <p class="noindent">systemd is a commonly used service manager for Linux, developed as a replacement for the original UNIX init system. systemd has various features including dependency-aware service startup and service time statistics.</p>
+        <p class="noindent">An occasional task in systems performance is to tune the system’s boot time, and the systemd time statistics can show where to tune. The overall boot time can be reported using systemd-analyze(1):</p>
+        <p class="codelink"><a href="ch03_images.xhtml#pg120-1a" id="pg120-1">Click here to view code image</a></p>
+        <pre class="pretb"># <strong>systemd-analyze</strong>
+        Startup finished in 1.657s (kernel) + 10.272s (userspace) = 11.930s
+        graphical.target reached after 9.663s in userspace</pre>
+        <p class="noindent">This output shows that the system booted (reached the graphical.target in this case) in 9.663 seconds. More information can be seen using the <code>critical-chain</code> subcommand:</p>
+        <p class="codelink"><a href="ch03_images.xhtml#pg120-2a" id="pg120-2">Click here to view code image</a></p>
+        <pre class="pretb"># <strong>systemd-analyze critical-chain</strong>
+        The time when unit became active or started is printed after the "@" character.
+        The time the unit took to start is printed after the "+" character.
+        
+        graphical.target @9.663s
+        └─multi-user.target @9.661s
+          └─snapd.seeded.service @9.062s +62ms
+            └─basic.target @6.336s
+              └─sockets.target @6.334s
+                └─snapd.socket @6.316s +16ms
+                  └─sysinit.target @6.281s
+                    └─cloud-init.service @5.361s +905ms
+                      └─systemd-networkd-wait-online.service @3.498s +1.860s
+                        └─systemd-networkd.service @3.254s +235ms
+                          └─network-pre.target @3.251s
+                            └─cloud-init-local.service @2.107s +1.141s
+                              └─systemd-remount-fs.service @391ms +81ms
+                                └─systemd-journald.socket @387ms
+                                  └─system.slice @366ms
+                                    └─-.slice @366ms</pre>
+        <p class="noindent">This output shows the <em>critical path</em>: the sequence of steps (in this case, services) that causes the latency. The slowest service was <code>systemd-networkd-wait-online.service</code>, taking 1.86 seconds to start.</p>
+        <p class="noindent">There are other useful subcommands: <code>blame</code> shows the slowest initialization times, and <code>plot</code> produces an SVG diagram. See the man page for systemd-analyze(1) for more information.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev4sec3"><span epub:type="pagebreak" id="page_121"></span>3.4.3 KPTI (Meltdown)</h4>
+        <p class="noindent">The kernel page table isolation (KPTI) patches added to Linux 4.14 in 2018 are a mitigation for the Intel processor vulnerability called “meltdown.” Older Linux kernel versions had KAISER patches for a similar purpose, and other kernels have employed mitigations as well. While these work around the security issue, they also reduce processor performance due to extra CPU cycles and additional TLB flushing on context switches and syscalls. Linux added process-context ID (PCID) support in the same release, which allows some TLB flushes to be avoided, provided the processor supports pcid.</p>
+        <p class="noindent">I evaluated the performance impact of KPTI as between 0.1% and 6% for Netflix cloud production workloads, depending on the workload’s syscall rate (higher costs more) <a href="ch03.xhtml#ch03ref32">[Gregg 18a]</a>. Additional tuning will further reduce the cost: the use of huge pages so that a flushed TLB warms up faster, and using tracing tools to examine syscalls to identify ways to reduce their rate. A number of such tracing tools are implemented using extended BPF.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev4sec4">3.4.4 Extended BPF</h4>
+        <p class="noindent">BPF stands for Berkeley Packet Filter, an obscure technology first developed in 1992 that improved the performance of packet capture tools <a href="ch03.xhtml#ch03ref6">[McCanne 92]</a>. In 2013, Alexei Starovoitov proposed a major rewrite of BPF <a href="ch03.xhtml#ch03ref15">[Starovoitov 13]</a>, which was further developed by himself and Daniel Borkmann and included in the Linux kernel in 2014 <a href="ch03.xhtml#ch03ref17">[Borkmann 14b]</a>. This turned BPF into a general-purpose execution engine that can be used for a variety of things, including networking, observability, and security.</p>
+        <p class="noindent">BPF itself is a flexible and efficient technology composed of an instruction set, storage objects (maps), and helper functions. It can be considered a virtual machine due to its virtual instruction set specification. BPF programs run in kernel mode (as pictured earlier in <a href="ch03.xhtml#ch03fig02">Figure 3.2</a>) and are configured to run on events: socket events, tracepoints, USDT probes, kprobes, uprobes, and perf_events. These are shown in <a href="ch03.xhtml#ch03fig16">Figure 3.16</a>.</p>
+        <figure class="image-c" id="ch03fig16">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/03fig16.jpg" alt="Images" width="775" height="372">
+        <figcaption>
+        <p class="title-f"><span class="pd_ashf">Figure 3.16</span> BPF components</p>
+        </figcaption>
+        </figure>
+        <p class="noindent"><span epub:type="pagebreak" id="page_122"></span>BPF bytecode must first pass through a verifier that checks for safety, ensuring that the BPF program will not crash or corrupt the kernel. It may also use a BPF Type Format (BTF) system for understanding data types and structures. BPF programs can output data via a perf ring buffer, an efficient way to emit per-event data, or via maps, which are suited for statistics.</p>
+        <p class="noindent">Because it is powering a new generation of efficient, safe, and advanced tracing tools, BPF is important for systems performance analysis. It provides programmability to existing kernel event sources: tracepoints, kprobes, uprobes, and perf_events. A BPF program can, for example, record a timestamp on the start and end of I/O to time its duration, and record this in a custom histogram. This book contains many BPF-based programs using the BCC and bpftrace front-ends. These front-ends are covered in <a href="ch15.xhtml#ch15">Chapter 15</a>.</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch03lev5">3.5 Other Topics</h3>
+        <p class="noindent">Some additional kernel and operating system topics worth summarizing are PGO kernels, Unikernels, microkernels, hybrid kernels, and distributed operating systems.</p>
+        <section>
+        <h4 class="h4" id="ch03lev5sec1">3.5.1 PGO Kernels</h4>
+        <p class="noindent">Profile-guided optimization (PGO), also known as feedback-directed optimization (FDO), uses CPU profile information to improve compiler decisions <a href="ch03.xhtml#ch03ref20">[Yuan 14a]</a>. This can be applied to kernel builds, where the procedure is:</p>
+        <ol class="number">
+        <li><p class="number">While in production, take a CPU profile.</p></li>
+        <li><p class="number">Recompile the kernel based on that CPU profile.</p></li>
+        <li><p class="number">Deploy the new kernel in production.</p></li>
+        </ol>
+        <p class="noindent">This creates a kernel with improved performance for a specific workload. Runtimes such as the JVM do this automatically, recompiling Java methods based on their runtime performance, in conjunction with just-in-time (JIT) compilation. The process for creating a PGO kernel instead involves manual steps.</p>
+        <p class="noindent">A related compile optimization is link-time optimization (LTO), where an entire binary is compiled at once to allow optimizations across the entire program. The Microsoft Windows kernel makes heavy use of both LTO and PGO, seeing 5 to 20% improvements from PGO <a href="ch03.xhtml#ch03ref36">[Bearman 20]</a>. Google also use LTO and PGO kernels to improve performance <a href="ch03.xhtml#ch03ref44">[Tolvanen 20]</a>.</p>
+        <p class="noindent">The gcc and clang compilers, and the Linux kernel, all have support for PGO. Kernel PGO typically involves running a specially instrumented kernel to collect profile data. Google has released an AutoFDO tool that bypasses the need for such a special kernel: AutoFDO allows a profile to be collected from a normal kernel using perf(1), which is then converted to the correct format for compilers to use <a href="ch03.xhtml#ch03ref37">[Google 20a]</a>.</p>
+        <p class="noindent">The only recent documentation on building a Linux kernel with PGO or AutoFDO is two talks from Linux Plumber’s Conference 2020 by Microsoft <a href="ch03.xhtml#ch03ref36">[Bearman 20]</a> and Google <a href="ch03.xhtml#ch03ref44">[Tolvanen 20]</a>.<sup><a id="ch03fn15a" href="ch03.xhtml#ch03fn15">15</a></sup></p>
+        <p class="footnote"><sup><a id="ch03fn15" href="ch03.xhtml#ch03fn15a">15</a></sup>For a while the most recent documentation was from 2014 for Linux 3.13 <a href="ch03.xhtml#ch03ref21">[Yuan 14b]</a>, hindering adoption on newer kernels.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev5sec2"><span epub:type="pagebreak" id="page_123"></span>3.5.2 Unikernels</h4>
+        <p class="noindent">A unikernel is a single-application machine image that combines kernel, library, and application software together, and can typically run this in a single address space in either a hardware VM or on bare metal. This potentially has performance and security benefits: less instruction text means higher CPU cache hit ratios and fewer security vulnerabilities. This also creates a problem: there may be no SSH, shells, or performance tools available for you to log in and debug the system, nor any way to add them.</p>
+        <p class="noindent">For unikernels to be performance tuned in production, new performance tooling and metrics must be built to support them. As a proof of concept, I built a rudimentary CPU profiler that ran from Xen dom0 to profile a domU unikernel guest and then built a CPU flame graph, just to show that it was possible <a href="ch03.xhtml#ch03ref28">[Gregg 16a]</a>.</p>
+        <p class="noindent">Examples of unikernels include MirageOS <a href="ch03.xhtml#ch03ref42">[MirageOS 20]</a>.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev5sec3">3.5.3 Microkernels and Hybrid Kernels</h4>
+        <p class="noindent">Most of this chapter discusses Unix-like kernels, also described as <em>monolithic kernels</em>, where all the code that manages devices runs together as a single large kernel program. For the <em>microkernel</em> model, kernel software is kept to a minimum. A microkernel supports essentials such as memory management, thread management, and inter-process communication (IPC). File systems, the network stack, and drivers are implemented as user-mode software, which allows those user-mode components to be more easily modified and replaced. Imagine not only choosing which database or web server to install, but also choosing which network stack to install. The microkernel is also more fault-tolerant: a crash in a driver does not crash the entire kernel. Examples of microkernels include QNX and Minix 3.</p>
+        <p class="noindent">A disadvantage with microkernels is that there are additional IPC steps for performing I/O and other functions, reducing performance. One solution for this is <em>hybrid kernels</em>, which combine the benefits of microkernels and monolithic kernels. Hybrid kernels move performance-critical services back into kernel space (with direct function calls instead of IPC) as they are with a monolithic kernel, but retains the modular design and fault tolerance of a micro kernel. Examples of hybrid kernels include the Windows NT kernel and the Plan 9 kernel.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch03lev5sec4">3.5.4 Distributed Operating Systems</h4>
+        <p class="noindent">A distributed operating system runs a single operating system instance across a set of separate computer nodes, networked together. A microkernel is commonly used on each of the nodes. Examples of distributed operating systems include Plan 9 from Bell Labs, and the Inferno operating system.</p>
+        <p class="noindent">While an innovative design, this model has not seen widespread use. Rob Pike, co-creator of Plan 9 and Inferno, has described various reasons for this, including <a href="ch03.xhtml#ch03ref9">[Pike 00]</a>:</p>
+        <p class="uln">“There was a claim in the late 1970s and early 1980s that Unix had killed operating systems research because no one would try anything else. At the time, I didn’t believe it. Today, I grudgingly accept that the claim may be true (Microsoft notwithstanding).”</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_124"></span>On the cloud, today’s common model for scaling compute nodes is to load-balance across a group of identical OS instances, which may scale in response to load (see <a href="ch11.xhtml#ch11">Chapter 11</a>, <a href="ch11.xhtml#ch11">Cloud Computing</a>, <a href="ch11.xhtml#ch11lev1sec3">Section 11.1.3</a>, <a href="ch11.xhtml#ch11lev1sec3">Capacity Planning</a>).</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch03lev6">3.6 Kernel Comparisons</h3>
+        <p class="noindent">Which kernel is fastest? This will depend partly on the OS configuration and workload and how much the kernel is involved. In general, I expect that Linux will outperform other kernels due to its extensive work on performance improvements, application and driver support, and widespread use and the large community who discover and report performance issues. The top 500 supercomputers, as tracked by the TOP500 list since 1993, became 100% Linux in 2017 <a href="ch03.xhtml#ch03ref31">[TOP500 17]</a>. There will be some exceptions; for example, Netflix uses Linux on the cloud and FreeBSD for its CDN.<sup><a id="ch03fn16a" href="ch03.xhtml#ch03fn16">16</a></sup></p>
+        <p class="footnote"><sup><a id="ch03fn16" href="ch03.xhtml#ch03fn16a">16</a></sup>FreeBSD delivers higher performance for the Netflix CDN workload, especially due to kernel improvements made by the Netflix OCA team. This is routinely tested, most recently during 2019 with a production comparison of Linux 5.0 versus FreeBSD, which I helped analyze.</p>
+        <p class="noindent">Kernel performance is commonly compared using micro-benchmarks, and this is error-prone. Such benchmarks may discover that one kernel is much faster at a particular syscall, but that syscall is not used in the production workload. (Or it is used, but with certain flags not tested by the microbenchmark, which greatly affect performance.) Comparing kernel performance accurately is a task for a senior performance engineer—a task that can take weeks. See <a href="ch12.xhtml#ch12">Chapter 12</a>, <a href="ch12.xhtml#ch12">Benchmarking</a>, <a href="ch12.xhtml#ch12lev3sec2">Section 12.3.2</a>, <a href="ch12.xhtml#ch12lev3sec2">Active Benchmarking</a>, as a methodology to follow.</p>
+        <p class="noindent">In the first edition of this book, I concluded this section by noting that Linux did not have a mature dynamic tracer, without which you might miss out on large performance wins. Since that first edition, I have moved to a full-time Linux performance role, and I helped develop the dynamic tracers that Linux was missing: BCC and bpftrace, based on extended BPF. These are covered in <a href="ch15.xhtml#ch15">Chapter 15</a> and in my previous book <a href="ch03.xhtml#ch03ref34">[Gregg 19]</a>.</p>
+        <p class="noindent"><a href="ch03.xhtml#ch03lev4sec1">Section 3.4.1</a>, <a href="ch03.xhtml#ch03lev4sec1">Linux Kernel Developments</a>, lists many other Linux performance developments that have occurred in the time between the first edition and this edition, spanning kernel versions 3.1 and 5.8. A major development not listed earlier is that OpenZFS now supports Linux as its primary kernel, providing a high-performance and mature file system option on Linux.</p>
+        <p class="noindent">With all this Linux development, however, comes complexity. There are so many performance features and tunables on Linux that it has become laborious to configure and tune them for each workload. I have seen many deployments running untuned. Bear this in mind when comparing kernel performance: has each kernel been tuned? Later chapters of this book, and their tuning sections, can help you remedy this.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch03lev7">3.7 Exercises</h3>
+        <ol class="number-n">
+        <li><p class="number">Answer the following questions about OS terminology:</p>
+        <ul class="sq-i">
+        <li><p class="bull">What is the difference between a process, a thread, and a task?</p></li>
+        <li><p class="bull">What is a mode switch and a context switch?</p></li>
+        <li><p class="bull"><span epub:type="pagebreak" id="page_125"></span>What is the difference between paging and process swapping?</p></li>
+        <li><p class="bull">What is the difference between I/O-bound and CPU-bound workloads?</p></li>
+        </ul></li>
+        <li><p class="number">Answer the following conceptual questions:</p>
+        <ul class="sq-i">
+        <li><p class="bull">Describe the role of the kernel.</p></li>
+        <li><p class="bull">Describe the role of system calls.</p></li>
+        <li><p class="bull">Describe the role of VFS and its location in the I/O stack.</p></li>
+        </ul></li>
+        <li><p class="number">Answer the following deeper questions:</p>
+        <ul class="sq-i">
+        <li><p class="bull">List the reasons why a thread would leave the current CPU.</p></li>
+        <li><p class="bull">Describe the advantages of virtual memory and demand paging.</p></li>
+        </ul></li>
+        </ol>
+        </section>
+        <section>
+        <h3 class="h3" id="ch03lev8">3.8 References</h3>
+        <p class="ref" id="ch03ref1"><strong>[Graham 68]</strong> Graham, B., “Protection in an Information Processing Utility,” <em>Communications of the ACM</em>, May 1968.</p>
+        <p class="ref" id="ch03ref2"><strong>[Ritchie 74]</strong> Ritchie, D. M., and Thompson, K., “The UNIX Time-Sharing System,” <em>Communications of the ACM</em> 17, no. 7, pp. 365–75, July 1974.</p>
+        <p class="ref" id="ch03ref3"><strong>[Thompson 78]</strong> Thompson, K., <em>UNIX Implementation</em>, Bell Laboratories, 1978.</p>
+        <p class="ref" id="ch03ref4"><strong>[Bach 86]</strong> Bach, M. J., <em>The Design of the UNIX Operating System</em>, Prentice Hall, 1986.</p>
+        <p class="ref" id="ch03ref5"><strong>[Mellor-Crummey 91]</strong> Mellor-Crummey, J. M., and Scott, M., “Algorithms for Scalable Synchronization on Shared-Memory Multiprocessors,” <em>ACM Transactions on Computing Systems</em>, Vol. 9, No. 1, <a href="https://www.cs.rochester.edu/u/scott/papers/1991_TOCS_synch.pdf">https://www.cs.rochester.edu/u/scott/papers/1991_TOCS_synch.pdf</a>, 1991.</p>
+        <p class="ref" id="ch03ref6"><strong>[McCanne 92]</strong> McCanne, S., and Jacobson, V., “The BSD Packet Filter: A New Architecture for User-Level Packet Capture”, <em>USENIX Winter Conference</em>, 1993.</p>
+        <p class="ref" id="ch03ref7"><strong>[Mills 94]</strong> Mills, D., “RFC 1589: A Kernel Model for Precision Timekeeping,” <em>Network Working Group</em>, 1994.</p>
+        <p class="ref" id="ch03ref8"><strong>[Lever 00]</strong> Lever, C., Eriksen, M. A., and Molloy, S. P., “An Analysis of the TUX Web Server,” <em>CITI Technical Report 00-8</em>, <a href="http://www.citi.umich.edu/techreports/reports/citi-tr-00-8.pdf">http://www.citi.umich.edu/techreports/reports/citi-tr-00-8.pdf</a>, 2000.</p>
+        <p class="ref" id="ch03ref9"><strong>[Pike 00]</strong> Pike, R., “Systems Software Research Is Irrelevant,” <a href="http://doc.cat-v.org/bell_labs/utah2000/utah2000.pdf">http://doc.cat-v.org/bell_labs/utah2000/utah2000.pdf</a>, 2000.</p>
+        <p class="ref" id="ch03ref10"><strong>[Mauro 01]</strong> Mauro, J., and McDougall, R., <em>Solaris Internals: Core Kernel Architecture</em>, Prentice Hall, 2001.</p>
+        <p class="ref" id="ch03ref11"><strong>[Bovet 05]</strong> Bovet, D., and Cesati, M., <em>Understanding the Linux Kernel</em>, 3rd Edition, O’Reilly, 2005.</p>
+        <p class="ref" id="ch03ref12"><strong>[Corbet 05]</strong> Corbet, J., Rubini, A., and Kroah-Hartman, G., <em>Linux Device Drivers</em>, 3rd Edition, O’Reilly, 2005.</p>
+        <p class="ref" id="ch03ref13"><span epub:type="pagebreak" id="page_126"></span><strong>[Corbet 13a]</strong> Corbet, J., “Is the whole system idle?” <em>LWN.net</em>, <a href="https://lwn.net/Articles/558284">https://lwn.net/Articles/558284</a>, 2013.</p>
+        <p class="ref" id="ch03ref14"><strong>[Corbet 13b]</strong> Corbet, J., “The multiqueue block layer,” <em>LWN.net</em>, <a href="https://lwn.net/Articles/552904">https://lwn.net/Articles/552904</a>, 2013.</p>
+        <p class="ref" id="ch03ref15"><strong>[Starovoitov 13]</strong> Starovoitov, A., “[PATCH net-next] extended BPF,” <em>Linux kernel mailing list</em>, <a href="https://lkml.org/lkml/2013/9/30/627">https://lkml.org/lkml/2013/9/30/627</a>, 2013.</p>
+        <p class="ref" id="ch03ref16"><strong>[Borkmann 14a]</strong> Borkmann, D., “net: tcp: add DCTCP congestion control algorithm,” <a href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=e3118e8359bb7c59555aca60c725106e6d78c5ce">https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=e3118e8359bb7c59555aca60c725106e6d78c5ce</a>, 2014.</p>
+        <p class="ref" id="ch03ref17"><strong>[Borkmann 14b]</strong> Borkmann, D., “[PATCH net-next 1/9] net: filter: add jited flag to indicate jit compiled filters,” <em>netdev mailing list</em>, https://lore.kernel.org/netdev/1395404418-25376-1-git-send-email-dborkman@redhat.com/T, 2014.</p>
+        <p class="ref" id="ch03ref18"><strong>[Corbet 14]</strong> Corbet, J., “MCS locks and qspinlocks,” <em>LWN.net</em>, <a href="https://lwn.net/Articles/590243">https://lwn.net/Articles/590243</a>, 2014.</p>
+        <p class="ref" id="ch03ref19"><strong>[Drysdale 14]</strong> Drysdale, D., “Anatomy of a system call, part 2,” <em>LWN.net</em>, <a href="https://lwn.net/Articles/604515">https://lwn.net/Articles/604515</a>, 2014.</p>
+        <p class="ref" id="ch03ref20"><strong>[Yuan 14a]</strong> Yuan, P., Guo, Y., and Chen, X., “Experiences in Profile-Guided Operating System Kernel Optimization,” <em>APSys</em>, 2014.</p>
+        <p class="ref" id="ch03ref21"><strong>[Yuan 14b]</strong> Yuan P., Guo, Y., and Chen, X., “Profile-Guided Operating System Kernel Optimization,” <a href="http://coolypf.com">http://coolypf.com</a>, 2014.</p>
+        <p class="ref" id="ch03ref22"><strong>[Corbet 15]</strong> Corbet, J., “Epoll evolving,” LWN<em>.net</em>, <a href="https://lwn.net/Articles/633422">https://lwn.net/Articles/633422</a>, 2015.</p>
+        <p class="ref" id="ch03ref23"><strong>[Edge 15]</strong> Edge, J., “TLS in the kernel,” <em>LWN.net</em>, <a href="https://lwn.net/Articles/666509">https://lwn.net/Articles/666509</a>, 2015.</p>
+        <p class="ref" id="ch03ref24"><strong>[Heo 15]</strong> Heo, T., “Control Group v2,” <em>Linux documentation</em>, <a href="https://www.kernel.org/doc/Documentation/cgroup-v2.txt">https://www.kernel.org/doc/Documentation/cgroup-v2.txt</a>, 2015.</p>
+        <p class="ref" id="ch03ref25"><strong>[McKusick 15]</strong> McKusick, M. K., Neville-Neil, G. V., and Watson, R. N. M., <em>The Design and Implementation of the FreeBSD Operating System</em>, 2nd Edition, Addison-Wesley, 2015.</p>
+        <p class="ref" id="ch03ref26"><strong>[Stewart 15]</strong> Stewart, R., Gurney, J. M., and Long, S., “Optimizing TLS for High-Bandwidth Applicationsin FreeBSD,” <em>AsiaBSDCon</em>, <a href="https://people.freebsd.org/~rrs/asiabsd_2015_tls.pdf">https://people.freebsd.org/~rrs/asiabsd_2015_tls.pdf</a>, 2015.</p>
+        <p class="ref" id="ch03ref27"><strong>[Cardwell 16]</strong> Cardwell, N., Cheng, Y., Stephen Gunn, C., Hassas Yeganeh, S., and Jacobson, V., “BBR: Congestion-Based Congestion Control,” <em>ACM queue</em>, <a href="https://queue.acm.org/detail.cfm?id=3022184">https://queue.acm.org/detail.cfm?id=3022184</a>, 2016.</p>
+        <p class="ref" id="ch03ref28"><strong>[Gregg 16a]</strong> Gregg, B., “Unikernel Profiling: Flame Graphs from dom0,” <a href="http://www.brendangregg.com/blog/2016-01-27/unikernel-profiling-from-dom0.html">http://www.brendangregg.com/blog/2016-01-27/unikernel-profiling-from-dom0.html</a>, 2016.</p>
+        <p class="ref" id="ch03ref29"><strong>[Herbert 16]</strong> Herbert, T., and Starovoitov, A., “eXpress Data Path (XDP): Programmable and High Performance Networking Data Path,” <a href="https://github.com/iovisor/bpf-docs/raw/master/Express_Data_Path.pdf">https://github.com/iovisor/bpf-docs/raw/master/Express_Data_Path.pdf</a>, 2016.</p>
+        <p class="ref" id="ch03ref30"><strong>[Corbet 17]</strong> Corbet, J., “Two new block I/O schedulers for 4.12,” <em>LWN.net</em>, <a href="https://lwn.net/Articles/720675">https://lwn.net/Articles/720675</a>, 2017.</p>
+        <p class="ref" id="ch03ref31"><span epub:type="pagebreak" id="page_127"></span><strong>[TOP500 17]</strong> TOP500, “List Statistics,” <a href="https://www.top500.org/statistics/list">https://www.top500.org/statistics/list</a>, 2017.</p>
+        <p class="ref" id="ch03ref32"><strong>[Gregg 18a]</strong> Gregg, B., “KPTI/KAISER Meltdown Initial Performance Regressions,” <a href="http://www.brendangregg.com/blog/2018-02-09/kpti-kaiser-meltdown-performance.html">http://www.brendangregg.com/blog/2018-02-09/kpti-kaiser-meltdown-performance.html</a>, 2018.</p>
+        <p class="ref" id="ch03ref33"><strong>[Jacobson 18]</strong> Jacobson, V., “Evolving from AFAP: Teaching NICs about Time,” <em>netdev 0x12</em>, <a href="https://netdevconf.info/0x12/session.html?evolving-from-afap-teaching-nics-about-time">https://netdevconf.info/0x12/session.html?evolving-from-afap-teaching-nics-about-time</a>, 2018.</p>
+        <p class="ref" id="ch03ref34"><strong>[Gregg 19]</strong> Gregg, B., <em>BPF Performance Tools: Linux System and Application Observability</em>, Addison-Wesley, 2019.</p>
+        <p class="ref" id="ch03ref35"><strong>[Looney 19]</strong> Looney, J., “Netflix and FreeBSD: Using Open Source to Deliver Streaming Video,” <em>FOSDEM</em>, <a href="https://papers.freebsd.org/2019/fosdem/looney-netflix_and_freebsd">https://papers.freebsd.org/2019/fosdem/looney-netflix_and_freebsd</a>, 2019.</p>
+        <p class="ref" id="ch03ref36"><strong>[Bearman 20]</strong> Bearman, I., “Exploring Profile Guided Optimization of the Linux Kernel,” <em>Linux Plumber’s Conference</em>, <a href="https://linuxplumbersconf.org/event/7/contributions/771">https://linuxplumbersconf.org/event/7/contributions/771</a>, 2020.</p>
+        <p class="ref" id="ch03ref37"><strong>[Google 20a]</strong> Google, “AutoFDO,” <a href="https://github.com/google/autofdo">https://github.com/google/autofdo</a>, accessed 2020.</p>
+        <p class="ref" id="ch03ref38"><strong>[Linux 20a]</strong> “NO_HZ: Reducing Scheduling-Clock Ticks,” <em>Linux documentation</em>, <a href="https://www.kernel.org/doc/html/latest/timers/no_hz.html">https://www.kernel.org/doc/html/latest/timers/no_hz.html</a>, accessed 2020.</p>
+        <p class="ref" id="ch03ref39"><strong>[Linux 20b]</strong> “Deadline Task Scheduling,” <em>Linux documentation</em>, <a href="https://www.kernel.org/doc/Documentation/scheduler/sched-deadline.rst">https://www.kernel.org/doc/Documentation/scheduler/sched-deadline.rst</a>, accessed 2020.</p>
+        <p class="ref" id="ch03ref40"><strong>[Linux 20c]</strong> “MSG_ZEROCOPY,” <em>Linux documentation</em>, <a href="https://www.kernel.org/doc/html/latest/networking/msg_zerocopy.html">https://www.kernel.org/doc/html/latest/networking/msg_zerocopy.html</a>, accessed 2020.</p>
+        <p class="ref" id="ch03ref41"><strong>[Linux 20d]</strong> “Softlockup Detector and Hardlockup Detector (aka nmi_watchdog),” <em>Linux documentation</em>, <a href="https://www.kernel.org/doc/html/latest/admin-guide/lockup-watchdogs.html">https://www.kernel.org/doc/html/latest/admin-guide/lockup-watchdogs.html</a>, accessed 2020.</p>
+        <p class="ref" id="ch03ref42"><strong>[MirageOS 20]</strong> MirageOS, “Mirage OS,” <a href="https://mirage.io">https://mirage.io</a>, accessed 2020.</p>
+        <p class="ref" id="ch03ref43"><strong>[Owens 20]</strong> Owens, K., et al., “4. Kernel Stacks,” <em>Linux documentation</em>, <a href="https://www.kernel.org/doc/html/latest/x86/kernel-stacks.html">https://www.kernel.org/doc/html/latest/x86/kernel-stacks.html</a>, accessed 2020.</p>
+        <p class="ref" id="ch03ref44"><strong>[Tolvanen 20]</strong> Tolvanen, S., Wendling, B., and Desaulniers, N., “LTO, PGO, and AutoFDO in the Kernel,” <em>Linux Plumber’s Conference</em>, <a href="https://linuxplumbersconf.org/event/7/contributions/798">https://linuxplumbersconf.org/event/7/contributions/798</a>, 2020.</p>
+        <section>
+        <h4 class="h4" id="ch03lev8sec1">3.8.1 Additional Reading</h4>
+        <p class="noindent">Operating systems and their kernels is a fascinating and extensive topic. This chapter summarized only the essentials. In addition to the sources mentioned in this chapter, the following are also excellent references, applicable to Linux-based operating systems and others:</p>
+        <p class="ref" id="ch03ref45"><strong>[Goodheart 94]</strong> Goodheart, B., and Cox J., <em>The Magic Garden Explained: The Internals of UNIX System V Release 4, an Open Systems Design</em>, Prentice Hall, 1994.</p>
+        <p class="ref" id="ch03ref46"><strong>[Vahalia 96]</strong> Vahalia, U., <em>UNIX Internals: The New Frontiers</em>, Prentice Hall, 1996.</p>
+        <p class="ref" id="ch03ref47"><strong>[Singh 06]</strong> Singh, A., <em>Mac OS X Internals: A Systems Approach</em>, Addison-Wesley, 2006.</p>
+        <p class="ref" id="ch03ref48"><span epub:type="pagebreak" id="page_128"></span><strong>[McDougall 06b]</strong> McDougall, R., and Mauro, J., <em>Solaris Internals: Solaris 10 and OpenSolaris Kernel Architecture</em>, Prentice Hall, 2006.</p>
+        <p class="ref" id="ch03ref49"><strong>[Love 10]</strong> Love, R., <em>Linux Kernel Development</em>, 3rd Edition, Addison-Wesley, 2010.</p>
+        <p class="ref" id="ch03ref50"><strong>[Tanenbaum 14]</strong> Tanenbaum, A., and Bos, H., <em>Modern Operating Systems</em>, 4th Edition, Pearson, 2014.</p>
+        <p class="ref" id="ch03ref51"><strong>[Yosifovich 17]</strong> Yosifovich, P., Ionescu, A., Russinovich, M. E., and Solomon, D. A., <em>Windows Internals, Part 1 (Developer Reference)</em>, 7th Edition, Microsoft Press, 2017.</p>
+        </section>
+        </section>
+        </section>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780136821694/files/9780136821656.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

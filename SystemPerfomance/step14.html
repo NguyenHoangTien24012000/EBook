@@ -1,0 +1,1835 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section epub:type="chapter">
+        <h2 class="h2b" id="ch14"><span epub:type="pagebreak" id="page_705"></span><span class="pd_ash">Chapter 14</span></h2>
+        <p class="chap_ttl">Ftrace</p>
+        <p class="noindent">Ftrace is the official Linux tracer, a multi-tool composed of different tracing utilities. Ftrace was created by Steven Rostedt and first added to Linux 2.6.27 (2008). It can be used without any additional user-level front end, making it especially suited for embedded Linux environments where storage space is at a premium. It is also useful for server environments.</p>
+        <p class="noindent">This chapter, along with <a href="ch13.xhtml#ch13">Chapter 13</a>, <a href="ch13.xhtml#ch13">perf</a>, and <a href="ch15.xhtml#ch15">Chapter 15</a>, <a href="ch15.xhtml#ch15">BPF</a>, are optional reading for those wishing to learn one or more system tracers in more detail.</p>
+        <p class="noindent">Ftrace can be used to answer questions such as:</p>
+        <ul class="sq">
+        <li><p class="bull">How often are certain kernel functions called?</p></li>
+        <li><p class="bull">What code path led to calling this function?</p></li>
+        <li><p class="bull">What child functions does this kernel function call?</p></li>
+        <li><p class="bull">What is the highest latency caused by preemption disabled code paths?</p></li>
+        </ul>
+        <p class="noindent">The following sections are structured to introduce Ftrace, show some of its profilers and tracers, and then show the front ends that use them. The sections are:</p>
+        <ul class="sq">
+        <li><p class="bull"><a href="ch14.xhtml#ch14lev1">14.1: Capabilities Overview</a></p></li>
+        <li><p class="bull"><a href="ch14.xhtml#ch14lev2">14.2: tracefs (/sys)</a></p></li>
+        <li><p class="bull">Profilers:</p>
+        <ul class="sq-i">
+        <li><p class="bull"><a href="ch14.xhtml#ch14lev3">14.3: Ftrace Function Profiler</a></p></li>
+        <li><p class="bull"><a href="ch14.xhtml#ch14lev10">14.10: Ftrace Hist Triggers</a></p></li>
+        </ul></li>
+        <li><p class="bull">Tracers:</p>
+        <ul class="sq-i">
+        <li><p class="bull"><a href="ch14.xhtml#ch14lev4">14.4: Ftrace Function Tracing</a></p></li>
+        <li><p class="bull"><a href="ch14.xhtml#ch14lev5">14.5: Tracepoints</a></p></li>
+        <li><p class="bull"><a href="ch14.xhtml#ch14lev6">14.6: kprobes</a></p></li>
+        <li><p class="bull"><a href="ch14.xhtml#ch14lev7">14.7: uprobes</a></p></li>
+        <li><p class="bull"><a href="ch14.xhtml#ch14lev8">14.8: Ftrace function_graph</a></p></li>
+        <li><p class="bull"><a href="ch14.xhtml#ch14lev9">14.9: Ftrace hwlat</a></p></li>
+        </ul></li>
+        <li><p class="bull"><span epub:type="pagebreak" id="page_706"></span>Front ends:</p>
+        <ul class="sq-i">
+        <li><p class="bull"><a href="ch14.xhtml#ch14lev11">14.11: trace-cmd</a></p></li>
+        <li><p class="bull"><a href="ch14.xhtml#ch14lev12">14.12: perf ftrace</a></p></li>
+        <li><p class="bull"><a href="ch14.xhtml#ch14lev13">14.13: perf-tools</a></p></li>
+        </ul></li>
+        <li><p class="bull"><a href="ch14.xhtml#ch14lev14">14.14: Ftrace Documentation</a></p></li>
+        <li><p class="bull"><a href="ch14.xhtml#ch14lev15">14.15: References</a></p></li>
+        </ul>
+        <p class="noindent">Ftrace hist triggers is an advanced topic that requires covering both profilers and tracers first, hence its later location in this chapter. The kprobes and uprobes sections also include basic profiling capabilities.</p>
+        <p class="noindent"><a href="ch14.xhtml#ch14fig01">Figure 14.1</a> is an overview of Ftrace and its front ends, with arrows showing the path from events to output types.</p>
+        <figure class="image-c" id="ch14fig01">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/14fig01.jpg" alt="Images" width="775" height="415">
+        <figcaption>
+        <p class="title-f"><span class="pd_ashf">Figure 14.1</span> Ftrace profilers, tracers, and front ends</p>
+        </figcaption>
+        </figure>
+        <p class="noindent">These are explained in the following sections.</p>
+        <section>
+        <h3 class="h3" id="ch14lev1">14.1 Capabilities Overview</h3>
+        <p class="noindent">While perf(1) uses subcommands for different functionality, Ftrace has <em>profilers</em> and <a href="gloss.xhtml#glo_182"><em>tracers</em></a>. Profilers provide statistical summaries such as counts and histograms, and tracers provide per-event details.</p>
+        <p class="noindent">As an example of Ftrace, the following funcgraph(8) tool uses an Ftrace tracer to show the child calls of the vfs_read() kernel function:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg707a" id="pg707">Click here to view code image</a></p>
+        <pre class="pretb"><span epub:type="pagebreak" id="page_707"></span># <strong>funcgraph vfs_read</strong>
+        Tracing "vfs_read"... Ctrl-C to end.
+         1)               |  vfs_read() {
+         1)               |    rw_verify_area() {
+         1)               |      security_file_permission() {
+         1)               |        apparmor_file_permission() {
+         1)               |          common_file_perm() {
+         1)   0.763 us    |            aa_file_perm();
+         1)   2.209 us    |          }
+         1)   3.329 us    |        }
+         1)   0.571 us    |        __fsnotify_parent();
+         1)   0.612 us    |        fsnotify();
+         1)   7.019 us    |      }
+         1)   8.416 us    |    }
+         1)               |    __vfs_read() {
+         1)               |      new_sync_read() {
+         1)               |        ext4_file_read_iter() {
+        [...]</pre>
+        <p class="noindent">The output shows that vfs_read() called rw_verify_area(), which called security_file_permission() and so on. The second column shows the duration in each function (“us” is microseconds) so that you can do performance analysis, identifying the child functions that caused a parent function to be slow. This particular Ftrace capability is called function graph tracing (and is covered in <a href="ch14.xhtml#ch14lev8">Section 14.8</a>, <a href="ch14.xhtml#ch14lev8">Ftrace function_graph</a>).</p>
+        <p class="noindent">Ftrace profilers and tracers from a recent Linux version (5.2) are listed in <a href="ch14.xhtml#ch14tab01">Tables 14.1</a> and <a href="ch14.xhtml#ch14tab02">14.2</a>, along with the Linux <em>event tracers</em>: tracepoints, kprobes, and uprobes. These event tracers are Ftrace-like, sharing similar configuration and output interfaces, and are included in this chapter. The monospace tracer names shown in <a href="ch14.xhtml#ch14tab02">Table 14.2</a> are the Ftrace tracers, and are also the command line keywords used to configure them.</p>
+        <figure class="table" id="ch14tab01">
+        <figcaption>
+        <p class="title-t"><span class="pd_ashf">Table 14.1</span> <strong>Ftrace profilers</strong></p>
+        </figcaption>
+        <table class="all">
+        <thead>
+        <tr>
+        <th class="th"><p class="thead"><strong>Profiler</strong></p></th>
+        <th class="th"><p class="thead"><strong>Description</strong></p></th>
+        <th class="th"><p class="thead"><strong>Section</strong></p></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td class="border"><p class="tab-para">function</p></td>
+        <td class="border"><p class="tab-para">Kernel function statistics</p></td>
+        <td class="border"><p class="tab-para"><a href="ch14.xhtml#ch14lev3">14.3</a></p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">kprobe profiler</p></td>
+        <td class="border"><p class="tab-para">Enabled kprobe counts</p></td>
+        <td class="border"><p class="tab-para"><a href="ch14.xhtml#ch14lev6sec5">14.6.5</a></p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">uprobe profiler</p></td>
+        <td class="border"><p class="tab-para">Enabled uprobe counts</p></td>
+        <td class="border"><p class="tab-para"><a href="ch14.xhtml#ch14lev7sec4">14.7.4</a></p></td>
+        </tr>
+        <tr>
+        <td><p class="tab-para">hist triggers</p></td>
+        <td><p class="tab-para">Custom histograms on events</p></td>
+        <td><p class="tab-para"><a href="ch14.xhtml#ch14lev10">14.10</a></p></td>
+        </tr>
+        </tbody>
+        </table>
+        </figure>
+        <figure class="table" id="ch14tab02">
+        <figcaption>
+        <p class="title-t"><span class="pd_ashf">Table 14.2</span> <strong>Ftrace and event tracers</strong></p>
+        </figcaption>
+        <table class="all">
+        <thead>
+        <tr>
+        <th class="th"><p class="thead"><strong>Tracer</strong></p></th>
+        <th class="th"><p class="thead"><strong>Description</strong></p></th>
+        <th class="th"><p class="thead"><strong>Section</strong></p></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td class="border"><p class="tab-para"><code>function</code></p></td>
+        <td class="border"><p class="tab-para">Kernel function call tracer</p></td>
+        <td class="border"><p class="tab-para"><a href="ch14.xhtml#ch14lev4">14.4</a></p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">tracepoints</p></td>
+        <td class="border"><p class="tab-para">Kernel static instrumentation (event tracer)</p></td>
+        <td class="border"><p class="tab-para"><a href="ch14.xhtml#ch14lev5">14.5</a></p></td>
+        </tr>
+        <tr>
+        <td class="border"><span epub:type="pagebreak" id="page_708"></span><p class="tab-para">kprobes</p></td>
+        <td class="border"><p class="tab-para">Kernel dynamic instrumentation (event tracer)</p></td>
+        <td class="border"><p class="tab-para"><a href="ch14.xhtml#ch14lev6">14.6</a></p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">uprobes</p></td>
+        <td class="border"><p class="tab-para">User-level dynamic instrumentation (event tracer)</p></td>
+        <td class="border"><p class="tab-para"><a href="ch14.xhtml#ch14lev7">14.7</a></p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>function_graph</code></p></td>
+        <td class="border"><p class="tab-para">Kernel function call tracing with a hierarchical graph of child calls.</p></td>
+        <td class="border"><p class="tab-para"><a href="ch14.xhtml#ch14lev8">14.8</a></p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>wakeup</code></p></td>
+        <td class="border"><p class="tab-para">Measures max CPU scheduler latency</p></td>
+        <td class="border"><p class="tab-para">-</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>wakeup_rt</code></p></td>
+        <td class="border"><p class="tab-para">Measures max CPU scheduler latency for real-time (RT) tasks</p></td>
+        <td class="border"><p class="tab-para">-</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>irqsoff</code></p></td>
+        <td class="border"><p class="tab-para">Traces IRQs off events with code location and latency (interrupts disabled latency)<sup><a id="ch14fn1a" href="ch14.xhtml#ch14fn1">1</a></sup></p></td>
+        <td class="border"><p class="tab-para">-</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>preemptoff</code></p></td>
+        <td class="border"><p class="tab-para">Traces preemption disabled events with code location and latency</p></td>
+        <td class="border"><p class="tab-para">-</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>preemptirqsoff</code></p></td>
+        <td class="border"><p class="tab-para">A tracer combining irqsoff and preemptoff</p></td>
+        <td class="border"><p class="tab-para">-</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>blk</code></p></td>
+        <td class="border"><p class="tab-para">Block I/O tracer (used by blktrace(8)).</p></td>
+        <td class="border"><p class="tab-para">-</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>hwlat</code></p></td>
+        <td class="border"><p class="tab-para">Hardware latency tracer: can detect external perturbations causing latency</p></td>
+        <td class="border"><p class="tab-para"><a href="ch14.xhtml#ch14lev9">14.9</a></p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>mmiotrace</code></p></td>
+        <td class="border"><p class="tab-para">Traces calls that a module makes to hardware</p></td>
+        <td class="border"><p class="tab-para">-</p></td>
+        </tr>
+        <tr>
+        <td><p class="tab-para"><code>nop</code></p></td>
+        <td><p class="tab-para">A special tracer to disable other tracers</p></td>
+        <td><p class="tab-para">-</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </figure>
+        <p class="footnote"><sup><a id="ch14fn1" href="ch14.xhtml#ch14fn1a">1</a></sup>This (and preemptoff, preemptirqsoff) require CONFIG_PREEMPTIRQ_EVENTS to be enabled.</p>
+        <p class="noindent">You can list the Ftrace tracers available on your kernel version using:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg708-1a" id="pg708-1">Click here to view code image</a></p>
+        <pre class="pretb"># <strong>cat /sys/kernel/debug/tracing/available_tracers</strong>
+        hwlat blk mmiotrace function_graph wakeup_dl wakeup_rt wakeup function nop</pre>
+        <p class="noindent">This is using the tracefs interface mounted under /sys, which is introduced in the next section. Subsequent sections cover profilers, tracers, and the tools that use them.</p>
+        <p class="noindent">If you wish to jump straight to Ftrace-based tools, take a look at <a href="ch14.xhtml#ch14lev13">Section 14.13</a>, <a href="ch13.xhtml#ch13">perf</a>-tools, which includes funcgraph(8) shown earlier.</p>
+        <p class="noindent">Future kernel versions may add more profilers and tracers to Ftrace: check the Ftrace documentation in the Linux source under Documentation/trace/ftrace.rst <a href="ch14.xhtml#ch14ref1">[Rostedt 08]</a>.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch14lev2">14.2 tracefs (/sys)</h3>
+        <p class="noindent">The interface for using Ftrace capabilities is the tracefs file system. It should be mounted on /sys/kernel/tracing; for example, by using:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg708-2a" id="pg708-2">Click here to view code image</a></p>
+        <pre class="pretab"><strong>mount -t tracefs tracefs /sys/kernel/tracing</strong></pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_709"></span>Ftrace was originally part of the debugfs file system until it was split into its own tracefs. When debugfs is mounted, it still preserves the original directory structure by mounting tracefs as a tracing subdirectory. You can list both debugfs and tracefs mount points using:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg709-1a" id="pg709-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>mount -t debugfs,tracefs</strong>
+        debugfs on /sys/kernel/debug type debugfs (rw,relatime)
+        tracefs on /sys/kernel/debug/tracing type tracefs (rw,relatime)</pre>
+        <p class="noindent">This output is from Ubuntu 19.10, which shows that tracefs is mounted in /sys/kernel/debug/tracing. The examples in the sections that follow use this location as it is still in widespread use, but in the future it should change to /sys/kernel/tracing.</p>
+        <p class="noindent">Note that if tracefs fails to mount, one possible reason is that your kernel has been built without the Ftrace config options (CONFIG_FTRACE, etc.).</p>
+        <section>
+        <h4 class="h4" id="ch14lev2sec1">14.2.1 tracefs Contents</h4>
+        <p class="noindent">Once tracefs is mounted, you should be able to see the control and output files in the tracing directory:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg709-2a" id="pg709-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>ls -F /sys/kernel/debug/tracing</strong>
+        available_events            max_graph_depth      stack_trace_filter
+        available_filter_functions  options/             synthetic_events
+        available_tracers           per_cpu/             timestamp_mode
+        buffer_percent              printk_formats       trace
+        buffer_size_kb              README               trace_clock
+        buffer_total_size_kb        saved_cmdlines       trace_marker
+        current_tracer              saved_cmdlines_size  trace_marker_raw
+        dynamic_events              saved_tgids          trace_options
+        dyn_ftrace_total_info       set_event            trace_pipe
+        enabled_functions           set_event_pid        trace_stat/
+        error_log                   set_ftrace_filter    tracing_cpumask
+        events/                     set_ftrace_notrace   tracing_max_latency
+        free_buffer                 set_ftrace_pid       tracing_on
+        function_profile_enabled    set_graph_function   tracing_thresh
+        hwlat_detector/             set_graph_notrace    uprobe_events
+        instances/                  snapshot             uprobe_profile
+        kprobe_events               stack_max_size
+        kprobe_profile              stack_trace</pre>
+        <p class="noindent">The names of many of these are intuitive. Key files and directories include those listed in <a href="ch14.xhtml#ch14tab03">Table 14.3</a>.</p>
+        <figure class="table" id="ch14tab03">
+        <figcaption>
+        <p class="title-t"><span epub:type="pagebreak" id="page_710"></span><span class="pd_ashf">Table 14.3</span> <strong>tracefs key files</strong></p>
+        </figcaption>
+        <table class="all">
+        <thead>
+        <tr>
+        <th class="th"><p class="thead"><strong>File</strong></p></th>
+        <th class="th"><p class="thead"><strong>Access</strong></p></th>
+        <th class="th"><p class="thead"><strong>Description</strong></p></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td class="border"><p class="tab-para"><code>available_tracers</code></p></td>
+        <td class="border"><p class="tab-para">read</p></td>
+        <td class="border"><p class="tab-para">Lists available tracers (see <a href="ch14.xhtml#ch14tab02">Table 14.2</a>)</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>current_tracer</code></p></td>
+        <td class="border"><p class="tab-para">read/write</p></td>
+        <td class="border"><p class="tab-para">Shows the current enabled tracer</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>function_profile_enabled</code></p></td>
+        <td class="border"><p class="tab-para">read/write</p></td>
+        <td class="border"><p class="tab-para">Enables the function profiler</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>available_filter_functions</code></p></td>
+        <td class="border"><p class="tab-para">read</p></td>
+        <td class="border"><p class="tab-para">Lists available functions to trace</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>set_ftrace_filter</code></p></td>
+        <td class="border"><p class="tab-para">read/write</p></td>
+        <td class="border"><p class="tab-para">Select functions to trace</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>tracing_on</code></p></td>
+        <td class="border"><p class="tab-para">read/write</p></td>
+        <td class="border"><p class="tab-para">A switch to enable/disable the output ring buffer</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>trace</code></p></td>
+        <td class="border"><p class="tab-para">read/write</p></td>
+        <td class="border"><p class="tab-para">Output of tracers (ring buffer)</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>trace_pipe</code></p></td>
+        <td class="border"><p class="tab-para">read</p></td>
+        <td class="border"><p class="tab-para">Output of tracers; this version consumes the trace and blocks for input</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>trace_options</code></p></td>
+        <td class="border"><p class="tab-para">read/write</p></td>
+        <td class="border"><p class="tab-para">Options to customize the trace buffer output</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>trace_stat</code> (directory)</p></td>
+        <td class="border"><p class="tab-para">read/write</p></td>
+        <td class="border"><p class="tab-para">Output of the function profiler</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>kprobe_events</code></p></td>
+        <td class="border"><p class="tab-para">read/write</p></td>
+        <td class="border"><p class="tab-para">Enabled kprobe configuration</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>uprobe_events</code></p></td>
+        <td class="border"><p class="tab-para">read/write</p></td>
+        <td class="border"><p class="tab-para">Enabled uprobe configuration</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>events</code> (directory)</p></td>
+        <td class="border"><p class="tab-para">read/write</p></td>
+        <td class="border"><p class="tab-para">Event tracer control files: tracepoints, kprobes, uprobes</p></td>
+        </tr>
+        <tr>
+        <td><p class="tab-para"><code>instances</code> (directory)</p></td>
+        <td><p class="tab-para">read/write</p></td>
+        <td><p class="tab-para">Ftrace instances for concurrent users</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </figure>
+        <p class="noindent">This /sys interface is documented in the Linux source under Documentation/trace/ftrace.rst <a href="ch14.xhtml#ch14ref1">[Rostedt 08]</a>. It can be used directly from the shell or by front ends and libraries. As an example, to see whether any of the Ftrace tracers are currently in use you can cat(1) the current_tracer file:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg710-1a" id="pg710-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>cat /sys/kernel/debug/tracing/current_tracer</strong>
+        nop</pre>
+        <p class="noindent">The output shows nop (no operation), which means that no tracer is currently in use. To enable a tracer, write its name to this file. For example, to enable the blk tracer:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg710-2a" id="pg710-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo blk &gt; /sys/kernel/debug/tracing/current_tracer</strong></pre>
+        <p class="noindent">Other Ftrace control and output files can also be used via echo(1) and cat(1). This means that Ftrace has virtually zero dependencies to be used (only a shell is needed<sup><a id="ch14fn2a" href="ch14.xhtml#ch14fn2">2</a></sup>).</p>
+        <p class="footnote"><sup><a id="ch14fn2" href="ch14.xhtml#ch14fn2a">2</a></sup>echo(1) is a shell builtin, cat(1) can be approximated: function shellcat <code>{ (while read line; do echo "$line"; done) &lt; $1; }</code>. Or busybox could be used to include a shell, cat(1), and other basics.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_711"></span>Steven Rostedt built Ftrace for his own use while developing the realtime patch set, and initially it did not support concurrent users. For example, the current_tracer file can only be set to one tracer at a time. Concurrent user support was added later, in the form of instances that can be created in the “instances” directory. Each instance has its own current_tracer and output files so that it can perform tracing independently.</p>
+        <p class="noindent">The following sections (<a href="ch14.xhtml#ch14lev3">14.3</a> to <a href="ch14.xhtml#ch14lev10">14.10</a>) show more /sys interface examples; then later sections (<a href="ch14.xhtml#ch14lev11">14.11</a> to <a href="ch14.xhtml#ch14lev13">14.13</a>) show the front ends built upon it: trace-cmd, the perf(1) <code>ftrace</code> subcommand, and perf-tools.</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch14lev3">14.3 Ftrace Function Profiler</h3>
+        <p class="noindent">The function profiler provides statistics on kernel function calls, and is suited for exploring which kernel functions are in use and identifying which are the slowest. I frequently use the function profiler as a starting point for understanding kernel code execution for a given workload, especially because it is efficient and costs relatively low overhead. Using it, I can identify functions to analyze using more expensive per-event tracing. It requires the CONFIG_FUNCTION_PROFILER=y kernel option.</p>
+        <p class="noindent">The function profiler works by using compiled-in profiling calls at the start of every kernel function. This approach is based on how compiler profilers work, such as gcc(1)’s <code>-pg</code> option, which inserts mcount() calls for use with gprof(1). Since gcc(1) version 4.6, this mcount() call is now __fentry__(). Adding calls to <em>every</em> kernel function sounds like it should cost significant overhead, which would be a concern for something that may rarely be used, but the overhead problem has been solved: when not in use, these calls are typically replaced with fast nop instructions, and only switched to the __fentry__() calls when needed <a href="ch14.xhtml#ch14ref3">[Gregg 19f]</a>.</p>
+        <p class="noindent">The following demonstrates the function profiler using the tracefs interface in /sys. For reference, the following shows the original not-enabled state of the function profiler:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg711-1a" id="pg711-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>cd /sys/kernel/debug/tracing</strong>
+        # <strong>cat set_ftrace_filter</strong>
+        #### all functions enabled ####
+        # <strong>cat function_profile_enabled</strong>
+        0</pre>
+        <p class="noindent">Now (from the same directory) these commands use the function profiler to count all kernel calls beginning with “tcp” for around 10 seconds:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg711-2a" id="pg711-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo 'tcp*' &gt; set_ftrace_filter</strong>
+        # <strong>echo 1 &gt; function_profile_enabled</strong>
+        # <strong>sleep 10</strong>
+        # <strong>echo 0 &gt; function_profile_enabled</strong>
+        # <strong>echo &gt; set_ftrace_filter</strong></pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_712"></span>The sleep(1) command was used to set a (rough) duration of the profile. The commands that came after that disabled function profiling and reset the filter. Tip: be sure to use “<code>0 &gt;</code>” and not “<code>0&gt;</code>”—they are not the same; the latter is a redirection of file descriptor 0. Likewise avoid “1<code>&gt;</code>” as it is a redirection of file descriptor 1.</p>
+        <p class="noindent">The profile statistics can now be read from the trace_stat directory, which keeps them in “function” files for each CPU. This is a 2-CPU system. Using head(1) to only show the first ten lines from each file:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg712a" id="pg712">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>head trace_stat/function*</strong>
+        ==&gt; trace_stat/function0 &lt;==
+          Function                       Hit    Time            Avg             s^2
+          --------                       ---    ----            ---             ---
+          tcp_sendmsg                 955912    2788479 us      2.917 us        3734541 us
+          tcp_sendmsg_locked          955912    2248025 us      2.351 us        2600545 us
+          tcp_push                    955912    852421.5 us     0.891 us        1057342 us
+          tcp_write_xmit              926777    674611.1 us     0.727 us        1386620 us
+          tcp_send_mss                955912    504021.1 us     0.527 us        95650.41 us
+          tcp_current_mss             964399    317931.5 us     0.329 us        136101.4 us
+          tcp_poll                    966848    216701.2 us     0.224 us        201483.9 us
+          tcp_release_cb              956155    102312.4 us     0.107 us        188001.9 us
+        
+        ==&gt; trace_stat/function1 &lt;==
+          Function                       Hit    Time            Avg             s^2
+          --------                       ---    ----            ---             ---
+          tcp_sendmsg                 317935    936055.4 us     2.944 us        13488147 us
+          tcp_sendmsg_locked          317935    770290.2 us     2.422 us        8886817 us
+          tcp_write_xmit              348064    423766.6 us     1.217 us        226639782 us
+          tcp_push                    317935    310040.7 us     0.975 us        4150989 us
+          tcp_tasklet_func             38109    189797.2 us     4.980 us        2239985 us
+          tcp_tsq_handler              38109    180516.6 us     4.736 us        2239552 us
+          tcp_tsq_write.part.0         29977    173955.7 us     5.802 us        1037352 us
+          tcp_send_mss                317935    165881.9 us     0.521 us        352309.0 us</pre>
+        <p class="noindent">The columns show the function name (<code>Function</code>), the call count (<code>Hit</code>), the total time in the function (<code>Time</code>), the average function time (<code>Avg</code>), and standard deviation (<code>s^2</code>). The output shows that the tcp_sendmsg() function was most frequent on both CPUs; it was called over 955k times on CPU0 and over 317k times on CPU1. Its average duration was 2.9 microseconds.</p>
+        <p class="noindent">A small amount of overhead is added to the profiled functions during profiling. If the set_ftrace_filter is left blank, all kernel functions are profiled (as we were warned by the initial state seen earlier: “all functions enabled”). Bear this in mind when using the profiler, and try to use the function filter to limit the overhead.</p>
+        <p class="noindent">The Ftrace front ends, covered later, automate these steps and can combine the per-CPU output into a system-wide summary.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch14lev4"><span epub:type="pagebreak" id="page_713"></span>14.4 Ftrace Function Tracing</h3>
+        <p class="noindent">The function tracer prints per-event details for kernel function calls, and uses the function profiling instrumentation described in the previous section. This can show the sequence of various functions, timestamp-based patterns, and the on-CPU process name and PID that may be responsible. The overhead of function tracing is higher than function profiling, and so tracing is best suited for relatively infrequent functions (less than 1,000 calls per second). You can use function profiling from the previous section to find out the rate of functions before tracing them.</p>
+        <p class="noindent">The key tracefs files involved in function tracing are shown in <a href="ch14.xhtml#ch14fig02">Figure 14.2</a>.</p>
+        <figure class="image-c" id="ch14fig02">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/14fig02.jpg" alt="Images" width="775" height="418">
+        <figcaption>
+        <p class="title-f"><span class="pd_ashf">Figure 14.2</span> Ftrace function tracing tracefs files</p>
+        </figcaption>
+        </figure>
+        <p class="noindent">The final trace output is read from either the <code>trace</code> or <code>trace_pipe</code> files, described in the following sections. Both of these interfaces also have ways to clear the output buffer (hence the arrows back to the buffer).</p>
+        <section>
+        <h4 class="h4" id="ch14lev4sec1">14.4.1 Using trace</h4>
+        <p class="noindent">The following demonstrates function tracing with the <code>trace</code> output file. For reference, the following shows the original not-enabled state of the function tracer:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg713a" id="pg713">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>cd /sys/kernel/debug/tracing</strong>
+        # <strong>cat set_ftrace_filter</strong>
+        #### all functions enabled ####
+        # <strong>cat current_tracer</strong>
+        nop</pre>
+        <p class="noindent">No other tracer is currently in use.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_714"></span>For this example, all kernel functions ending with “sleep” are traced, and the events are ultimately saved to a /tmp/out.trace01.txt file. A dummy sleep(1) command is used to collect at least 10 seconds of tracing. This command sequence finishes by disabling the function tracer and returning the system back to normal:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg714-1a" id="pg714-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>cd /sys/kernel/debug/tracing</strong>
+        # <strong>echo 1 &gt; tracing_on</strong>
+        # <strong>echo '*sleep' &gt; set_ftrace_filter</strong>
+        # <strong>echo function &gt; current_tracer</strong>
+        # <strong>sleep 10</strong>
+        # <strong>cat trace &gt; /tmp/out.trace01.txt</strong>
+        # <strong>echo nop &gt; current_tracer</strong>
+        # <strong>echo &gt; set_ftrace_filter</strong></pre>
+        <p class="noindent">Setting tracing_on may be an unnecessary step (on my Ubuntu system, it is set to 1 by default). I’ve included it in case it is not set on your system.</p>
+        <p class="noindent">The dummy sleep(1) command was captured in the trace output while we were tracing “sleep” function calls:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg714-2a" id="pg714-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>more /tmp/out.trace01.txt</strong>
+        # tracer: function
+        #
+        # entries-in-buffer/entries-written: 57/57   #P:2
+        #
+        #                              _-----=&gt; irqs-off
+        #                             / _----=&gt; need-resched
+        #                            | / _---=&gt; hardirq/softirq
+        #                            || / _--=&gt; preempt-depth
+        #                            ||| /     delay
+        #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+        #              | |       |   ||||       |         |
+              multipathd-348   [001] .... 332762.532877: __x64_sys_nanosleep &lt;-do_syscall_64
+              multipathd-348   [001] .... 332762.532879: hrtimer_nanosleep &lt;-
+        __x64_sys_nanosleep
+              multipathd-348   [001] .... 332762.532880: do_nanosleep &lt;-hrtimer_nanosleep
+                   sleep-4203  [001] .... 332762.722497: __x64_sys_nanosleep &lt;-do_syscall_64
+                   sleep-4203  [001] .... 332762.722498: hrtimer_nanosleep &lt;-
+        __x64_sys_nanosleep
+                   sleep-4203  [001] .... 332762.722498: do_nanosleep &lt;-hrtimer_nanosleep
+              multipathd-348   [001] .... 332763.532966: __x64_sys_nanosleep &lt;-do_syscall_64
+        [...]</pre>
+        <p class="noindent">The output includes field headers and trace metadata. This example shows a process named <code>multipathd</code> with process ID 348 calling sleep functions, as well as the sleep(1) command. The <span epub:type="pagebreak" id="page_715"></span>final fields show the current function and the parent function that called it. For example, for the first line, the function was __x64_sys_nanosleep() and was called by do_syscall_64().</p>
+        <p class="noindent">The <code>trace</code> file is an interface to the trace events buffer. Reading it shows the buffer contents; you can clear the contents by writing a newline to it:</p>
+        <pre class="pretab"># <strong>&gt; trace</strong></pre>
+        <p class="noindent">The trace buffer is also cleared when the <code>current_tracer</code> is set back to <code>nop</code> as I did in the example steps to disable tracing. It is also cleared when trace_pipe is used.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev4sec2">14.4.2 Using trace_pipe</h4>
+        <p class="noindent">The <code>trace_pipe</code> file is a different interface for reading the trace buffer. Reads from this file return an endless stream of events. It also consumes events, so after reading them once they are no longer in the trace buffer.</p>
+        <p class="noindent">For example, using <code>trace_pipe</code> to watch sleep events live:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg715a" id="pg715">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo '*sleep' &gt; set_ftrace_filter</strong>
+        # <strong>echo function &gt; current_tracer</strong>
+        # <strong>cat trace_pipe</strong>
+              multipathd-348   [001] .... 332624.519190: __x64_sys_nanosleep &lt;-do_syscall_64
+              multipathd-348   [001] .... 332624.519192: hrtimer_nanosleep &lt;-
+        __x64_sys_nanosleep
+              multipathd-348   [001] .... 332624.519192: do_nanosleep &lt;-hrtimer_nanosleep
+              multipathd-348   [001] .... 332625.519272: __x64_sys_nanosleep &lt;-do_syscall_64
+              multipathd-348   [001] .... 332625.519274: hrtimer_nanosleep &lt;-
+        __x64_sys_nanosleep
+              multipathd-348   [001] .... 332625.519275: do_nanosleep &lt;-hrtimer_nanosleep
+                    cron-504   [001] .... 332625.560150: __x64_sys_nanosleep &lt;-do_syscall_64
+                    cron-504   [001] .... 332625.560152: hrtimer_nanosleep &lt;-
+        __x64_sys_nanosleep
+                    cron-504   [001] .... 332625.560152: do_nanosleep &lt;-hrtimer_nanosleep
+        ^C
+        # <strong>echo nop &gt; current_tracer</strong>
+        # <strong>echo &gt; set_ftrace_filter</strong></pre>
+        <p class="noindent">The output shows a number of sleeps from <code>multipathd</code> and <code>cron</code> processes. The fields are the same as the trace file output shown previously, but this time without the column headers.</p>
+        <p class="noindent">The <code>trace_pipe</code> file is handy for watching low-frequency events, but for high-frequency events you will want to capture them to a file for later analysis using the <code>trace</code> file shown earlier.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev4sec3"><span epub:type="pagebreak" id="page_716"></span>14.4.3 Options</h4>
+        <p class="noindent">Ftrace provides options for customizing the trace output, which can be controlled from a trace_options file or the options directory. For example (from the same directory) disabling the flags column (in the previous output this was “...”):</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg716-1a" id="pg716-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo 0 &gt; options/irq-info</strong>
+        # <strong>cat trace</strong>
+        # tracer: function
+        #
+        # entries-in-buffer/entries-written: 3300/3300   #P:2
+        #
+        #           TASK-PID     CPU#   TIMESTAMP  FUNCTION
+        #              | |         |       |         |
+              multipathd-348   [001]  332762.532877: __x64_sys_nanosleep &lt;-do_syscall_64
+              multipathd-348   [001]  332762.532879: hrtimer_nanosleep &lt;-__x64_sys_nanosleep
+              multipathd-348   [001]  332762.532880: do_nanosleep &lt;-hrtimer_nanosleep
+        [...]</pre>
+        <p class="noindent">Now the flags file is not present in the output. You can set this back using:</p>
+        <pre class="pretab"># <strong>echo 1 &gt; options/irq-info</strong></pre>
+        <p class="noindent">There are many more options, which you can list from the options directory; they have somewhat intuitive names.</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg716-2a" id="pg716-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>ls options/</strong>
+        annotate          funcgraph-abstime   hex              stacktrace
+        bin               funcgraph-cpu       irq-info         sym-addr
+        blk_cgname        funcgraph-duration  latency-format   sym-offset
+        blk_cgroup        funcgraph-irqs      markers          sym-userobj
+        blk_classic       funcgraph-overhead  overwrite        test_nop_accept
+        block             funcgraph-overrun   print-parent     test_nop_refuse
+        context-info      funcgraph-proc      printk-msg-only  trace_printk
+        disable_on_free   funcgraph-tail      raw              userstacktrace
+        display-graph     function-fork       record-cmd       verbose
+        event-fork        function-trace      record-tgid
+        func_stack_trace  graph-time          sleep-time</pre>
+        <p class="noindent">These options include <code>stacktrace</code> and <code>userstacktrace</code>, which will append kernel and user stack traces to the output: this is useful for understanding why functions were called. All of these options are documented in the Ftrace documentation in the Linux source <a href="ch14.xhtml#ch14ref1">[Rostedt 08]</a>.</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch14lev5"><span epub:type="pagebreak" id="page_717"></span>14.5 Tracepoints</h3>
+        <p class="noindent">Tracepoints are kernel static instrumentation, and were introduced in <a href="ch04.xhtml#ch04">Chapter 4</a>, <a href="ch04.xhtml#ch04">Observability Tools</a>, <a href="ch04.xhtml#ch04lev3sec5">Section 4.3.5</a>, <a href="ch04.xhtml#ch04lev3sec5">Tracepoints</a>. Tracepoints are technically just the tracing functions placed in kernel source; they are used from a trace event interface that defines and formats their arguments. Trace events are visible in tracefs, and share output and control files with Ftrace.</p>
+        <p class="noindent">As an example, the following enables the block:block_rq_issue tracepoint and watches the events live. This example finishes by disabling the tracepoint:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg717-1a" id="pg717-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>cd /sys/kernel/debug/tracing</strong>
+        # <strong>echo 1 &gt; events/block/block_rq_issue/enable</strong>
+        # <strong>cat trace_pipe</strong>
+                    sync-4844  [001] .... 343996.918805: block_rq_issue: 259,0 WS 4096 ()
+        2048 + 8 [sync]
+                    sync-4844  [001] .... 343996.918808: block_rq_issue: 259,0 WSM 4096 ()
+        10560 + 8 [sync]
+                    sync-4844  [001] .... 343996.918809: block_rq_issue: 259,0 WSM 4096 ()
+        38424 + 8 [sync]
+                    sync-4844  [001] .... 343996.918809: block_rq_issue: 259,0 WSM 4096 ()
+        4196384 + 8 [sync]
+                    sync-4844  [001] .... 343996.918810: block_rq_issue: 259,0 WSM 4096 ()
+        4462592 + 8 [sync]
+        ^C
+        # <strong>echo 0 &gt; events/block/block_rq_issue/enable</strong></pre>
+        <p class="noindent">The first five columns are the same as shown in 4.6.4, and are: process name “-” PID, CPU ID, flags, timestamp (seconds), and event name. The remainder are the format string for the tracepoint, described in <a href="ch04.xhtml#ch04lev3sec5">Section 4.3.5</a>.</p>
+        <p class="noindent">As can be seen in this example, tracepoints have control files in a directory structure under events. There is a directory for each trace system (e.g., “block”) and within those subdirectories for each event (e.g., “block_rq_issue”). Listing this directory:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg717-2a" id="pg717-2">Click here to view code image</a></p>
+        <pre class="pretab"><strong># ls events/block/block_rq_issue/</strong>
+        enable  filter  format  hist  id  trigger</pre>
+        <p class="noindent">These control files are documented in the Linux source under Documentation/trace/events.rst <a href="ch14.xhtml#ch14ref9">[Ts’o 20]</a>. In this example, the <code>enable</code> file was used to turn on and off the tracepoint. Other files provide filtering and triggered capabilities.</p>
+        <section>
+        <h4 class="h4" id="ch14lev5sec1">14.5.1 Filter</h4>
+        <p class="noindent">A filter can be included to record the event only when a Boolean expression has been met. It has a restricted syntax:</p>
+        <pre class="pretab">field operator value</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_718"></span>The field is from the format file described in <a href="ch04.xhtml#ch04lev3sec5">Section 4.3.5</a>, under the heading <a href="ch04.xhtml#ch04lev3_14">Tracepoints Arguments and Format String</a> (these fields are also printed in the format string described earlier). The operator for numbers is one of: ==, !=, &lt;, &lt;=, &gt;, &gt;=, &amp;; and for strings: ==, !=, ~. The “~” operator performs a shell glob-style match, with wildcards: *, ?, []. These Boolean expressions can be grouped with parentheses and combined using: &amp;&amp;, ||.</p>
+        <p class="noindent">As an example, the following sets a filter on an already-enabled block:block_rq_insert tracepoint to only trace events where the bytes field was larger than 64 Kbytes:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg718-1a" id="pg718-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo 'bytes &gt; 65536' &gt; events/block/block_rq_insert/filter</strong>
+        # <strong>cat trace_pipe</strong>
+            kworker/u4:1-7173  [000] .... 378115.779394: block_rq_insert: 259,0 W 262144 ()
+        5920256 + 512 [kworker/u4:1]
+            kworker/u4:1-7173  [000] .... 378115.784654: block_rq_insert: 259,0 W 262144 ()
+        5924336 + 512 [kworker/u4:1]
+            kworker/u4:1-7173  [000] .... 378115.789136: block_rq_insert: 259,0 W 262144 ()
+        5928432 + 512 [kworker/u4:1]
+        ^C</pre>
+        <p class="noindent">The output now only contains larger I/O.</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg718-2a" id="pg718-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo 0 &gt; events/block/block_rq_insert/filter</strong></pre>
+        <p class="noindent">This <code>echo 0</code> resets the filter.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev5sec2">14.5.2 Trigger</h4>
+        <p class="noindent">A trigger runs an extra tracing command when an event fires. That command may be to enable or disable other tracing, print a stack trace, or take a snapshot of the tracing buffer. Available trigger commands can be listed from the trigger file when no trigger is currently set. For example:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg718-3a" id="pg718-3">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>cat events/block/block_rq_issue/trigger</strong>
+        # Available triggers:
+        # traceon traceoff snapshot stacktrace enable_event disable_event enable_hist
+        disable_hist hist</pre>
+        <p class="noindent">One use case for triggers is when you wish to see events that led to an error condition: a trigger can be placed on the error condition that either disables tracing (<code>traceoff</code>) so that the trace buffer only contains the prior events, or takes a snapshot (<code>snapshot</code>) to preserve it.</p>
+        <p class="noindent">Triggers can be combined with filters, shown in the previous section, by using an <code>if</code> keyword. This may be necessary to match an error condition or an interesting event. For example, to stop recording events when a block I/O larger than 64 Kbytes was queued:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg718-4a" id="pg718-4">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo 'traceoff if bytes &gt; 65536' &gt; events/block/block_rq_insert/trigger</strong></pre>
+        <p class="noindent">More complex actions can be performed using hist triggers, introduced in <a href="ch14.xhtml#ch14lev10">Section 14.10</a>, <a href="ch14.xhtml#ch14lev10">Ftrace Hist Triggers</a>.</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch14lev6"><span epub:type="pagebreak" id="page_719"></span>14.6 kprobes</h3>
+        <p class="noindent">kprobes are kernel dynamic instrumentation, and were introduced in <a href="ch04.xhtml#ch04">Chapter 4</a>, <a href="ch04.xhtml#ch04">Observability Tools</a>, <a href="ch04.xhtml#ch04lev3sec6">Section 4.3.6</a>, <a href="ch04.xhtml#ch04lev3sec6">kprobes</a>. kprobes create kprobe events for tracers to use, which share tracefs output and control files with Ftrace. kprobes are similar to the Ftrace function tracer, covered in <a href="ch14.xhtml#ch14lev4">Section 14.4</a>, in that they trace kernel functions. kprobes, however, can be customized further, can be placed on function offsets (individual instructions), and can report function argument and return values.</p>
+        <p class="noindent">This section covers kprobe event tracing and the Ftrace kprobe profiler.</p>
+        <section>
+        <h4 class="h4" id="ch14lev6sec1">14.6.1 Event Tracing</h4>
+        <p class="noindent">As an example, the following uses kprobes to instrument the do_nanosleep() kernel function:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg719-1a" id="pg719-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo 'p:brendan do_nanosleep' &gt;&gt; kprobe_events</strong>
+        # <strong>echo 1 &gt; events/kprobes/brendan/enable</strong>
+        # <strong>cat trace_pipe</strong>
+              multipathd-348   [001] .... 345995.823380: brendan: (do_nanosleep+0x0/0x170)
+              multipathd-348   [001] .... 345996.823473: brendan: (do_nanosleep+0x0/0x170)
+              multipathd-348   [001] .... 345997.823558: brendan: (do_nanosleep+0x0/0x170)
+        ^C
+        # <strong>echo 0 &gt; events/kprobes/brendan/enable</strong>
+        <strong># echo '-:brendan' &gt;&gt; kprobe_events</strong></pre>
+        <p class="noindent">The kprobe is created and deleted by appending a special syntax to kprobe_events. After it has been created, it appears in the events directory alongside tracepoints, and can be used in a similar fashion.</p>
+        <p class="noindent">The kprobe syntax is fully explained in the kernel source under Documentation/trace/kprobetrace.rst <a href="ch14.xhtml#ch14ref6">[Hiramatsu 20]</a>. kprobes are able to trace the entry and return of kernel functions as well as function offsets. The synopsis is:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg719-2a" id="pg719-2">Click here to view code image</a></p>
+        <pre class="pretab">  p[:[GRP/]EVENT] [MOD:]SYM[+offs]|MEMADDR [FETCHARGS]  : Set a probe
+          r[MAXACTIVE][:[GRP/]EVENT] [MOD:]SYM[+0] [FETCHARGS]  : Set a return probe
+          -:[GRP/]EVENT                                         : Clear a probe</pre>
+        <p class="noindent">In my example, the string “<code>p:brendan do_nanosleep</code>” creates a probe (p:) of name “brendan” for the kernel symbol do_nanosleep(). The string “<code>-:brendan</code>” deletes the probe of name “brendan”.</p>
+        <p class="noindent">Custom names have proven useful for differentiating different users of kprobes. The BCC tracer (covered in <a href="ch15.xhtml#ch15">Chapter 15</a>, <a href="ch15.xhtml#ch15">BPF</a>, <a href="ch15.xhtml#ch15lev1">Section 15.1</a>, <a href="ch15.xhtml#ch15lev1">BCC</a>) uses names that include the traced function, the string “bcc”, and the BCC PID. For example:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg719-3a" id="pg719-3">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>cat /sys/kernel/debug/tracing/kprobe_events</strong>
+        p:kprobes/<strong>p_blk_account_io_start_bcc_19454</strong> blk_account_io_start
+        p:kprobes/<strong>p_blk_mq_start_request_bcc_19454</strong> blk_mq_start_request</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_720"></span>Note that, on newer kernels, BCC has switched to using a perf_event_open(2)-based interface to use kprobes instead of the kprobe_events file (and events enabled using perf_event_open(2) do not appear in kprobe_events).</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev6sec2">14.6.2 Arguments</h4>
+        <p class="noindent">Unlike function tracing (<a href="ch14.xhtml#ch14lev4">Section 14.4</a>, <a href="ch14.xhtml#ch14lev4">Ftrace Function Tracing</a>), kprobes can inspect function arguments and return values. As an example, here is the declaration for the do_nanosleep() function traced earlier, from kernel/time/hrtimer.c, with the argument variable types highlighted:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg720-1a" id="pg720-1">Click here to view code image</a></p>
+        <pre class="pretab">static int __sched do_nanosleep(struct <strong>hrtimer_sleeper</strong> *t, enum <strong>hrtimer_mode</strong> mode)
+        {
+        [...]</pre>
+        <p class="noindent">Tracing the first two arguments on an Intel x86_64 system and printing them as hexadecimal (the default):</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg720-2a" id="pg720-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo 'p:brendan do_nanosleep hrtimer_sleeper=$arg1 hrtimer_mode=$arg2' &gt;&gt;
+        kprobe_events</strong>
+        # <strong>echo 1 &gt; events/kprobes/brendan/enable</strong>
+        # <strong>cat trace_pipe</strong>
+              multipathd-348   [001] .... 349138.128610: brendan: (do_nanosleep+0x0/0x170)
+        <strong>hrtimer_sleeper=0xffffaa6a4030be80 hrtimer_mode=0x1</strong>
+              multipathd-348   [001] .... 349139.128695: brendan: (do_nanosleep+0x0/0x170)
+        <strong>hrtimer_sleeper=0xffffaa6a4030be80 hrtimer_mode=0x1</strong>
+              multipathd-348   [001] .... 349140.128785: brendan: (do_nanosleep+0x0/0x170)
+        <strong>hrtimer_sleeper=0xffffaa6a4030be80 hrtimer_mode=0x1</strong>
+        ^C
+        # <strong>echo 0 &gt; events/kprobes/brendan/enable</strong>
+        # <strong>echo '-:brendan' &gt;&gt; kprobe_events</strong></pre>
+        <p class="noindent">There is additional syntax added to the event description in the first line: the string “<code>hrtimer_sleeper=$arg1</code>”, for example, traces the first argument to the function and uses the custom name “hrtimer_sleeper”. This has been highlighted in the output.</p>
+        <p class="noindent">Accessing arguments to functions as $arg1, $arg2, etc., was added in Linux 4.20. Prior Linux versions required the use of register names.<sup><a id="ch14fn3a" href="ch14.xhtml#ch14fn3">3</a></sup> Here is the equivalent kprobe definition using register names:</p>
+        <p class="footnote"><sup><a id="ch14fn3" href="ch14.xhtml#ch14fn3a">3</a></sup>This may also be necessary for processor architectures where the aliases have yet to be added.</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg720-3a" id="pg720-3">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo 'p:brendan do_nanosleep hrtimer_sleeper=%di hrtimer_mode=%si' &gt;&gt; kprobe_events</strong></pre>
+        <p class="noindent">To use register names, you need to know the processor type and the function calling convention in use. x86_64 uses the AMD64 ABI <a href="ch14.xhtml#ch14ref2">[Matz 13]</a>, so the first two arguments are available in the <span epub:type="pagebreak" id="page_721"></span>registers rdi and rsi.<sup><a id="ch14fn4a" href="ch14.xhtml#ch14fn4">4</a></sup> This syntax is also used by perf(1), and I provided a more complex example of it in <a href="ch13.xhtml#ch13">Chapter 13</a>, <a href="ch13.xhtml#ch13">perf</a>, <a href="ch13.xhtml#ch13lev7sec2">Section 13.7.2</a>, <a href="ch13.xhtml#ch13lev7sec2">uprobes</a>, which dereferenced a string pointer.</p>
+        <p class="footnote"><sup><a id="ch14fn4" href="ch14.xhtml#ch14fn4a">4</a></sup>The syscall(2) man page summarizes calling conventions for different processors. An excerpt is in <a href="ch14.xhtml#ch14lev13sec4">Section 14.13.4</a>, <a href="ch14.xhtml#ch14lev13sec4">perf-tools One-Liners</a>.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev6sec3">14.6.3 Return Values</h4>
+        <p class="noindent">The special alias <code>$retval</code> for the return value is available for use with kretprobes. The following example uses it to show the return value of do_nanosleep():</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg721-1a" id="pg721-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo 'r:brendan do_nanosleep ret=$retval' &gt;&gt; kprobe_events</strong>
+        # <strong>echo 1 &gt; events/kprobes/brendan/enable</strong>
+        # <strong>cat trace_pipe</strong>
+              multipathd-348   [001] d... 349782.180370: brendan:
+        (hrtimer_nanosleep+0xce/0x1e0 &lt;- do_nanosleep) <strong>ret=0x0</strong>
+              multipathd-348   [001] d... 349783.180443: brendan:
+        (hrtimer_nanosleep+0xce/0x1e0 &lt;- do_nanosleep) <strong>ret=0x0</strong>
+              multipathd-348   [001] d... 349784.180530: brendan:
+        (hrtimer_nanosleep+0xce/0x1e0 &lt;- do_nanosleep) <strong>ret=0x0</strong>
+        ^C
+        # <strong>echo 0 &gt; events/kprobes/brendan/enable</strong>
+        # <strong>echo '-:brendan' &gt;&gt; kprobe_events</strong></pre>
+        <p class="noindent">This output shows that, while tracing, the return value of do_nanosleep() was always “<code>0</code>” (success).</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev6sec4">14.6.4 Filters and Triggers</h4>
+        <p class="noindent">Filters and triggers can be used from the events/kprobes/... directory, as they were with tracepoints (see <a href="ch14.xhtml#ch14lev5">Section 14.5</a>, <a href="ch14.xhtml#ch14lev5">Tracepoints</a>). Here is the format file for the earlier kprobe on do_nanosleep() with arguments (from <a href="ch14.xhtml#ch14lev6sec2">Section 14.6.2</a>, <a href="ch14.xhtml#ch14lev6sec2">Arguments</a>):</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg721-2a" id="pg721-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>cat events/kprobes/brendan/format</strong>
+        name: brendan
+        ID: 2024
+        format:
+                field:unsigned short common_type;  offset:0;  size:2;    signed:0;
+                field:unsigned char common_flags;  offset:2;  size:1;    signed:0;
+                field:unsigned char common_preempt_count;   offset:3;  size:1;  signed:0;
+                field:int common_pid;    offset:4; size:4;    signed:1;
+        
+                field:unsigned long __probe_ip;    offset:8;   size:8;   signed:0;
+                field:u64 <strong>hrtimer_sleeper</strong>;     offset:16;  size:8;    signed:0;
+                field:u64 <strong>hrtimer_mode</strong>;  offset:24;     size:8;     signed:0;
+        <span epub:type="pagebreak" id="page_722"></span>print fmt: "(%lx) hrtimer_sleeper=0x%Lx hrtimer_mode=0x%Lx", REC-&gt;__probe_ip, REC-
+        &gt;hrtimer_sleeper, REC-&gt;hrtimer_mode</pre>
+        <p class="noindent">Note that my custom hrtimer_sleeper and hrtimer_mode variable names are visible as fields that can be used with a filter. For example:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg722-1a" id="pg722-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo 'hrtimer_mode != 1' &gt; events/kprobes/brendan/filter</strong></pre>
+        <p class="noindent">This will only trace do_nanosleep() calls where hrtimer_mode is not equal to 1.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev6sec5">14.6.5 kprobe Profiling</h4>
+        <p class="noindent">When kprobes are enabled, Ftrace counts their events. These counts can be printed in the kprobe_profile file. For example:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg722-2a" id="pg722-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>cat /sys/kernel/debug/tracing/kprobe_profile</strong>
+          p_blk_account_io_start_bcc_19454                        1808               0
+          p_blk_mq_start_request_bcc_19454                         677               0
+          p_blk_account_io_completion_bcc_19454                    521              11
+          p_kbd_event_1_bcc_1119                                   632               0</pre>
+        <p class="noindent">The columns are: the probe name (its definition can be seen by printing the kprobe_events file), the hit count, and the miss-hits count (where the probe was hit but then an error was encountered and it wasn’t recorded: it was missed).</p>
+        <p class="noindent">While you can already get function counts using the function profiler (<a href="ch14.xhtml#ch14lev3">Section 14.3</a>), I’ve found the kprobe profiler useful for checking the always-enabled kprobes used by monitoring software, in case some are firing too frequently and should be disabled (if possible).</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch14lev7">14.7 uprobes</h3>
+        <p class="noindent">uprobes are user-level dynamic instrumentation, and were introduced in <a href="ch04.xhtml#ch04">Chapter 4</a>, <a href="ch04.xhtml#ch04">Observability Tools</a>, <a href="ch04.xhtml#ch04lev3sec7">Section 4.3.7</a>, <a href="ch04.xhtml#ch04lev3sec7">uprobes</a>. uprobes create uprobe events for tracers to use, which share tracefs output and control files with Ftrace.</p>
+        <p class="noindent">This section covers uprobe event tracing and the Ftrace uprobe profiler.</p>
+        <section>
+        <h4 class="h4" id="ch14lev7sec1">14.7.1 Event Tracing</h4>
+        <p class="noindent">For uprobes the control file is uprobe_events, with the syntax documented in the Linux source under Documentation/trace/uprobetracer.rst <a href="ch14.xhtml#ch14ref4">[Dronamraju 20]</a>. The synopsis is:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg722-3a" id="pg722-3">Click here to view code image</a></p>
+        <pre class="pretab">  p[:[GRP/]EVENT] PATH:OFFSET [FETCHARGS] : Set a uprobe
+          r[:[GRP/]EVENT] PATH:OFFSET [FETCHARGS] : Set a return uprobe (uretprobe)
+          -:[GRP/]EVENT                           : Clear uprobe or uretprobe event</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_723"></span>The syntax now requires a path and an offset for the uprobe. The kernel does not have symbol information for user-space software, so this offset must be determined and provided to the kernel using user-space tools.</p>
+        <p class="noindent">The following example uses uprobes to instrument the readline() function from the bash(1) shell, starting with a lookup of the symbol offset:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg723-1a" id="pg723-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>readelf -s /bin/bash | grep -w readline</strong>
+           882: 00000000000b61e0   153 FUNC    GLOBAL DEFAULT   14 readline
+        # <strong>echo 'p:brendan /bin/bash:0xb61e0' &gt;&gt; uprobe_events</strong>
+        # <strong>echo 1 &gt; events/uprobes/brendan/enable</strong>
+        # <strong>cat trace_pipe</strong>
+                    bash-3970  [000] d... 347549.225818: brendan: (0x55d0857b71e0)
+                    bash-4802  [000] d... 347552.666943: brendan: (0x560bcc1821e0)
+                    bash-4802  [000] d... 347552.799480: brendan: (0x560bcc1821e0)
+        ^C
+        # <strong>echo 0 &gt; events/uprobes/brendan/enable</strong>
+        <strong># echo '-:brendan' &gt;&gt; uprobe_events</strong></pre>
+        <p class="noindent">WARNING: If you mistakenly use a symbol offset that is midway through an instruction, you will corrupt the target process (and for shared instruction text, all processes that share it!). The example technique of using readelf(1) to find the symbol offset may not work if the target binary has been compiled as a position-independent executable (PIE) with address space layout randomization (ASLR). I do not recommend that you use this interface at all: switch to a higher-level tracer that takes care of symbol mappings for you (e.g., BCC or bpftrace).</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev7sec2">14.7.2 Arguments and Return Values</h4>
+        <p class="noindent">These are similar to kprobes demonstrated in <a href="ch14.xhtml#ch14lev6">Section 14.6</a>, <a href="ch14.xhtml#ch14lev6">kprobes</a>. uprobe arguments and return values can be inspected by specifying them when the uprobe is created. The syntax is in uprobetracer.rst <a href="ch14.xhtml#ch14ref4">[Dronamraju 20]</a>.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev7sec3">14.7.3 Filters and Triggers</h4>
+        <p class="noindent">Filters and triggers can be used from the events/uprobes/... directory, as they were with kprobes (see <a href="ch14.xhtml#ch14lev6">Section 14.6</a>, <a href="ch14.xhtml#ch14lev6">kprobes</a>).</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev7sec4">14.7.4 uprobe Profiling</h4>
+        <p class="noindent">When uprobes are enabled, Ftrace counts their events. These counts can be printed in the uprobe_profile file. For example:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg723-2a" id="pg723-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>cat /sys/kernel/debug/tracing/uprobe_profile</strong>
+          /bin/bash brendan                                                   11</pre>
+        <p class="noindent">The columns are: the path, the probe name (its definition can be seen by printing the uprobe_events file), and the hit count.</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch14lev8"><span epub:type="pagebreak" id="page_724"></span>14.8 Ftrace function_graph</h3>
+        <p class="noindent">The function_graph tracer prints the call graph for functions, revealing the flow of code. This chapter began with an example via funcgraph(8) from perf-tools. The following shows the Ftrace tracefs interface.</p>
+        <p class="noindent">For reference, here is the original not-enabled state of the function graph tracer:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg724-1a" id="pg724-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>cd /sys/kernel/debug/tracing</strong>
+        <strong># cat set_graph_function</strong>
+        #### all functions enabled ####
+        # <strong>cat current_tracer</strong>
+        nop</pre>
+        <p class="noindent">No other tracer is currently in use.</p>
+        <section>
+        <h4 class="h4" id="ch14lev8sec1">14.8.1 Graph Tracing</h4>
+        <p class="noindent">The following uses the function_graph tracer on the do_nanosleep() function, to show its child function calls:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg724-2a" id="pg724-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo do_nanosleep &gt; set_graph_function</strong>
+        # <strong>echo function_graph &gt; current_tracer</strong>
+        # <strong>cat trace_pipe</strong>
+         1)   2.731 us    |  get_xsave_addr();
+         1)               |  do_nanosleep() {
+         1)               |    hrtimer_start_range_ns() {
+         1)               |      lock_hrtimer_base.isra.0() {
+         1)   0.297 us    |        _raw_spin_lock_irqsave();
+         1)   0.843 us    |      }
+         1)   0.276 us    |      ktime_get();
+         1)   0.340 us    |      get_nohz_timer_target();
+         1)   0.474 us    |      enqueue_hrtimer();
+         1)   0.339 us    |      _raw_spin_unlock_irqrestore();
+         1)   4.438 us    |    }
+         1)               |    schedule() {
+         1)               |      rcu_note_context_switch() {
+        [...]
+         5) $ 1000383 us  |  } /* do_nanosleep */
+        ^C
+        # <strong>echo nop &gt; current_tracer</strong>
+        # <strong>echo &gt; set_graph_function</strong></pre>
+        <p class="noindent">The output shows the child calls and the code flow: do_nanosleep() called hrtimer_start_range_ns(), which called lock_hrtimer_base.isra.0(), and so on. The column on the left shows the CPU (in <span epub:type="pagebreak" id="page_725"></span>this output, mostly CPU 1) and the duration in functions, so that latency can be identified. High latencies include a character symbol to help draw your attention to them, in this output, a “<code>$</code>” next to a latency of 1000383 microseconds (1.0 seconds). The characters are <a href="ch14.xhtml#ch14ref1">[Rostedt 08]</a>:</p>
+        <ul class="sq">
+        <li><p class="bull"><strong><code>$</code></strong>: Greater than 1 second</p></li>
+        <li><p class="bull"><strong><code>@</code></strong>: Greater than 100 ms</p></li>
+        <li><p class="bull"><strong><code>*</code></strong>: Greater than 10 ms</p></li>
+        <li><p class="bull"><strong><code>#</code></strong>: Greater than 1 ms</p></li>
+        <li><p class="bull"><strong><code>!</code></strong>: Greater than 100 μs</p></li>
+        <li><p class="bull"><strong><code>+</code></strong>: Greater than 10 μs</p></li>
+        </ul>
+        <p class="noindent">This example deliberately did not set a function filter (set_ftrace_filter), so that all child calls can be seen. This does, however, cost some overhead, inflating the reported durations. It is still generally useful for locating the origin of high latencies, which can dwarf the added overhead. When you want more accurate times for a given function, you can use a function filter to reduce the functions traced. For example, to only trace do_nanosleep():</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg725-1a" id="pg725-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo do_nanosleep &gt; set_ftrace_filter</strong>
+        # <strong>cat trace_pipe</strong>
+        [...]
+         7) $ 1000130 us  |  } /* do_nanosleep */
+        ^C</pre>
+        <p class="noindent">I am tracing the same workload (<code>sleep 1</code>). After applying a filter, the reported duration of do_nanosleep() has dropped from 1000383 μs to 1000130 μs (for these example outputs), as it no longer includes the overhead of tracing all child functions.</p>
+        <p class="noindent">These examples also used trace_pipe to watch the output live, but this is verbose, and it is more practical to redirect the trace file to an output file, as I demonstrated in <a href="ch14.xhtml#ch14lev4">Section 14.4</a>, <a href="ch14.xhtml#ch14lev4">Ftrace Function Tracing</a>.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev8sec2">14.8.2 Options</h4>
+        <p class="noindent">Options are available to change the output, which can be listed in the options directory:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg725-2a" id="pg725-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>ls options/funcgraph-*</strong>
+        options/funcgraph-abstime   options/funcgraph-irqs      options/funcgraph-proc
+        options/funcgraph-cpu       options/funcgraph-overhead  options/funcgraph-tail
+        options/funcgraph-duration  options/funcgraph-overrun</pre>
+        <p class="noindent">These adjust the output and can include or exclude details, such as the CPU ID (funcgraph-cpu), process name (funcgraph-proc), function duration (funcgraph-duration), and delay markers (funcgraph-overhead).</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch14lev9"><span epub:type="pagebreak" id="page_726"></span>14.9 Ftrace hwlat</h3>
+        <p class="noindent">The hardware latency detector (hwlat) is an example of a special-purpose tracer. It can detect when external hardware events perturb CPU performance: events that are otherwise invisible to the kernel and other tools. For example, system management interrupt (SMI) events and hypervisor perturbations (including those caused by noisy neighbors).</p>
+        <p class="noindent">This works by running a code loop as an experiment with interrupts disabled, measuring the time taken for each iteration of the loop to run. This loop is executed on one CPU at a time and rotates through them. The slowest loop iteration for each CPU is printed, provided it exceeds a threshold (10 microseconds, which can be configured via the tracing_thresh file).</p>
+        <p class="noindent">Here is an example:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg726a" id="pg726">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>cd /sys/kernel/debug/tracing</strong>
+        # <strong>echo hwlat &gt; current_tracer</strong>
+        # <strong>cat trace_pipe</strong>
+                   &lt;...&gt;-5820  [001] d... 354016.973699: #1     inner/outer(us): 2152/1933
+        ts:1578801212.559595228
+                   &lt;...&gt;-5820  [000] d... 354017.985568: #2     inner/outer(us):   19/26
+        ts:1578801213.571460991
+                   &lt;...&gt;-5820  [001] dn.. 354019.009489: #3     inner/outer(us): 1699/5894
+        ts:1578801214.595380588
+                   &lt;...&gt;-5820  [000] d... 354020.033575: #4     inner/outer(us):   43/49
+        ts:1578801215.619463259
+                   &lt;...&gt;-5820  [001] d... 354021.057566: #5     inner/outer(us):   18/45
+        ts:1578801216.643451721
+                   &lt;...&gt;-5820  [000] d... 354022.081503: #6     inner/outer(us):   18/38
+        ts:1578801217.667385514
+        ^C
+        # <strong>echo nop &gt; current_tracer</strong></pre>
+        <p class="noindent">Many of these fields have been described in previous sections (see <a href="ch14.xhtml#ch14lev4">Section 14.4</a>, <a href="ch14.xhtml#ch14lev4">Ftrace Function Tracing</a>). What is interesting is after the timestamp: there is a sequence number (#1, ...), then “inner/outer(us)” numbers, and a final timestamp. The inner/outer numbers show the loop timing inside the loop (inner) and the code logic to wrap to the next loop iteration (outer). The first line shows an iteration that took 2,152 microseconds (inner) and 1,933 microseconds (outer). This by far exceeds the threshold of 10 microseconds, and is due to an external perturbation.</p>
+        <p class="noindent">hwlat has parameters that can be configured: the loop runs for a period of time called the <em>width</em>, and runs one width experiment during a period of time called the <em>window</em>. The slowest iteration longer than a threshold (10 microseconds) during each width is logged. These parameters can be modified via files in /sys/kernel/debug/tracing/hwlat_detector: the width and window files, which use units of microseconds.</p>
+        <p class="noindent">WARNING: I’d classify hwlat as a microbenchmark tool rather than an observability tool, because it performs an experiment that will itself perturb the system: it will make one CPU busy for the width duration, with interrupts disabled.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch14lev10"><span epub:type="pagebreak" id="page_727"></span>14.10 Ftrace Hist Triggers</h3>
+        <p class="noindent">Hist triggers is an advanced Ftrace capability added to Linux 4.7 by Tom Zanussi, which allows the creation of custom histograms on events. It is another form of statistical summary, allowing counts to be broken down by one or more components.</p>
+        <p class="noindent">The overall usage for a single histogram is:</p>
+        <ol class="number">
+        <li><p class="number"><strong><code>echo 'hist:<em>expression</em>' &gt; events/.../trigger</code></strong>: Create a hist trigger.</p></li>
+        <li><p class="number"><strong><code>sleep <em>duration</em></code></strong>: Allow histogram to populate.</p></li>
+        <li><p class="number"><strong><code>cat events/.../hist</code></strong>: Print the histogram.</p></li>
+        <li><p class="number"><strong><code>echo '!hist:<em>expression</em>' &gt; events/.../trigger</code></strong>: Remove it.</p></li>
+        </ol>
+        <p class="noindent">The hist expression is of the format:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg727-1a" id="pg727-1">Click here to view code image</a></p>
+        <pre class="pretab">hist:keys=&lt;field1[,field2,...]&gt;[:values=&lt;field1[,field2,...]&gt;]
+          [:sort=&lt;field1[,field2,...]&gt;][:size=#entries][:pause][:continue]
+          [:clear][:name=histname1][:&lt;handler&gt;.&lt;action&gt;] [if &lt;filter&gt;]</pre>
+        <p class="noindent">The syntax is fully documented in the Linux source under Documentation/trace/histogram.rst, and the following are some examples <a href="ch14.xhtml#ch14ref10">[Zanussi 20]</a>.</p>
+        <section>
+        <h4 class="h4" id="ch14lev10sec1">14.10.1 Single Keys</h4>
+        <p class="noindent">The following uses hist triggers to count syscalls via the raw_syscalls:sys_enter tracepoint, and provides a histogram breakdown by process ID:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg727-2a" id="pg727-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>cd /sys/kernel/debug/tracing</strong>
+        # <strong>echo 'hist:key=common_pid' &gt; events/raw_syscalls/sys_enter/trigger</strong>
+        # <strong>sleep 10</strong>
+        # <strong>cat events/raw_syscalls/sys_enter/hist</strong>
+        # event histogram
+        #
+        # trigger info: hist:keys=common_pid.execname:vals=hitcount:sort=hitcount:size=2048
+        [active]
+        #<br>
+        { common_pid:        347 } hitcount:          1
+        { common_pid:        345 } hitcount:          3
+        { common_pid:        504 } hitcount:          8
+        { common_pid:        494 } hitcount:         20
+        { common_pid:        502 } hitcount:         30
+        { common_pid:        344 } hitcount:         32
+        { common_pid:        348 } hitcount:         36
+        { common_pid:      32399 } hitcount:        136
+        { common_pid:      32400 } hitcount:        138
+        <span epub:type="pagebreak" id="page_728"></span>{ common_pid:      32379 } hitcount:        177
+        { common_pid:      32296 } hitcount:        187
+        { common_pid:      32396 } hitcount:     882604<br>
+        Totals:
+            Hits: 883372
+            Entries: 12
+            Dropped: 0
+        # <strong>echo '!hist:key=common_pid' &gt; events/raw_syscalls/sys_enter/trigger</strong></pre>
+        <p class="noindent">The output shows that PID 32396 performed 882,604 syscalls while tracing, and listed the counts for the other PIDs. The final few lines show statistics: the number of writes to the hash (<code>Hits</code>), the entries in the hash (<code>Entries</code>), and how many writes were dropped if the entries exceeded the hash size (<code>Dropped</code>). If drops occur, you can increase the size of the hash when declaring it; it defaults to 2048.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev10sec2">14.10.2 Fields</h4>
+        <p class="noindent">The hash fields come from the format file for the event. For this example, the common_pid field was used:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg728-1a" id="pg728-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>cat events/raw_syscalls/sys_enter/format</strong>
+        [...]
+                field:int <strong>common_pid</strong>;       offset:4;  size:4;    signed:1;
+        
+                field:long id;   offset:8;  size:8;    signed:1;
+                field:unsigned long args[6];    offset:16;   size:48;  signed:0;</pre>
+        <p class="noindent">You can use other fields as well. For this event, the id field is the syscall ID. Using it as the hash key:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg728-2a" id="pg728-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo 'hist:key=id' &gt; events/raw_syscalls/sys_enter/trigger</strong>
+        # cat events/raw_syscalls/sys_enter/hist
+        [...]
+        { id:         14 } hitcount:         48
+        { id:          1 } hitcount:      80362
+        { id:          0 } hitcount:      80396
+        [...]</pre>
+        <p class="noindent">The histogram shows that the most frequent syscalls had IDs 0 and 1. On my system the syscall IDs are in this header file:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg728-3a" id="pg728-3">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>more /usr/include/x86_64-linux-gnu/asm/unistd_64.h</strong>
+        [...]
+        #define __NR_read 0
+        <span epub:type="pagebreak" id="page_729"></span>#define __NR_write 1
+        [...]</pre>
+        <p class="noindent">This shows that 0 and 1 are for the read(2) and write(2) syscalls.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev10sec3">14.10.3 Modifiers</h4>
+        <p class="noindent">Since PID and syscall ID breakdowns are common, hist triggers supports modifiers that annotate the output: <code>.execname</code> for PIDs, and <code>.syscall</code> for syscall IDs. For example, adding the <code>.execname</code> modifier to the earlier example:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg729-1a" id="pg729-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo 'hist:key=common_pid.execname' &gt; events/raw_syscalls/sys_enter/trigger</strong>
+        [...]
+        { common_pid: bash            [     32379] } hitcount:        166
+        { common_pid: sshd            [     32296] } hitcount:        259
+        { common_pid: dd              [     32396] } hitcount:     869024
+        [...]</pre>
+        <p class="noindent">The output now contains the process name followed by the PID in square brackets, instead of just the PID.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev10sec4">14.10.4 PID Filters</h4>
+        <p class="noindent">Based on the previous by-PID and by-syscall ID outputs, you may assume that the two are related and that the dd(1) command was performing the read(2) and write(2) syscalls. To measure this directly, you can create a histogram for the syscall ID and then use a filter to match on the PID:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg729-2a" id="pg729-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo 'hist:key=id.syscall if common_pid==32396' &gt; \</strong>
+            <strong>events/raw_syscalls/sys_enter/trigger</strong>
+        # <strong>cat events/raw_syscalls/sys_enter/hist</strong>
+        # event histogram
+        #
+        # trigger info: hist:keys=id.syscall:vals=hitcount:sort=hitcount:size=2048 if common_
+        pid==32396 [active]
+        #
+        
+        { id: sys_write                     [  1] } hitcount:     106425
+        { id: sys_read                      [  0] } hitcount:     106425
+        
+        Totals:
+            Hits: 212850
+            Entries: 2
+            Dropped: 0</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_730"></span>The histogram now shows the syscalls for that one PID, and the .syscall modifier has included the syscall names. This confirms that dd(1) is calling read(2) and write(2). Another solution to this is to use multiple keys, as shown in the next section.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev10sec5">14.10.5 Multiple Keys</h4>
+        <p class="noindent">The following example includes the syscall ID as a <em>second key</em>:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg730-1a" id="pg730-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo 'hist:key=common_pid.execname,id' &gt; events/raw_syscalls/sys_enter/trigger</strong>
+        # <strong>sleep 10</strong>
+        # <strong>cat events/raw_syscalls/sys_enter/hist</strong>
+        # event histogram
+        #
+        # trigger info: hist:keys=common_pid.execname,id:vals=hitcount:sort=hitcount:size=2048
+        [active]
+        #
+        [...]
+        { common_pid: sshd            [   14250], id:         23 } hitcount:         36
+        { common_pid: bash            [   14261], id:         13 } hitcount:         42
+        { common_pid: sshd            [   14250], id:         14 } hitcount:         72
+        { common_pid: dd              [   14325], id:          0 } hitcount:    9195176
+        { common_pid: dd              [   14325], id:          1 } hitcount:    9195176
+        
+        Totals:
+            Hits: 18391064
+            Entries: 75
+            Dropped: 0
+            Dropped: 0</pre>
+        <p class="noindent">The output now shows the process name and PID, further broken down by the syscall ID. This output shows that <code>dd</code> PID 142325 was performing two syscalls with IDs 0 and 1. You can add the <code>.syscall</code> modifier to the second key to make it include the syscall names.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev10sec6">14.10.6 Stack Trace Keys</h4>
+        <p class="noindent">I frequently wish to know the code path that led to the event, and I suggested that Tom Zanussi add functionality for Ftrace to use an entire kernel stack trace as a key.</p>
+        <p class="noindent">For example, counting the code paths that led to the block:block_rq_issue tracepoint:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg730-2a" id="pg730-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>echo 'hist:key=stacktrace' &gt; events/block/block_rq_issue/trigger</strong>
+        # <strong>sleep 10</strong>
+        # <strong>cat events/block/block_rq_issue/hist</strong>
+        [...]
+        <span epub:type="pagebreak" id="page_731"></span>{ stacktrace:
+                 nvme_queue_rq+0x16c/0x1d0
+                 __blk_mq_try_issue_directly+0x116/0x1c0
+                 blk_mq_request_issue_directly+0x4b/0xe0
+                 blk_mq_try_issue_list_directly+0x46/0xb0
+                 blk_mq_sched_insert_requests+0xae/0x100
+                 blk_mq_flush_plug_list+0x1e8/0x290
+                 blk_flush_plug_list+0xe3/0x110
+                 blk_finish_plug+0x26/0x34
+                 read_pages+0x86/0x1a0
+                 __do_page_cache_readahead+0x180/0x1a0
+                 ondemand_readahead+0x192/0x2d0
+                 page_cache_sync_readahead+0x78/0xc0
+                 generic_file_buffered_read+0x571/0xc00
+                 generic_file_read_iter+0xdc/0x140
+                 ext4_file_read_iter+0x4f/0x100
+                 new_sync_read+0x122/0x1b0
+        } hitcount:        266<br>
+        Totals:
+            Hits: 522
+            Entries: 10
+            Dropped: 0</pre>
+        <p class="noindent">I’ve truncated the output to only show the last, most frequent, stack trace. It shows that disk I/O was issued via the new_sync_read(), which called ext4_file_read_iter(), and so on.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev10sec7">14.10.7 Synthetic Events</h4>
+        <p class="noindent">This is where things start to get really weird (if they haven’t already). A <em>synthetic event</em> can be created that is triggered by other events, and can combine their event arguments in custom ways. To access event arguments from prior events, they can be saved into a histogram and fetched by the later synthetic event.</p>
+        <p class="noindent">This makes much more sense with a key use case: custom latency histograms. With synthetic events, a timestamp can be saved on one event and then retrieved on another so that the delta time can be calculated.</p>
+        <p class="noindent">For example, the following uses a synthetic event named syscall_latency to calculate the latency of all syscalls, and present it as a histogram by syscall ID and name:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg731a" id="pg731">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>cd /sys/kernel/debug/tracing</strong>
+        # <strong>echo 'syscall_latency u64 lat_us; long id' &gt;&gt; synthetic_events</strong>
+        # <strong>echo 'hist:keys=common_pid:ts0=common_timestamp.usecs' &gt;&gt; \</strong>
+            <strong>events/raw_syscalls/sys_enter/trigger</strong>
+        <span epub:type="pagebreak" id="page_732"></span># <strong>echo 'hist:keys=common_pid:lat_us=common_timestamp.usecs-$ts0:'\</strong>
+            <strong>'onmatch(raw_syscalls.sys_enter).trace(syscall_latency,$lat_us,id)' &gt;&gt;\</strong>
+            <strong>events/raw_syscalls/sys_exit/trigger</strong>
+        # <strong>echo 'hist:keys=lat_us,id.syscall:sort=lat_us' &gt;&gt; \</strong>
+            <strong>events/synthetic/syscall_latency/trigger</strong>
+        # <strong>sleep 10</strong>
+        # <strong>cat events/synthetic/syscall_latency/hist</strong>
+        [...]
+        { lat_us:    5779085, id: sys_epoll_wait                [232] } hitcount:          1
+        { lat_us:    6232897, id: sys_poll                      [  7] } hitcount:          1
+        { lat_us:    6233840, id: sys_poll                      [  7] } hitcount:          1
+        { lat_us:    6233884, id: sys_futex                     [202] } hitcount:          1
+        { lat_us:    7028672, id: sys_epoll_wait                [232] } hitcount:          1
+        { lat_us:    9999049, id: sys_poll                      [  7] } hitcount:          1
+        { lat_us:   10000097, id: sys_nanosleep                 [ 35] } hitcount:          1
+        { lat_us:   10001535, id: sys_wait4                     [ 61] } hitcount:          1
+        { lat_us:   10002176, id: sys_select                    [ 23] } hitcount:          1
+        [...]</pre>
+        <p class="noindent">The output is truncated to show only the highest latencies. The histogram is counting pairs of latency (in microseconds) and syscall ID: this output shows that sys_nanosleep had one occurrence of 10000097 microsecond latency. This is likely showing the <code>sleep 10</code> command used to set the recording duration.</p>
+        <p class="noindent">The output is also very long because it is recording a key for every microsecond and syscall ID combination, and in practice I’ve exceeded the default hist size of 2048. You can increase the size by adding a <code>:size=...</code> operator to the hist declaration, or you can use the <code>.log2</code> modifier to record the latency as a log2. This greatly reduces the number of hist entries, and still has sufficient resolution to analyze latency.</p>
+        <p class="noindent">To disable and clean up this event, echo all the strings in reverse order with a “!” prefix.</p>
+        <p class="noindent">In <a href="ch14.xhtml#ch14tab04">Table 14.4</a> I explain how this synthetic event works, with code snippets.</p>
+        <figure class="table" id="ch14tab04">
+        <figcaption>
+        <p class="title-t"><span class="pd_ashf">Table 14.4</span> <strong>Synthetic event example explanation</strong></p>
+        </figcaption>
+        <table class="all">
+        <thead>
+        <tr>
+        <th class="th"><p class="thead"><strong>Description</strong></p></th>
+        <th class="th"><p class="thead"><strong>Syntax</strong></p></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td class="border"><p class="tab-para">I’d like to create a synthetic event named <code>syscall_latency</code> with two arguments: <code>lat_us</code> and <code>id</code>.</p></td>
+        <td class="border"><p class="tab-para"><code>echo 'syscall_latency u64 lat_us; long id' &gt;&gt; synthetic_events</code></p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">When the sys_enter event occurs, record a histogram using <code>common_pid</code> (the current PID) as a key,</p></td>
+        <td class="border"><p class="tab-para"><code>echo 'hist:keys=common_pid: ... &gt;&gt;<br>events/raw_syscalls/sys_enter/trigger</code></p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">and save the current time, in microseconds, into a histogram variable named <code>ts0</code> that is associated with the histogram key (<code>common_pid</code>).</p></td>
+        <td class="border"><p class="tab-para"><code>ts0=common_timestamp.usecs</code></p></td>
+        </tr>
+        <tr>
+        <td class="border"><span epub:type="pagebreak" id="page_733"></span><p class="tab-para">On the sys_exit event, use <code>common_pid</code> as the histogram key and,</p></td>
+        <td class="border"><p class="tab-para"><code>echo 'hist:keys=common_pid: ... &gt;&gt;<br>events/raw_syscalls/sys_exit/trigger</code></p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">calculate latency as now minus the start time saved in <code>ts0</code> by the prior event, and save it as a histogram variable named <code>lat_us</code>,</p></td>
+        <td class="border"><p class="tab-para"><code>lat_us=common_timestamp.usecs-$ts0</code></p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">compare the histogram keys of this event and the sys_enter event. If they match (the same <code>common_pid</code>), then <code>lat_us</code> has the right latency calculation (sys_enter to sys_exit for the same PID) so,</p></td>
+        <td class="border"><p class="tab-para"><code>onmatch(raw_syscalls.sys_enter)</code></p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">finally, trigger our synthetic event syscall_latency with <code>lat_us</code> and <code>id</code> as arguments.</p></td>
+        <td class="border"><p class="tab-para"><code>.trace(syscall_latency,$lat_us,id)</code></p></td>
+        </tr>
+        <tr>
+        <td><p class="tab-para">Show this synthetic event as a histogram with its <code>lat_us</code> and <code>id</code> as fields.</p></td>
+        <td><p class="tab-para"><code>echo 'hist:keys=lat_us,id.syscall:sort=lat_us'<br>&gt;&gt; events/synthetic/syscall_latency/trigger</code></p></td>
+        </tr>
+        </tbody>
+        </table>
+        </figure>
+        <p class="noindent">Ftrace histograms are implemented as a hash object (key/value store), and the earlier examples only used these hashes for output: showing syscall counts by PID and ID. With synthetic events, we’re doing two extra things with these hashes: A) storing values that are not part of the output (timestamps) and B) in one event, fetching key/value pairs that were set by another event. We’re also performing arithmetic: a minus operation. In a way, we’re starting to write mini programs.</p>
+        <p class="noindent">There is more to synthetic events, covered in the documentation [Zanussi 20]. I’ve provided feedback, directly or indirectly, to the Ftrace and BPF engineers for years, and from my perspective the evolution of Ftrace makes sense as it’s solving the problems I’ve previously raised. I’d summarize the evolution as:</p>
+        <p class="uln-indent">“Ftrace is great, but I need to use BPF for counts by PID and stack trace.”</p>
+        <p class="uln-indent">“Here you go, hist triggers.”</p>
+        <p class="uln-indent">“That’s great, but I still need to use BPF to do custom latency calculations.”</p>
+        <p class="uln-indent">“Here you go, synthetic events.”</p>
+        <p class="uln-indent">“That’s great, I’ll check it out after I finish writing <em>BPF Performance Tools</em>.”</p>
+        <p class="uln-indent"><em>“Seriously?”</em></p>
+        <p class="noindent">Yes, I now do need to explore adopting synthetic events for some use cases. It’s incredibly powerful, built into the kernel, and can be used via shell scripting alone. (And I did finish the BPF book, but then became busy with this one.)</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch14lev11"><span epub:type="pagebreak" id="page_734"></span>14.11 trace-cmd</h3>
+        <p class="noindent">trace-cmd is an open-source Ftrace front end developed by Steven Rostedt and others <a href="ch14.xhtml#ch14ref8">[trace-cmd 20]</a>. It supports subcommands and options for configuring the tracing system, a binary output format, and other features. For event sources it can use the Ftrace function and function_graph tracers, as well as tracepoints and already configured kprobes and uprobes.</p>
+        <p class="noindent">For example, using trace-cmd to record the kernel function do_nanosleep() via the function tracer for ten seconds (using a dummy sleep(1) command):</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg734a" id="pg734">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>trace-cmd record -p function -l do_nanosleep sleep 10</strong>
+          plugin 'function'
+        CPU0 data recorded at offset=0x4fe000
+            0 bytes in size
+        CPU1 data recorded at offset=0x4fe000
+            4096 bytes in size
+        # <strong>trace-cmd report</strong>
+        CPU 0 is empty
+        cpus=2
+                   sleep-21145 [001] 573259.213076: function:             do_nanosleep
+              multipathd-348   [001] 573259.523759: function:             do_nanosleep
+              multipathd-348   [001] 573260.523923: function:             do_nanosleep
+              multipathd-348   [001] 573261.524022: function:             do_nanosleep
+              multipathd-348   [001] 573262.524119: function:             do_nanosleep
+        [...]</pre>
+        <p class="noindent">The output begins with the sleep(1) invoked by trace-cmd (it configures tracing and then launches the provided command), and then various calls from multipathd PID 348. This example also shows that trace-cmd is more concise than the equivalent tracefs commands in /sys. It is also safer: many subcommands handle cleaning up tracing state when done.</p>
+        <p class="noindent">trace-cmd can often be installed via a “trace-cmd” package, and if not, the source is available on the trace-cmd website [trace-cmd 20].</p>
+        <p class="noindent">This section shows a selection of trace-cmd subcommands and tracing capabilities. Refer to the bundled trace-cmd documentation for all of its capabilities, and for the syntax used in the following examples.</p>
+        <section>
+        <h4 class="h4" id="ch14lev11sec1">14.11.1 Subcommands Overview</h4>
+        <p class="noindent">trace-cmd’s capabilities are available by first specifying a subcommand, such as <code>trace-cmd record</code> for the record subcommand. A selection of subcommands from a recent trace-cmd version (2.8.3) are listed in <a href="ch14.xhtml#ch14tab05">Table 14.5</a>.</p>
+        <figure class="table" id="ch14tab05">
+        <figcaption>
+        <p class="title-t"><span epub:type="pagebreak" id="page_735"></span><span class="pd_ashf">Table 14.5</span> <strong>trace-cmd selected subcommands</strong></p>
+        </figcaption>
+        <table class="all">
+        <tbody>
+        <tr>
+        <th class="th"><p class="thead"><strong>Command</strong></p></th>
+        <th class="th"><p class="thead"><strong>Description</strong></p></th>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>record</code></p></td>
+        <td class="border"><p class="tab-para">Trace and record to a trace.dat file</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>report</code></p></td>
+        <td class="border"><p class="tab-para">Read the trace from the trace.dat file</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>stream</code></p></td>
+        <td class="border"><p class="tab-para">Trace and then print to stdout</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>list</code></p></td>
+        <td class="border"><p class="tab-para">List available tracing events</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>stat</code></p></td>
+        <td class="border"><p class="tab-para">Show the status of the kernel tracing subsystem</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para"><code>profile</code></p></td>
+        <td class="border"><p class="tab-para">Trace and generate a custom report showing kernel time and latencies</p></td>
+        </tr>
+        <tr>
+        <td><p class="tab-para"><code>listen</code></p></td>
+        <td><p class="tab-para">Accept network requests for traces</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </figure>
+        <p class="noindent">Other subcommands include <code>start</code>, <code>stop</code>, <code>restart</code>, and <code>clear</code> for controlling tracing beyond a single invocation of <code>record</code>. Future versions of trace-cmd may add more subcommands; run <code>trace-cmd</code> with no arguments for the full list.</p>
+        <p class="noindent">Each subcommand supports a variety of options. These can be listed with <code>-h</code>, for example, for the record subcommand:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg735a" id="pg735">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>trace-cmd record -h</strong><br>
+        trace-cmd version 2.8.3
+        
+        usage:
+         trace-cmd record [-v][-e event [-f filter]][-p plugin][-F][-d][-D][-o file] \
+                   [-q][-s usecs][-O option ][-l func][-g func][-n func] \
+                   [-P pid][-N host:port][-t][-r prio][-b size][-B buf][command ...]
+                   [-m max][-C clock]
+                  -e run command with event enabled
+                  -f filter for previous -e event
+                  -R trigger for previous -e event
+                  -p run command with plugin enabled
+                  -F filter only on the given process
+                  -P trace the given pid like -F for the command
+                  -c also trace the children of -F (or -P if kernel supports it)
+                  -C set the trace clock
+                  -T do a stacktrace on all events
+                  -l filter function name
+                  -g set graph function
+                  -n do not trace function
+        [...]</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_736"></span>The options have been truncated in this output, showing the first 12 out of 35 options. These first 12 include those most commonly used. Note that the term <em>plugin</em> (<code>-p</code>) refers to the Ftrace tracers, which include function, function_graph, and hwlat.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev11sec2">14.11.2 trace-cmd One-Liners</h4>
+        <p class="noindent">The following one-liners show different trace-cmd capabilities by example. The syntax for these is covered in their man pages.</p>
+        <section>
+        <h5 class="h5" id="ch14lev3_1">Listing Events</h5>
+        <p class="noindent">List all tracing event sources and options:</p>
+        <pre class="preash">trace-cmd list</pre>
+        <p class="noindent">List Ftrace tracers:</p>
+        <pre class="preash">trace-cmd list -t</pre>
+        <p class="noindent">List event sources (tracepoints, kprobe events, and uprobe events):</p>
+        <pre class="preash">trace-cmd list -e</pre>
+        <p class="noindent">List syscall tracepoints:</p>
+        <pre class="preash">trace-cmd list -e syscalls:</pre>
+        <p class="noindent">Show the format file for a given tracepoint:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg736-1a" id="pg736-1">Click here to view code image</a></p>
+        <pre class="preash">trace-cmd list -e syscalls:sys_enter_nanosleep -F</pre>
+        </section>
+        <section>
+        <h5 class="h5" id="ch14lev3_2">Function Tracing</h5>
+        <p class="noindent">Trace a kernel function system-wide:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg736-2a" id="pg736-2">Click here to view code image</a></p>
+        <pre class="preash">trace-cmd record -p function -l <em>function_name</em></pre>
+        <p class="noindent">Trace all kernel functions beginning with “tcp_”, system-wide, until Ctrl-C:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg736-3a" id="pg736-3">Click here to view code image</a></p>
+        <pre class="preash">trace-cmd record -p function -l 'tcp_*'</pre>
+        <p class="noindent">Trace all kernel functions beginning with “tcp_”, system-wide, for 10 seconds:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg736-4a" id="pg736-4">Click here to view code image</a></p>
+        <pre class="preash">trace-cmd record -p function -l 'tcp_*' sleep 10</pre>
+        <p class="noindent">Trace all kernel functions beginning with “vfs_” for the ls(1) command:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg736-5a" id="pg736-5">Click here to view code image</a></p>
+        <pre class="preash">trace-cmd record -p function -l 'vfs_*' -F ls</pre>
+        <p class="noindent">Trace all kernel functions beginning with “vfs_” for bash(1) and its children:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg736-6a" id="pg736-6">Click here to view code image</a></p>
+        <pre class="preash">trace-cmd record -p function -l 'vfs_*' -F -c bash</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_737"></span>Trace all kernel functions beginning with “vfs_” for PID 21124</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg737-1a" id="pg737-1">Click here to view code image</a></p>
+        <pre class="preash">trace-cmd record -p function -l 'vfs_*' -P 21124</pre>
+        </section>
+        <section>
+        <h5 class="h5" id="ch14lev3_3">Function Graph Tracing</h5>
+        <p class="noindent">Trace a kernel function and its child calls, system-wide:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg737-2a" id="pg737-2">Click here to view code image</a></p>
+        <pre class="preash">trace-cmd record -p function_graph -g <em>function_name</em></pre>
+        <p class="noindent">Trace the kernel function do_nanosleep() and children, system-wide, for 10 seconds:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg737-3a" id="pg737-3">Click here to view code image</a></p>
+        <pre class="preash">trace-cmd record -p function_graph -g do_nanosleep sleep 10</pre>
+        </section>
+        <section>
+        <h5 class="h5" id="ch14lev3_4">Event Tracing</h5>
+        <p class="noindent">Trace new processes via the sched:sched_process_exec tracepoint, until Ctrl-C:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg737-4a" id="pg737-4">Click here to view code image</a></p>
+        <pre class="preash">trace-cmd record -e sched:sched_process_exec</pre>
+        <p class="noindent">Trace new processes via the sched:sched_process_exec (shorter version):</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg737-5a" id="pg737-5">Click here to view code image</a></p>
+        <pre class="preash">trace-cmd record -e sched_process_exec</pre>
+        <p class="noindent">Trace block I/O requests with kernel stack traces:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg737-6a" id="pg737-6">Click here to view code image</a></p>
+        <pre class="preash">trace-cmd record -e block_rq_issue -T</pre>
+        <p class="noindent">Trace all block tracepoints until Ctrl-C:</p>
+        <pre class="preash">trace-cmd record -e block</pre>
+        <p class="noindent">Trace a previously created kprobe named “brendan” for 10 seconds:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg737-7a" id="pg737-7">Click here to view code image</a></p>
+        <pre class="preash">trace-cmd record -e probe:brendan sleep 10</pre>
+        <p class="noindent">Trace all syscalls for the ls(1) command:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg737-8a" id="pg737-8">Click here to view code image</a></p>
+        <pre class="preash">trace-cmd record -e syscalls -F ls</pre>
+        </section>
+        <section>
+        <h5 class="h5" id="ch14lev3_5">Reporting</h5>
+        <p class="noindent">Print the contents of the trace.dat output file:</p>
+        <pre class="preash">trace-cmd report</pre>
+        <p class="noindent">Print the contents of the trace.dat output file, CPU 0 only:</p>
+        <pre class="preash">trace-cmd report --cpu 0</pre>
+        </section>
+        <section>
+        <h5 class="h5" id="ch14lev3_6"><span epub:type="pagebreak" id="page_738"></span>Other Capabilities</h5>
+        <p class="noindent">Trace events from the sched_switch plugin:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg738-1a" id="pg738-1">Click here to view code image</a></p>
+        <pre class="preash">trace-cmd record -p sched_switch</pre>
+        <p class="noindent">Listen for tracing requests on TCP port 8081:</p>
+        <pre class="preash">trace-cmd listen -p 8081</pre>
+        <p class="noindent">Connect to remote host for running a record subcommand:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg738-2a" id="pg738-2">Click here to view code image</a></p>
+        <pre class="preash">trace-cmd record ... -N <em>addr</em>:<em>port</em></pre>
+        </section>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev11sec3">14.11.3 trace-cmd vs. perf(1)</h4>
+        <p class="noindent">The style of trace-cmd subcommands may remind you of perf(1), covered in <a href="ch13.xhtml#ch13">Chapter 13</a>, and the two tools do have similar capabilities. <a href="ch14.xhtml#ch14tab06">Table 14.6</a> compares trace-cmd and perf(1).</p>
+        <figure class="table" id="ch14tab06">
+        <figcaption>
+        <p class="title-t"><span class="pd_ashf">Table 14.6</span> <strong>perf(1) versus trace-cmd</strong></p>
+        </figcaption>
+        <table class="all">
+        <thead>
+        <tr>
+        <th class="th"><p class="thead"><strong>Attribute</strong></p></th>
+        <th class="th"><p class="thead"><strong>perf(1)</strong></p></th>
+        <th class="th"><p class="thead"><strong>trace-cmd</strong></p></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td class="border"><p class="tab-para">Binary output file</p></td>
+        <td class="border"><p class="tab-para">perf.data</p></td>
+        <td class="border"><p class="tab-para">trace.dat</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">Tracepoints</p></td>
+        <td class="border"><p class="tab-para">Yes</p></td>
+        <td class="border"><p class="tab-para">Yes</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">kprobes</p></td>
+        <td class="border"><p class="tab-para">Yes</p></td>
+        <td class="border"><p class="tab-para">Partial(1)</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">uprobes</p></td>
+        <td class="border"><p class="tab-para">Yes</p></td>
+        <td class="border"><p class="tab-para">Partial(1)</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">USDT</p></td>
+        <td class="border"><p class="tab-para">Yes</p></td>
+        <td class="border"><p class="tab-para">Partial(1)</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">PMCs</p></td>
+        <td class="border"><p class="tab-para">Yes</p></td>
+        <td class="border"><p class="tab-para">No</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">Timed sampling</p></td>
+        <td class="border"><p class="tab-para">Yes</p></td>
+        <td class="border"><p class="tab-para">No</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">function tracing</p></td>
+        <td class="border"><p class="tab-para">Partial(2)</p></td>
+        <td class="border"><p class="tab-para">Yes</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">function_graph tracing</p></td>
+        <td class="border"><p class="tab-para">Partial(2)</p></td>
+        <td class="border"><p class="tab-para">Yes</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">Network client/server</p></td>
+        <td class="border"><p class="tab-para">No</p></td>
+        <td class="border"><p class="tab-para">Yes</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">Output file overhead</p></td>
+        <td class="border"><p class="tab-para">Low</p></td>
+        <td class="border"><p class="tab-para">Very low</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">Front ends</p></td>
+        <td class="border"><p class="tab-para">Various</p></td>
+        <td class="border"><p class="tab-para">KernelShark</p></td>
+        </tr>
+        <tr>
+        <td><p class="tab-para">Source</p></td>
+        <td><p class="tab-para">In Linux tools/perf</p></td>
+        <td><p class="tab-para"><a href="http://git.kernel.org">git.kernel.org</a></p></td>
+        </tr>
+        </tbody>
+        </table>
+        </figure>
+        <ul class="sq">
+        <li><p class="bull">Partial(1): trace-cmd supports these events only if they have already been created via other means, and appear in /sys/kernel/debug/tracing/events.</p></li>
+        <li><p class="bull">Partial(2): perf(1) supports these via the <code>ftrace</code> subcommand, although it is not fully integrated into perf(1) (it doesn’t support perf.data, for example).</p></li>
+        </ul>
+        <p class="noindent"><span epub:type="pagebreak" id="page_739"></span>As an example of the similarity, the following traces the syscalls:sys_enter_read tracepoint system-wide for ten seconds and then lists the trace using perf(1):</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg739-1a" id="pg739-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf record -e syscalls:sys_enter_nanosleep -a sleep 10</strong>
+        # <strong>perf script</strong></pre>
+        <p class="noindent">...and using trace-cmd:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg739-2a" id="pg739-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>trace-cmd record -e syscalls:sys_enter_nanosleep sleep 10</strong>
+        # <strong>trace-cmd report</strong></pre>
+        <p class="noindent">One advantage of trace-cmd is its better support for the function and function_graph tracers.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev11sec4">14.11.4 trace-cmd function_graph</h4>
+        <p class="noindent">The start of this section demonstrated the function tracer using trace-cmd. The following demonstrates the function_graph tracer for the same kernel function, do_nanosleep():</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg739-3a" id="pg739-3">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>trace-cmd record -p function_graph -g do_nanosleep sleep 10</strong>
+          plugin 'function_graph'
+        CPU0 data recorded at offset=0x4fe000
+            12288 bytes in size
+        CPU1 data recorded at offset=0x501000
+            45056 bytes in size
+        # <strong>trace-cmd report | cut -c 66-</strong>
+        
+                      |  do_nanosleep() {
+                      |    hrtimer_start_range_ns() {
+                      |      lock_hrtimer_base.isra.0() {
+           0.250 us   |        _raw_spin_lock_irqsave();
+           0.688 us   |      }
+           0.190 us   |      ktime_get();
+           0.153 us   |      get_nohz_timer_target();
+           [...]</pre>
+        <p class="noindent">For clarity in this example, I used cut(1) to isolate the function graph and timing columns. This truncated the typical tracing fields shown in the earlier function tracing example.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev11sec5">14.11.5 KernelShark</h4>
+        <p class="noindent">KernelShark is a visual user interface for trace-cmd output files, created by the creator of Ftrace, Steven Rostedt. Originally GTK, KernelShark has since been rewritten in Qt by Yordan Karadzhov, who maintains the project. KernelShark can be installed from a kernelshark package if available, or via the source links on its website <a href="ch14.xhtml#ch14ref7">[KernelShark 20]</a>. Version 1.0 is the Qt version, and 0.99 and older are the GTK version.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_740"></span>As an example of using KernelShark, the following records all scheduler tracepoints and then visualizes them:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg740a" id="pg740">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>trace-cmd record -e 'sched:*'</strong>
+        # <strong>kernelshark</strong></pre>
+        <p class="noindent">KernelShark reads the default trace-cmd output file, trace.dat (you can specify a different file using <code>-i</code>). <a href="ch14.xhtml#ch14fig03">Figure 14.3</a> shows KernelShark visualizing this file.</p>
+        <figure class="image-c" id="ch14fig03">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/14fig03.jpg" alt="Images" width="775" height="389">
+        <figcaption>
+        <p class="title-f"><span class="pd_ashf">Figure 14.3</span> KernelShark</p>
+        </figcaption>
+        </figure>
+        <p class="noindent">The top part of the screen shows a per-CPU timeline, with tasks colored differently. The bottom part is a table of events. KernelShark is interactive: a click and drag right will zoom to the selected time range, and a click and drag left will zoom out. Right-clicking events provides additional actions, such as setting up filters.</p>
+        <p class="noindent">KernelShark can be used to identify performance issues caused by the interaction between different threads.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev11sec6">14.11.6 trace-cmd Documentation</h4>
+        <p class="noindent">For package installations, the trace-cmd documentation should be available as trace-cmd(1) and other man pages (e.g., trace-cmd-record(1)), which are also in the trace-cmd source under the Documentation directory. I also recommend watching a talk by the maintainer Steven Rostedt on Ftrace and trace-cmd, such as “Understanding the Linux Kernel (via ftrace)”:</p>
+        <ul class="sq">
+        <li><p class="bull">Slides: <a href="https://www.slideshare.net/ennael/kernel-recipes-2017-understanding-the-linux-kernel-via-ftrace-steven-rostedt">https://www.slideshare.net/ennael/kernel-recipes-2017-understanding-the-linux-kernel-via-ftrace-steven-rostedt</a></p></li>
+        <li><p class="bull">Video: <a href="https://www.youtube.com/watch?v=2ff-7UTg5rE">https://www.youtube.com/watch?v=2ff-7UTg5rE</a></p></li>
+        </ul>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch14lev12"><span epub:type="pagebreak" id="page_741"></span>14.12 perf ftrace</h3>
+        <p class="noindent">The perf(1) utility, covered in <a href="ch13.xhtml#ch13">Chapter 13</a>, has an <code>ftrace</code> subcommand so that it can access the function and function_graph tracers.</p>
+        <p class="noindent">For example, using the function tracer on the kernel do_nanosleep() function:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg741-1a" id="pg741-1">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf ftrace -T do_nanosleep -a sleep 10</strong>
+         0)  sleep-22821   |               |  do_nanosleep() {
+         1)  multipa-348   |               |  do_nanosleep() {
+         1)  multipa-348   | $ 1000068 us  |  }
+         1)  multipa-348   |               |  do_nanosleep() {
+         1)  multipa-348   | $ 1000068 us  |  }
+        [...]</pre>
+        <p class="noindent">And using the function_graph tracer:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg741-2a" id="pg741-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>perf ftrace -G do_nanosleep -a sleep 10</strong>
+         1)  sleep-22828   |               |  do_nanosleep() {
+         1)  sleep-22828   |   ==========&gt; |
+         1)  sleep-22828   |               |    smp_irq_work_interrupt() {
+         1)  sleep-22828   |               |      irq_enter() {
+         1)  sleep-22828   |   0.258 us    |        rcu_irq_enter();
+         1)  sleep-22828   |   0.800 us    |      }
+         1)  sleep-22828   |               |      __wake_up() {
+         1)  sleep-22828   |               |        __wake_up_common_lock() {
+         1)  sleep-22828   |   0.491 us    |          _raw_spin_lock_irqsave();
+        [...]</pre>
+        <p class="noindent">The ftrace subcommand supports a few options including <code>-p</code> to match on a PID. This is a simple wrapper that does not integrate with other perf(1) capabilities: for example, it prints the trace output to stdout and does not use the perf.data file.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch14lev13">14.13 perf-tools</h3>
+        <p class="noindent">perf-tools is an open-source collection of Ftrace- and perf(1)-based advanced performance analysis tools developed by myself and installed by default on servers at Netflix <a href="ch14.xhtml#ch14ref5">[Gregg 20i]</a>. I designed these tools to be easy to install (few dependencies) and simple to use: each should do one thing and do it well. The perf-tools themselves are mostly implemented as shell scripts that automate setting the tracefs /sys files.</p>
+        <p class="noindent">For example, using execsnoop(8) to trace new processes:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg741-3a" id="pg741-3">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>execsnoop</strong>
+        Tracing exec()s. Ctrl-C to end.
+           PID   PPID ARGS
+        <span epub:type="pagebreak" id="page_742"></span>  6684   6682 cat -v trace_pipe
+          6683   6679 gawk -v o=1 -v opt_name=0 -v name= -v opt_duration=0 [...]
+          6685  20997 man ls
+          6695   6685 pager
+          6691   6685 preconv -e UTF-8
+          6692   6685 tbl
+          6693   6685 nroff -mandoc -rLL=148n -rLT=148n -Tutf8
+          6698   6693 locale charmap
+          6699   6693 groff -mtty-char -Tutf8 -mandoc -rLL=148n -rLT=148n
+          6700   6699 troff -mtty-char -mandoc -rLL=148n -rLT=148n -Tutf8
+          6701   6699 grotty
+        [...]</pre>
+        <p class="noindent">This output begins by showing a cat(1) and gawk(1) command used by excesnoop(8) itself, followed by commands executed by a <code>man ls</code>. It can be used to debug issues of short-lived processes that can be invisible to other tools.</p>
+        <p class="noindent">execsnoop(8) supports options including <code>-t</code> for timestamps and <code>-h</code> to summarize the command line usage. execsnoop(8) and all other tools also have a man page and an examples file.</p>
+        <section>
+        <h4 class="h4" id="ch14lev13sec1">14.13.1 Tool Coverage</h4>
+        <p class="noindent"><a href="ch14.xhtml#ch14fig04">Figure 14.4</a> shows the different perf-tools and the areas of a system they can observe.</p>
+        <figure class="image-c" id="ch14fig04">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136821694/files/graphics/14fig04.jpg" alt="Images" width="775" height="374">
+        <figcaption>
+        <p class="title-f"><span class="pd_ashf">Figure 14.4</span> perf-tools</p>
+        </figcaption>
+        </figure>
+        <p class="noindent">Many are single-purpose tools shown with a single arrow head; some are multi-purpose tools listed on the left with a double arrow to show their coverage.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev13sec2"><span epub:type="pagebreak" id="page_743"></span>14.13.2 Single-Purpose Tools</h4>
+        <p class="noindent">Single-purpose tools are shown with single arrow heads in <a href="ch14.xhtml#ch14fig04">Figure 14.4</a>. Some were introduced in prior chapters.</p>
+        <p class="noindent">The single-purpose tools such as execsnoop(8) do one job and do it well (Unix philosophy). This design includes making their default output concise and often sufficient, which helps aid learning. You can “just run execsnoop” without needing to learn any command line options, and get just enough output to solve your problem without unnecessary clutter. Options typically do exist for customization.</p>
+        <p class="noindent">The single-purpose tools are described in <a href="ch14.xhtml#ch14tab07">Table 14.7</a>.</p>
+        <figure class="table" id="ch14tab07">
+        <figcaption>
+        <p class="title-t"><span class="pd_ashf">Table 14.7</span> <strong>Single-purpose perf-tools</strong></p>
+        </figcaption>
+        <table class="all">
+        <thead>
+        <tr>
+        <th class="th"><p class="thead"><strong>Tool</strong></p></th>
+        <th class="th"><p class="thead"><strong>Uses</strong></p></th>
+        <th class="th"><p class="thead"><strong>Description</strong></p></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td class="border"><p class="tab-para">bitesize(8)</p></td>
+        <td class="border"><p class="tab-para">perf</p></td>
+        <td class="border"><p class="tab-para">Summarize disk I/O size as a histogram</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">cachestat(8)</p></td>
+        <td class="border"><p class="tab-para">Ftrace</p></td>
+        <td class="border"><p class="tab-para">Show page cache hit/miss statistics</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">execsnoop(8)</p></td>
+        <td class="border"><p class="tab-para">Ftrace</p></td>
+        <td class="border"><p class="tab-para">Trace new processes (via execve(2)) with arguments</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">iolatency(8)</p></td>
+        <td class="border"><p class="tab-para">Ftrace</p></td>
+        <td class="border"><p class="tab-para">Summarize disk I/O latency as a histogram</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">iosnoop(8)</p></td>
+        <td class="border"><p class="tab-para">Ftrace</p></td>
+        <td class="border"><p class="tab-para">Trace disk I/O with details including latency</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">killsnoop(8)</p></td>
+        <td class="border"><p class="tab-para">Ftrace</p></td>
+        <td class="border"><p class="tab-para">Trace kill(2) signals showing process and signal details</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">opensnoop(8)</p></td>
+        <td class="border"><p class="tab-para">Ftrace</p></td>
+        <td class="border"><p class="tab-para">Trace open(2)-family syscalls showing filenames</p></td>
+        </tr>
+        <tr>
+        <td><p class="tab-para">tcpretrans(8)</p></td>
+        <td><p class="tab-para">Ftrace</p></td>
+        <td><p class="tab-para">Trace TCP retransmits, showing addresses and kernel state</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </figure>
+        <p class="noindent">execsnoop(8) was demonstrated earlier. As another example, iolatency(8) shows disk I/O latency as a histogram:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg743a" id="pg743">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>iolatency</strong>
+        Tracing block I/O. Output every 1 seconds. Ctrl-C to end.
+        
+          &gt;=(ms) .. &lt;(ms)   : I/O      |Distribution                          |
+               0 -&gt; 1       : 731      |######################################|
+               1 -&gt; 2       : 318      |#################                     |
+               2 -&gt; 4       : 160      |#########                             |
+        
+          &gt;=(ms) .. &lt;(ms)   : I/O      |Distribution                          |
+               0 -&gt; 1       : 2973     |######################################|
+               1 -&gt; 2       : 497      |#######                               |
+               2 -&gt; 4       : 26       |#                                     |
+               4 -&gt; 8       : 3        |#                                     |
+        
+        <span epub:type="pagebreak" id="page_744"></span>  &gt;=(ms) .. &lt;(ms)   : I/O      |Distribution                          |
+               0 -&gt; 1       : 3130     |######################################|
+               1 -&gt; 2       : 177      |###                                   |
+               2 -&gt; 4       : 1        |#                                     |
+        ^C</pre>
+        <p class="noindent">This output shows that I/O latency was typically low, between 0 and 1 milliseconds.</p>
+        <p class="noindent">The way I implemented this helps to explain the need for extended BPF. iolatency(8) traces block I/O issue and completion tracepoints, reads all events in user-space, parses them, and post-processes them into these histograms using awk(1). Since disk I/O has a relatively low frequency on most servers, this approach was possible without onerous overhead. But the overhead would be prohibitive for more frequent events, such as network I/O or scheduling. Extended BPF solved this problem by allowing the histogram summary to be calculated in kernel space, and only the summary is passed to user space, greatly reducing overhead. Ftrace now supports some similar capabilities with hist triggers and synthetic events, described in <a href="ch14.xhtml#ch14lev10">Section 14.10</a>, <a href="ch14.xhtml#ch14lev10">Ftrace Hist Triggers</a> (I need to update iolatency(8) to make use of them).</p>
+        <p class="noindent">I did develop a pre-BPF solution to custom histograms, and exposed it as the perf-stat-hist(8) multi-purpose tool.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev13sec3">14.13.3 Multi-Purpose Tools</h4>
+        <p class="noindent">The multi-purpose tools are listed and described in <a href="ch14.xhtml#ch14fig04">Figure 14.4</a>. These support multiple event sources and can do many roles, similar to perf(1) and trace-cmd, although this also makes them complex to use.</p>
+        <figure class="table" id="ch14tab08">
+        <figcaption>
+        <p class="title-t"><span class="pd_ashf">Table 14.8</span> <strong>Multi-purpose perf-tools</strong></p>
+        </figcaption>
+        <table class="all">
+        <thead>
+        <tr>
+        <th class="th"><p class="thead"><strong>Tool</strong></p></th>
+        <th class="th"><p class="thead"><strong>Uses</strong></p></th>
+        <th class="th"><p class="thead"><strong>Description</strong></p></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td class="border"><p class="tab-para">funccount(8)</p></td>
+        <td class="border"><p class="tab-para">Ftrace</p></td>
+        <td class="border"><p class="tab-para">Count kernel function calls</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">funcgraph(8)</p></td>
+        <td class="border"><p class="tab-para">Ftrace</p></td>
+        <td class="border"><p class="tab-para">Trace kernel functions showing child function code flow</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">functrace(8)</p></td>
+        <td class="border"><p class="tab-para">Ftrace</p></td>
+        <td class="border"><p class="tab-para">Trace kernel functions</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">funcslower(8)</p></td>
+        <td class="border"><p class="tab-para">Ftrace</p></td>
+        <td class="border"><p class="tab-para">Trace kernel functions slower than a threshold</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">kprobe(8)</p></td>
+        <td class="border"><p class="tab-para">Ftrace</p></td>
+        <td class="border"><p class="tab-para">Dynamic tracing of kernel functions</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">perf-stat-hist(8)</p></td>
+        <td class="border"><p class="tab-para">perf(1)</p></td>
+        <td class="border"><p class="tab-para">Custom power-of aggregations for tracepoint arguments</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">syscount(8)</p></td>
+        <td class="border"><p class="tab-para">perf(1)</p></td>
+        <td class="border"><p class="tab-para">Summarize syscalls</p></td>
+        </tr>
+        <tr>
+        <td class="border"><p class="tab-para">tpoint(8)</p></td>
+        <td class="border"><p class="tab-para">Ftrace</p></td>
+        <td class="border"><p class="tab-para">Trace tracepoints</p></td>
+        </tr>
+        <tr>
+        <td><p class="tab-para">uprobe(8)</p></td>
+        <td><p class="tab-para">Ftrace</p></td>
+        <td><p class="tab-para">Dynamic tracing of user-level functions</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </figure>
+        <p class="noindent">To aid usage of these tools you can collect and share one-liners. I have provided them in the next section, similar to my one-liner sections for perf(1) and trace-cmd.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev13sec4"><span epub:type="pagebreak" id="page_745"></span>14.13.4 perf-tools One-Liners</h4>
+        <p class="noindent">The following one-liners trace system-wide and until Ctrl-C is typed, unless otherwise specified. They are grouped into those that use Ftrace profiling, Ftrace tracers, and event tracing (tracepoints, kprobes, uprobes).</p>
+        <section>
+        <h5 class="h5" id="ch14lev3_7">Ftrace Profilers</h5>
+        <p class="noindent">Count all kernel TCP functions:</p>
+        <pre class="preash">funccount 'tcp_*'</pre>
+        <p class="noindent">Count all kernel VFS functions, printing the top 10 every 1 second:</p>
+        <pre class="preash">funccount -t 10 -i 1 'vfs*'</pre>
+        </section>
+        <section>
+        <h5 class="h5" id="ch14lev3_8">Ftrace Tracers</h5>
+        <p class="noindent">Trace the kernel function do_nanosleep() and show all child calls:</p>
+        <pre class="preash">funcgraph do_nanosleep</pre>
+        <p class="noindent">Trace the kernel function do_nanosleep() and show child calls up to 3 levels deep:</p>
+        <pre class="preash">funcgraph -m 3 do_nanosleep</pre>
+        <p class="noindent">Count all kernel functions ending in “sleep” for PID 198:</p>
+        <pre class="preash">functrace -p 198 '*sleep'</pre>
+        <p class="noindent">Trace vfs_read() calls slower than 10 ms:</p>
+        <pre class="preash">funcslower vfs_read 10000</pre>
+        </section>
+        <section>
+        <h5 class="h5" id="ch14lev3_9">Event Tracing</h5>
+        <p class="noindent">Trace the do_sys_open() kernel function using a kprobe:</p>
+        <pre class="preash">kprobe p:do_sys_open</pre>
+        <p class="noindent">Trace the return of do_sys_open() using a kretprobe, and print the return value:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg745-1a" id="pg745-1">Click here to view code image</a></p>
+        <pre class="preash">kprobe 'r:do_sys_open $retval'</pre>
+        <p class="noindent">Trace the file mode argument of do_sys_open():</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg745-2a" id="pg745-2">Click here to view code image</a></p>
+        <pre class="preash">kprobe 'p:do_sys_open mode=$arg3:u16'</pre>
+        <p class="noindent">Trace the file mode argument of do_sys_open() (x86_64 specific):</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg745-3a" id="pg745-3">Click here to view code image</a></p>
+        <pre class="preash">kprobe 'p:do_sys_open mode=%dx:u16'</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_746"></span>Trace the filename argument of do_sys_open() as a string:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg746-1a" id="pg746-1">Click here to view code image</a></p>
+        <pre class="preash">kprobe 'p:do_sys_open filename=+0($arg2):string'</pre>
+        <p class="noindent">Trace the filename argument of do_sys_open() (x86_64 specific) as a string:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg746-2a" id="pg746-2">Click here to view code image</a></p>
+        <pre class="preash">kprobe 'p:do_sys_open filename=+0(%si):string'</pre>
+        <p class="noindent">Trace do_sys_open() when the filename matches “*stat”:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg746-3a" id="pg746-3">Click here to view code image</a></p>
+        <pre class="preash">kprobe 'p:do_sys_open file=+0($arg2):string' 'file ~ "*stat"'</pre>
+        <p class="noindent">Trace tcp_retransmit_skb() with kernel stack traces:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg746-4a" id="pg746-4">Click here to view code image</a></p>
+        <pre class="preash">kprobe -s p:tcp_retransmit_skb</pre>
+        <p class="noindent">List tracepoints:</p>
+        <pre class="preash">tpoint -l</pre>
+        <p class="noindent">Trace disk I/O with kernel stack traces:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg746-5a" id="pg746-5">Click here to view code image</a></p>
+        <pre class="preash">tpoint -s block:block_rq_issue</pre>
+        <p class="noindent">Trace user-level readline() calls in all “bash” executables:</p>
+        <pre class="preash">uprobe p:bash:readline</pre>
+        <p class="noindent">Trace the return of readline() from “bash” and print its return value as a string:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg746-6a" id="pg746-6">Click here to view code image</a></p>
+        <pre class="preash">uprobe 'r:bash:readline +0($retval):string'</pre>
+        <p class="noindent">Trace readline() entry from /bin/bash with its entry argument (x86_64) as a string:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg746-7a" id="pg746-7">Click here to view code image</a></p>
+        <pre class="preash">uprobe 'p:/bin/bash:readline prompt=+0(%di):string'</pre>
+        <p class="noindent">Trace the libc gettimeofday() call for PID 1234 only:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg746-8a" id="pg746-8">Click here to view code image</a></p>
+        <pre class="preash">uprobe -p 1234 p:libc:gettimeofday</pre>
+        <p class="noindent">Trace the return of fopen() only when it returns NULL (and using a “file” alias):</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg746-9a" id="pg746-9">Click here to view code image</a></p>
+        <pre class="preash">uprobe 'r:libc:fopen file=$retval' 'file == 0'</pre>
+        </section>
+        <section>
+        <h5 class="h5" id="ch14lev3_10">CPU Registers</h5>
+        <p class="noindent">Function argument aliases ($arg1, ..., $argN) is a newer Ftrace capability (Linux 4.20+). For older kernels (or processor architectures missing the aliases), you will need to use CPU register names instead, as introduced in <a href="ch14.xhtml#ch14lev6sec2">Section 14.6.2</a>, <a href="ch14.xhtml#ch14lev6sec2">Arguments</a>. These one-liners included some x86_64 registers (%di, %si, %dx) as examples. The calling conventions are documented in the syscall(2) man page:</p>
+        <p class="codelink"><span epub:type="pagebreak" id="page_747"></span><a href="ch14_images.xhtml#pg747-1a" id="pg747-1">Click here to view code image</a></p>
+        <pre class="pretab">$ <strong>man 2 syscall</strong>
+        [...]
+               Arch/ABI      arg1  arg2  arg3  arg4  arg5  arg6  arg7  Notes
+               ──────────────────────────────────────────────────────────────
+        [...]
+               sparc/32      o0    o1    o2    o3    o4    o5    -
+               sparc/64      o0    o1    o2    o3    o4    o5    -
+               tile          R00   R01   R02   R03   R04   R05   -
+               <strong>x86-64        rdi   rsi   rdx</strong>   r10   r8    r9    -
+               x32           rdi   rsi   rdx   r10   r8    r9    -
+        [...]</pre>
+        </section>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev13sec5">14.13.5 Example</h4>
+        <p class="noindent">As an example of using a tool, the following uses funccount(8) to count VFS calls (function names that match “vfs_*”):</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg747-2a" id="pg747-2">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>funccount 'vfs_*'</strong>
+        Tracing "vfs_*"... Ctrl-C to end.
+        ^C
+        FUNC                              COUNT
+        vfs_fsync_range                      10
+        vfs_statfs                           10
+        vfs_readlink                         35
+        vfs_statx                           673
+        vfs_write                           782
+        vfs_statx_fd                        922
+        vfs_open                           1003
+        vfs_getattr                        1390
+        vfs_getattr_nosec                  1390
+        vfs_read                           2604</pre>
+        <p class="noindent">This output shows that, during tracing, vfs_read() was called 2,604 times. I regularly use funccount(8) to determine which kernel functions are frequently called, and which are called at all. Since its overhead is relatively low, I can use it to check whether function call rates are low enough for more expensive tracing.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev13sec6">14.13.6 perf-tools vs. BCC/BPF</h4>
+        <p class="noindent">I originally developed perf-tools for the Netflix cloud when it was running Linux 3.2, which lacked extended BPF. Since then Netflix has moved to newer kernels, and I have rewritten many of these tools to use BPF. For example, both perf-tools and BCC have their own versions of funccount(8), execsnoop(8), opensnoop(8), and more.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_748"></span>BPF provides programmability and more powerful capabilities, and the BCC and bpftrace BPF front ends are covered in <a href="ch15.xhtml#ch15">Chapter 15</a>. However, there are some advantages of perf-tools<sup><a id="ch14fn5a" href="ch14.xhtml#ch14fn5">5</a></sup>:</p>
+        <ul class="sq">
+        <li><p class="bull"><strong>funccount(8)</strong>: The perf-tools version uses Ftrace function profiling, which is much more efficient and less constrained than the current kprobe-based BPF version in BCC.</p></li>
+        <li><p class="bull"><strong>funcgraph(8)</strong>: This tool does not exist in BCC, since it uses Ftrace function_graph tracing.</p></li>
+        <li><p class="bull"><strong>Hist Triggers</strong>: This will power future perf-tools that should be more efficient than kprobe-based BPF versions.</p></li>
+        <li><p class="bull"><strong>Dependencies</strong>: perf-tools remain useful for resource-constrained environments (e.g., embedded Linux) as they typically only require a shell and awk(1).</p></li>
+        </ul>
+        <p class="footnote"><sup><a id="ch14fn5" href="ch14.xhtml#ch14fn5a">5</a></sup>I originally believed I would retire perf-tools when we finished BPF tracing, but have kept it alive for these reasons.</p>
+        <p class="noindent">I also sometimes use perf-tools tools to cross-check and debug problems with BPF tools.<sup><a id="ch14fn6a" href="ch14.xhtml#ch14fn6">6</a></sup></p>
+        <p class="footnote"><sup><a id="ch14fn6" href="ch14.xhtml#ch14fn6a">6</a></sup>I could repurpose a famous saying: A man with one tracer knows what events happened; a man with two tracers knows that one of them is broken, and searches lkml hoping for a patch.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch14lev13sec7">14.13.7 Documentation</h4>
+        <p class="noindent">Tools typically have a usage message to summarize their syntax. For example:</p>
+        <p class="codelink"><a href="ch14_images.xhtml#pg748a" id="pg748">Click here to view code image</a></p>
+        <pre class="pretab"># <strong>funccount -h</strong>
+        USAGE: funccount [-hT] [-i secs] [-d secs] [-t top] funcstring
+                         -d seconds      # total duration of trace
+                         -h              # this usage message
+                         -i seconds      # interval summary
+                         -t top          # show top num entries only
+                         -T              # include timestamp (for -i)
+          eg,
+               funccount 'vfs*'          # trace all funcs that match "vfs*"
+               funccount -d 5 'tcp*'     # trace "tcp*" funcs for 5 seconds
+               funccount -t 10 'ext3*'   # show top 10 "ext3*" funcs
+               funccount -i 1 'ext3*'    # summary every 1 second
+               funccount -i 1 -d 5 'ext3*' # 5 x 1 second summaries</pre>
+        <p class="noindent">Every tool also has a man page and an examples file in the perf-tools repository (funccount_example.txt) that contains output examples with commentary.</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch14lev14">14.14 Ftrace Documentation</h3>
+        <p class="noindent">Ftrace (and trace events) are well documented in the Linux source, under the Documentation/trace directory. This documentation is also online:</p>
+        <ul class="sq">
+        <li><p class="bull"><a href="https://www.kernel.org/doc/html/latest/trace/ftrace.html">https://www.kernel.org/doc/html/latest/trace/ftrace.html</a></p></li>
+        <li><p class="bull"><a href="https://www.kernel.org/doc/html/latest/trace/kprobetrace.html">https://www.kernel.org/doc/html/latest/trace/kprobetrace.html</a></p></li>
+        <li><p class="bull"><span epub:type="pagebreak" id="page_749"></span><a href="https://www.kernel.org/doc/html/latest/trace/uprobetracer.html">https://www.kernel.org/doc/html/latest/trace/uprobetracer.html</a></p></li>
+        <li><p class="bull"><a href="https://www.kernel.org/doc/html/latest/trace/events.html">https://www.kernel.org/doc/html/latest/trace/events.html</a></p></li>
+        <li><p class="bull"><a href="https://www.kernel.org/doc/html/latest/trace/histogram.html">https://www.kernel.org/doc/html/latest/trace/histogram.html</a></p></li>
+        </ul>
+        <p class="uln-indent"><strong>Resources for front ends are:</strong></p>
+        <ul class="sq">
+        <li><p class="bull"><strong>trace-cmd</strong>: <a href="https://trace-cmd.org">https://trace-cmd.org</a></p></li>
+        <li><p class="bull"><strong>perf ftrace</strong>: In the Linux source: tools/perf/Documentation/perf-ftrace.txt</p></li>
+        <li><p class="bull"><strong>perf-tools</strong>: <a href="https://github.com/brendangregg/perf-tools">https://github.com/brendangregg/perf-tools</a></p></li>
+        </ul>
+        </section>
+        <section>
+        <h3 class="h3" id="ch14lev15">14.15 References</h3>
+        <p class="ref" id="ch14ref1"><strong>[Rostedt 08]</strong> Rostedt, S., “ftrace - Function Tracer,” <em>Linux documentation</em>, <a href="https://www.kernel.org/doc/html/latest/trace/ftrace.html">https://www.kernel.org/doc/html/latest/trace/ftrace.html</a>, 2008+.</p>
+        <p class="ref" id="ch14ref2"><strong>[Matz 13]</strong> Matz, M., Hubička, J., Jaeger, A., and Mitchell, M., “System V Application Binary Interface, AMD64 Architecture Processor Supplement, Draft Version 0.99.6,” <a href="http://x86-64.org/documentation/abi.pdf">http://x86-64.org/documentation/abi.pdf</a>, 2013.</p>
+        <p class="ref" id="ch14ref3"><strong>[Gregg 19f]</strong> Gregg, B., “Two Kernel Mysteries and the Most Technical Talk I’ve Ever Seen,” <a href="http://www.brendangregg.com/blog/2019-10-15/kernelrecipes-kernel-ftrace-internals.html">http://www.brendangregg.com/blog/2019-10-15/kernelrecipes-kernel-ftrace-internals.html</a>, 2019.</p>
+        <p class="ref" id="ch14ref4"><strong>[Dronamraju 20]</strong> Dronamraju, S., “Uprobe-tracer: Uprobe-based Event Tracing,” <em>Linux documentation</em>, <a href="https://www.kernel.org/doc/html/latest/trace/uprobetracer.html">https://www.kernel.org/doc/html/latest/trace/uprobetracer.html</a>, accessed 2020.</p>
+        <p class="ref" id="ch14ref5"><strong>[Gregg 20i]</strong> Gregg, B., “Performance analysis tools based on Linux perf_events (aka perf) and ftrace,” <a href="https://github.com/brendangregg/perf-tools">https://github.com/brendangregg/perf-tools</a>, last updated 2020.</p>
+        <p class="ref" id="ch14ref6"><strong>[Hiramatsu 20]</strong> Hiramatsu, M., “Kprobe-based Event Tracing,” <em>Linux documentation</em>, <a href="https://www.kernel.org/doc/html/latest/trace/kprobetrace.html">https://www.kernel.org/doc/html/latest/trace/kprobetrace.html</a>, accessed 2020.</p>
+        <p class="ref" id="ch14ref7"><strong>[KernelShark 20]</strong> “KernelShark,” <a href="https://www.kernelshark.org">https://www.kernelshark.org</a>, accessed 2020.</p>
+        <p class="ref" id="ch14ref8"><strong>[trace-cmd 20]</strong> “TRACE-CMD,” <a href="https://trace-cmd.org">https://trace-cmd.org</a>, accessed 2020.</p>
+        <p class="ref" id="ch14ref9"><strong>[Ts’o 20]</strong> Ts’o, T., Zefan, L., and Zanussi, T., “Event Tracing,” <em>Linux documentation</em>, <a href="https://www.kernel.org/doc/html/latest/trace/events.html">https://www.kernel.org/doc/html/latest/trace/events.html</a>, accessed 2020.</p>
+        <p class="ref" id="ch14ref10"><strong>[Zanussi 20]</strong> Zanussi, T., “Event Histograms,” <em>Linux documentation</em>, <a href="https://www.kernel.org/doc/html/latest/trace/histogram.html">https://www.kernel.org/doc/html/latest/trace/histogram.html</a>, accessed 2020.<span epub:type="pagebreak" id="page_750"></span></p>
+        </section>
+        </section>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780136821694/files/9780136821656.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com
