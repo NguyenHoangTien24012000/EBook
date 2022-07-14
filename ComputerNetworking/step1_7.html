@@ -1,0 +1,375 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 class="h2" id="ch07"><a id="page_171"></a><strong>Chapter 7<br>Packet Switching</strong></h2>
+        <div class="sidebar">
+        <p class="sb-noindent"><strong>Learning Objectives</strong></p>
+        <p class="sb-noindent">After reading this chapter, you should be able to understand:</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The four steps required to switch a packet through a network device</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> How the receive and transmit rings are used in the process of forwarding a packet</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The basic process of switching a packet, including how the forwarding tables are built</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> How routing is different from switching and the advantages of routing</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The concept of equal cost multipath</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The concept of link aggregation</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The concept of a bus and the concept of a crossbar fabric</p>
+        </div>
+        <p class="noindent">Network devices are inserted into networks to solve a number of problems, including connecting different kinds of media and scaling a network by only carrying packets where they need to go. Routers and switches are, however, complex devices in their own right; engineers can build an entire career by specializing in solving just a small set of the problems encountered in carrying packets through a network device.</p>
+        <p class="indent"><a href="ch07.xhtml#ch07fig01">Figure 7-1</a> is used to discuss an overview of the problem space.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/07fig01.jpg" aria-describedby="Al07fig01" alt="Figure represents the process of moving a packet through a network device." width="702" height="367"><aside class="hidden" id="Al07fig01">
+        <p>A rectangular box on the left has physical media enclosed. A line labeled 1 leads to the right, reaching a box labeled memory. A bidirectional arrow at top, labeled 2, points to an oval shaped box with packet processing enclosed. An arrow labeled 3 leads to a box labeled memory. An arrow labeled 4 leads to the right, meeting a box labeled physical media.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch07fig01"></a><strong>Figure 7-1</strong> <em>Moving a Packet Through a Network Device</em></p>
+        </div>
+        <p class="indentb"><a id="page_172"></a>In <a href="ch07.xhtml#ch07fig01">Figure 7-1</a>, there are four distinct steps:</p>
+        <p class="indenthangingN">1. The packet needs to be copied off the physical media and into memory within the device; this is sometimes called clocking the packet off the wire.</p>
+        <p class="indenthangingN">2. The packet needs to be processed, which generally means determining the correct outbound interface and modifying the packet in any way necessary. For instance, in a router, the lower layer header is stripped off and replaced with a new one; in a stateful packet filter, the packet may be dropped based on internal state; etc.</p>
+        <p class="indenthangingN">3. The packet needs to be copied from the inbound to the outbound interface. This often involves a trip across an internal fabric, or bus. Some systems skip this step by using a single memory pool for both inbound and outbound interfaces; these are called shared memory systems (one thing about network engineering you will notice is the names of things either tend to be too clever or too obvious).</p>
+        <p class="indenthangingN">4. The packet needs to be copied back onto the outbound physical media; this is sometimes called clocking the packet onto the wire.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">Smaller systems, particularly those focused on fast, consistent packet switching, will often use shared memory to transfer a packet from one interface to another. The time required to copy a packet in memory is often larger than the speed at which the interfaces operate; shared memory systems avoid this in memory copying of packets.</p>
+        </div>
+        <p class="indent"><a id="page_173"></a>The problem space discussed in the sections that follow, then, consist of this:</p>
+        <p class="blockquote"><strong>How are packets which need to be forwarded by the network device carried from the inbound to the outbound physical media, and how are packets exposed to processing along this path?</strong></p>
+        <p class="indent">Each of the following sections discusses one part of the solution to this problem.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch07lev1">Physical Media to Memory</h3>
+        <p class="noindent">The first step in processing a packet through a network device is to copy the packet off the wire and into memory. <a href="ch07.xhtml#ch07fig02">Figure 7-2</a> is used to illustrate the process.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/07fig02.jpg" aria-describedby="Al07fig02" alt="Figure represents the process of clocking a packet into memory." width="701" height="410"><aside class="hidden" id="Al07fig02">
+        <p>A concentric circle filled with lines are labeled receive ring. A rectangular box separated by sections are labeled input queue. A rectangular block to the right, filled with squares are labeled memory locations. Step 1 shows time (logical) slots on physical media representing an arrow pointing to the right divided into eight sections. Dashed arrows lead to memory locations with two dotted lines leading to receive ring. Step 2 has a set of dotted lines leading downward to the rectangular box.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch07fig02"></a><strong>Figure 7-2</strong> <em>Clocking a Packet into Memory</em></p>
+        </div>
+        <p class="indent">There are two steps in <a href="ch07.xhtml#ch07fig02">Figure 7-2</a>:</p>
+        <p class="step"><strong>Step 1.</strong> The physical media chipset (the <em>PHY chip)</em> will copy each time (or logical) slot from the physical media, which represents a single bit of data, into a memory location. This memory location is actually mapped into a receive ring, which is a set of memory locations (packet buffer) set aside for the sole purpose of receiving packets being clocked off the wire. The receive ring, and all packet buffer memory, is normally carved out of a single kind of memory accessible by (shared by) all the switching components on the receiving end of the line card or device.</p>
+        <div class="note">
+        <p class="title"><a id="page_174"></a><strong>Note</strong></p>
+        <p class="notepara">A ring buffer is used based on a single pointer, which is incremented each time a new packet is inserted into the buffer. For instance, in the ring shown in <a href="ch07.xhtml#ch07fig02">Figure 7-2</a>, the pointer would begin at slot 1 and increment through the slots as packets are copied into the ring buffer. If the pointer reaches slot 7, and a new packet arrives, the packet will be copied into slot 1—regardless of whether or not the contents of slot 1 have been processed.</p>
+        </div>
+        <p class="stepP">In packet switching, the most time-consuming and difficult task is copying packets from one location to another; this is avoided as much as possible through the use of pointers. Rather than moving a packet in memory, a pointer to the memory location is passed from process to process within the switching path.</p>
+        <p class="step"><strong>Step 2.</strong> Once the packet is clocked into memory, some local processor is interrupted. During this interrupt, the local processor will remove the pointer to the packet buffer containing a packet from the receive ring and place a pointer to an empty packet buffer onto the receive ring. The pointer is placed on a separate list called the input queue.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch07lev2">Processing the Packet</h3>
+        <p class="noindent">Once the packet is in the input queue, it can be processed. Processing can be seen as a chain of events, rather than a single event; <a href="ch07.xhtml#ch07fig03">Figure 7-3</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/07fig03.jpg" aria-describedby="Al07fig03" alt="Figure represents packet switching process." width="683" height="204"><aside class="hidden" id="Al07fig03">
+        <p>Six circles are connected by a straight line with lines pointing downward from each circle, labeled destination based filtering, stateful packet filtering, deep packet inspection, network address translation, switch, and post switch processing. The fifth circle is grayed out.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch07fig03"></a><strong>Figure 7-3</strong> <em>Packet Switching Process</em></p>
+        </div>
+        <p class="indent">Some processing needs to take place before the packet is switched, such as Network Address Translation, because it changes some information about the packet used in the actual switching process. Other processing can take place after the switch.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch07lev3"><a id="page_175"></a><strong>Switching</strong></h4>
+        <p class="noindent">Switching a packet is a somewhat simple operation:</p>
+        </div>
+        <p class="indenthangingN">1. The switching process looks up the destination Media Access Control (MAC), or physical device, address in a forwarding table (in switches this is sometimes called the bridge learning table, or just the bridge table).</p>
+        <p class="indenthangingN">2. The outbound interface is determined based on the information in this table.</p>
+        <p class="indenthangingN">3. The packet is moved from the input queue to the output queue.</p>
+        <p class="indentt">The packet is not modified in any way during the switching process; it is copied from the input queue to the output queue.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">How is the forwarding table built? By a control plane. <a href="part2.xhtml#part2">Part II</a> of this book considers control planes in some detail.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch07lev4"><strong>Routing</strong></h4>
+        <p class="noindent">Routing is a more complex process than switching; <a href="ch07.xhtml#ch07fig04">Figure 7-4</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/07fig04.jpg" aria-describedby="Al07fig04" alt="Figure represents the process of routing a packet." width="698" height="373"><aside class="hidden" id="Al07fig04">
+        <p>A rectangular box at the top is labeled input queue with packet data, upper layer packet header, destination address, lower layer packet header, and destination address. A dashed arrow labeled 1 leads to used to determine if the router should process this packet, then removed. A dashed arrow labeled 2 starts from destination address and leads to a box labeled forwarding table below. A dashed arrow labeled 3 leads to a box labeled interlayer table. A dashed arrow labeled 4 points to lower layer packet header enclosed in a rectangular box below labeled output queue.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch07fig04"></a><strong>Figure 7-4</strong> <em>Routing a Packet</em></p>
+        </div>
+        <p class="indentb"><a id="page_176"></a>In <a href="ch07.xhtml#ch07fig04">Figure 7-4</a>, the packet begins on the input queue. The switching processor then</p>
+        <p class="indenthangingN">1. Removes (or ignores) the lower layer header (for instance, the Ethernet framing on the packet). This information is used to determine whether or not the router should receive the packet, but is not used during the actual switching process.</p>
+        <p class="indenthangingN">2. Looks up the destination address (and potentially other information) in the forwarding table. The forwarding table relates the destination of the packet to the next hop of the packet. The next hop can either be the next router in the path toward the destination or the destination itself.</p>
+        <p class="indenthangingN">3. The switching processor then examines an interlayer discovery table (such as those considered in <a href="ch06.xhtml#ch06">Chapter 6</a>, “<a href="ch06.xhtml#ch06">Interlayer Discovery</a>”), to determine the correct physical address to which to send the packet to bring the packet one hop closer to the destination.</p>
+        <p class="indenthangingN">4. A new lower layer header is built using this new lower layer destination address and copied onto the packet. Normally, the lower layer destination address is cached locally, along with the entire lower layer header. The entire header is rewritten in a process called the MAC header rewrite.</p>
+        <p class="indentt">The entire packet is now moved from the input queue to the output queue.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch07lev5"><strong>Why Route?</strong></h4>
+        <p class="noindent">Because routing is a more complex process than switching, why route? <a href="ch07.xhtml#ch07fig05">Figure 7-5</a> will be used to illustrate.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/07fig05.jpg" aria-describedby="Al07fig05" alt="Figure explains the reason for routing." width="687" height="205"><aside class="hidden" id="Al07fig05">
+        <p>A computer, labeled A is at the left with a line leading to the right, reaching a router labeled B. The line continues, leading to another router labeled C. The line continues to reach two computers, D and E.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch07fig05"></a><strong>Figure 7-5</strong> <em>Why Route?</em></p>
+        </div>
+        <p class="indent">There are at least three specific reasons to route, rather than switch, in a network. Using the network in <a href="ch07.xhtml#ch07fig05">Figure 7-5</a> as an example:</p>
+        <p class="bullt"><a id="page_177"></a>• If the [B,C] link is a different kind of physical media than the two links connecting to hosts, with different encoding, headers, addressing, etc., then routing will allow A and D to communicate without worrying about these differences in the link types. This could be overcome in a purely switched network through header translation, but header translation doesn’t really take any less work than routing in the switching path, so there is little point in <em>not</em> routing to solve this problem. Another solution might be for every physical media type to agree on a single addressing and packet format, but given the constant advances in physical media, and the many different kinds of physical media, this seems like an unlikely solution.</p>
+        <p class="bull">• If the entire network were switched, B would need to know full reachability information for D and E; specifically, D and E would need to know the physical or lower layer addresses for each device connected to the host segment beyond C. This might not be a big problem in a smaller network, but in larger networks, with hundreds of thousands of nodes, or the global Internet, this will not scale—there is simply too much state to manage. It is possible to aggregate reachability information with lower layer addressing, but it is more difficult than using a higher layer address assigned based on the device’s topological attachment point, rather than an address assigned at the factory that uniquely identifies the interface chipset.</p>
+        <p class="bullb">• If D sends a broadcast to “all devices on segment,” A will receive the broadcast if B and C are switches, but not if B and C are routers. Broadcast packets cannot be eliminated, as they are an essential part of just about every transport protocol, but in purely switched networks, broadcasts present a very hard-to-solve scaling problem. Broadcasts are blocked (or rather consumed) at a router.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">In the commercial networking world, the terms <em>routing</em> and <em>switching</em> are often used interchangeably. The reason for this is primarily marketing history; <em>routing</em> always originally meant “switched in software,” while <em>switching</em> always meant “switched in hardware.” As packet switching engines capable of rewriting a MAC header in hardware became available, they were called “Layer 3 switches,” which was eventually shortened to just <em>switch</em>. Most data center “switches,” for instance, are actually routers, as they do perform a MAC header rewrite on forwarded packets. If someone calls a piece of equipment a switch, then it is best to clarify whether it is a Layer 3 switch (properly a router) or a Layer 2 switch (properly a switch).</p>
+        </div>
+        <a id="page_178"></a>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">The terms <em>link</em> and <em>connection</em> are used interchangeably here; a link is a physical or virtual wired or wireless connection between two devices.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch07lev6"><strong>Equal Cost Multipath</strong></h4>
+        <p class="noindent">In some network designs, engineers will introduce parallel links between two network nodes. If you assume these parallel links are equal in bandwidth, latency, and so on, they are said to be equal cost. In this scenario, the links are said to be equal cost multipath (ECMP).</p>
+        </div>
+        <p class="indent">In networking, there are two variants seen frequently on production networks. They behave similarly but are different in how the links are grouped and managed by the network operating system.</p>
+        <div class="heading">
+        <h5 class="h5" id="ch07level1"><em><strong>Link Aggregation</strong></em></h5>
+        <p class="noindent">Link aggregation schemes take multiple physical links and bundle them into a single virtual link. For purposes of routing protocols and loop prevention algorithms such as spanning tree, a virtual link is treated as if it were a single physical link.</p>
+        </div>
+        <p class="indent">Link aggregation is used to increase bandwidth between network nodes without having to replace slower physical links with faster ones. For instance, two 10Gbps links could be aggregated into a single 20Gbps link, thus doubling the potential bandwidth between the two nodes, as shown in <a href="ch07.xhtml#ch07fig06">Figure 7-6</a>. The word <em>potential</em> was chosen carefully, as aggregated links do not, in practice, scale linearly.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/07fig06.jpg" aria-describedby="Al07fig06" alt="Figure shows the process of link aggregation." width="467" height="126"><aside class="hidden" id="Al07fig06">
+        <p>A router, A is to the left, connected to a router labeled B at the right with two dotted lines labeled 20g single logical link and two solid lines labeled 10g.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch07fig06"></a><strong>Figure 7-6</strong> <em>Link Aggregation</em></p>
+        </div>
+        <p class="indent">The problem link aggregation faces is determining which packets should be sent down which member of the bundle. Intuitively, this might not seem like a problem. After all, it would seem to make sense to use the link bundle in a round-robin fashion. The initial frame would be sent down the first member of the bundle, the second frame down the second member, and so on, eventually wrapping back around to the first link bundle member. In this way, the link should be used perfectly evenly, and bandwidth should scale linearly.</p>
+        <p class="indent"><a id="page_179"></a>There are a very few real-life implementations where aggregated links are used on a round-robin basis like this because they run the risk of delivering out-of-order packets. Assume Ethernet frame one is sent down link member one, and frame two is sent down link member two immediately after. For whatever reason, frame two gets to the other end before frame one. The packets that these frames contain will be delivered to the receiving hosts out of order—packet two before packet one. This is a problem because a computational burden is now placed on the host to reorder the packets so the entire datagram can be properly reassembled.</p>
+        <p class="indent">Therefore, most vendors implement flow hashing to ensure the entirety of a traffic flow uses the same bundle member. In this way, there is no risk of a host receiving packets out of order, as they will be sent sequentially across the same link member.</p>
+        <div class="sidebar1">
+        <p class="title1"><strong>Hash Algorithms</strong></p>
+        <p class="noindent">A hash is a simple concept that is actually quite difficult to implement in a useful way: a hash takes a string of numbers of any size and returns a fixed length number, or hash, that (more or less) uniquely represents the original string. The simple-to-implement part is this: one rather naïve hash is to simply add the numbers in a set of numbers until you reach a single digit, calling the result the hash. For instance:</p>
+        <p class="codelink"><a href="ch07_images.xhtml#p07pro01a" id="p07pro01">Click here to view code image</a></p>
+        <p class="pre">23523<br>
+        2 + 3 + 5 + 2 + 3 == 15<br>
+        1 + 5 == 6</p>
+        <p class="indent">Hence, the number 23523 can be <em>represented</em> as 6. One curious property of the hash is there is no way to determine, from the hash, what the original number was—this is one of the essential observations of many uses for the hash. If I share a number with some third party, and that party then shares it with you, you can ask me for the hash of the number (without telling me what the actual number is!), and you can verify the number is the same by verifying the hash I give you matches the one you calculate.</p>
+        <p class="indent">The hash here is naïve because it is too easy to obtain a <em>collision</em>. In other words, there are many different sets of numbers that will result in a hash of 6 given the same process, such as 222, 33, 111111, and (probably) an almost infinite number of others. In some situations, collisions are extremely undesirable. For instance, if you are trying to store pairs of numbers, where you look up the first number to find the second (an indexing problem), then you want to minimize collisions. Once you have computed the hash of the number you are <a id="page_180"></a>using as the index, you do not want to have the result point to a hash bucket with a lot of entries, as each entry in the bucket needs to be searched to find the index. In the extreme case, every number will index into a single hash bucket, resulting in the hash being completely ineffective as a sorting tool.</p>
+        <p class="indent">In other cases, such as the load-sharing example given here, it is more important to make certain the hash spreads entries out among the available buckets as evenly as possible. You want to make certain each bucket contains about the same number of entries, as each bucket represents a single link, and you want the links to each receive the traffic of about the same number of destinations.</p>
+        </div>
+        <p class="indent">Flow hashing works by performing a mathematical operation on two or more static components of a flow, such as source and destination MAC addresses, source and destination Internet Protocol (IP) addresses, or Transmission Control Protocol (TCP) or User Datagram Protocol (UDP) port numbers to compute a link member the flow will use. Because the characteristics of the flow are static, the hashing algorithm results in an identical computation for each frame or packet in a traffic flow, guaranteeing the same link will be used for the life of the flow.</p>
+        <p class="indent">While flow hashing solves the out-of-order packet problem, it introduces a new problem. Not all flows are the same size. Some flows use a high amount of band-width, such as those used for file transfers, backups, or storage; these are sometimes called <em>elephant flows</em>. Other flows are quite small, such as those used to load a web page or communicate using voice over IP; these are sometimes called <em>mouse flows</em>. Because flows are different sizes, some link members might be running at capacity, while others are underutilized.</p>
+        <p class="indent">This mismatch in utilization brings us back around to the point about linear scaling. If frames were load-balanced across an aggregated link bundle perfectly evenly, then adding new links to the bundle would evenly multiply capacity. However, hashing algorithms combined with the unpredictable volume of traffic flows mean bundled links will not be evenly loaded.</p>
+        <p class="indent">The job of the network engineer is to understand the type of traffic flowing through the aggregated bundle and choose an available hashing algorithm that will result in the most even load distribution. For instance, some considerations might be</p>
+        <p class="bullt">• Are many hosts in the same broadcast domain communicating with one another across the aggregated link? Hashing against the MAC addresses found in the Ethernet frame header is a possible solution, because the MAC addresses will be varied.</p>
+        <p class="bullb"><a id="page_181"></a>• Are a small number of hosts communicating to a single server across the aggregated link? There might not be enough variety of either MAC addresses or IP addresses in this scenario. Instead, hashing against TCP or UDP port numbers might result in the greatest variety and subsequent traffic distribution across the aggregated links.</p>
+        <div class="heading">
+        <h5 class="h5" id="ch07level2"><em><strong>Link Aggregation Control Protocol</strong></em></h5>
+        <p class="noindent">When bundling links together, you must consider the network devices on either end of the link and take special care to allow the link bundle to be formed while maintaining a loop-free topology. The most common way of addressing this issue is by using industry standard Link Aggregation Control Protocol (LACP), codified as Institute of Electrical and Electronic Engineers (IEEE) standard 802.3ad.</p>
+        </div>
+        <p class="indent">On links designated by a network engineer, LACP advertises its intent to form an aggregated link to the other side. The other side, also running LACP, accepts this advertisement if the announced parameters are valid, and forms the link. Once the link bundle has been formed, the aggregated link is placed into a forwarding state. Network operators can then query LACP for status on the aggregated link and the state of link members.</p>
+        <p class="indent">LACP is also aware when a member of the link bundle goes down, as control packets no longer flow across the failed link. This capability is useful, as it allows the LACP process to notify the network operating system to recalculate its flow hashes. Without LACP, it might take the network operating system a longer time to become aware of the failed link, causing traffic to be hashed to a link member that is no longer a valid path.</p>
+        <p class="indent">Other link aggregation control protocols exist. It is also possible in some scenarios to create link bundles manually without the protection of a control protocol; however, LACP dominates as the standard in use by networking vendors as well as host operating systems and hypervisor vendors for link aggregation.</p>
+        <div class="heading">
+        <h5 class="h5" id="ch07level3"><em><strong>Multichassis Link Aggregation</strong></em></h5>
+        <p class="noindent">Multichassis Link Aggregation (MLAG) is a feature offered by some network vendors allowing a single aggregated link bundle to span two or more network switches. To facilitate this, a vendor’s special control protocol will run between the MLAG member switches, making multiple network switches act as if they are one switch as far as LACP, Spanning Tree Protocol (STP), and any other protocols are concerned.</p>
+        </div>
+        <p class="indent">The usual justification for MLAG is physical redundancy, where a network engineer requires a lower layer (such as Ethernet) adjacency between network devices (instead of a routed connection), and also requires the link bundle to remain up if <a id="page_182"></a>the remote side of the link fails. Spreading the link bundle between two or more switches allows this requirement to be met. <a href="ch07.xhtml#ch07fig07">Figure 7-7</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/07fig07.jpg" aria-describedby="Al07fig07" alt="Figure represents multi-chassis link aggregation." width="477" height="380"><aside class="hidden" id="Al07fig07">
+        <p>A rectangular box filled with dashed lines is labeled multi-chassis switch. Two small rectangles to the left and right are labeled switch. A line connecting two boxes are labeled MLAG control protocol. Lines lead downward to another box labeled switch. A dotted circle is labeled aggregated link.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch07fig07"></a><strong>Figure 7-7</strong> <em>Multichassis Link Aggregation</em></p>
+        </div>
+        <p class="indent">While many networks operate some flavor of MLAG in production, many others have shied away from the technology, at least partially because MLAG is proprietary; there is no such thing as multivendor MLAG. Better network design trends away from widely dispersed switched domains, a scenario that benefits from MLAG. Instead, network design is trending toward constrained switched domains interconnected through routing, obviating the need for MLAG technologies.</p>
+        <div class="heading">
+        <h5 class="h5" id="ch07level4"><em><strong>Routed Parallel Links</strong></em></h5>
+        <p class="noindent">Routed control planes, called routing protocols (see the chapters in <a href="part2.xhtml#part2">Part II</a> of this book for more information on routing and loop-free path calculation), sometimes compute a set of multiple paths through a network with equal costs. In the case of routing, multiple links with the same cost may not even connect a single pair of devices; <a href="ch07.xhtml#ch07fig08">Figure 7-8</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/07fig08.jpg" aria-describedby="Al07fig08" alt="Figure shows a routed ECMP." width="397" height="415"><aside class="hidden" id="Al07fig08">
+        <p>A router labeled A is at the top with a line labeled cost 5 leading to the left, reaching a router labeled B. A line labeled cost 5 leads downward, meeting a router labeled D. The line labeled cost 5 reaches a router labeled C. A line labeled cost 5 leads upward to A. A line labeled cost 10 starts from A and leads downward to D.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch07fig08"></a><strong>Figure 7-8</strong> <em>Routed ECMP</em></p>
+        </div>
+        <p class="indent">In <a href="ch07.xhtml#ch07fig08">Figure 7-8</a>, there are three paths:</p>
+        <p class="bullt">• [A,B,D] with a total cost of 10</p>
+        <p class="bull">• [A,D] with a total cost of 10</p>
+        <p class="bullb">• [A,C,D] with a total cost of 10</p>
+        <p class="indent"><a id="page_183"></a>Because these three paths have the same cost, they may all three be installed in the local forwarding table at A and D. Router A, for instance, may forward traffic over any one of these three links toward D. When a router has multiple options to reach the same destination, how does it decide which physical path to take?</p>
+        <p class="indent">As with lower layer ECMP, the answer is hashing. Routed ECMP hashing can be performed on a variety of fields. Common fields to hash against include source or destination IP addresses and source or destination port numbers. The hashing results in a consistent path being selected for the duration of an L3 flow. Only in the case of a link failure would the flow need to be rehashed and a new forwarding link chosen.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch07lev7"><strong>Packet Processing Engines</strong></h4>
+        <p class="noindent">The steps involved in routing a single packet may seem very simple—look up the destination in a table, build (or retrieve) a MAC header rewrite, rewrite the MAC header, and then place the packet on the correct queue for an outbound interface. As simple as this might be, it still takes time to process a single packet. <a href="ch07.xhtml#ch07fig09">Figure 7-9</a> illustrates three different <em>paths</em> through which a packet may be switched in a network device.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/07fig09.jpg" aria-describedby="Al07fig09" alt="Figure represents the process of switching paths." width="702" height="627"><aside class="hidden" id="Al07fig09">
+        <p>Two clouds labeled Interrupt and Switching application are at the top with four rectangular boxes directly below, labeled GPP, Main memory, ASIC memory, and ASIC. Two rectangles, input process and output process are to the left and right respectively. Arrows 1 and 4 move from input process to main memory. An arrow labeled 5 points to interrupt. An arrow labeled 2 points to switching application. An arrow labeled 7 points to ASIC memory and an arrow labeled 8 points to ASIC. Two arrows, 6 and 3 point from main memory to output process. An arrow labeled 9 points from ASIC memory to output process. GPP and main memory has a set of lines labeled bus in between. ASIC memory and ASIC has a set of lines labeled bus in between.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch07fig09"></a><strong>Figure 7-9</strong> <em>Switching Paths</em></p>
+        </div>
+        <p class="indentb"><a id="page_184"></a><a href="ch07.xhtml#ch07fig09">Figure 7-9</a> illustrates three different switching paths through a device; these are not the <em>only possible</em> switching paths, but they are the most common ones. The first path processes packets through a software application running on a general-purpose processor (GPP), and consists of three steps:</p>
+        <p class="indenthangingN">1. The packet is copied off the physical media into main memory, as described in the sections above.</p>
+        <p class="indenthangingN">2. The physical signal processor, the PHY chip, sends a signal to the GPP (probably, but not necessarily, the main processor in the network device), called an interrupt.</p>
+        <p class="indenthangingNA">a. The interrupt causes the processor to stop other tasks (this is why it is called an interrupt) and run a small piece of code that will schedule another process, the switching application, to run later.</p>
+        <p class="indenthangingNA"><a id="page_185"></a>b. When the switching application runs, it will do the appropriate lookups and make the appropriate modifications to the packet.</p>
+        <p class="indenthangingN">3. Once the packet has been switched, it is copied out of main memory by the outbound processor, as described in the following sections.</p>
+        <p class="indent1">Switching a packet through a process in this way is often called process switching (for obvious reasons), or sometimes the slow path. No matter how fast the GPP is, to reach full line rate switching on higher-speed interfaces requires a lot of tuning—to the point of being almost impossible. The second switching path shown in <a href="ch07.xhtml#ch07fig09">Figure 7-9</a> was designed to process packets more quickly:</p>
+        <p class="indenthangingN">4. The packet is copied off the physical media into main memory, as described in the previous sections.</p>
+        <p class="indenthangingN">5. The PHY chip interrupts the GPP; the interrupt handler code, rather than calling another process, actually processes the packet.</p>
+        <p class="indenthangingN">6. Once the packet has been switched, the packet is copied from main memory into the output process, as described in the text that follows.</p>
+        <p class="indentt">This process is often called interrupt context switching, for obvious reasons; many processors can support switching packets fast enough to carry packets between low and moderate rate interfaces in this mode. The switching code itself must be highly optimized, of course, because switching the packet causes the processor to stop executing any other tasks (such as processing a routing protocol update). This was originally—and is still sometimes—called the fast switching path.</p>
+        <p class="indentb">For truly high-speed applications, the process of switching packets must be offloaded from the main processor, or any kind of GPP, and onto a specialized processor designed for the specific task of processing packets. Sometimes these processors are called Network Processing Units (NPUs), much like a processor designed to handle just graphics is called a Graphics Processing Unit (GPU). These specialized processors are a subset of a broader class of processors called Application-Specific Integrated Circuits (ASICs), and are often just called ASICs by engineers. Switching a packet through an ASIC is shown as steps 7 through 9 in <a href="ch07.xhtml#ch07fig09">Figure 7-9</a>:</p>
+        <p class="indenthangingN">7. The packet is copied off the physical media into the ASIC’s memory, as described in the previous sections.</p>
+        <p class="indenthangingN"><a id="page_186"></a>8. The PHY chip interrupts the ASIC; the ASIC handles the interrupt by switching the packet.</p>
+        <p class="indenthangingN">9. Once the packet has been switched, the packet is copied from the ASIC’s memory into the output process, as described next.</p>
+        <p class="indentt">Many specialized packet processing ASICs have a number of interesting features, including</p>
+        <p class="bullt">• Internal memory structures (registers) configured specifically to handle the various kinds of addresses used in networks</p>
+        <p class="bull">• Specialized instruction sets designed to handle various packet processing requirements, such as examining the inner headers being carried in a packet, and rewriting the MAC header</p>
+        <p class="bull">• Specialized memory structures and instruction sets designed to store and look up destination addresses to speed packet processing</p>
+        <p class="bullb">• The ability to recycle a packet through the packet pipeline in order to perform operations that cannot be supported in a single pass, such as deep packet inspection or specialized filtering tasks</p>
+        <div class="heading">
+        <h3 class="h3" id="ch07lev8">Across the Bus</h3>
+        <p class="noindent">In smaller network devices with just one network process (the ASIC or NPU, as described previously), moving a packet from the input queue to the output queue is simple. The input and output interfaces both share a common pool of packet memory, so a pointer to the packet can be moved from one queue to the other.</p>
+        </div>
+        <p class="indent">To reach higher port counts and larger-scale devices—particularly chassis devices— there must be an internal bus, or fabric, that connects the input and output packet processing engines. One common type of fabric used to interconnect packet processing engines within a network device is a crossbar fabric; <a href="ch07.xhtml#ch07fig10">Figure 7-10</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/07fig10.jpg" aria-describedby="Al07fig10" alt="Figure represents a crossbar fabric." width="678" height="669"><aside class="hidden" id="Al07fig10">
+        <p>The horizontal portion is labeled receive and the vertical portion is labeled send. The horizontal portion has a set of vertical lines with LC1, LC2, LC3, LC4, LC5, LC6, LC7, LC8, and LC9 at the bottom and 1, 2, 3, 4, 5, 6, 7, 8, and 9 at the top. The vertical portion has a set of horizontal lines with LC1, LC2, LC3, LC4, LC5, LC6, LC7, LC8, and LC9 at the left and A, B, C, D, E, F, G, H, and K to the right.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch07fig10"></a><strong>Figure 7-10</strong> <em>A Crossbar Fabric</em></p>
+        </div>
+        <p class="indent">The size and structure of the crossbar fabric are dependent on the number of ports connected. If there are more ports in the switch than feasible to connect via a single crossbar fabric, then the switch will use multiple crossbar fabrics. A common topology for this kind of fabric is a multistage Clos connecting the ingress and egress crossbar fabrics together. You might think of this as a crossbar of crossbars.</p>
+        <div class="note">
+        <p class="title"><a id="page_187"></a><strong>Note</strong></p>
+        <p class="notepara">Spine and leaf fabrics, which are a form of Clos, are considered in <a href="ch25.xhtml#ch25">Chapter 25</a>, “<a href="ch25.xhtml#ch25">Disaggregation, Hyperconvergence, and the Changing Network</a>.”</p>
+        </div>
+        <p class="indent">A crossbar fabric requires a sense of time (or rather a fixed time slot) and a scheduler to work. At each interval of time, one output (send) port is connected to one input (receive) port, so that during this time period the sender can transmit a packet, frame, or set of packets to the receiver. The scheduler “connects” the correct cross <a id="page_188"></a>points on the crossbar fabric for transmissions to take place during the correct time period. For instance:</p>
+        <p class="bullt">• Line card 1 (LC1) would like to send a packet to LC3.</p>
+        <p class="bullb">• LC3 would like to send a packet to LC5.</p>
+        <p class="indent">During the next time cycle, the scheduler can connect row A to column 1 (“make” the connection at A3) and connect row C to column 5 (“make” the connection at C5) so a communication channel is set up between these pairs of line cards.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch07lev9"><strong>Crossbars and Contention</strong></h4>
+        <p class="noindent">What happens if two transmitters want to send a packet to a single receiver? For instance, if during one period of time both LC1 and LC2 want to send a packet to LC9 across the crossbar fabric? This is called contention, and is a situation that must be handled by the fabric scheduler. Which of the two ingress ports should be allowed to send their traffic to the egress port? And where are the ingress traffic queues in the meantime?</p>
+        </div>
+        <p class="indent">One option is for the packets to be stored in an input queue; switches that use this technique are called input-queued switches. These kinds of switches suffer from head-of-line (HOL) blocking. HOL blocking is what happens when the packet at the head of the line, waiting to be forwarded across the fabric, blocks the other packets queued up behind it.</p>
+        <p class="indent">Another option is for the switch to leverage multiple virtual output queues (VOQs) per input port.</p>
+        <p class="indent">VOQs give a crossbar fabric multiple places to stash ingress packets while they are waiting to be delivered to their egress ports. In many switch designs, one VOQ exists per output port for which input traffic is destined. Therefore, an input port can have several packets queued in several different VOQs, assuming several different egress ports.</p>
+        <p class="indent">Each of these VOQs is eligible to be serviced during a single clock cycle. This means HOL blocking is eliminated, because several different packets from the same input queue can be passed through the crossbar fabric at the same time. Rather than a single queue existing for an input port, there are several different queues. Think of it as additional checkout lines being opened at the grocery store.</p>
+        <p class="indent">Even with VOQs, the potential remains for contention across the crossbar fabric. The most common example is where two or more ingress packets need to leave the <a id="page_189"></a>switch via the same egress port at the same time, or more precisely, on the same clock cycle. An egress port can only send one packet per clock cycle.</p>
+        <p class="indent">Determining which ingress queue will get to deliver traffic to the egress port first is an algorithm determined by the switch manufacturer to make the maximum use of the hardware. iSLIP is one scheduling algorithm used by switches to solve this problem.</p>
+        <div class="heading">
+        <h5 class="h5" id="ch07level5"><em><strong>An Overview of the iSLIP Algorithm</strong></em></h5>
+        <p class="noindent">The iSLIP algorithm arbitrates crossbar fabric contention, scheduling traffic so the network device achieves nonblocking throughput. For the purposes of this discussion, it is helpful to scrutinize iSLIP in its simplest form by reviewing what happens when the iSLIP algorithm executes once.</p>
+        </div>
+        <p class="indentb">There are three crucial events that take place during an iSLIP execution:</p>
+        <p class="indenthangingN">1. <strong>Request.</strong> All input points (ingress) on the crossbar fabric with queued traffic ask their output points (egress) if they can send.</p>
+        <p class="indenthangingN">2. <strong>Grant.</strong> Each output point that received a request must determine which input point will be allowed to send. If there is a single request, then a grant is awarded with no further deliberation. However, if there are multiple requests, the output point must determine which input point can send. This is done via round-robin, where one request is awarded a grant, a subsequent request is awarded a grant during the next execution of iSLIP, and so on in a circular fashion. When the decision has been made for this particular execution of iSLIP, each output point sends its grant message, effectively signaling permission to send, to the appropriate input point.</p>
+        <p class="indenthangingN">3. <strong>Accept.</strong> An input point considers the grant messages it has received from output points, choosing a grant in round-robin fashion. Upon selection, the input notifies the output that the grant has been accepted. If and only if the output point is notified the grant was accepted will the output point move on to the next request. If there is no accept message received, then the output point will attempt to service the previous request during the next execution of iSLIP.</p>
+        <p class="indentt">Understanding the request, grant, and accept process gives us insight into how packets can be delivered simultaneously through a crossbar fabric without colliding. However, if you ponder a complex set of inputs, VOQs, and outputs, you might</p>
+        <p class="indent"><a id="page_190"></a>realize a single iSLIP run doesn’t schedule as many packets for delivery as it could have after only a single execution.</p>
+        <p class="indent">Certainly, some inputs were granted outputs and some packets can be forwarded, but it is possible some outputs were never matched with a waiting input. In other words, if you limit iSLIP to a single execution per clock cycle, we’d be leaving available egress bandwidth unused.</p>
+        <p class="indent">Therefore, the normal practice is to run iSLIP through multiple iterations. The result is the number of input-to-output matches is maximized. More packets can be sent across the crossbar fabric at a time. How many times does iSLIP need to run to maximize the number of packets that can be switched through the crossbar fabric in a clock cycle? Research suggests that for the traffic patterns prevalent on most networks, running iSLIP four times matches inputs and outputs across the crossbar fabric the best. Executing iSLIP more than four times does not result in a meaningfully larger number of matches. In other words, there is nothing to be gained running iSLIP five, six, or ten times in most network environments.</p>
+        <div class="heading">
+        <h5 class="h5" id="ch07level6"><em><strong>Moving Beyond iSLIP</strong></em></h5>
+        <p class="noindent">This discussion has assumed, so far, that the traffic flowing through the crossbar fabric was all of equal importance. However, in modern data centers, certain traffic classes are prioritized over the other. For instance, Fibre Channel over Ethernet (FCoE) storage frames need to traverse the fabric in a lossless manner, while a TCP session falling into a scavenger QoS class does not.</p>
+        </div>
+        <p class="indent">Does iSLIP handle traffic with different priorities, granting some requests before others? Yes, but in a modified form of the algorithm we’ve looked at. Variants to iSLIP include Prioritized, Threshold, and Weighted iSLIP.</p>
+        <p class="indent">Beyond iSLIP, used here merely as a convenient example of contention management, vendors will write their own algorithms to suit their own crossbar fabric’s hardware capabilities. For example, this section only considered an input-queued crossbar fabric, but many crossbar fabrics offer output-queuing on the egress side of the crossbar as well.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch07lev10">Memory to Physical Media</h3>
+        <p class="noindent">Once the packet is carried across the bus to the outbound line card, or the pointer on the packet buffer is moved from the input queue to the output queue, there is still work for the network device to do. <a href="ch07.xhtml#ch07fig11">Figure 7-11</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/07fig11.jpg" aria-describedby="Al07fig11" alt="Figure represents the process of clocking a packet back onto the wire." width="702" height="319"><aside class="hidden" id="Al07fig11">
+        <p>A box labeled packet to transmit is to the left. A concentric circle filled with lines are labeled transmit ring. A rectangular block filled with blocks lie below. A block filled with 8 boxes are to the right, labeled memory locations. A dashed arrow leads from packet to transmit to transmit ring, labeled Step 1. A dashed arrow leads downward from packet to transmit to output queue, labeled step 2. Four dashed arrows lead to the top, reaching the ring and is labeled Step 3. Two dashed lines lead from the ring to memory locations. Eight dashed arrows lead downward to an arrow pointing rightward labeled time (logical) slots on physical media with 1, 2, 3, 4, 5, 6, 7, and 8 on top.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch07fig11"></a><strong>Figure 7-11</strong> <em>Clocking a Packet Back onto the Wire</em></p>
+        </div>
+        <p class="indentb"><a id="page_191"></a>Note the ring shown in <a href="ch07.xhtml#ch07fig11">Figure 7-11</a> is the transmit ring, rather than the receive ring. There are four steps in <a href="ch07.xhtml#ch07fig11">Figure 7-11</a>:</p>
+        <p class="step"><strong>Step 1.</strong> The packet is passed to the transmit side of the router for forwarding. There may be post switch processing that needs to be done here, depending on the platform and specific features; these are not shown in this illustration. An attempt will first be made to place the packet directly on the transmit ring, where it can be transmitted. If the ring already has a packet on it, or if the ring is full (depending on the implementation), the packet will not be placed on the transmit ring. If the packet is placed on the transmit ring, step 2 is skipped (which means the packet will not be processed using any outbound Quality of Service [QoS] rules). Otherwise, the packet is placed on the output queue, where it will await being transferred to the transmit ring.</p>
+        <p class="step"><strong>Step 2.</strong> If the packet cannot be placed on the transmit ring, it will be placed on the output queue for holding for some later time.</p>
+        <p class="step"><strong>Step 3.</strong> Periodically, the transmit code will move packets from the output queue to the transmit ring. The order in which packets are taken from the output queue will depend on the QoS configuration; see <a href="ch08.xhtml#ch08">Chapter 8</a>, “<a href="ch08.xhtml#ch08">Quality of Service</a>,” for more information on how QoS is applied to queues in various situations.</p>
+        <p class="step"><strong>Step 4.</strong> At some point after the packet has been moved to the transmit ring, the transmit PHY chip, which reads each bit from the packet buffer, encodes it into the proper format for the outbound physical media type and copies the packet onto the wire.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch07lev11"><a id="page_192"></a>Final Thoughts on Packet Switching</h3>
+        <p class="noindent">The details of packet switching might seem mired in minutiae. After all, does it matter exactly how a packet or frame moves between two devices? Is it really all that critical to comprehend serialization and deserialization, equal cost multipath, crossbar fabric contention, transmit rings, and the like?</p>
+        </div>
+        <p class="indent">In a certain sense, these details don’t matter to the average network engineer. When a network device is doing its job moving data through it, the actual processes followed by the switch to get that job done are trivialities. “It just works.”</p>
+        <p class="indent">However, switching internals often factor greatly into network design. For example, consider port-to-port latency. In some high-traffic networks, the amount of time it takes for a switch to move a frame from ingress port to egress port makes a difference in overall application performance. In modern switches, port-to-port latency is measured in single microseconds or hundreds of nanoseconds. If one switch gets the job done in 1 microsecond, while another can do it in 400 nanoseconds, that can impact a hardware choice.</p>
+        <p class="indent">Another consideration is troubleshooting. What happens when a network device does not appear to be forwarding all of the packets it receives, i.e. there is more ingress than egress? Small amounts of packet loss in a network fabric are troublesome to track down. Understanding a network device’s internal packet switching process shines a great deal of light on where the breakdown might be happening.</p>
+        <p class="indent">Therefore, don’t dismiss packet switching as “too close to the wires” to be relevant to the aspiring networker. Rather, embrace a knowledge of packet switching for the deep insights into overall network performance that it supplies.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch07lev12">Further Reading</h3>
+        <p class="ref">“1.5. Basics of How Operating Systems Work.” <em>Operating Systems Study Guide</em>. Accessed April 22, 2017. <a href="http://faculty.salina.k-state.edu/tim/ossg/Introduction/OSworking.html">http://faculty.salina.k-state.edu/tim/ossg/Introduction/OSworking.html</a>.</p>
+        </div>
+        <p class="ref">Bollapragada, Vijay, Russ White, and Curtis Murphy. <em>Inside Cisco IOS Software Architecture</em>. Indianapolis, IN: Cisco Press, 2000.</p>
+        <p class="ref"><em>BSTJ 18: 1. January 1939: Crossbar Dial Telephone Switching System. (Scudder, F. J.; Reynolds, J. N.)</em>, 1939. <a href="http://archive.org/details/bstj18-1-76">http://archive.org/details/bstj18-1-76</a>.</p>
+        <p class="ref">“Cisco Nexus 5548P Switch Architecture.” <em>Cisco</em>. Accessed July 29, 2017. <a href="http://www.cisco.com/c/en/us/products/collateral/switches/nexus-5548p-switch/white_paper_c11-622479.html">http://www.cisco.com/c/en/us/products/collateral/switches/nexus-5548p-switch/white_paper_c11-622479.html</a>.</p>
+        <p class="ref"><a id="page_193"></a>“Fast Ethernet | Integrating 100mbps into Existing 10mbps Networks.” <em>Savvius</em>. Accessed April 22, 2017. <a href="https://www.savvius.com/resources/compendium/fast_ethernet/overview">https://www.savvius.com/resources/compendium/fast_ethernet/overview</a>.</p>
+        <p class="ref">Heineman, George T., Gary Pollice, and Stanley Selkow. <em>Algorithms in a Nutshell: A Practical Guide</em>. 2nd edition. O’Reilly Media, 2016.</p>
+        <p class="ref">Inniss, Daryl, and Roy Rubenstein. <em>Silicon Photonics: Fueling the Next Information Revolution</em>. 1st edition. Morgan Kaufmann, 2016.</p>
+        <p class="ref">“Intel Ethernet Switch Family Hash Efficiency.” Intel, April 2009. <a href="https://www.intel.com/content/dam/www/public/us/en/documents/white-papers/ethernet-switch-hash-efficiency-paper.pdf">https://www.intel.com/content/dam/www/public/us/en/documents/white-papers/ethernet-switch-hash-efficiency-paper.pdf</a>.</p>
+        <p class="ref">“Interrupt.” <em>Wikipedia</em>, Accessed February 3, 2017. <a href="https://en.wikipedia.org/w/index.php?title=Interrupt&amp;oldid=763436239">https://en.wikipedia.org/w/index.php?title=Interrupt&amp;oldid=763436239</a>.</p>
+        <p class="ref">Kloth, Axel K. <em>Advanced Router Architectures</em>. Boca Raton, FL: CRC Press, 2005.</p>
+        <p class="ref">Konheim, Alan G. <em>Hashing in Computer Science: Fifty Years of Slicing and Dicing</em>. 1st edition. Wiley-Interscience, 2011.</p>
+        <p class="ref">Lekkas, Panos. <em>Network Processors: Architectures, Protocols and Platforms</em>. 1st edition. New York: McGraw-Hill Education, 2003.</p>
+        <p class="ref">Meiners, Chad R., Alex X. Liu, and Eric Torng. <em>Hardware Based Packet Classification for High Speed Internet Routers</em>. 2010 edition. New York: Springer, 2010.</p>
+        <p class="ref">Noubir, Guevara. “Signal Encoding Techniques.” Accessed April 22, 2017. <a href="http://www.ccs.neu.edu/home/noubir/Courses/CS6710/S12/slides/signals-encoding.pdf">http://www.ccs.neu.edu/home/noubir/Courses/CS6710/S12/slides/signals-encoding.pdf</a>.</p>
+        <p class="ref">Stringfield, Nakia, Russ White, and Stacia McKee. <em>Cisco Express Forwarding</em>. 1st edition. Indianapolis, IN: Cisco Press, 2007.</p>
+        <p class="ref">Thakur, Dinesh. “Encoding Techniques and Codec.” <em>Computer Notes</em>. Accessed April 22, 2017. <a href="http://ecomputernotes.com/computernetworkingnotes/communication-networks/encoding-techniques-and-codec">http://ecomputernotes.com/computernetworkingnotes/communication-networks/encoding-techniques-and-codec</a>.</p>
+        <p class="ref">“Understanding IEEE 802.3ad Link Aggregation—Technical Documentation—Support—Juniper Networks,” March 26, 2013. <a href="https://www.juniper.net/documentation/en_US/junose14.2/topics/concept/802.3ad-link-aggregation-understanding.html">https://www.juniper.net/documentation/en_US/junose14.2/topics/concept/802.3ad-link-aggregation-understanding.html</a>.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch07lev13">Review Questions</h3>
+        <p class="indenthangingN">1. What happens if one end of a link is configured as a bundle and the other end is not? Specifically, what happens if one device thinks STP is running and the other does not?</p>
+        </div>
+        <p class="indenthangingN"><a id="page_194"></a>2. Why is flow hashing typically used as opposed to round-robin as a forwarding algorithm in ECMP?</p>
+        <p class="indenthangingN">3. What is the purpose of a multistage fabric? Provide an example.</p>
+        <p class="indenthangingN">4. Briefly summarize techniques found in crossbar fabrics to mitigate contention.</p>
+        <p class="indenthangingN">5. The iSLIP algorithm has steps of Request, Grant, and Accept. In a single sentence for each, explain what happens in each step.</p>
+        <p class="indenthangingN">6. How many times does iSLIP need to run before it is no longer effective in improving input-to-output matches?</p>
+        <p class="indenthangingN">7. How many packets can be placed on the transmit ring at a time?</p>
+        <p class="indenthangingN">8. Why not make the transmit and receive rings large enough to prevent any packet from ever being overwritten because the packets being held in the ring buffer are not processed quickly enough? What are the tradeoffs in terms of switching speed through the switch, memory utilization, and other factors?</p>
+        <p class="indenthangingN">9. Research and describe the impact of a broadcast storm in a network. How does routing prevent broadcast storms?</p>
+        <p class="indenthangingN1">10. What are some advantages of using MLAG to build very large, flat networks without routing? What are some disadvantages?</p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780134762814/files/9780134762852.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

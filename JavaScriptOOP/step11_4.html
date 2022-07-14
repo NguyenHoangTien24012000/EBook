@@ -1,0 +1,72 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="The Liskov Substitution Principle"><div class="titlepage"><div><div><h1 class="title"><a id="ch11lvl1sec72"></a>The Liskov Substitution Principle</h1></div></div></div><p>The third SOLID principle, the <span class="strong"><strong>Liskov Substitute Principle</strong></span>, is somehow an extension of the Open/Closed Principle. In fact, it concerns the possibility of extending a component through inheritance and imposes a constraint that ensures interoperability of objects within an inheritance hierarchy. The principle says:</p><div class="blockquote"><blockquote class="blockquote"><p><span class="emphasis"><em>Subtypes must be substitutable for their base types.</em></span></p></blockquote></div><p>When we use inheritance, we extend a base component to create specialized components. The principle of Liskov invites us to be careful not to disrupt the functionality of the parent component when we define a derived component. Classes, objects, functions, and other software entities that have to do with the components of an inheritance hierarchy must be able to interact in a uniform manner. In other words, a derived component must be semantically equivalent to its base component. Otherwise, the new components can produce undesired effects when they interact with existing components.</p><div class="note" title="Note" style=""><div class="inner"><h3 class="title"><a id="note20"></a>Note</h3><p>The Liskov Substitution Principle was introduced in 1987 by Barbara Liskov, an MIT professor, during the Conference on Object-Oriented Programming Systems Languages and Applications, in a paper called <span class="emphasis"><em>Data abstraction and hierarchy</em></span>.</p></div></div><p>Let's try to explain this principle with an example. Consider the discounter objects seen in the previous section and define a constructor like the one shown here:</p><pre class="programlisting">function Discounter(min, max, discountPercentage) { 
+  this.min = min; 
+  this.max = max; 
+  this.discountPercentage = discountPercentage; 
+} 
+ 
+Discounter.prototype.isApplicable = function(order) { 
+  var itemsCount = order.items.length; 
+ 
+  return (itemsCount &gt;= this.min &amp;&amp; itemsCount &lt; this.max) 
+}; 
+ 
+Discounter.prototype.apply = function(order) { 
+  order.totalAmount = order.totalAmount - order.totalAmount *    discountPercentage / 100; 
+}; 
+</pre><p>In practice, we generalized the discounter features creating a constructor function, so we can define an instance as in the following example:</p><pre class="programlisting">var bronzeDiscounter = new Discounter(10, 20, 10); 
+</pre><p>Now, if we want to define a new type of discount based on the amount of the order and not on the quantity of items, we may expand the <code class="literal">Discounter</code> constructor by simply changing the <code class="literal">isApplicable()</code> method, as shown here:</p><pre class="programlisting">function AmountDiscounter(min, max, discountPercentage) { 
+  Discounter.apply(this, arguments); 
+} 
+ 
+AmountDiscounter.prototype.isApplicable = function(order) { 
+  var orderAmount = order.totalAmount; 
+ 
+  return (orderAmount &gt;= min &amp;&amp; orderAmount &lt; max) 
+}; 
+</pre><p>The change is very simple, but completely changes the semantics of the base constructor. The <code class="literal">AmountDiscounter</code> definition is in contrast to the <code class="literal">Discounter</code> definition and violates the Liskov Substitution Principle, since I cannot use an instance of <code class="literal">AmountDiscounter</code>, which currently uses an instance of <code class="literal">Discounter</code>. If we do that, the results would be unpredictable, since the old client assumes that a discounter works on quantity ranges, not on amount ranges.</p><p>The applicability of the Liskov principle is not simple. In fact, the extension of a component is not necessarily under our control, especially if our code is a library used by third parties. In these cases, the user can create derived objects and redefine functionalities at his own discretion, with the risk of infringing the principle of Liskov.</p><p>A strategy for limiting the possibility of violations of this principle is to limit the use of inheritance, when it is possible. The well-known suggestion of the Gang of Four says to <span class="emphasis"><em>favor object composition over class inheritance</em></span>. In fact, in addition to the potential violation of the substitution principle of Liskov, inheritance creates coupling between the base and derived entities and the changes propagation can have effects not always so clear. In languages with static typing, it is usually suggested the definition of interfaces instead of the use of inheritance, but in dynamic languages like JavaScript, this suggestion is not relevant, since the interface of an object is not determined by the type of the object, but by the capabilities expected by the object itself.</p><p>Anyway, even if the Liskov principle refers to inheritance, its true essence is in the behavioral compatibility, that is, to maintain a uniform behavior for objects in a given category.</p></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

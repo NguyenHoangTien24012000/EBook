@@ -1,0 +1,478 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 class="h2" id="ch15"><a id="page_397"></a><strong>Chapter 15<br>Distance Vector Control Planes</strong></h2>
+        <div class="sidebar">
+        <p class="sb-noindent"><strong>Learning Objectives</strong></p>
+        <p class="sb-noindent">After reading this chapter, you should understand:</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The classification of control planes into link state and distance vector</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The operation of the Spanning Tree Protocol</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The operation of the Routing Information Protocol</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> How the Routing Information Protocol reacts to topology changes</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The operation of the Enhanced Interior Gateway Protocol</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> How the Enhanced Interior Gateway Routing Protocol reacts to topology changes</p>
+        </div>
+        <p class="noindent">The previous several chapters have considered three broad areas of problems every control plane for a packet switched network must solve and a range of solutions for each of those problems. The first problem considered was discovering the network topology and reachability. The second was calculating loop-free (and, in some cases, disjoint) paths through the network. The final problem, reacting to topology changes, is really a set of problems, including detecting and reporting changes to the network across the control plane.</p>
+        <p class="indent">This chapter will consolidate these problems and solutions by examining a few implementations of distributed control planes used for unicast forwarding in packet switched networks. The implementations here are not chosen because they are widely used, but rather because they represent a range of implementation choices among the solutions outlined in the previous chapters. The basic operation of each <a id="page_398"></a>protocol is considered in each case; later chapters in this part of the book will delve into information hiding and other more advanced topics in control planes, so they will not be covered here.</p>
+        <p class="indent">Rather than diving directly into protocol operation, the first section of this chapter will begin by defining various broad classes of control planes. Once these broad definitions are out of the way, six distributed unicast control planes will be considered.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch15lev1">Control Plane Classification</h3>
+        <p class="noindent">Control planes are typically classified by two characteristics. First, they are divided based on where the loop-free paths are calculated, whether on the forwarding device or off. Control planes in which the actual switching devices directly participate in the calculation of loop-free paths are then divided up based on the kind of information they carry about the network. There is no classification based on the algorithm used to calculate loop-free paths, although this is often intimately tied to the kind of information carried by the control plane.</p>
+        </div>
+        <p class="indent">While <em>centralized control planes</em> are often related to a few (or one, conceptually) controllers gathering the reachability and topology information from each switching device, calculating the set of loop-free paths, and downloading the resulting forwarding table to the switching devices, the concept is much less strict. A centralized control plane more generally just means calculating some part of the forwarding information someplace other than the actual forwarding device. This may mean a single device or a set of devices; it may mean a set of processes running in a virtual machine; it may mean calculating all of the required forwarding information or (perhaps) most of it.</p>
+        <p class="indent"><em>Distributed control planes</em> are generally marked by three general characteristics:</p>
+        <p class="bullt">• A protocol running on each device, and that implements the various mechanisms required to transport reachability and topology information between devices</p>
+        <p class="bull">• A set of algorithms implemented on each device, used to compute a set of loop-free paths to known destinations</p>
+        <p class="bullb">• The ability to detect and react to changes in reachability and topology locally at each device</p>
+        <p class="indent"><a id="page_399"></a>In distributed control planes, not only is each packet switched hop by hop, but each hop determines the set of loop-free paths to reach any particular destination locally. Distributed control planes are generally divided into three broad classes of protocols: link state, distance vector, and path vector.</p>
+        <p class="indent">In link state protocols, each device advertises the state of each connected link, including reachable destinations and neighbors attached to the link. This information forms a topology database containing every link, every node, and every reachable destination in the network, across which an algorithm such as Dijkstra’s or Suurballe’s can be used to calculate a set of loop-free or disjoint paths. Link state protocols typically flood their databases so each forwarding device has a copy that is synchronized with every other forwarding device.</p>
+        <p class="indent">In distance vector protocols, each device advertises a set of <em>distances</em> to known reachable destinations. This reachability information is advertised by a particular neighbor that provides the <em>vector</em> information, or rather the direction through which the destination can be reached. Distance vector protocols typically implement either Bellman-Ford, Garcia-Luna’s DUAL, or some similar algorithm to calculate loop-free paths through the network.</p>
+        <p class="indent">In path vector protocols, the path to reach the destination is recorded as the routing advertisement passes through the network, on a node-by-node basis. Other information may be added, such as metrics, to express some form of policy, but the primary loop-free nature of each path is calculated based on the actual paths advertisements take when passing through the network.</p>
+        <p class="indent"><a href="ch15.xhtml#ch15fig01">Figure 15-1</a> illustrates these three kinds of distributed control planes.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/15fig01.jpg" aria-describedby="Al15fig01" alt="Figure represents distributed control plane classifications." width="696" height="692"><aside class="hidden" id="Al15fig01">
+        <p>A router labeled A has a line leading to the left, reaching a router labeled B. A line leads from B to reach a router labeled C. A line leads from C to reach a router labeled D. The line continues to reach a vertical line labeled 2001:db8:3e8:100::/64. A section labeled Link State is mentioned below with I can reach B below A with an arrow leading to the right. I can reach A and I can reach C is below B with arrows leading to both ends. I can reach B and I can reach D is below C with arrows leading to both ends. I can reach C and I can reach 100::/64 is below D with an arrow leading to the left. A section labeled Distance Vector is mentioned below with 100::/64 cost 4 below A, 100::/64 cost 3 below B, 100::/64 cost 2 below C, and 100::/64 cost 1 below D. Another section labeled Party Vector has 100::/64 [A, B, C, D] below A with an arrow pointing towards it from 100::/64 [B, C, D] below B. An arrow points to it from 100::/64 [C, D] below C. Another arrow points to it from 100::/64 [D] below D.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch15fig01"></a><strong>Figure 15-1</strong> <em>Distributed Control Plane Classifications</em></p>
+        </div>
+        <p class="indentb">In <a href="ch15.xhtml#ch15fig01">Figure 15-1</a>:</p>
+        <p class="bullt">• In the link state example, at the top, each device advertises what it can reach to every other device in the network. Hence, A advertises reachability to B, C, and D; at the same time, D advertises reachability to 2001:db8:3e8:100::/64 and to C, B, and A.</p>
+        <p class="bull">• In the distance vector example, in the middle, D advertises reachability to 2001:db8:3e8:100::24 to C with its local cost, which is 1. C adds the [D,C] cost and advertises reachability to 2001:db8:3e8:100::64 with a cost of 2 to B.</p>
+        <p class="bullb">• In the path vector example, at the bottom, D advertises reachability to 2001:db8:3e8:100::/24 through itself. C receives this advertisement and adds itself to [D,C].</p>
+        <p class="indent"><a id="page_400"></a>Control planes do not <em>always</em> neatly fit into one category or another, particularly when you move into various forms of information hiding. Some link state protocols, for instance, use distance vector principles with aggregated information, and path vector protocols often use some form of distance vector metric arrangement to augment the path in calculating loop-free paths. These classifications—centralized, distance vector, link state, and path vector—are important for understanding and encountering the network engineering world.</p>
+        <div class="sidebar1">
+        <p class="title1"><a id="page_401"></a><strong>Packets Don’t Follow Advertisements</strong></p>
+        <p class="noindent">A common mistake in assessing and understanding path vector protocols, a mistake that can be easily expanded to distance vector protocols, is to associate the <em>path of an advertisement</em> to the <em>path of a packet</em> through the network. Not only does the traffic flow in the opposite direction of the advertisement. This mistake shows up particularly in design when thinking through traffic engineering, in troubleshooting when trying to understand why a particular flow of packets is acting a particular way, and in securing the control plane to provide greater data plane security. The key point to remember is the control plane provides a loop-free path, but each forwarding device chooses which among a number of possible loop-free paths to use when forwarding traffic. <a href="ch15.xhtml#ch15fig02">Figure 15-2</a> illustrates one situation where the path of the packet does not follow the path of the update in a path vector system.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/15fig02.jpg" aria-describedby="Al15fig02" alt="Figure represents update versus packet path through a network." width="698" height="349"><aside class="hidden" id="Al15fig02">
+        <p>A router labeled A has a line leading to a router labeled B. An arrow leading to the right lies over A and B labeled 2001:db8:3e8::/60. A line leads from B to reach a router labeled C. An arrow leading rightward is above C, labeled 2001:db8:3e8::/60. A line leads from C to reach a router labeled D. A line leads to the right, reaching a vertical line labeled 2001:db8:3e8:100::/64. A line leads from B to reach a router labeled E that is attached to a vertical line labeled 2001:db8:3e8:101::/64.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch15fig02"></a><strong>Figure 15-2</strong> <em>Update versus Packet Path through a Network</em></p>
+        </div>
+        <p class="indent">Assume, in the network shown in <a href="ch15.xhtml#ch15fig02">Figure 15-2</a>, D and E are advertising /64’s. At C, the /64 being advertised by D is being aggregated into a covering /60. This /60, plus the /64 being advertised by E, are both being advertised to B. At B, there is some policy in place that recognizes the overlapping prefixes, passing the /60 through to A, and blocking the /64. Forwarding is not impacted by this configuration; traffic transmitted through A toward either 2001:db8:3e8:100::/64 or 2001:db8:3e8:101::/64 will be delivered correctly.</p>
+        <p class="indent"><a id="page_402"></a>Assume the path vector system in place treats an aggregate in the same way it treats any other reachable destination. At C, then, when the 2001:db8:3e8::/60 aggregate route is created, C advertises the route toward B with a path originating at C itself. Hence, when A receives this aggregated route, the path through the network is [A,B,C]. From A’s perspective, then, traffic being transmitted toward 2001:db8:3e8:100::/64 and 2001:db8:3e8:101::/64 will both leave the network at C. This is not true.</p>
+        <p class="indent">Looking at the routing (or topology) table at A, then, will give you apparently wrong information about how the traffic is forwarded through the network to reach either of these destinations. While routing is still correct, using the routing table to see how traffic will be forwarded through the network— either for troubleshooting, design, or security—is of limited value. This kind of situation can arise with any routing protocol; forwarding is performed hop by hop through the network, with each device making an independent decision about where to send each individual packet.</p>
+        </div>
+        <div class="heading">
+        <h3 class="h3" id="ch15lev2">Spanning Tree Protocol</h3>
+        <p class="noindent">The Spanning Tree Protocol (STP) was originally designed by Radia Perlman, and first described in 1985 in <em>An Algorithm for Distributed Computation of a Spanning Tree in an Extended LAN</em>.<sup><a id="ch15fn1"></a><a href="ch15.xhtml#ch15fn-1">1</a></sup> STP is unique in the list of control planes considered here because it was originally designed to support switching rather than routing. In other words, STP was designed to support forwarding on packets without a Time to Live (TTL), and without a per hop header swap by the switching device. Packets switched based on the STP are carried through the network without change.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch15lev3"><strong>Building a Loop-Free Tree</strong></h4>
+        <p class="noindent">The process of building a loop-free tree is as follows:</p>
+        </div>
+        <p class="indenthangingN">1. Each device places all ports in blocked mode so that no port will forward any traffic, and begins advertising Bridge Protocol Data Units (BPDUs) out each port. This BPDU contains</p>
+        <p class="indenthangingNA">a. The ID of the advertising device, which is a priority combined with a local interface Media Access Control (MAC) address.</p>
+        <p class="indenthangingNA"><a id="page_403"></a>b. The ID of the candidate root bridge. This is the bridge with the lowest ID the local device knows about. If every device on the network starts at the same moment, then each device would advertise itself as the candidate root bridge until it learned of other bridges with a lower bridge ID.</p>
+        <p class="indenthangingN">2. On receiving a BPDU on an interface, the root bridge ID contained in the BPDU is compared with the locally stored lowest root bridge ID. If the root bridge ID contained in the BPDU is lower, then the locally stored root bridge ID is replaced with the newly discovered bridge with a lower ID.</p>
+        <p class="indenthangingN">3. After a few rounds of advertisements, every bridge should have discovered the bridge with the lowest bridge ID in the network and declared this bridge to be the root bridge.</p>
+        <p class="indenthangingNA">a. This should occur while all the ports on all the devices are still in a blocked state (not forwarding traffic).</p>
+        <p class="indenthangingNA">b. To make certain this does happen while all the ports are still blocked, a timer is set long enough to allow the root bridge to be elected.</p>
+        <p class="indenthangingN">4. Once the root bridge is elected, the shortest path to the root bridge is determined.</p>
+        <p class="indenthangingNA">a. Each BPDU also contains a metric to reach the root bridge. This metric may be a hop count, but the cost of each hop can vary based on administrative variables as well, such as the bandwidth of the link.</p>
+        <p class="indenthangingNA">b. Each device determines the port through which it has the lowest cost path to the root bridge; this is marked as the root port.</p>
+        <p class="indenthangingNA">c. If there is more than one path to the root bridge with the same cost, a tie breaker is used; this is normally the port identifier.</p>
+        <p class="indenthangingN">5. For any link on which two bridges are connected</p>
+        <p class="indenthangingNA">a. The bridge with the lowest cost path to the root bridge is elected to forward traffic off the link toward the root bridge.</p>
+        <p class="indenthangingNA">b. The port connecting the elected forwarder to the link is marked as the designated port.</p>
+        <p class="indenthangingN">6. Ports marked as either root or designated ports are allowed to forward traffic.</p>
+        <p class="indentt">The result of this process is a single tree over which every destination in the network is reachable. <a href="ch15.xhtml#ch15fig03">Figure 15-3</a> is used to show how STP works in an actual topology.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/15fig03.jpg" aria-describedby="Al15fig03" alt="Figure represents the process of spanning tree protocol operation." width="700" height="504"><aside class="hidden" id="Al15fig03">
+        <p>A router labeled A: 32768.0200.0000.1111 is at the top left with a line leading downward to reach a router labeled C: 24576.0200.0000.3333. A line leads upward from C to reach a router labeled B: 32768.0200.0000.2222. A line leads downward from B to reach a router labeled E: 32768.0200.0000.5555. A line leads from E to reach a router labeled F: 32768.0200.0000.6666. A line leads upward from F to reach a router labeled D: 28672.0200.0000.4444. A line leads from D to connect to C.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch15fig03"></a><strong>Figure 15-3</strong> <em>Spanning Tree Protocol Operation</em></p>
+        </div>
+        <p class="indent"><a id="page_404"></a>Assume all the devices in <a href="ch15.xhtml#ch15fig03">Figure 15-3</a> were turned on at the same moment. There are a number of variations possible in timing, but the process of building a set of loop-free paths through the network would look, from F’s perspective, something like this:</p>
+        <p class="indenthangingN">1. Elect the root bridge:</p>
+        <p class="indenthangingNA">a. F advertises a BPDU to E and D with an ID and a candidate root bridge of 32768.0200.0000.6666.</p>
+        <p class="indenthangingNA">b. D (assuming D has not received any BPDUs) advertises a BDPU with an ID and a candidate root bridge of 28672.0200.0000.4444.</p>
+        <p class="indenthangingNA">c. E (assuming E has not received any BPDUs) advertises a BPDU with an ID and a candidate root bridge of 32768.0200.0000.5555.</p>
+        <p class="indenthangingNA">d. At this point, F will elect D as the root bridge, and start advertising BPDUs with its local ID and the candidate root bridge set to D’s ID.</p>
+        <p class="indenthangingNA">e. At some point, D and E will both receive BPDUs from C, which has a lower bridge ID (24576.0200.0000.3333). On receiving this BPDU, they will both set their candidate root bridge ID to C’s ID and send new BPDUs to F.</p>
+        <p class="indenthangingNA"><a id="page_405"></a>f. On receiving these new BPDUs, F will note the new candidate root bridge ID is lower than its previous candidate root bridge ID, and it will then elect C as the root bridge.</p>
+        <p class="indenthangingNA">g. After several rounds of BDPUs, all the bridges in the network will elect C as the root bridge.</p>
+        <p class="indenthangingN">2. Mark the root ports by finding the shortest path to the root:</p>
+        <p class="indenthangingNA">a. Assume each link is a cost of 1.</p>
+        <p class="indenthangingNA">b. D will receive a BDPU from C with a local ID and root bridge ID of 24576.0200.0000.3333 and a cost of 0.</p>
+        <p class="indenthangingNA">c. D will add the cost of reaching C, a single hop, advertising it can reach the root bridge with a cost of 1 to F.</p>
+        <p class="indenthangingNA">d. E will receive a BDPU from C with a local ID and root bridge ID of 24576.0200.0000.3333 and a cost of 0.</p>
+        <p class="indenthangingNA">e. E will add the cost of reaching C, a single hop, advertising it can reach the root bridge with a cost of 1 to F.</p>
+        <p class="indenthangingNA">f. F now has two advertisements toward the root bridge with equal cost; it must break the tie between these two available paths. To do so, F examines the bridge ID of the advertising bridges. D’s bridge ID is lower than E’s, so F will mark its port toward D as its root port.</p>
+        <p class="indenthangingN">3. Marking the designated ports on each link:</p>
+        <p class="indenthangingNA">a. F’s only other port is toward E. Should this port be blocked?</p>
+        <p class="indenthangingNA">b. To determine this, F compares its local bridge ID with E’s bridge ID. The priorities are the same, so the local port addresses must be compared to make the decision. F’s local ID ends in 6666, while E’s ends in 5555, so E’s is lower.</p>
+        <p class="indenthangingNA">c. F does <em>not</em> mark the interface toward E as a designated port; instead, it marks this port as <em>blocked</em>.</p>
+        <p class="indenthangingNA">d. E does the same comparison and marks its port toward F as a designated port.</p>
+        <p class="indenthangingNA">e. D compares its cost toward the root with F’s cost toward the root.</p>
+        <p class="indenthangingNA">f. D’s cost is lower, so it will mark its port toward D as a designated port.</p>
+        <p class="indentt"><a id="page_406"></a><a href="ch15.xhtml#ch15fig04">Figure 15-4</a> illustrates the blocked, designated, and root ports once these calculations are completed.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/15fig04.jpg" aria-describedby="Al15fig04" alt="Figure shows the result of the spanning tree process." width="700" height="504"><aside class="hidden" id="Al15fig04">
+        <p>A router labeled A: 32768.0200.0000.1111 is at the top left with a line leading downward that has rp and dp mentioned at the top and bottom respectively to reach a router labeled C: 24576.0200.0000.3333. A line leads upward from C that has rp and dp pointing downward and mentioned at the top and bottom respectively to reach a router labeled B: 32768.0200.0000.2222. A line leads downward from B that has dp and bp pointing upward and mentioned at the top and bottom respectively to reach a router labeled E: 32768.0200.0000.5555. A line leads from E that has bp and dp pointing upward and mentioned at the top and bottom respectively to reach a router labeled F: 32768.0200.0000.6666. A line leads upward from F that has dp and rp pointing upward and mentioned at the top and bottom respectively to reach a router labeled D: 28672.0200.0000.4444. A line leads from D that has rp and dp pointing rightward to connect to C.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch15fig04"></a><strong>Figure 15-4</strong> <em>The Result of the Spanning Tree Process</em></p>
+        </div>
+        <p class="indent">The ports in <a href="ch15.xhtml#ch15fig04">Figure 15-4</a> are marked with bp for blocked port, rp for root port, and dp for designated port. The result of the process is a tree that can reach any segment in the network, and hence the hosts connected to any segment in the network. One interesting point about STP is the result is a <em>single</em> tree across the entire topology, anchored at the root bridge. If some host connected to E sends a packet to a host connected to B or F, the packet must travel through C, the root bridge, because one of the two ports on the [F,E] and [E,B] links is blocked. This is not the most efficient use of bandwidth, but it does prevent looping packets during normal forwarding.</p>
+        <p class="indent">How is neighbor discovery handled in STP? Neighbor discovery is not addressed from the perspective of the reliable transport of information through the network at all. Each device in the network builds its own BPDUs; these BPDUs are not carried <em>through</em> any device, so there is no need for end-to-end reliable transport in the control plane. Neighbor discovery is used, however, to elect a root bridge and to build a loop-free tree across the entire topology using BPDUs. What about dropped and missed packets? Any device running STP retransmits its BPDUs on every link periodically (according to a <em>retransmission timer);</em> it takes a few dropped packets (according to a <em>dead timer)</em> for a device running STP to assume its neighbors have <a id="page_407"></a>failed, and hence to restart calculating the root bridge and port statuses. There is no two-way connectivity check in STP, either on a per neighbor basis or across the entire path. Nor is there any Maximum Transmission Unit (MTU) check of any kind. STP learns about the topology by combining BPDUs with local link information on a per node basis; there is no single node in the network with a table describing the entire topology, however.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch15lev4"><strong>Learning about Reachable Destinations</strong></h4>
+        <p class="noindent">How does STP enable forwarding? More specifically, how do devices running STP learn about reachable destinations? <a href="ch15.xhtml#ch15fig05">Figure 15-5</a> is used to explain.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/15fig05.jpg" aria-describedby="Al15fig05" alt="Figure represents STP reachability discovery." width="700" height="116"><aside class="hidden" id="Al15fig05">
+        <p>A computer labeled A is to the left with a line leading to a router labeled B with dp and rp mentioned at the left and right respectively. A line leads from B to reach a router labeled C with dp and dp mentioned at the left and right respectively. A line leads from C to reach a router labeled D with rp and dp mentioned at the left and right respectively. A line leads from D to reach a computer labeled E.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch15fig05"></a><strong>Figure 15-5</strong> <em>STP Reachability Discovery</em></p>
+        </div>
+        <p class="indent"><a href="ch15.xhtml#ch15fig05">Figure 15-5</a> shows the state of the network with the spanning tree calculated and each port marked as a designated or root port. There are no blocked ports in this topology because there are no loops. Assume B, C, and D have no information about attached devices; A sends a packet toward E. What happens at this point?</p>
+        <p class="indenthangingN">1. A transmits the packet onto the [A,B] link. As B has a designated port on this link, it will accept the packet (switches accept all packets on designated ports) and examine the source and destination addresses.</p>
+        <p class="indenthangingN">2. B can determine that A is reachable through this designated port because it has received a packet from A on this port. Based on this, B will insert A’s MAC address as reachable in its forwarding table through its interface onto the [A,B] link.</p>
+        <p class="indenthangingN">3. B does not have any information about E; therefore it will flood this packet out every one of its nonblocked ports. In this case, the only other port B has is its root port, so B will forward this packet toward C. This flooding is called Broadcast, Unknown, and Multicast (BUM) traffic; BUM traffic is something every control plane that learns destinations during the forwarding process must manage in some way.</p>
+        <p class="indenthangingN">4. When C receives this packet, it will examine the source address and discover that A is reachable through the designated port attached to [B,C]. It will insert this information into its local forwarding table.</p>
+        <p class="indenthangingN"><a id="page_408"></a>5. C also has no information about where E is located on the network, so it will simply flood the packet on all nonblocked ports. In this case, the only other port C has is onto the [C,D] link.</p>
+        <p class="indenthangingN">6. D repeats the same process B and C have followed, learning that A is reachable through its root port onto the [C,D] link and flooding the packet onto the [D,E] link.</p>
+        <p class="indenthangingN">7. When E receives the packet, it processes the information and sends a reply back toward A.</p>
+        <p class="indenthangingN">8. When D receives this reply packet from E, it will examine the source address and discover E is reachable on its designated port onto the [D,E] link. D does know the path back to A, as it discovered this information in processing the first packet in the flow traveling from A to E. It will look up A in its forwarding table and transmit the packet onto the [C,D] link.</p>
+        <p class="indenthangingN">9. C and B will repeat the process D and C have used to discover the location of E and to forward the return traffic back to A.</p>
+        <p class="indentt">In this way—learning the source address from incoming packets, and either flooding or forwarding packets onto outgoing links—every device in the network can learn about every reachable destination. Because STP relies on learning reachable destinations in reaction to packets being transmitted on the network, it is classified as a reactive control plane. Note this learning process is at the host level; subnets and Internet Protocol (IP) addresses are not learned, but rather the physical address of the host interface. If a single host has two physical interfaces onto the same wire, it will appear as two different hosts to the STP control plane.</p>
+        <p class="indent">How is information removed from the forwarding tables on each device? Through a timeout process. If a forwarding entry has not been used in a specific time (a hold timer), the entry is removed from the table. Hence, STP relies on cached forwarding information.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch15lev5"><strong>Concluding Thoughts on the Spanning Tree Protocol</strong></h4>
+        <p class="noindent">STP is clearly not a link state protocol, nor is it a path vector protocol. Is it a distance vector protocol? Any confusion over how to classify the protocol stems from the initial selection of a root bridge before the shortest paths are calculated. Removing this first step, it is easier to classify STP as a distance vector protocol using a distributed form of the Bellman-Ford algorithm to calculate loop-free paths across the topology. What should be done with the initial root bridge calculation? This part of the process ensures there is just one Shortest Path Tree across the entire network. So STP can <a id="page_409"></a>be classified as a <em>distance vector protocol</em> that uses the <em>Bellman-Ford algorithm</em> to compute a single set of shortest paths for <em>all</em> destinations across the entire network. Another way to put this is STP computes a Shortest Path Tree across the <em>topology</em>, rather than across the <em>destinations</em>.</p>
+        </div>
+        <p class="indent">Why is it important that a <em>single</em> tree be calculated across the entire network? This is related to the way in which STP learns reachability information: STP is a reactive control plane, learning reachability in response to actual packets flowing through the network. If each device built a separate tree rooted at itself, this reactive process would lead to an inconsistent view of the network topology and hence to forwarding loops.</p>
+        <div class="sidebar1">
+        <p class="title1"><strong>STP and Broadcast Storms</strong></p>
+        <p class="noindent">Broadcasts are an important part of service discovery in most applications. For instance, in <a href="ch15.xhtml#ch15fig06">Figure 15-6</a>, how can A discover the presence of a particular service on F?</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/15fig06.jpg" aria-describedby="Al15fig06" alt="Figure represents broadcast storms and the spanning tree protocol." width="700" height="365"><aside class="hidden" id="Al15fig06">
+        <p>A computer labeled A has a line labeled dp leading rightward to a router labeled B. A line with dp and rp at the top and bottom leads upward from B to reach a router labeled C. A line with dp and dp at the top and bottom leads downward from B to reach a router labeled D. A line with dp and bp at the top and bottom leads to a router labeled E. A line with dp and rp at the top and bottom leads to a router labeled C with root bridge mentioned above. A line labeled dp leads from E to reach a computer labeled F.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch15fig06"></a><strong>Figure 15-6</strong> <em>Broadcast Storms and the Spanning Tree Protocol</em></p>
+        </div>
+        <p class="indent">The easiest thing for A to do in this situation is to send some sort of packet that will be delivered to each host connected to the network and await a reply from the host running the service in question. So A sends a broadcast asking about a particular service or device. How should B, C, D, and E treat this broadcast? As the broadcast is not a “learnable” address (every device on <a id="page_410"></a>every segment should receive the broadcast), the best thing for the switches to do is to forward the packet on every nonblocked port.</p>
+        <p class="indent">What happens if A sends a <em>lot</em> of broadcasts? What happens if a host sends enough broadcasts to cause BPDUs to be dropped? In this case, STP itself will become confused and will likely create a forwarding loop in the topology. Such a forwarding loop will, of course, forward broadcast packets <em>forever;</em> there is no TTL to drop packets after they have traversed the network a specific number of times. Each broadcast transmitted by A, in this situation, will remain in the network forever, looping, perhaps, among the switches B, C, D, and E. And each broadcast added to the load of the network will, of course, prevent BPDUs from being successfully transmitted or received, preventing STP from converging.</p>
+        <p class="indent">Hence, the traffic on the network prevents STP from converging, and the lack of convergence increases the traffic load on the network itself—a positive feedback loop causing havoc throughout the network. These events are called broadcast storms, and are common enough in STP-based networks to cause wise network designers and operators to limit the scope of any STP domain. The existence of broadcast storms has also driven a number of modifications to the operation of STP, such as simply replacing the base protocol with a true link state control plane.</p>
+        </div>
+        <div class="heading">
+        <h3 class="h3" id="ch15lev6">The Routing Information Protocol</h3>
+        <p class="noindent">The Routing Information Protocol (RIP) was originally specified in RFC1058, <em>Routing Information Protocol,</em> published in 1998.<sup><a id="ch15fn2"></a><a href="ch15.xhtml#ch15fn-2">2</a></sup> The protocol was updated in a series of more recent RFCs, including RFC2435, <em>RIP version 2</em>,<sup><a id="ch15fn3"></a><a href="ch15.xhtml#ch15fn-3">3</a></sup> and RFC2080, <em>RIP Next Generation for IPv6</em>.<sup><a id="ch15fn4"></a><a href="ch15.xhtml#ch15fn-4">4</a></sup> <a href="ch15.xhtml#ch15fig07">Figure 15-7</a> is used to explain RIP operation.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/15fig07.jpg" aria-describedby="Al15fig07" alt="Figure represents an example for RIP Operation." width="697" height="401"><aside class="hidden" id="Al15fig07">
+        <p>A vertical line labeled 2001:db8:3e8:100::/64 has a horizontal line labeled 1 leading to a router labeled A. A line labeled 1 leads from A to reach a router labeled B. A line labeled 2 leads from B to reach a router labeled E. A line labeled 2 leads from E to reach a router labeled D. A line labeled 1 leads from D to reach a router labeled C. A line labeled 1 leads from C to reach a router labeled E. A line labeled 1 leads from C to reach A.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch15fig07"></a><strong>Figure 15-7</strong> <em>RIP Operation Example</em></p>
+        </div>
+        <p class="indentb">The operation of RIP is deceptively simple. In <a href="ch15.xhtml#ch15fig07">Figure 15-7</a>:</p>
+        <p class="indenthangingN">1. A discovers 2001:db8:3e8:100::/64 because it is configured on a directly attached interface.</p>
+        <p class="indenthangingN">2. A adds this destination to its local routing table with a cost of 1.</p>
+        <p class="indenthangingN">3. As 100::/64 is installed in the local routing table, A will advertise this reachable destination (<em>route</em>) to B and C.</p>
+        <p class="indenthangingN"><a id="page_411"></a>4. When B receives this route, it will add the cost of the inbound interface so that the path through A has a cost of 2, and examine its local table for any lower-cost routes to this destination. As B has no other path to 100::/64, it will install the route in its routing table and advertise the route to E.</p>
+        <p class="indenthangingN">5. When C receives this route, it will add the cost of the inbound interface so that the path through A has a cost of 2, and examine its local table for any lower-cost routes to this destination. As C has no other path to 100::/64, it will install the route in its routing table and advertise the route to D and E.</p>
+        <p class="indenthangingN">6. When D receives this route, it will add the cost of the inbound interface from C so that the path through C has a cost of 3, and examine its local table for any lower-cost routes to this destination. As D has no other path to 100::/64, it will install the route into its routing table and advertise the route to E.</p>
+        <p class="indenthangingN">7. E will now receive three copies of the same route; one through C with a cost of 3, one through B with a cost of 4, and one through D with a cost of 5. E will choose the path through C with a cost of 2, installing this path to 100::/64 into its local routing table.</p>
+        <p class="indenthangingN">8. E will not advertise any path to 100::/64 toward C, because it is using C as its best path to reach this specific destination. Thus, E will <em>split horizon</em> its advertisement of 100::/64 toward C.</p>
+        <p class="indenthangingN"><a id="page_412"></a>9. While E will advertise its best path, through C, to both D and B, neither will choose the path through E, as they already have better paths available toward 100::/64.</p>
+        <p class="indentt">RIP advertises a set of destinations and costs one hop at a time through the network; hence it is considered a <em>distance vector</em> protocol. The process that RIP uses to find a set of loop-free paths through the network is considered a distributed form of the Bellman-Ford algorithm, but it is not obvious how the process that RIP is using is related to Bellman-Ford.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch15lev7"><strong>Tying Bellman-Ford to RIP</strong></h4>
+        <p class="noindent">To see the connection, it is best to think of each hop in the network as a single row in the topology table; this is illustrated in <a href="ch15.xhtml#ch15fig08">Figure 15-8</a>.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/15fig08.jpg" aria-describedby="Al15fig08" alt="Figure represents RIP and Bellman-Ford." width="702" height="396"><aside class="hidden" id="Al15fig08">
+        <p>A vertical line labeled 2001:db8:3e8:100::/64 has a horizontal line leading to router labeled A. A line leads from A to reach a router labeled B. The line continues from B to reach routers, C and D. Router A is enclosed in Row 1, Router B is enclosed in Row 2, Router C is enclosed in Row 3, and Router D is enclosed in Row 4.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch15fig08"></a><strong>Figure 15-8</strong> <em>RIP and Bellman-Ford</em></p>
+        </div>
+        <p class="indent"><a href="ch12.xhtml#ch12">Chapter 12</a>, “<a href="ch12.xhtml#ch12">Unicast Loop-Free Paths (1)</a>,” describes Bellman-Ford operating across a topology table, arranged as a set of columns and rows. Using the row numbers indicated in <a href="ch15.xhtml#ch15fig08">Figure 15-8</a>, you can build a similar topology table for this network, as shown in <a href="ch15.xhtml#ch15tab01">Table 15-1</a>.</p>
+        <div class="tab-heading">
+        <p class="tab-caption"><a id="ch15tab01"></a><strong>Table 15-1</strong> <em>A Topology Table Built from the Network in <a href="ch15.xhtml#ch15fig08">Figure 15-8</a></em></p>
+        <table class="tablewidth">
+        <tbody>
+        <tr>
+        <td class="bg1"><p class="thead"><strong>Row</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>Source (s)</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>Destination (d)</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>Distance (cost)</strong></p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">100::/64</p></td>
+        <td class="tbody_first"><p class="noindent">A</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">2</p></td>
+        <td class="tbody_first"><p class="noindent">A</p></td>
+        <td class="tbody_first"><p class="noindent">B</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">3</p></td>
+        <td class="tbody_first"><p class="noindent">B</p></td>
+        <td class="tbody_first"><p class="noindent">C</p></td>
+        <td class="tbody_first"><p class="noindent">2</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">4</p></td>
+        <td class="tbody_first"><p class="noindent">C</p></td>
+        <td class="tbody_first"><p class="noindent">D</p></td>
+        <td class="tbody_first"><p class="noindent">2</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div>
+        <p class="indentb">Assume each row of the table is run through the Bellman-Ford algorithm by a different node. For instance, A computes Bellman-Ford across the first row and passes the result on to B. Likewise, B computes Bellman-Ford across the relevant rows and passes the result on to C. Bellman-Ford would still be the algorithm used to compute the set of loop-free paths through the network; it would simply be distributed across the nodes in the network. This, in fact, is how RIP operates. Consider the following:</p>
+        <p class="indenthangingN">1. A computes the first row in the table, setting the predecessor for 100::/64 to A and the cost to 1. A passes this result on to B for the second round of processing.</p>
+        <p class="indenthangingN"><a id="page_413"></a>2. B processes the second row in the table, setting the predecessor for 100::/64 to B and the cost to 2. B passes this result on to C for the third round of processing.</p>
+        <p class="indenthangingN">3. C processes the second row in the table, setting the predecessor for 100::/64 to C and the cost to 2. C passes this result on to D.</p>
+        <p class="indentt">The Bellman-Ford distributed processing is more difficult to see in more complex topologies, because there is more than one “result table” being passed around the network. These “result tables” will eventually merge at the source node, however. <a href="ch15.xhtml#ch15fig09">Figure 15-9</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/15fig09.jpg" aria-describedby="Al15fig09" alt="Figure represents distributed Bellman-Ford in Parallel." width="700" height="518"><aside class="hidden" id="Al15fig09">
+        <p>A vertical line labeled 2001:db8:3e8:100::/64 has a horizontal line leading to router labeled A. A line leads from A to reach a router labeled E. A line leads from E to reach a router labeled F. A line leads from F to reach a router labeled D. A line leads from A to reach a router labeled B. The line continues from B to reach routers, C and D. Router A is enclosed in Row 1, Router B and Router E are enclosed in Row 2, Router C and Router F are enclosed in Row 3, and Router D is enclosed in Row 4.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch15fig09"></a><strong>Figure 15-9</strong> <em>Distributed Bellman-Ford in Parallel</em></p>
+        </div>
+        <p class="indent">In <a href="ch15.xhtml#ch15fig09">Figure 15-9</a>, A would compute a provisional result table as the first “round” of the Bellman-Ford algorithm, passing the result on to both B and E. B would compute a provisional result based on local information, passing this on to C, and then C to D. In the same way, E would compute a provisional result table based on local information, passing this on to F, and then F to D. At D, the two provisional results are combined into a final table from D’s perspective. Of course, the provisional table is considered final for the device at each hop. From E’s perspective, the table it computes based on locally available information plus the advertisement from A is the <em>final</em> table of loop-free paths to reach 100::/64.</p>
+        <p class="indent">The entire distributed process has the same effect as walking across every row in the topology table the same number of times as entries in the topology table itself, slowly sorting the predecessor and cost fields for each entry based on newly set predecessors in the previous round of computation.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch15lev8"><a id="page_414"></a><strong>Reacting to Topology Changes</strong></h4>
+        <p class="noindent">How does RIP remove reachability information from the network in the case of a node or link failure? <a href="ch15.xhtml#ch15fig10">Figure 15-10</a> is used to explain.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/15fig10.jpg" aria-describedby="Al15fig10" alt="Figure represents link failure in a RIP network." width="675" height="297"><aside class="hidden" id="Al15fig10">
+        <p>A vertical line labeled 2001:db8:3e8:100::/64 is connected to a horizontal line, meeting a router labeled A. A router labeled B is to the right with two unconnected lines between A and B. A line leads from B to reach a router labeled C. A line leads from C to reach a router labeled D.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch15fig10"></a><strong>Figure 15-10</strong> <em>Link Failure in a RIP Network</em></p>
+        </div>
+        <p class="indent"><a id="page_415"></a>There are two different possible reactions to the loss of the [A,B] link, depending on the version and configuration of RIP running in this network. The first possible reaction is to simply let the information about 100::/64 time out. Assuming the <em>invalid timer</em> (a form of hold timer) for any given route is 180 seconds (a common setting in RIP implementations):</p>
+        <p class="bullt">• B would notice the failed link immediately, as it is directly connected, and remove 100::/64 from its local routing table.</p>
+        <p class="bull">• B would stop advertising reachability to 100::/64 toward C.</p>
+        <p class="bull">• C will remove reachability to this destination from its local routing table and stop advertising reachability toward 100::/64 to D 180 seconds after B stops advertising reachability to 100::/64.</p>
+        <p class="bullb">• D will remove reachability to this destination from its local routing table 180 seconds after C stops advertising reachability to 100::/64.</p>
+        <p class="indent">At this point, the network has converged on the new topology information. This is obviously a rather slow process, as each hop must wait for every router closer to the destination to time the destination out before discovering the loss of connectivity.</p>
+        <p class="indent">To speed up this process, most RIP implementations also include <em>triggered updates</em>. If triggered updates are implemented and deployed in this network, when the [A,B] link fails (or is removed from service), B will remove reachability to 100::/64 from its local table and send a triggered update to C, informing C of the failed reachability toward the destination. This triggered update generally takes the form of an advertisement with an infinite metric, or rather what is known as a <em>poison reverse</em>. Triggered updates are often <em>paced</em>, so a flapping link will not cause the triggered updates themselves to overwhelm either a link or a neighboring router.</p>
+        <p class="indent">Two other timers are specified in RIP for use during convergence: the <em>flush timer</em> and the <em>hold-down timer</em>. When a route times out (as described above), it is not immediately removed from the local routing table. Rather, another timer is set that determines when the route will be flushed from the local table. This is the flush timer. Further, there is a separate time period during which any route with a worse metric than the previously known metric will not be accepted. This is the hold-down timer.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch15lev9"><strong>Concluding Thoughts on RIP</strong></h4>
+        <p class="noindent">RIP carries information about locally reachable destinations to neighbors, along with a cost for each destination; hence it is a distance vector protocol. Reachable destinations are learned through local information at each device, and carried <a id="page_416"></a>through the network by the protocol regardless of traffic flow; hence RIP is a <em>proactive</em> control plane.</p>
+        </div>
+        <p class="indent">RIP does not form adjacencies for the reliable transmission of data through the network; rather, RIP relies on periodically transmitted updates to ensure information has not become out of date or has been accidentally dropped. The amount of time any piece of information is kept is based on a <em>hold timer</em>, and the frequency of transmissions is based on an <em>update timer;</em> the hold timer is normally set to three times the value of the update timer.</p>
+        <p class="indent">As RIP has no true adjacency process, it does not detect whether or not two-way connectivity exists; hence there is no Two-Way Connectivity Check (TWCC). No method to check the MTU between two neighbors is built into RIP, either.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch15lev10">The Enhanced Interior Gateway Routing Protocol</h3>
+        <p class="noindent">The Enhanced Interior Gateway Routing Protocol (EIGRP) was originally released in 1993 to replace Cisco’s Interior Gateway Routing Protocol (IGRP). The primary reason for replacing IGRP was its inability to carry classful routing information; specifically, IGRP could not carry subnet masks. Rather than rebuild the protocol to support prefix lengths, engineers at Cisco (specifically Dino Farinacci and Bob Albrightson) decided to build a new protocol based on Garcia-Luna’s Diffusing Update Algorithm (DUAL). Dave Katz rebuilt the transport to resolve some widely encountered problems in the mid-1990s. Based on this initial implementation, a team led by Donnie Savage modified the operation of the protocol heavily in the 2000s, adding a number of scaling features, and rewriting key parts of EIGRP’s reaction to topology changes. EIGRP was released, along with virtually all of these enhancements, in the informational RFC7868 in 2013.</p>
+        </div>
+        <p class="indent">While EIGRP is not often considered for active deployment in most service provider networks (most operators prefer a link state protocol instead), DUAL introduces some important concepts into the conversation around loop-free paths. DUAL is also used in other protocols, such as BABEL (specified in RFC6126, and used in lightweight radio and home network environments).</p>
+        <div class="sidebar1">
+        <p class="title1"><strong>EIGRP Metrics</strong></p>
+        <p class="noindent">EIGRP was originally designed to read the bandwidth, delay, error rate, and other factors off links in near real time and carry them as metrics. This would allow EIGRP to react to changing network conditions in real time, and hence allow networks running EIGRP to more efficiently use the <a id="page_417"></a>available network resources. At the time EIGRP was originally designed and deployed, however, there were no “guard rails” put in place to prevent feedback loops between, for instance, the reaction of the protocol to changes in available bandwidth and the shifts in traffic based on the available bandwidth. If a pair of links with near real time available bandwidth were placed parallel to one another, traffic will shift to the one with the most available bandwidth, causing the protocol to react by showing more available bandwidth on the other link, improving its metric, and hence traffic to shift to the other link. This process of traffic shifting back and forth between links can be solved in various ways, but it caused enough problems in early EIGRP deployments for this near-real-time capability to be removed from the code. Instead, EIGRP reads the characteristics of an interface at specific times and advertises these metrics for the interface regardless of the network conditions.</p>
+        <p class="indent">EIGRP carries five different route attributes, including bandwidth, delay, load, reliability, and the MTU. Four of the metrics are combined using the formula shown in <a href="ch15.xhtml#ch15fig11">Figure 15-11</a>.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/15fig11.jpg" aria-describedby="Al15fig11" alt="The EIRGP Metric Calculation Formula is represented." width="702" height="86"><aside class="hidden" id="Al15fig11">
+        <p>Formula reads: Open bracket, open bracket, K1 multiplied with min throughpout plus open bracket, K2 multiplied with min throughput over 256 minus load close bracket, close bracket, plus open bracket, K3 multiplied with epsilon (delays) close bracket plus open bracket, K6 multiplied with ext attribute close bracket, close bracket, into open bracket, K5 over K4 minus reliability.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch15fig11"></a><strong>Figure 15-11</strong> <em>The EIGRP Metric Calculation Formula</em></p>
+        </div>
+        <p class="indent">The default <em>K</em> values in this formula cause the entire formula to collapse to <em>(10</em><sup>7</sup><em>/throughput) * delay</em>. Replacing <em>throughput</em> with <em>minimum bandwidth</em> along the path yields the version most engineers are familiar with, <em>(10</em><sup>7</sup><em>/band-width) * delay</em>.</p>
+        <p class="indent">The bandwidth and delay values are, however, scaled in more recent versions of EIGRP to account for links with a bandwidth higher than 10<sup>7</sup> kbps.</p>
+        </div>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">Throughout this discussion of EIGRP, the bandwidth of every link is assumed to be set to 1,000, and the K values set to their default values, leaving the delay as the only component impacting the metric. Given this, the delay value alone is used as the metric in these examples to simplify the math.</p>
+        </div>
+        <p class="indent"><a id="page_418"></a><a href="ch15.xhtml#ch15fig12">Figure 15-12</a> is used to describe the operation of EIGRP.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/15fig12.jpg" aria-describedby="Al15fig12" alt="Figure represents sample network for EIGRP operation." width="698" height="345"><aside class="hidden" id="Al15fig12">
+        <p>A vertical line labeled 2001:db8:3e8:100::/64 is connected to a horizontal line labeled D: 100 that leads to a router labeled A. A line labeled D: 100 leads upward from A to reach a router labeled B. A line labeled D: 100 leads downward to reach a router labeled C. A line labeled D: 100 leads from B to reach a router labeled D. A line labeled D: 200 leads from C to reach a router labeled D. A line labeled D: 100 leads from D to reach a router labeled E.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch15fig12"></a><strong>Figure 15-12</strong> <em>Sample Network for EIGRP Operation</em></p>
+        </div>
+        <p class="indentb">The operation of EIGRP in this network is very simple on the surface:</p>
+        <p class="indenthangingN">1. A discovers 2001:db8:3e8:100::/64 because it is directly attached (this could be through the interface configuration, for instance).</p>
+        <p class="indenthangingN">2. A adds the inbound interface cost, here shown as a delay of 100, to the route, and installs it in its local routing table.</p>
+        <p class="indenthangingN">3. A advertises 100::/64 to B and C through the two other connected interfaces.</p>
+        <p class="indenthangingN">4. B receives this route, adds the inbound interface cost (for a total delay of 200), and examines its local table for any other (or better) routes to this destination; B does not have a route to 100::/64, so it installs the route in its local routing table.</p>
+        <p class="indenthangingN">5. B advertises 100::/64 to D.</p>
+        <p class="indenthangingN">6. C receives this route, adds the inbound interface cost (for a total delay of 200), and examines its local table for any other (or better) routes to this destination; C does not have a route to 100::/64, so it installs the route in its local routing table.</p>
+        <p class="indenthangingN">7. C advertises 100::/64 to D.</p>
+        <p class="indenthangingN">8. D receives the route to 100::/64 from B, adds the inbound interface cost (for a total delay of 300), and examines its local table for any other (or better) routes to this destination; D does not have a route to this destination, so it installs the route in its local routing table.</p>
+        <p class="indenthangingN"><a id="page_419"></a>9. D receives the route to 100::/64 from C, adds the inbound interface cost (for a total delay of 400), and examines its table for any other (or better) routes to this destination; D does have a better route to 100::/64, through B, so it inserts the new route into its local topology table (see below for the additional processing D does on this alternate path).</p>
+        <p class="indenthangingN1">10. D advertises the route to 100::/64 to E.</p>
+        <p class="indenthangingN1">11. E receives the route to 100::/64 from D, adds the inbound interface cost (for a total delay of 400), and examines its local table for any other (or better) routes to this destination; E does not have a route to this destination, so it installs the route in its local routing table.</p>
+        <p class="indentt">Thus far, this is very similar to the operation of RIP. Step 9, however, needs a good bit more detail. After step 8, D has a path to 100::/64 with a total cost of 300; this is the feasible distance to the destination, and B is the successor, as it is the path with the lowest-cost path. At step 9, D receives a second path to this same destination. In RIP, or other Bellman-Ford implementations, this second path would either be ignored or discarded. EIGRP, being grounded in DUAL, however, will examine this second path to determine if it is loop free or not. Can this path be used if the primary path fails?</p>
+        <p class="indent">To determine whether this alternate path is loop free or not, D must compare the feasible distance with the distance C has reported as its cost to reach 100::/64— the reported distance. This information is available in the advertisement D receives from C (remember that C advertises the route with its cost to the destination; D adds the cost of the [B,D] link to this to find the total cost through C to reach 100::/64). The reported distance through C is 200, which is less than the local feasible distance, which is 300. Hence, the route through C is loop free and is marked as a feasible successor.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch15lev11"><strong>Reacting to a Topology Change</strong></h4>
+        <p class="noindent">How are these feasible successors used? Assume the [B,D] link fails, as illustrated in <a href="ch15.xhtml#ch15fig13">Figure 15-13</a>.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/15fig13.jpg" aria-describedby="Al15fig13" alt="Figure represents the process of using the feasible successor." width="698" height="345"><aside class="hidden" id="Al15fig13">
+        <p>A vertical line labeled 2001:db8:3e8:100::/64 has a horizontal line labeled D:100 connected to it and leading to a router labeled A. A line labeled D: 100 leads from A to reach a router labeled C. A line labeled D: 100 leads from A to reach a router labeled B. A line labeled D: 200 leads from C to reach a router labeled D. Two lines lead from B and D that are not connected. The line leading from D is labeled D: 100. A line labeled D: 100 leads from D to reach a router labeled E.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch15fig13"></a><strong>Figure 15-13</strong> <em>Using the Feasible Successor</em></p>
+        </div>
+        <p class="indent">When this link fails, D will examine its local topology table to discover if it has another loop-free path to the destination. Since the path through C is marked as a feasible successor, D does have an alternate path. In this case, D can simply switch to using the path through C to reach 100::/64. D will <em>not</em> recalculate the feasible distance in this case, as it has not received any new information about the network topology.</p>
+        <p class="indent"><a id="page_420"></a>What if the link between C and A fails, instead, as illustrated in <a href="ch15.xhtml#ch15fig14">Figure 15-14</a>?</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/15fig14.jpg" aria-describedby="Al15fig14" alt="Figure represents the process of reacting to failure without a feasible successor in EIGRP." width="698" height="345"><aside class="hidden" id="Al15fig14">
+        <p>A vertical line labeled 2001:db8:3e8:100::/64 has a horizontal line labeled D:100 connected to it and leading to a router labeled A. A line labeled D: 100 leads from A to reach a router labeled B. Two lines between routers A and C are left unconnected. A line leading from C is labeled D: 100. A line labeled D: 200 leads from C to reach a router labeled D. A line labeled D: 100 leads from D to reach a router labeled B. A line labeled D: 100 leads from D to reach a router labeled E."</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch15fig14"></a><strong>Figure 15-14</strong> <em>Reacting to Failure Without a Feasible Successor in EIGRP</em></p>
+        </div>
+        <p class="indent">In this case, before the failure, C has two paths to 100::/64: one through A with a total delay of 200 and a second through D with a total delay of 500. The feasible distance at C will be set to 200, as this is the cost of the best path available when convergence is complete. The reported distance at D, 300, is greater than the feasible distance at C, so C will not mark the path through D as a feasible successor. Once the [A,C] link fails, since C does not have an alternate path, it will mark the route active <a id="page_421"></a>and send a query to each of its neighbors requesting updated information about any available path to 100::/64.</p>
+        <p class="indent">When D receives this query, it will examine its local topology table and find that its best path toward 100::/64 is still available. Because this path still exists, the EIGRP process on D can assume that the current best path, through B, has not been impacted by the failure of the [A,C] link. D replies to this query with its current metric, which indicates this path is still available, and is loop free from D’s perspective.</p>
+        <p class="indent">On receiving this reply, C will note it is not waiting on any other neighbors to respond (as it has just one neighbor, D). As C has received all the replies it is waiting on, it will recalculate the available loop-free paths, choosing D as the successor, and the cost through D as the feasible distance.</p>
+        <p class="indent">What happens if D never responds to C’s query? In older EIGRP implementations, C would set a timer, called the <em>Stuck in Active Timer;</em> if D does not respond to C’s query within this time, C will declare the route <em>Stuck in Active (SIA)</em> and reset its neighbor adjacency with D. In newer implementations of EIGRP, C will set a timer called the <em>SIA Query</em> timer. When this timer expires, it will resend the query to D. So long as D responds that it is still working on answering the query, C will continue to wait for a response.</p>
+        <p class="indent">Where do these queries terminate? How far will an EIGRP query propagate in a network? EIGRP queries terminate at one of two points:</p>
+        <p class="bullt">• When a router has no other neighbors to send queries to</p>
+        <p class="bullb">• When the router receiving the query does not have any information about the destination referenced by the query</p>
+        <p class="indent">This means either at the “end of the EIGRP network” (called an Autonomous System), or one router beyond any sort of policy or configuration that hides information about specific destinations; for instance, one hop beyond the point where a route is aggregated.</p>
+        <div class="sidebar1">
+        <p class="title1"><strong>EIGRP Query Range and Network Design</strong></p>
+        <p class="noindent">EIGRP has always been known as the “protocol that will work on any network,” because of its large scaling properties (on the order of BGP in many cases) and apparent capability to run on “any” topology without a lot of configuration. The primary determinant of EIGRP scaling, however, is the query <a id="page_422"></a>range; the primary task of network design in an EIGRP network is <em>bounding</em> the scope of queries through the network. First, the query range impacts the speed at which EIGRP converges; each additional hop of query range adds some small amount of time to the overall convergence time of the network (around 200ms in most cases). Second, the query range impacts the stability of the network. The farther queries must pass through the network, the more likely it is some router along the way will not be able to answer the query immediately. Hence, the most important point in designing a network around EIGRP as a protocol is bounding queries through aggregation or filtering of some type.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch15lev12"><strong>Neighbor Discovery and Reliable Transport</strong></h4>
+        <p class="noindent">EIGRP checks two-way connectivity between neighbors, the link MTU, and provides for the reliable transport of control plane information through the network by forming neighbor relationships. <a href="ch15.xhtml#ch15fig15">Figure 15-15</a> illustrates the EIGRP neighbor formation process.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/15fig15.jpg" aria-describedby="Al15fig15" alt="Figure represents EIRGP neighbor formation." width="592" height="581"><aside class="hidden" id="Al15fig15">
+        <p>A router labeled A has a line leading to the right, connecting a router labeled B. An arrow labeled 1. Multicast hello leads to the right. 2. A in pending state is mentioned below. An arrow labeled 3. Unicast update + init leads to the left. An arrow labeled 4. Unicast update + init + ack leads to the right. 5. A in connected state is mentioned below. An arrow labeled 6. Unicast update + ack leads to the left. An arrow labeled 7. Unicast update + ack leads to the right. An arrow labeled 8. Unicast update + ack leads to the left. Three dotted lines fall below.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch15fig15"></a><strong>Figure 15-15</strong> <em>EIGRP Neighbor Formation</em></p>
+        </div>
+        <p class="indentb">The steps illustrated in <a href="ch15.xhtml#ch15fig15">Figure 15-15</a> are as follows:</p>
+        <p class="indenthangingN">1. A sends a multicast hello onto the link shared between A and B.</p>
+        <p class="indenthangingN">2. B places A in <em>pending</em> state; while A is in pending state, B will not send standard updates or queries to A, nor will it accept anything other than a specially formatted update from A.</p>
+        <p class="indenthangingN">3. B transmits an empty update with the <em>initialization bit</em> set to A; this packet is sent to A’s unicast interface address.</p>
+        <p class="indenthangingN">4. On receiving this update, A responds with an empty update with the initialization bit set and containing an <em>acknowledgment;</em> this packet is sent to B’s unicast interface address.</p>
+        <p class="indenthangingN">5. On receiving this unicast update, B places A into the connected state and begins sending updates containing individual topology table entries toward A; piggy-backed onto each packet is an acknowledgment for the previous packet received from the neighbor.</p>
+        <p class="indent"><a id="page_423"></a>Because EIGRP does not form adjacencies with sets of neighbors, only individual neighbors, this process ensures that both unicast and multicast reachability are available between the two routers forming an adjacency. To ensure that the MTU is not mismatched on either end of the link, EIGRP pads a specific set of packets during the neighbor formation; if these packets are not received by the other router, the MTU is mismatched, and no neighbor relationship should be formed.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">EIGRP sends multicast hellos for neighbor discovery by default but will use unicast hellos if neighbors are manually configured.</p>
+        </div>
+        <p class="indent"></p>
+        <a id="page_424"></a>
+        <div class="heading">
+        <h4 class="h4" id="ch15lev13"><strong>Concluding Thoughts on EIGRP</strong></h4>
+        <p class="noindent">EIGRP presents a number of interesting solutions to the problems that routing protocols encounter when sending information across a network, calculating loop-free paths, and reacting to topology changes. EIGRP is classified as a distance vector protocol using DUAL to calculate loop-free paths, and alternate loop-free paths, through the network. EIGRP advertises routes without reference to traffic flows through the network, so it is a proactive protocol.</p>
+        </div>
+        <div class="sidebar1">
+        <p class="title1"><strong>Distance Vector Protocols and the Routing Table</strong></p>
+        <p class="noindent">In most discussions about distance vector protocols (including this one), these protocols are explained in a way that implies they operate completely separate from the routing table and any other routing processes running on the device. This, however, is not the case; distance vector protocols interact with the routing table in a way that link state protocols do not. Specifically, a distance vector protocol will not advertise a route to a destination it has not installed in the local routing table.</p>
+        <p class="indent">For instance, assume EIGRP and RIP are running on the same router. EIGRP learns about some destination and installs a route to the same destination in the local routing table. RIP learns about the same destination and attempts to install the route it has learned into the local routing table, but it fails to do so—the EIGRP route overwrites (or overrides) the RIP learned route. In this case, RIP will <em>not</em> advertise this specific route to any of its neighbors.</p>
+        <p class="indent">There are two reasons for this behavior. <em>First</em>, the route learned through EIGRP might point to a completely different next hop than the route learned through RIP. If the metrics are not set correctly, the two protocols could form a permanent forwarding loop in the network. <em>Second</em>, RIP has no way of knowing just how valid the EIGRP route is. It could be that RIP advertises the route, causing other routers to send the local device traffic destined to the advertised destination, and then the local device actually drops the packet, rather than forwarding it. This is one instance of a <em>routing black hole</em>.</p>
+        <p class="indent">To prevent either of these situations from occurring, distance vector protocols will not advertise routes that the protocol itself has not in the local routing table. If a distance vector protocol’s route is overwritten for any reason, it will stop advertising reachability to the destination.</p>
+        </div>
+        <div class="heading">
+        <h3 class="h3" id="ch15lev14"><a id="page_425"></a>Further Reading</h3>
+        <p class="ref">Bellman, Richard. “On a Routing Problem.” <em>Quarterly of Applied Mathematics</em> 16 (1958): 87–90.</p>
+        </div>
+        <p class="ref">Dijkstra, E. W. “A Note on Two Problems in Connexion with Graphs.” <em>Numerische Mathematik</em> 1, no. 1 (1959): 269–71. doi:10.1007/BF01386390.</p>
+        <p class="ref">Envedi, Gabor Sandor, Andras Csaszar, Alia Atlas, Chris Bowers, and Abishek Gopalan. <em>An Algorithm for Computing IP/LDP Fast Reroute Using Maximally Redundant Trees (MRT-FRR)</em>. Request for Comments 7811. RFC Editor, 2016. <a href="https://rfc-editor.org/rfc/rfc7811.txt">https://rfc-editor.org/rfc/rfc7811.txt</a>.</p>
+        <p class="ref">“eRSTP—Enhanced Rapid Spanning Tree Protocol—Industrial Communication—Siemens.” WCMS3Article. Accessed September 25, 2017. <a href="http://w3.siemens.com/mcms/industrial-communication/en/rugged-communication/technology-highlights/pages/erstp-enhance-rapid-spanning-tree-protocol.aspx">http://w3.siemens.com/mcms/industrial-communication/en/rugged-communication/technology-highlights/pages/erstp-enhance-rapid-spanning-tree-protocol.aspx</a>.</p>
+        <p class="ref">Ford, L. R. <em>Network Flow Theory</em>. Santa Monica, CA: RAND Corporation, 1956.</p>
+        <p class="ref">Garcia-Luna-Aceves, J. J. “Loop-Free Routing Using Diffusing Computations.” <em>IEEE/ACM Transactions on Networking</em> 1, no. 1 (February 1993): 130–41.</p>
+        <p class="ref">Hendrick, C. <em>Routing Information Protocol</em>. Request for Comments 1058. RFC Editor, 1988. <a href="https://rfc-editor.org/rfc/rfc1058.txt">https://rfc-editor.org/rfc/rfc1058.txt</a>.</p>
+        <p class="ref">Malkin, Gary S. <em>RIP Version 2</em>. Request for Comments 2453. RFC Editor, 1998. <a href="https://rfc-editor.org/rfc/rfc2453.txt">https://rfc-editor.org/rfc/rfc2453.txt</a>.</p>
+        <p class="ref">Malkin, Gary S., and Robert E. Minnear. <em>RIPng for IPv6</em>. Request for Comments 2080. RFC Editor, 1997. <a href="https://rfc-editor.org/rfc/rfc2080.txt">https://rfc-editor.org/rfc/rfc2080.txt</a>.</p>
+        <p class="ref">Moore, Edward F. “The Shortest Path through a Maze.” In <em>Proceedings of the International Symposium on Switching Theory 1957, Part II</em>. Cambridge, MA: Harvard University Press, 1959.</p>
+        <p class="ref">Perlman, Radia. “An Algorithm for Distributed Computation of a Spanningtree in an Extended LAN.” <em>SIGCOMM Computer Communication Review</em> 15, no. 4 (September 1985): 44–53, doi:10.1145/318951.319004.</p>
+        <p class="ref">Retana, Alvaro, Russ White, and Don Slice. <em>EIGRP for IP: Basic Operation and Configuration</em>. 1st edition. Boston, MA: Addison-Wesley Professional, 2000.</p>
+        <p class="ref">Savage, Donnie, Steven Moore, James Ng, Russ White, Donald Slice, and Peter Paluch. <em>Cisco’s Enhanced Interior Gateway Routing Protocol (EIGRP)</em>. Request for Comments 7868. RFC Editor, 2016. <a href="https://rfc-editor.org/rfc/rfc7868.txt">https://rfc-editor.org/rfc/rfc7868.txt</a>.</p>
+        <p class="ref">Schrijver, Alexander. “On the History of the Shortest Path Problem.” <em>Documenta Mathematica</em> Extra (2012): 155–67.</p>
+        <p class="ref"><a id="page_426"></a>Shimbel, A. “Structure in Communication Nets.” In <em>Proceedings of the Symposium on Information Networks</em>, 199–203. New York: Polytechnic Press of the Polytechnic Institute of Brooklyn, n.d.</p>
+        <p class="ref">Suurballe, J. W. “Disjoint Paths in a Network.” <em>Networks</em> 4, no. 2 (1974): 125–45. doi:10.1002/net.3230040204.</p>
+        <p class="ref">“Understanding Rapid Spanning Tree Protocol (802.1w).” <em>Cisco</em>. Accessed September 25, 2017. <a href="https://www.cisco.com/c/en/us/support/docs/lan-switching/spanning-tree-protocol/24062-146.html">https://www.cisco.com/c/en/us/support/docs/lan-switching/spanning-tree-protocol/24062-146.html</a>.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch15lev15">Review Questions</h3>
+        <p class="indenthangingN">1. Go through some specific protocols, describing each in terms of Protocols:</p>
+        </div>
+        <p class="bull2"><span class="pd_ash">•</span> How the protocol would be broadly classified</p>
+        <p class="bull2"><span class="pd_ash">•</span> Which problems they address out of the set described in the book</p>
+        <p class="bull2"><span class="pd_ash">•</span> Which solutions they chose for each problem</p>
+        <p class="bull2"><span class="pd_ash">•</span> Which problems the protocol does not address</p>
+        <p class="bull3"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull1.jpg" alt="Image" width="9" height="8"> What does this tell you about the convergence characteristics of the protocol?</p>
+        <p class="bull3"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull1.jpg" alt="Image" width="9" height="8"> Is there a particular use case for each protocol?</p>
+        <p class="bull3"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull1.jpg" alt="Image" width="9" height="8"> How does each one overlap with/differ from the ones described in the book?</p>
+        <p class="bull2"><span class="pd_ash">•</span> AODV</p>
+        <p class="bull2"><span class="pd_ash">•</span> TRILL</p>
+        <p class="bull2"><span class="pd_ash">•</span> BABEL</p>
+        <p class="bull2"><span class="pd_ash">•</span> OLSR</p>
+        <p class="indenthangingN">2. What is the specific method used by STP to prevent loops after a topology change has occurred? Can you relate this to the CAP theorem?</p>
+        <p class="indenthangingN">3. The text only describes the handling of unicast packets flowing through an STP domain. How are broadcasts and multicasts handled? What is a broadcast storm, and why is it so dangerous in a network running STP?</p>
+        <p class="indenthangingN"><a id="page_427"></a>4. Examine STP from a complexity perspective. What simplifying assumptions are made, and how do these simplifying assumptions impact the optimization of using network resources?</p>
+        <p class="indenthangingN">5. Research the operation of the Rapid Spanning Tree Protocol (RSTP; see the “Further Reading” section for resources). What are the advantages of RSTP over the Spanning Tree Protocol?</p>
+        <p class="indenthangingN">6. Consider the VLAN extensions to STP. What are these extensions? Do they make the protocol more complex or less? Do they increase or decrease the optimal use of network resources?</p>
+        <p class="indenthangingN">7. Consider the RIP hold-down timer described in the text. Construct a network where RIP could potentially form a loop if the implementation does not support the hold-down timer.</p>
+        <p class="indenthangingN">8. Analyze triggered RIP, as described in the text, within the complexity model of state/optimization/surface. Is there an additional interaction surface introduced into RIP by triggered updates? Is there additional state? What is the optimization tradeoff?</p>
+        <p class="indenthangingN">9. EIGRP can carry two different kinds of metrics—narrow and wide. Why do these two kinds of metrics exist? What is the relationship between them?</p>
+        <p class="indenthangingN1">10. EIGRP can carry two different kinds of metrics—narrow and wide. Describe the narrow to wide transition mechanism. Is this effective? Are there any problems inherent in the process? What happens if one router is never upgraded?</p>
+        <p class="indenthangingN1">11. Consider the EIGRP stuck-in-active process before the SIA query was inserted in the code. Describe the process. Construct a network where EIGRP will reset an adjacency several hops away from a router that is not answering queries without the SIA query.<a id="page_428"></a></p>
+        <p class="footnotet"><a id="ch15fn-1"></a><a href="ch15.xhtml#ch15fn1">1</a>. Perlman, “An Algorithm for Distributed Computation of a Spanningtree in an Extended LAN.”</p>
+        <p class="footnote"><a id="ch15fn-2"></a><a href="ch15.xhtml#ch15fn2">2</a>. Hendrick, <em>Routing Information Protocol.</em></p>
+        <p class="footnote"><a id="ch15fn-3"></a><a href="ch15.xhtml#ch15fn3">3</a>. Malkin, <em>RIP Version 2.</em></p>
+        <p class="footnote"><a id="ch15fn-4"></a><a href="ch15.xhtml#ch15fn4">4</a>. Malkin and Minnear, <em>RIPng for IPv6.</em></p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780134762814/files/9780134762852.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

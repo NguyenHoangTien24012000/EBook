@@ -1,0 +1,171 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="Implementing data binding"><div class="titlepage"><div><div><h1 class="title"><a id="ch08lvl1sec54"></a>Implementing data binding</h1></div></div></div><p>After clarifying what we mean by data binding, let's see what are the most common techniques used for its implementation. We will explore these techniques gradually going from the most simple to the most sophisticated that use advanced features of JavaScript.</p><div class="section" title="Manual data binding"><div class="titlepage"><div><div><h2 class="title"><a id="ch08lvl2sec55"></a>Manual data binding</h2></div></div></div><p>The simplest way to set up a data binding relationship between two objects is manual binding. Let's consider the following markup:</p><pre class="programlisting">&lt;label&gt;Name &lt;input type="text" id="txtName"&gt;&lt;/label&gt;&lt;br/&gt; 
+        &lt;label&gt;Surname &lt;input type="text" id="txtSurname"&gt;&lt;/label&gt;&lt;br/&gt; 
+        &lt;button id="btnSave"&gt;Save&lt;/button&gt; 
+        </pre><p>It defines an HTML view with two text boxes and a save button. In our data binding model, the DOM elements that correspond to the two textboxes are the data target objects. Now, let's consider the following code:</p><pre class="programlisting">function Person(name, surname) { 
+          this.name = name; 
+          this.surname = surname; 
+        } 
+         
+        person = new Person("John", "Smith"); 
+        </pre><p>The <code class="literal">person</code> object is the data source object for the data binding relationship we are trying to set up. The initial binding between the data source object and the data target object can be simply done by the following code:</p><pre class="programlisting">var txtName = document.getElementById("txtName"); 
+        var txtSurname = document.getElementById("txtSurname"); 
+         
+        txtName.value = person.name; 
+        txtSurname.value = person.surname; 
+        </pre><p>Now, we can define a reverse one-way data binding relationship using the click event on the save button, as shown here:</p><pre class="programlisting">var btnSave = document.getElementById("btnSave"); 
+         
+        btnSave.onclick = function() { 
+            person.name = txtName.value; 
+            person.surname = txtSurname.value; 
+        }; 
+        </pre><p>With this approach, we defined a synchronization mechanism that updates the data source properties when the user changes data on the web page.</p></div><div class="section" title="Monitoring changes"><div class="titlepage"><div><div><h2 class="title"><a id="ch08lvl2sec56"></a>Monitoring changes</h2></div></div></div><p>Even if rudimentary, this implementation is working and is widely used in contexts where there is no need&nbsp;for a more advanced solution. However, this approach could be not appropriate in some situations. In fact, the synchronization between the properties is not in real time, but it happens when the user clicks on the save button. This leaves the binding in an inconsistent state that can lead to unexpected behaviors. For example, an asynchronous or a scheduled task can access the data source properties when they are not yet updated. What we need is a sort of automatic data binding that updates the properties as soon as a new value is detected. In other words, we need to monitor when changes happen.</p><p>In order to apply real-time monitoring of changes, we can use the <code class="literal">onchange</code> event of the textboxes instead of <code class="literal">onclick</code>:</p><pre class="programlisting">var txtName = document.getElementById("txtName"); 
+        var txtSurname = document.getElementById("txtSurname"); 
+         
+        txtName.onchange = function() { 
+          person.name = txtName.value; 
+        }; 
+         
+        txtSurname.onchange = function() { 
+          person.surname = txtSurname.value; 
+        }; 
+        </pre><p>This ensures that a change on any textbox is immediately reflected on the associated property.</p><p>However, this approach can be applied if the data target object supports events, as for DOM elements. How can we implement a real-time property update without events?</p><p>Suppose, for example, we want to create a two-way data binding between the textboxes and the properties of the <code class="literal">person</code> object, we need to complete the current binding by allowing the automatic update of textboxes when the properties of the <code class="literal">person</code> object change. However, we cannot rely on events, since our object does not support them.</p><p>A way around the problem is to define specialized methods to get and set values of the properties. Let's define a factory of the person object:</p><pre class="programlisting">  function createPerson(name, surname) { 
+            var _name = name; 
+            var _surname = surname; 
+            var txtName = document.getElementById("txtName"); 
+            var txtSurname = document.getElementById("txtSurname"); 
+         
+            txtName.value = _name; 
+            txtSurname.value = _surname; 
+         
+            return { 
+              name: function(value) { 
+                if (value) { 
+                  _name = value; 
+                  txtName.value = _name; 
+                } 
+                return _name; 
+              }, 
+              surname: function(value) { 
+                if (value) { 
+                  _surname = value; 
+                  txtSurname.value = _surname; 
+                } 
+                return _name; 
+              } 
+            }; 
+          } 
+        </pre><p>This function returns an object that has the <code class="literal">name()</code> and <code class="literal">surname()</code>methods instead of the <code class="literal">name</code> and <code class="literal">surname</code> properties. These methods work as getters when no argument is passed and as setters when an argument is passed. The following code shows how to use these methods:</p><pre class="programlisting">person = createPerson("John", "Smith"); 
+        console.log(person.name());  //result: John 
+         
+        person.name("Mario"); 
+        console.log(person.name());  //result: Mario 
+        </pre><p>If we look at the method's definition, we will find that in addition to managing the internal values of the properties, they map these values to the associated textboxes. This means that whenever a new value is assigned to the properties through these methods, it is automatically assigned to the bound textbox.</p><p>Adding the following code in the context of our example will update the textboxes after 5 seconds:</p><pre class="programlisting">setTimeout(function() { 
+          person.name("Mario"); 
+          person.surname("Rossi"); 
+        }, 5000); 
+        </pre><p>In a real context, the data may be updated, for example, as a result of an Ajax call or by an asynchronous task.</p></div><div class="section" title="Hacking properties"><div class="titlepage"><div><div><h2 class="title"><a id="ch08lvl2sec57"></a>Hacking properties</h2></div></div></div><p>The previous proposed approach to monitoring changes of the data source properties is based on the definition of specialized getters and setters. That solution works properly also for old versions of JavaScript engines, but if we have no limitation on using more recent features, we can use the standard getters and setters using the <code class="literal">defineProperty()</code> method. So, let's define a constructor for the <code class="literal">Person</code> object as in the following code:</p><pre class="programlisting">  function Person(name, surname) { 
+            var _name = name; 
+            var _surname = surname; 
+            var txtName = document.getElementById("txtName"); 
+            var txtSurname = document.getElementById("txtSurname"); 
+         
+            txtName.value = _name; 
+            txtSurname.value = _surname; 
+         
+            Object.defineProperty(this, "name", 
+            { 
+              get: function() { return _name; }, 
+              set: function(value) { 
+                _name = value; 
+                txtName.value = _name; 
+              } 
+            }); 
+         
+            Object.defineProperty(this, "surname", 
+            { 
+              get: function() { return _surname; }, 
+              set: function(value) { 
+                _surname = value; 
+                txtSurname.value = _surname; 
+              } 
+            }); 
+          } 
+        </pre><p>Here we can see, we defined the <code class="literal">name</code> and <code class="literal">surname</code> properties in quite a similar way to the <code class="literal">name()</code> and <code class="literal">surname()</code> methods of the previous approach. However, in this case, we have the benefit of keeping the standard syntactical approach in accessing properties, as the following example shows:</p><pre class="programlisting">  var person = new Person("John", "Smith"); 
+         
+          setTimeout(function() { 
+            person.name = "Mario"; 
+            person.surname = "Rossi"; 
+          }, 5000); 
+        </pre><p>Thanks to the standard getters and setters definition, once defined, the constructor of the <code class="literal">Person</code> object, the data binding relationship is totally transparent.</p></div><div class="section" title="Defining a binder"><div class="titlepage"><div><div><h2 class="title"><a id="ch08lvl2sec58"></a>Defining a binder</h2></div></div></div><p>The data binding implementations we analyzed are based on a tight coupling between the data source object and the data target object. Whether we define specialized methods or we use the standard getter and setter, we include in the data source object definition an explicit reference to the data target object. Usually, this is not desirable, because a change to one object may require a change to the other object. Moreover, what happens if we want to create a new data binding relationship with another object? We need to add a reference to the new object by adding a new dependency and this slowly leads to a messy code.</p><p>What we need is an external mechanism that sets up a data binding relationship. Let's implement this mechanism as an object like the following:</p><pre class="programlisting">function Binder() {} 
+         
+          Binder.prototype.bindTo = 
+          function(dataSourceObj, dataSourceProperty, dataTargetObj,
+          dataTargetProperty) { 
+            Object.defineProperty(dataSourceObj, dataSourceProperty, { 
+              get: function() { return dataTargetObj[dataTargetProperty];        } 
+            }); 
+          } 
+        </pre><p>The <code class="literal">Binder()</code> constructor defines the <code class="literal">bindTo()</code> method that takes the four actors of the data binding context, creates the specified property of the data source object, and binds it to the specified data the target property. In this way, it defines a reverse one-way data binding relationship between the data source object and the data target object.</p><p>With this approach, we brought the code creating the data binding relationship out of the definition of the data source object. So, we can define the relationship using the <code class="literal">bindTo()</code> method:</p><pre class="programlisting">var person = new Person("John", "Smith"); 
+        var txtName = document.getElementById("txtName"); 
+        var txtSurname = document.getElementById("txtSurname"); 
+        var btnSave = document.getElementById("btnSave"); 
+        var binder = new Binder() 
+         
+        binder.bindTo(person, "name", txtName, "value"); 
+        binder.bindTo(person, "surname", txtSurname, "value"); 
+        </pre><p>When a change occurs in the <code class="literal">txtName</code> or <code class="literal">txtSurname</code> textboxes, the new value will be assigned to the bound properties. Analyzing the property definition inside the <code class="literal">bindTo()</code> method, we can see that there is not an actual assignment. We defined it so that any attempt to read its value returns the value of target property. Anyway, the effect is the same as that of an actual assignment.</p><p>We may also notice that the property has been defined as read-only, since there is no setter. It should not be so strange, since the data binding direction we defined is reverse one-way. If we allow to change the data source property, we risk to get inconsistent situations, where the data source property has a value different from the data target property.</p><p>It is not so difficult to add a method to the <code class="literal">Binder()</code> constructor so that we can define a two-way data binding relationship. The following is such an example:</p><pre class="programlisting">Binder.prototype.bindTwoWay = 
+          function(dataSourceObj, dataSourceProperty, dataTargetObj,    dataTargetProperty) { 
+            Object.defineProperty(dataSourceObj, dataSourceProperty, { 
+              get: function() { return dataTargetObj[dataTargetProperty];
+              },
+        <span class="strong"><strong>      set: function(newValue) {dataTargetObj[dataTargetProperty]
+              = newValue;}</strong></span> 
+            }); 
+          } 
+        </pre><p>As we can see, we simply added a setter to the data source property definition that assigns the new value to the data target property. This simple addition makes the two properties tightly synchronized, since the actual value is kept by the data target property and the data source property act as its wrapper.</p><p>Even if this solution is very effective, it has some issues. Since it redefines a possible existing property, we risk losing the original definition which may have a customized behavior. Moreover, the properties involved in the data binding relationship may be sealed so that we cannot change its definition. This happens, for example, with the DOM elements. We can't change the DOM's elements definition, so if we plan to use the <code class="literal">bindTwoWay()</code> method on a DOM element we will fail.</p></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

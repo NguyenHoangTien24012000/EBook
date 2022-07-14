@@ -1,0 +1,247 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="Module loading"><div class="titlepage"><div><div><h1 class="title"><a id="ch10lvl1sec66"></a>Module loading</h1></div></div></div><p>Modules concern code organization, which is how the functionalities of an application are distributed in units that simplify reusability, maintainability, and understandability of the code. The concept of module itself does not concern how it is loaded into the execution environment. Usually, this should be a concern of the runtime engine hosting the application. However, module loading plays an important role in JavaScript, as we will see in this section.</p><div class="section" title="Modules, scripts, and files"><div class="titlepage"><div><div><h2 class="title"><a id="ch10lvl2sec88"></a>Modules, scripts, and files</h2></div></div></div><p>In the examples we have shown so far, we have not said where the modules are. Until now, we talked about modules as units of code with private and public parts, but where do they live in an application?</p><p>In general, one or more modules can be in the same container of the entire application. For example, we can imagine a JavaScript application composed of many modules, all stored in a single file or in a single Web page. For nontrivial applications usually this is not a clever solution, at least during the development stage. Having all the code in a single file does not simplify its understandability nor its reusability. A better approach is to store one module into one file so that it becomes easier to detect which module implements a certain functionality and to reuse a module in another application.</p><p>In a runtime environment, being able to access a filesystem, such as in server-side environments like Node.js, loading modules from files is not a problem. It can be a synchronous or asynchronous operation usually with a minor impact on the overall performance.</p><p>Conversely, loading a module in a web page may cause issues. Usually, we place JavaScript code inside a <code class="literal">&lt;script&gt;</code> element, as in the following example:</p><pre class="programlisting">&lt;script type="text/javascript"&gt; 
+  (function(module) { 
+    module.calculateTriangleArea = function area(basis, height) { 
+      return basis*height/2; 
+    }; 
+ 
+    return module; 
+  })(myApp); 
+&lt;/script&gt; 
+</pre><p>Or, even better, its code can be placed in an external file, as shown below:</p><pre class="programlisting">&lt;script type="text/javascript" src="triangleModule.js"&gt;&lt;/script&gt; 
+</pre><p>In both cases, the code will make the module available to the application. However, while in the first case the code of the module is loaded within the entire page, in the second case the code needs to be loaded after a new request to the server. In the latter case, the browser loads the file containing the code and executes it, blocking in the meanwhile the rendering of the page. Since loading scripts may be slower on the Internet and a browser opens a limited number of concurrent HTTP connections, this approach may heavily affect the user experience.</p><p>In order to avoid this issue, we need to load scripts in the background with no impact on page rendering—we need asynchronous loading. HTML provides us with a couple of attributes of the <code class="literal">&lt;script&gt;</code> tag: <code class="literal">defer</code> and <code class="literal">async</code>.</p><p>We can use <code class="literal">defer</code> as shown here:</p><pre class="programlisting">&lt;script type="text/javascript" src="triangleModule.js" defer&gt; 
+&lt;/script&gt; 
+</pre><p>This ensures that the script is loaded during the page parsing and is executed after the parsing has completed. The execution order of the scripts reflects their appearance order in the document. These attributes may be useful when we want to be sure that our code runs when the document has been parsed, but anyway its loading slows down the page rendering.</p><p>We can use the <code class="literal">async</code> attribute as in the following example:</p><pre class="programlisting">&lt;script type="text/javascript" src="triangleModule.js" async&gt; 
+&lt;/script&gt; 
+</pre><p>It allows us to load scripts asynchronously without any immediate impact on the page rendering. The script's code is executed as soon as it is loaded, but we have no guarantee on the execution order of scripts.</p></div><div class="section" title="A simple module loader"><div class="titlepage"><div><div><h2 class="title"><a id="ch10lvl2sec89"></a>A simple module loader</h2></div></div></div><p>When the codebase of an application becomes large, we may feel that the built-in loading mechanism of the runtime environment is no longer adequate. We may need to load modules conditionally, resolve dependencies between modules or make some other processing while getting a module. In these cases, we may need a module loader.</p><p>There is a clear distinction between <span class="strong"><strong>script loader</strong></span> and <span class="strong"><strong>module loader</strong></span>. A <span class="strong"><strong>script loader</strong></span> is a mechanism that loads a piece of code and executes it without caring about its structure. A <span class="strong"><strong>module loader</strong></span> is a mechanism that loads a module, it is a piece of code that has a certain structure and the loader knows how to interact with it.</p><p>We can write a module loader in a very simple way. Let's implement a <code class="literal">loadModule()</code> function that takes a module name, loads that module's file from the filesystem or the Web, depending on the platform we are running on, and returns the exported functionalities. We supposed to have a <code class="literal">getFileContent()</code> function, which returns the content of a given file as a string. The code of our simple module loader may be as follows:</p><pre class="programlisting">function loadModule(moduleName) { 
+  var moduleCode = new Function("return " + getFileContent   (moduleName)); 
+ 
+  return moduleCode(); 
+} 
+</pre><p>In the example, we exploited the <code class="literal">Function()</code> constructor that allows us to create a new function object from a string representing its body. We can optionally define one or more parameters, but in our example it is not necessary. The new function is then executed and its output is returned to the caller. Our module loader relies on the fact that the module is defined using the standard module pattern that returns an object with the exported methods.</p><p>So, we can use our loader as follows:</p><pre class="programlisting">var geoModule = loadModule("geoModule.js"); 
+ 
+geoModule.calculateCircleArea(5); 
+</pre><p>Someone may ask why we used the <code class="literal">Function()</code> constructor and not the <code class="literal">eval()</code> function. Using the <code class="literal">eval()</code> function is not usually a good idea. In fact, evaluating a JavaScript piece of code may cause an&nbsp;unclear mix of local and global scope. Consider, for example, the following code:</p><pre class="programlisting">var declaration = "var x = 123;"; 
+ 
+function evaluate(code) { 
+  eval(code); 
+  return x; 
+} 
+ 
+console.log(evaluate(declaration));  //result: 123 
+console.log(x);                      //result: undefined 
+</pre><p>It defines a string variable with a declaration of a variable <code class="literal">x</code>. The string is evaluated inside the <code class="literal">evaluate()</code> function. This creates a local variable, as we can deduce from the output. This is not the case if we use <code class="literal">window.eval()</code>, as we can see in the following example:</p><pre class="programlisting">var declaration = "var x = 123;"; 
+ 
+function evaluate(code) { 
+  window.eval(code); 
+  return x; 
+} 
+ 
+console.log(evaluate(declaration));  //result: 123 
+console.log(x);                      //result: 123 
+</pre><p>Of course, our simple module loader implementation has several issues. For example, if many modules depend on the same module, the <code class="literal">loadModule()</code> function will be called multiple times always loading the same module. This issue can be solved by storing the modules that have already been loaded in an object that acts as a cache. When a module is requested, it will be searched inside the cache before loading it from the server. Let's take a look at how our code changes:</p><pre class="programlisting">function loadModule(moduleName) { 
+  var moduleCode; 
+  var module; 
+ 
+  if (moduleName in loadModule.cache) { 
+    module =  loadModule.cache[moduleName]; 
+  } else { 
+    moduleCode = new Function("return " + getFileContent
+    (moduleName)); 
+    module = moduleCode(); 
+    loadModule.cache[moduleName] = module; 
+  } 
+ 
+  return module; 
+} 
+ 
+loadModule.cache = {}; 
+</pre><p>The caching issue is just one of the problems that a module loader has&nbsp;to face. Other features required for a module loader concern synchronous or asynchronous loading, dependency management, recursive loading, and so on. So, but not always, writing our own module loader is the best choice. Nowadays, several module loaders exist, and we can choose the best one that fits our needs. A first choice we have to make when selecting a module loader is the paradigm it implements. Currently, we have two module loading paradigms: <span class="strong"><strong>CommonJS module</strong></span> and <span class="strong"><strong>Asynchronous Module Definition</strong></span>.</p></div><div class="section" title="CommonJS modules"><div class="titlepage"><div><div><h2 class="title"><a id="ch10lvl2sec90"></a>CommonJS modules</h2></div></div></div><p>The CommonJS community attempts to define standards for JavaScript in order to make JavaScript engine implementations more compatible. We mentioned them in <span><a class="link" href="ch04.html" title="Chapter&nbsp;4.&nbsp;Inheriting and Creating Mixins">Chapter 9</a></span>, <span class="emphasis"><em>Asynchronous Programming and Promises</em></span>, when discussing about Promises. <span class="strong"><strong>CommonJS modules</strong></span> specify an API that modules use to declare dependencies. The file containing the JavaScript code is the module, so there is no need for a function wrapper to contain the scope as happens in the module pattern, because each file is given its own scope. Modules declare dependencies with a synchronous <code class="literal">require()</code> function. That means that execution is blocked while the required module is being resolved. This allows us to use the module immediately after requiring it.</p><div class="note" title="Note" style=""><div class="inner"><h3 class="title"><a id="note18"></a>Note</h3><p>Before Node.js, there were several other attempts to run JavaScript on the server side. Both Netscape and Microsoft supported JavaScript in their server environments in the 90s and more recently Rhino gained some popularity. Each JavaScript server-side environment used different conventions for dealing with module loading. CommonJS was created to solve that problems and Node-style modules are essentially an implementation of the CommonJS module specification.</p></div></div><p>A module must explicitly export an object with the functionalities to make it publicly available. This can be made with the <code class="literal">exports</code> property of the <code class="literal">module</code> object. Let's see how we can write a CommonJS module:</p><pre class="programlisting">var pi = 3.14; 
+ 
+function circumference(radius) { 
+  return 2*pi*radius; 
+} 
+ 
+function circleArea(radius) { 
+  return pi*radius*radius; 
+} 
+ 
+module.exports = { 
+  calculateCircumference:  circumference, 
+  calculateCircleArea:   circleArea 
+}; 
+</pre><p>If we put the preceding code in a file named <code class="literal">geoModule.js</code>, we can load the module as follows:</p><pre class="programlisting">var geoModule = require("./geoModule"); 
+ 
+console.log(geoModule.calculateCircumference(5)); 
+</pre><p>As we can see, the CommonJS approach to manage modules is extremely simple and guarantees the order of execution of modules. However, it is not suitable for browsers since module loading is synchronous and it blocks the page rendering.</p></div><div class="section" title="Asynchronous Module Definition"><div class="titlepage"><div><div><h2 class="title"><a id="ch10lvl2sec91"></a>Asynchronous Module Definition</h2></div></div></div><p>An alternative approach to CommonJS specifically designed for browsers is the <span class="strong"><strong>Asynchronous Module Definition</strong></span> paradigm or <span class="strong"><strong>AMD</strong></span>. As the name says, its main feature is asynchronous loading of modules. In order to create an AMD module, we need to use the <code class="literal">define()</code> function that takes three parameters:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc">A string that represents the name of the module</li><li class="listitem" style="list-style-type: disc">An array of dependencies expressed as module names or file locations</li><li class="listitem" style="list-style-type: disc">A function containing the module's code</li></ul></div><p>Anything returned by the module is exposed to the outside world. Let's rewrite our module following the AMD standard:</p><pre class="programlisting">define("geoModule", [], function() { 
+  var pi = 3.14; 
+ 
+  function circumference(radius) { 
+    return 2*pi*radius; 
+  } 
+ 
+  function circleArea(radius) { 
+    return pi*radius*radius; 
+  } 
+ 
+  return { 
+    calculateCircumference:  circumference, 
+    calculateCircleArea:   circleArea 
+  }; 
+ 
+}); 
+</pre><p>We assigned the <code class="literal">geoModule</code> name to the module using the <code class="literal">define()</code> function. Then, we passed an empty array to declare that our module has no dependencies and finally passed the function that contains the module's code.</p><p>Now, we can load our module as shown in the following example:</p><pre class="programlisting">require(["geoModule"], function(geoModule) { 
+  console.log(geoModule.calculateCircumference(5)); 
+}); 
+</pre><p>We used the <code class="literal">require()</code> function by passing an array with the name of the module we want to load and a callback function that uses our module. The module's content is mapped to the callback's parameter once it is loaded.</p><p>When defining a module, we can omit the first parameter that defines an identifier for the module. In this case, we can identify a module by specifying the filename that contains it. Moreover, we can also omit the dependencies array when it is empty.</p><p>Having to do with asynchronous calls, the <code class="literal">require()</code> function may potentially suffer the same issues we analyzed in <span><a class="link" href="ch04.html" title="Chapter&nbsp;4.&nbsp;Inheriting and Creating Mixins">Chapter 9</a></span>, <span class="emphasis"><em>Asynchronous Programming and Promises</em></span>, where we talked about asynchronous programming. Just to recall some of the issues discussed at that time, we cannot catch errors and lose a bit of readability. A better approach could use Promises; but unfortunately, the AMD specification does not support them.</p><div class="note" title="Note" style=""><div class="inner"><h3 class="title"><a id="note19"></a>Note</h3><p>At the time of this writing, RequireJS, the most known AMD implementation, does not support Promises. However, some extensions and plugins like the following allow to use them:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc"><span><a class="ulink" href="https://github.com/jokeyrhyme/requirejs-promise">https://github.com/jokeyrhyme/requirejs-promise</a></span></li><li class="listitem" style="list-style-type: disc"><span><a class="ulink" href="https://github.com/requirejs/alameda">https://github.com/requirejs/alameda</a></span></li></ul></div></div></div><p>We can integrate AMD the <code class="literal">require()</code> function with ES6 Promises as shown in the following example:</p><pre class="programlisting">function requireWithPromise(modules) { 
+  return new Promise(function(resolve, reject) { 
+    try { 
+      require(modules, resolve); 
+    } 
+    catch(e) { 
+      reject(new Error(e.message)); 
+    } 
+  }); 
+} 
+ 
+requireWithPromise(["geoModule"]) 
+  .then(function(geoModule) { 
+    console.log(geoModule.calculateCircumference(5)); 
+  }) 
+  .catch(function(error) { console.log(error.message); }); 
+</pre><p>The <code class="literal">requireWithPromise()</code>function takes an array of module names as a parameter and returns a Promise. In this way, we can use the standard methods to manage the Promise, such as <code class="literal">then()</code> or <code class="literal">catch()</code>, as in the example, or <code class="literal">all()</code> and <code class="literal">race()</code> when we need to synchronize multiple Promises.</p><p>The AMD approach to module loading naturally works on browsers. It can load multiple modules concurrently and is very convenient when we do not need to load a module at page load. However, the asynchronous loading is subject to potential race conditions if not properly designed. A common criticism of AMD concerns its syntax, which tends to become hard to understand, especially when the dependencies array grows. Although AMD cannot guarantee the order of execution of asynchronous modules, we can mitigate this issue by combining it with Promises.</p></div><div class="section" title="Merging the module pattern with AMD"><div class="titlepage"><div><div><h2 class="title"><a id="ch10lvl2sec92"></a>Merging the module pattern with AMD</h2></div></div></div><p>Each module loading paradigm has its own way to define a module, and both differ from the classic module pattern definition. This raises a problem since the way we define a module determines the way it will be loaded. In fact, if we define a module using <code class="literal">define()</code>, it can only be used with an AMD loader, such as RequireJS or Curl.js. However, we can make modules written using the classic module pattern compatible with AMD. What we need to do is to add a couple of statements at the end of the IIFE body, as shown by the following example:</p><pre class="programlisting">(function() { 
+  var pi = 3.14; 
+  var export; 
+ 
+  function circumference(radius) { 
+    return 2*pi*radius; 
+  } 
+ 
+  function circleArea(radius) { 
+    return pi*radius*radius; 
+  } 
+ 
+  export = { 
+    calculateCircumference:  circumference, 
+    calculateCircleArea:   circleArea 
+  }; 
+ 
+<span class="strong"><strong>  if (typeof define === 'function') {</strong></span>
+<span class="strong"><strong>    define([], function () {</strong></span>
+<span class="strong"><strong>      return export;</strong></span>
+<span class="strong"><strong>    });</strong></span>
+<span class="strong"><strong>  }</strong></span> 
+ 
+ 
+})(); 
+</pre><p>The highlighted code checks if a <code class="literal">define()</code> function is defined. If it is so, an AMD module is defined returning the functionalities assigned to the <code class="literal">export</code> variable.</p><p>In this way, our module can be asynchronously loaded by AMD loaders and still properly works if it's loaded within a simple <code class="literal">&lt;script&gt;</code> element.</p></div><div class="section" title="Universal Module Definition"><div class="titlepage"><div><div><h2 class="title"><a id="ch10lvl2sec93"></a>Universal Module Definition</h2></div></div></div><p>As discussed in the previous section, each module loading approach has its own syntax to define a module. We saw how to make AMD and the module pattern compatible, but what about CommonJS module and AMD compatibility?</p><div class="section" title="UMD"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl3sec5"></a>UMD</h3></div></div></div><p>An attempt to define JavaScript modules that are compatible both for AMD and CommonJS paradigms is <span class="strong"><strong>Universal Module Definition</strong></span> or simply <span class="strong"><strong>UMD</strong></span>. It is actually a collection of patterns published on GitHub at the address: <span><a class="ulink" href="https://github.com/umdjs/umd">https://github.com/umdjs/umd</a></span>. Although there are a lot of different patterns, they are all essentially variations on the same idea—to define a module that can be used in CommonJS and AMD environments. The following is a code template of UMD module definition following the pattern called <span class="strong"><strong>returnExport</strong></span>:</p><pre class="programlisting">(function (root, factory) { 
+  if (typeof define === 'function' &amp;&amp; define.amd) { 
+    // AMD. Register as an anonymous module. 
+    define([], factory); 
+  } else if (typeof exports === 'object') { 
+    // Node. Does not work with strict CommonJS, but 
+    // only CommonJS-like environments that support 
+    //module.exports, like Node. 
+    module.exports = factory(); 
+  } else { 
+    // Browser globals (root is window) 
+    root.returnExports = factory(); 
+  } 
+}(this, function () { 
+  //Module code 
+  return {...}; 
+})); 
+</pre><p>Basically, it is an IIFE that takes two parameters: the object to which the module will be attached in a browser context (<code class="literal">root</code>) and the function that actually defines the module (<code class="literal">factory</code>). In our example, we pass the <code class="literal">this</code> keyword as the root, so the module will be attached to the global scope when it is loaded inside a browser without AMD.</p><p>This definition makes the module available as a CommonJS module, an AMD module, or a global variable, depending on the environment.</p><p>The detection of the environment is made by checking if the key functions of each paradigm exist. In fact, if a <code class="literal">define()</code> function is detected, then the function builds an AMD module; if an <code class="literal">exports</code> object exists, then it builds a CommonJS module; otherwise it attaches the module at the global variable <code class="literal">returnExports</code>.</p><p>Let's apply this template to define a module:</p><pre class="programlisting">(function (root, factory) { 
+  if (typeof define === 'function' &amp;&amp; define.amd) { 
+    define([], factory); 
+  } else if (typeof exports === 'object') { 
+    module.exports = factory(); 
+  } else { 
+    root.returnExports = factory(); 
+  } 
+}(this, function () { 
+  var pi = 3.14; 
+ 
+  function circumference(radius) { 
+    return 2*pi*radius; 
+  } 
+ 
+  function circleArea(radius) { 
+    return pi*radius*radius; 
+  } 
+ 
+  return { 
+    calculateCircumference:  circumference, 
+    calculateCircleArea:   circleArea 
+  }; 
+})); 
+</pre><p>Once we define the module, we can use it on browsers not supporting AMD as follows:</p><pre class="programlisting">console.log(returnExports.calculateCircumference(5)); 
+</pre><p>If the browser has an AMD loader, we will load the module in the following way:</p><pre class="programlisting">require(["geoModule"], function(geoModule) { 
+  console.log(geoModule.calculateCircumference(5)); 
+}); 
+</pre><p>Instead, in a CommonJS environment we will write:</p><pre class="programlisting">var geoModule = require("./geoModule"); 
+ 
+console.log(geoModule.calculateCircumference(5)); 
+</pre></div><div class="section" title="Dependency management"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl3sec6"></a>Dependency management</h3></div></div></div><p>The previous example described how to define an UMD module without dependencies. If our module depends on another one, we can change the code as follows:</p><pre class="programlisting">(function (root, factory) { 
+  if (typeof define === 'function' &amp;&amp; define.amd) { 
+    // AMD. Register as an anonymous module. 
+    define([<span class="strong"><strong>'module1'</strong></span>], factory); 
+  } else if (typeof exports === 'object') { 
+    // Node. Does not work with strict CommonJS, but 
+    // only CommonJS-like environments that support 
+    //module.exports, like Node. 
+    module.exports = factory(<span class="strong"><strong>require('module1')</strong></span>); 
+  } else { 
+    // Browser globals (root is window) 
+    root.returnExports = factory(<span class="strong"><strong>root.module1</strong></span>); 
+  } 
+}(this, function (<span class="strong"><strong>module1</strong></span>) { 
+  //Module code 
+  return {...}; 
+})); 
+</pre><p>The only difference compared to the previous code is the <code class="literal">module1</code> parameter and the string with the same name highlighted in bold.</p><p>The approach proposed is actually ugly and not so comfortable to use. Apart from the fact of being very verbose, the presence of dependencies forces us to adjust the code with the risk of introducing errors.</p></div></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

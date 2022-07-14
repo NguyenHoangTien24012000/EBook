@@ -1,0 +1,235 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="Introducing Promises"><div class="titlepage"><div><div><h1 class="title"><a id="ch09lvl1sec60"></a>Introducing Promises</h1></div></div></div><p>From the previous considerations, we can conclude that, despite their common usage, callback functions are not so suitable to manage asynchronous programming. They allow us to execute asynchronous code, but we have not a strong control on synchronization, error handling, and code readability.</p><p>In last years, an alternative pattern for managing asynchronous code is spreading in the JavaScript community—the Promise pattern.</p><div class="section" title="What are Promises?"><div class="titlepage"><div><div><h2 class="title"><a id="ch09lvl2sec72"></a>What are Promises?</h2></div></div></div><p><span class="strong"><strong>Promises</strong></span> are objects that represent a value that we can handle at some point in the future. They can be used to capture the outcome of an asynchronous activity, such as an event, and to manage it in a consistent way. In fact, unlike event handling, using callbacks, Promises guarantees us to receive a result, even if the event occurs before we register to handle it (in contrast to event that can incur in race conditions) and allow us to catch and handle exceptions. Moreover, they allow us to write code with a synchronous style gaining readability.</p><p>Promises have been around for a while and used by the JavaScript community in the form of libraries. They are defined by a specification called <span class="strong"><strong>Promise/A+</strong></span> and implemented by libraries such as Q, When.js or RSVP.js, jQuery, and supported by frameworks such as AngularJS. Although the various Promise implementations follow the standardized behavior, their APIs have some differences.</p><div class="note" title="Note" style=""><div class="inner"><h3 class="title"><a id="note17"></a>Note</h3><p>Various attempts have been made to define a common specification for Promises in JavaScript. The most known ones have been published by the CommonJS community with Promise/A, Promise/B, and an interoperable specification Promise/D. The specifications implemented by ECMAScript 6 is the Promise/A+ specifications and can be found at <span><a class="ulink" href="https://promisesaplus.com/">https://promisesaplus.com/</a></span>.</p></div></div><p>Fortunately, ECMAScript 6 introduced Promises in JavaScript as native objects, so we can rely on a uniform API layer to manage asynchronous code, as we will see in the following sections.</p></div><div class="section" title="The Promise terminology"><div class="titlepage"><div><div><h2 class="title"><a id="ch09lvl2sec73"></a>The Promise terminology</h2></div></div></div><p>Before seeing how to use Promises to manage asynchronous code, we have to introduce some terms we will use while talking about them. Let's start by illustrating the states that a Promise can have:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>Resolved or fulfilled</strong></span>: A Promise is resolved or fulfilled when the value it represents is available, that is, when the asynchronous task associated with it returns the requested value.</li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>Rejected</strong></span>: A Promise is rejected when the asynchronous task associated with it fails to return a value, maybe for an exception or because the returned value is not considered valid.</li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>Pending</strong></span>: This is the state of a Promise until it is not resolved or rejected, that is the request to start an asynchronous task has been made but we have not yet a result.</li></ul></div><p>Usually, when a Promise has resolved or rejected, we say that it is <span class="strong"><strong>settled</strong></span>.</p><p>Remember that a Promise can only be settled once and other consumers of a Promise cannot change its state; that is, a Promise is <span class="strong"><strong>immutable</strong></span>.</p></div><div class="section" title="Creating Promises"><div class="titlepage"><div><div><h2 class="title"><a id="ch09lvl2sec74"></a>Creating Promises</h2></div></div></div><p>Once introduced to the Promise terminology, let's explore how we can create and use it to better to handle asynchronous code. We will analyze the ES6 Promise syntax, since it is a standard specification and hopefully all current libraries will disappear or comply within near future.</p><p>We can create a Promise using the <code class="literal">Promise()</code> constructor, as shown here:</p><pre class="programlisting">var promise = new Promise(handler); 
+</pre><p>The <code class="literal">Promise()</code> constructor takes a function as an argument whose task is to manage the fulfillment or rejection of the Promise. Typically, a Promise handler has the following structure:</p><pre class="programlisting">var promise = new Promise(function(resolve, reject) { 
+  if (condition)  {  //some condition 
+    resolve(value);  //successfully resolve the Promise 
+  } else { 
+    reject(reason);  //reject the Promise and specify the reason 
+  } 
+}); 
+</pre><p>The Promise handler is given two functions as parameters.</p><p>The first parameter (<code class="literal">resolve</code> in the example) is the function to call when the value returned by the asynchronous task is available. The returned value is passed to the resolve function.</p><p>The second parameter (<code class="literal">reject</code> in the example) is the function to call if the Promise can't be resolved, for instance, because an error occurred or the value is not valid. When a Promise is rejected, a reason is passed to the reject function, such as an exception.</p><p>In order to show how to concretely create a Promise, let's rewrite the <code class="literal">httpGet()</code> function seen earlier:</p><pre class="programlisting">function httpGet(url) { 
+  return new Promise(function(resolve, reject) { 
+    var httpReq = new XMLHttpRequest(); 
+ 
+    httpReq.onreadystatechange = function() { 
+      var data; 
+ 
+      if (httpReq.readyState == 4) { 
+        if (httpReq.status == 200) { 
+          data = JSON.parse(httpReq.responseText); 
+          resolve(data); 
+        } else { 
+          reject(new Error(httpReq.statusText)); 
+        } 
+      } 
+    }; 
+ 
+    httpReq.open("GET", url, true); 
+    httpReq.send(); 
+  }); 
+} 
+</pre><p>This version of the <code class="literal">httpGet()</code> function takes just one argument: the <code class="literal">url</code> that should respond to our HTTP request. The function returns a Promise whose handler is quite similar to previous version of the <code class="literal">httpGet()</code> function. In fact, it creates an <code class="literal">XMLHttpRequest</code> object to make the HTTP request as usual, but it calls the <code class="literal">resolve()</code> function when it receives a successful response from the server; it calls the <code class="literal">reject()</code> function when it receives an unsuccessful response. In the first case, the response's content is passed to the <code class="literal">resolve()</code> function; in the second case, an exception with the HTTP status message is passed to the <code class="literal">reject()</code> function.</p><p>So, now the <code class="literal">httpGet()</code> function returns a Promise instead of directly submitting the HTTP request to the server.</p></div><div class="section" title="Consuming Promises"><div class="titlepage"><div><div><h2 class="title"><a id="ch09lvl2sec75"></a>Consuming Promises</h2></div></div></div><p>Since a Promise is an object, it can be used as any other object; it can be stored in a variable, passed as a parameter, returned by a function and so on. For example, we can store the promise returned by the <code class="literal">httpGet()</code> function in a variable, as shown by the following code:</p><pre class="programlisting">var myPromise = httpGet("/users/12345") 
+</pre><p>When we want to consume the Promise, that is, we want to process the value it represents, we need to use its <code class="literal">then()</code> method. We pass a function as a parameter to the <code class="literal">then()</code> method and this function will receive the Promise's value once it will be resolved.</p><p>Let's take a simplified version of the example seen earlier. We use the new Promise-based <code class="literal">httpGet()</code> function to get the user's data and access his blog. Our code will look like the following:</p><pre class="programlisting">httpGet("/users/12345") 
+  .then(function(user) { 
+    console.log("The user's blog has the id " + user.blogId); 
+  }); 
+</pre><p>As we can see, we pass a function to the <code class="literal">then()</code> method whose argument <code class="literal">user</code> will be bound to the data received from the server asynchronously. When the data will be available, the Promise is resolved and the function will be called.</p><p>In order to display the list of blog posts of the user, we will write the following code:</p><pre class="programlisting">httpGet("/users/12345") 
+  .then(function(user) { 
+    httpGet("/blogs/" + user.blogId) 
+      .then(function(blog) { 
+        displayPostList(blog.posts); 
+      }); 
+  }); 
+</pre><p>Here, the function handling the resolved Promise creates another Promise to get the blog's posts. So, we get nested Promises that will be resolved one after the other in sequence.</p><p>After all, this code is quite similar to the callback-based code seen in previous examples. However the Promise-based approach give us more flexibility and is more powerful, as we will see shortly.</p><p>As a first step, let's rewrite the previous code in a more readable form:</p><pre class="programlisting">function getUserData() { 
+  return httpGet("/users/12345"); 
+} 
+ 
+function getBlog(user) { 
+  return httpGet("/blogs/" + user.blogId); 
+} 
+ 
+function displayBlog(blog) { 
+  displayPostList(blog.posts); 
+} 
+ 
+getUserData() 
+  .then(function(user) { 
+    getBlog(user) 
+      .then(function(blog) { 
+        displayPostList(blog.posts); 
+      }) 
+  }) 
+</pre><p>We used named functions to make the code more readable. However, we can do better.</p><p>In fact, the <code class="literal">then()</code> method always returns a new Promise so that we can chain calls as highlighted in the following code:</p><pre class="programlisting">function getUserData() { 
+  return httpGet("/users/12345"); 
+} 
+ 
+function getBlog(user) { 
+  return httpGet("/blogs/" + user.blogId); 
+} 
+ 
+function displayBlog(blog) { 
+  displayPostList(blog.posts); 
+} 
+ 
+<span class="strong"><strong>getUserData()
+</strong></span>
+<span class="strong"><strong>  .then(getBlog)
+</strong></span>
+<span class="strong"><strong>  .then(displayBlog);</strong></span>
+</pre><p>In our example, the <code class="literal">getUserData()</code> and <code class="literal">getBlog()</code> functions return the Promises created by the <code class="literal">httpGet()</code> function. The <code class="literal">then()</code> method returns these Promises allowing us to chain the calls. However, more in us, the <code class="literal">then()</code> method always returns a Promise, even when a Promise handler does not explicitly create and return it.</p><p>In fact, when a Promise handler does not return a Promise but a standard value, such as a primitive value or an object, the <code class="literal">then()</code> method creates a new Promise and resolves it with the returned value. If the Promise handler does not return anything, the <code class="literal">then()</code> method creates anyway a new resolved Promise and returns it.</p></div><div class="section" title="Catching failures"><div class="titlepage"><div><div><h2 class="title"><a id="ch09lvl2sec76"></a>Catching failures</h2></div></div></div><p>In the previous examples, we used the <code class="literal">then()</code> method of a Promise in order to manage its resolved value. However, a Promise can also be rejected when something goes wrong. It should be pointed out that rejections happen when a Promise is explicitly rejected, but also implicitly if an error is thrown in the constructor callback. We can manage a Promise rejection by passing a second handler function to the <code class="literal">then()</code> method.</p><p>So, our previous code becomes as follows:</p><pre class="programlisting">function getUserData() { 
+  return httpGet("/users/12345"); 
+} 
+ 
+function getBlog(user) { 
+  return httpGet("/blogs/" + user.blogId); 
+} 
+ 
+function displayBlog(blog) { 
+  displayPostList(blog.posts); 
+} 
+ 
+function manageError(error) { 
+  console.log(error.message); 
+} 
+ 
+getUserData() 
+  .then(getBlog, manageError) 
+  .then(displayBlog, manageError); 
+</pre><p>Here, we introduced the <code class="literal">manageError()</code> function whose task is simply to show the error message on the console. This function is passed as the second parameter of the <code class="literal">then()</code> method, and it will be executed when the Promise is rejected.</p><p>In this example, we use the same handler for managing Promise rejections, but of course, we can use specific handlers for each Promise. It only depends on how we want to manage rejections.</p><p>We have already seen that the second parameter of the <code class="literal">then()</code> method is optional. Also, the first parameter is optional. In fact, we can pass <code class="literal">null</code> as the first parameter of <code class="literal">then()</code> pointing out that we want to manage just Promise rejections. For example, we could write the following code:</p><pre class="programlisting">getUserData() 
+  .then(null, manageError); 
+</pre><p>This code will ignore the resolved Promise and will only manage possible errors. From a practical point of view, this has little meaning in the specific case. However, we can use this approach to explicitly separate the resolved Promise management from its possible rejection, as in the following:</p><pre class="programlisting">getUserData() 
+  .then(getBlog) 
+  .then(null, manageError); 
+</pre><p>Thanks to the call chaining mechanism, the rejected Promise passes from a <code class="literal">then()</code> invocation to the subsequent one. In fact, when a Promise is rejected and a rejection handler is not specified, a new Promise is internally created with the same rejection reason and it is passed to the subsequent <code class="literal">then()</code> in order to be managed. This failure propagation allows us to use just one rejection handler function, when we manage all failures in the same way. So, we can rewrite the previous example as follows:</p><pre class="programlisting">getUserData() 
+  .then(getBlog) 
+  .then(displayBlog) 
+  .then(null, manageError); 
+</pre><p>Here, the <code class="literal">manageError()</code> function will manage any rejection that occurs in any point of the Promise chain.</p><p>Instead of using <code class="literal">null</code> as the first parameter of the <code class="literal">then()</code> method, we can use an equivalent syntax based on the <code class="literal">catch()</code> method of the Promise object. So, the preceding code is equivalent to the following:</p><pre class="programlisting">getUserData() 
+  .then(getBlog) 
+  .then(displayBlog) 
+  .catch(manageError); 
+</pre><p>As we can see, the use of the Promises allows to create not only more readable code, but also more robust code, since now we have the ability to intercept and appropriately handle asynchronous errors.</p></div><div class="section" title="Composing Promises"><div class="titlepage"><div><div><h2 class="title"><a id="ch09lvl2sec77"></a>Composing Promises</h2></div></div></div><p>The example that we used to show how to consume a Promise was a simplified version of the one we used when we introduced the callback approach. In fact, now we have only focused on showing the blog's posts of the user, omitting displaying photos. Let's recall the original code:</p><pre class="programlisting">function getUserBlogAndPhoto(user) { 
+  getBlog(user.blogId); 
+  getPhotos(user.albumId); 
+} 
+ 
+function getBlog(blogId) { 
+  httpGet("/blogs/" + blogId, displayBlog); 
+} 
+ 
+function displayBlog(blog) { 
+  displayPostList(blog.posts); 
+} 
+ 
+function getPhotos(albumId) { 
+  httpGet("/photos/" + user.albumId,  displayAlbum); 
+} 
+ 
+function displayAlbum(album) { 
+  displayPhotoList(album.photos); 
+} 
+ 
+httpGet("/users/12345",  getUserBlogAndPhoto); 
+</pre><p>Applying what we learned about Promises, we can rewrite it as in the following example:</p><pre class="programlisting">function getUserData() { 
+  return httpGet("/users/12345"); 
+} 
+ 
+function getBlog(user) { 
+  return httpGet("/blogs/" + user.blogId); 
+} 
+ 
+function displayBlog(blog) { 
+  displayPostList(blog.posts); 
+} 
+ 
+function getPhotos(user) { 
+  return httpGet("/photos/" + user.albumId); 
+} 
+ 
+function displayAlbum(album) { 
+  displayPhotoList(album.photos); 
+} 
+ 
+function manageError(error) { 
+  console.log(error.message); 
+} 
+ 
+function getBlogAndPhotos(user) { 
+  getBlog(user) 
+    .then(displayBlog); 
+ 
+  getPhotos(user) 
+    .then(displayAlbum); 
+} 
+ 
+getUserData() 
+  .then(getBlogAndPhotos) 
+  .catch(manageError); 
+</pre><p>All we have done here is to integrate the previous Promise-based code with a new HTTP call to retrieve the photos associated with the user. We introduced the <code class="literal">getBlogAndPhotos()</code> function to handle the two asynchronous tasks that will retrieve both posts and photos. But, how Promises will be handled in this case? What happens if one Promise is resolved and the other one is rejected?</p><p>If both Promises created inside the <code class="literal">getBlogAndPhotos()</code> function are resolved, we will get posts and photos displayed on the page. The order in which they will be displayed is not determined-they will be displayed as they will be received and the Promise is resolved.</p><p>However, unlike what we would expect, if one or both Promises are rejected, we will not get them managed as we planned. The <code class="literal">manageError()</code> function will not be called. In fact, accordingly to what we said about the chaining mechanism of the <code class="literal">then()</code> method, if our resolved Promise handler does not return anything, as in our case, a new resolved Promise is created and passed to the subsequent handler in the chain. So, when the <code class="literal">getBlogAndPhotos()</code> function is executed, it implicitly passes a resolved Promise to the next handler. Since we have a <code class="literal">catch()</code> method, the resolved Promise is ignored and the chain of Promises is considered as resolved. When one or both Promises created by the <code class="literal">getBlog()</code> and <code class="literal">getPhotos()</code> functions are rejected, they will no longer be able to pass to the <code class="literal">catch()</code> method, since it is no longer waiting for their settling.</p><p>When we need to get the result of a multiple asynchronous task, we should use the <code class="literal">all()</code> method of the Promise constructor. This method allows us to wait for all associated Promises be resolved. So, we can synchronize the asynchronous tasks and manage their results all at once. The <code class="literal">Promise.all()</code> method takes an array of Promises and creates a Promise that will be resolved when all of them are resolved. When all the Promises in the array are resolved, an array with the correspondent resolved values will be passed to the handler function. If any of the Promises is rejected, the entire array of Promises are rejected and the <code class="literal">catch()</code> method is called.</p><p>So, we can use the <code class="literal">Promise.all()</code> method in order to wait for a blog's posts and photos availability before displaying their content. This allows us to decide the content's display order and to correctly manage possible rejection. Now, we can rewrite our code as in the following:</p><pre class="programlisting">getUserData() 
+  .then(function(user) { 
+    var promises = []; 
+    var blog = getBlog(user); 
+    var album = getAlbum(user); 
+ 
+    promises.push(blog); 
+    promises.push(photos); 
+ 
+    Promise.all(promises) 
+    .then(function(results) { 
+      displayBlog(results[0]); 
+     displayAlbum(results[1]); 
+    }) 
+  }) 
+  .catch(manageError); 
+</pre><p>We defined a <code class="literal">promises</code> array and filled it with the Promises created by calling the <code class="literal">getBlog()</code> and <code class="literal">getAlbum()</code> functions. This array is then passed to the <code class="literal">Promise.all()</code> method, which creates the new Promise we will consume. When both Promises are resolved, we will display the data returned by the server in the order we prefer. In the example, we first display the blog's posts and then the photos. If any rejection occurs, the <code class="literal">catch()</code> method will be executed as expected.</p><p>An alternative way to manage multiple asynchronous tasks is by the <code class="literal">Promise.race()</code> method. Like the <code class="literal">Promise.all()</code> method, <code class="literal">race()</code> takes an array of Promises and creates a new Promise as well. However, it resolves the new created Promise when any of the Promises contained in the array is resolved.</p><p>We can use this feature to display the first content that becomes available after submitting the requests of posts and photos to the server. The following code shows how to implement it:</p><pre class="programlisting">Promise.race(promises) 
+  .then(function(result) { 
+    if (result.posts) displayBlog(results); 
+    if (result.photos) displayAlbum(results); 
+  }) 
+  .catch(manageError); 
+</pre><p>The Promise associated with the <code class="literal">promises</code> array is resolved when the blog's posts or the photos are received. So, in the handler we check which content has been received and call the respective function to display it.</p></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

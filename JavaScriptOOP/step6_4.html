@@ -1,0 +1,179 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="An object factory"><div class="titlepage"><div><div><h1 class="title"><a id="ch06lvl1sec41"></a>An object factory</h1></div></div></div><p>In some contexts, we need to create different types of objects, but we wish to manage their creation in a uniform way. Consider, for example, a word processor that need to allow the user to add elements to a document: words, paragraphs, images, sections, and so on. Each type of object will match a class or constructor that will create the required object and will put it on the document. This means that the document manager needs to know how to create each type of object. Moreover, when a new type of element is added to the word processor's capability, say tables, the document manager must be modified in order to learn how to create these new elements.</p><p>In these cases, the <span class="strong"><strong>factory pattern</strong></span> can help us set up a more effective approach.</p><div class="section" title="Understanding factories"><div class="titlepage"><div><div><h2 class="title"><a id="ch06lvl2sec46"></a>Understanding factories</h2></div></div></div><p>In general, a factory is an entity (a function and an object) used to create objects, as in the following basic example:</p><pre class="programlisting">function createPerson(name, surname) { 
+        return {name: name, surname: surname}; 
+      } 
+      </pre><p>Unlike a constructor function, this factory returns the object it creates without using the <code class="literal">new</code> operator:</p><pre class="programlisting">var johnSmith = createPerson("John", "Smith"); 
+      </pre><p>This is a very minimal example of a factory and might not clearly explain its usefulness, apart from the purely functional approach. The purpose of a factory is to abstract the details of object creation from object use and it is particularly useful when the object creation process is relatively complex.</p><p>In the classical definition of the factory pattern, we have three actors involved:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>The client</strong></span>: This is the object that needs another object of a specific category</li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>The factory</strong></span>: This is the object able to generate objects of a number of categories</li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>The product</strong></span>: This is the object created by the factory and returned to the client</li></ul></div><p>We can represent graphically the interactions between the actors of the factory patterns as in the following diagram:</p><div class="mediaobject"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781785889103/files/graphics/image_06_001.jpg" alt="Understanding factories" width="761" height="425"></div><p>In order to make more understandable this abstract definition, let's go into an example to better explain.</p><p>Consider a slightly different definitions of the <code class="literal">Developer</code> and <code class="literal">SoftwareHouse</code> classes introduced in the previous chapters:</p><pre class="programlisting">class Developer { 
+        constructor(skills, benefits) { 
+          this.skills = ["programming"].concat(skills); 
+          this.salary = 40000; 
+          this.benefits = ["computer"].concat(benefits); 
+        } 
+      } 
+       
+      class SoftwareHouse { 
+        constructor() { 
+          this.employees = []; 
+        } 
+       
+        hireDeveloper() { 
+          var dev = new Developer(["JavaScript"], ["smartphone"]); 
+          this.employees.push(dev); 
+        } 
+      } 
+      </pre><p>The <code class="literal">Developer</code> class defines objects with some default features tied to its intrinsic role and other features specific for each instance and passed to the constructor. The <code class="literal">SoftwareHouse</code> class has a <code class="literal">hireDeveloper()</code> method that creates a new developer and adds it to the list of employees.</p><p>Suppose that the company grew so that it needs to hire people with different roles: salesmen, business analysts, system engineers, and so on, we cannot use the same <code class="literal">hireDeveloper()</code> method for all types of role, because it should be changed to manage different type of objects. To solve this issue, we can implement different methods, one for each type of role we need to hire, as follows:</p><pre class="programlisting">class Salesman { 
+        constructor(skills, benefits) { 
+          this.skills = ["selling"].concat(skills); 
+          this.salary = 50000; 
+          this.benefits = ["computer"].concat(benefits); 
+        } 
+      } 
+       
+      class BusinessAnalyst { 
+        constructor(skills, benefits) { 
+          this.skills = ["analyzing"].concat(skills); 
+          this.salary = 60000; 
+          this.benefits = ["computer"].concat(benefits); 
+        } 
+      } 
+       
+      class SoftwareHouse { 
+        constructor() { 
+          this.employees = []; 
+        } 
+       
+        hireDeveloper() { 
+          var dev = new Developer(["JavaScript"], ["smartphone"]); 
+          this.employees.push(dev); 
+        } 
+       
+        hireSalesman() { 
+          var sm = new Salesman(["communication"], ["smartphone",      "car"]); 
+          this.employees.push(sm); 
+        } 
+       
+        hireBusinessAnalyst() { 
+          var ba = new BusinessAnalyst(["communication", "writing"],
+          ["smartphone", "tablet"]); 
+          this.employees.push(ba); 
+        } 
+      } 
+      </pre><p>Each method creates a specific object and adds it to the employees array.</p><p>This approach pollutes the class with methods that really have nothing to do with its core goal-creating software. Moreover, if we want to hire a new role, we need to add a new method to the <code class="literal">SoftwareHouse</code> class, getting worse even more the situation. A better approach is to delegate to a specialized object the task to hire people on behalf of the <code class="literal">SoftwareHouse</code>-a <code class="literal">RecruitmentAgency</code>, the factory:</p><pre class="programlisting">class RecruitmentAgency { 
+       
+        getStaffMember(role, skills, benefits) { 
+          var member; 
+       
+          switch(role .toLowerCase()) { 
+            case "dev": 
+              member = new Developer(skills, benefits); 
+              break; 
+            case "sale": 
+              member = new Salesman(skills, benefits); 
+              break; 
+            case "ba": 
+              member = new BusinessAnalyst(skills, benefits); 
+              break; 
+            default: 
+              throw new Error("Unable to hire people for the role " +
+              role) 
+          } 
+       
+          return member; 
+        } 
+      } 
+      </pre><p>The <code class="literal">RecruitmentAgency</code> class is a factory whose method <code class="literal">getStaffMember()</code> uses a string passed as the first parameter to detect which type of role it must hire. For each role, the correspondent constructor function is invoked, such as <code class="literal">Developer()</code>, <code class="literal">Salesman()</code>, and so on. With the proper skills, it benefits parameters. With this approach, we give a factory the responsibility of creating the objects instead of creating them inside the client.</p><p>The <code class="literal">SoftwareHouse</code> class will use the <code class="literal">RecruitmentAgency</code> factory simply calling the <code class="literal">getStaffMember()</code> method by passing the desired role and specific parameters, as in the following example:</p><pre class="programlisting">var agency = new RecruitmentAgency(); 
+       
+      var newDevStaffMember = agency.getStaffMember("dev", ["C++",  "C#"], ["tablet"]);</pre><p>The application of the factory pattern frees our class from the responsibility of getting objects whose creation process may be complex and out of its main goal.</p></div><div class="section" title="Factory with constructor registration"><div class="titlepage"><div><div><h2 class="title"><a id="ch06lvl2sec47"></a>Factory with constructor registration</h2></div></div></div><p>The implementation of the factory we have just shown is the most simple and intuitive. However, it has a main drawback: when we need to add a new role we should modify the <code class="literal">RecruitmentAgency</code> class. It may be acceptable in situations where these changes happen very seldomly, but we can do better by decoupling the factory from the concrete object creator functions.</p><p>Let's rewrite the <code class="literal">RecruitmentAgency</code> class as follows:</p><pre class="programlisting">class RecruitmentAgency { 
+        constructor() { 
+          this.objConstructors = {}; 
+        } 
+       
+        register(role, constructor) { 
+          this.objConstructors[role] = constructor; 
+        } 
+       
+        getStaffMember(role, skills, benefits) { 
+          var objConstructor =  this.objConstructors[role]; 
+          var member; 
+       
+          if (objConstructor) member = new objConstructor(skills,
+          benefits); 
+       
+          return member; 
+        } 
+      } 
+      </pre><p>As we can see, the <code class="literal">RecruitmentAgency</code> class defines an <code class="literal">objConstructors</code> property in its constructor. This property will contain the references to all constructor functions or classes stored as properties of an object. The <code class="literal">register()</code> method allows us to register a constructor by assigning it to a property of the <code class="literal">objConstructors</code> property. Finally, the <code class="literal">getStaffMember()</code> method got rid of the <code class="literal">switch</code> statement and now uses the <code class="literal">objConstructors</code> object to find the correct constructor for the requested role.</p><p>So, we have a registration phase that attaches the constructors to the factory, as in the following example:</p><pre class="programlisting">var agency = new RecruitmentAgency(); 
+       
+      agency.register("dev", Developer); 
+      agency.register("ba", BusinessAnalyst); 
+      agency.register("sale", Salesman); 
+      </pre><p>With this approach, the addition of a new constructor will simply require the function definition and its registration to the factory with a new role code.</p></div><div class="section" title="The abstract factory"><div class="titlepage"><div><div><h2 class="title"><a id="ch06lvl2sec48"></a>The abstract factory</h2></div></div></div><p>An evolution of the factory pattern is the <span class="strong"><strong>abstract factory pattern</strong></span>. This pattern builds on the factory pattern since it returns a factory instead of an object. In fact, sometimes it is called a  or a <span class="emphasis"><em>factory of factories</em></span>. In this pattern, we find the following actors:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>The client</strong></span>: As in the factory pattern, this is the object that needs another object of a specific category</li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>The abstract factory</strong></span>: This is the object that returns a concrete factory</li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>The concrete factory</strong></span>: It is the factory returned by the abstract factory able to create objects of a number of categories</li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>The product</strong></span>: This is the object created by the concrete factory and used by the client</li></ul></div><p>The following diagram represents the interactions between the actors involved in the pattern:</p><div class="mediaobject"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781785889103/files/graphics/image_06_002.jpg" alt="The abstract factory" width="734" height="551"></div><p>In order to explain how this pattern works, let's modify our example of the recruiting agency considering a case where we have more agencies, each one specialized in recruiting staff members in a specific area, such as development, sales, and so on. Inside each area, they can detect and hire people with specific skills, for example JavaScript, C#, or SQL skills for the development area.</p><p>We can imagine that our <code class="literal">SoftwareHouse</code> class wants to contact a specialized recruitment agency for its hiring needs, and it can obtain this agency through an abstract factory.</p><p>Let's model this case with the following class:</p><pre class="programlisting">class RecruitmentAgencyAbstractFactory { 
+       
+        constructor() { 
+          this.agencyFactories = {}; 
+        } 
+       
+        register(area, agencyFactory) { 
+          this.agencyFactories[area] = agencyFactory; 
+        } 
+       
+        getAgency (area) { 
+          return new this.agencyFactories[area]; 
+        } 
+      } 
+      </pre><p>The class defines the <code class="literal">agencyFactories</code> property in its constructor, with the same goal we have seen in the <code class="literal">RecruitmentAgency</code> implementation. The <code class="literal">register()</code> method allows an agency factory to be registered on the <code class="literal">agencyFactories</code> property with a specific area code. The <code class="literal">getAgency()</code> method returns the factory identified by the area code passed as a parameter.</p><p>The registration phase allows the agency factories to be registered in the abstract factory:</p><pre class="programlisting">var agencyFinder = new RecruitmentAgencyAbstractFactory(); 
+       
+      agencyFinder.register("dev", DevAgency); 
+      agencyFinder.register("sales", SalesAgency); 
+      agencyFinder.register("ba", BusinessAnalystAgency); 
+      </pre><p>Each agency factory will be focused on returning specialized staff members. For example, the agency factory specialized in recruiting developers can be implemented as follows:</p><pre class="programlisting">class DevAgency { 
+        getStaffMember(skills, benefits) { 
+          return new Developer(skills, benefits); 
+        } 
+      } 
+      </pre><p>In a similar way, we can implement the other agencies.</p><p>With this infrastructure, the <code class="literal">SoftwareHouse</code> class will use our abstract factory to get an agency specialized in an area, as shown by the following example:</p><pre class="programlisting">var devAgency = agencyFinder.getAgency("dev"); 
+      var newDevMember = devAgency.getStaffMember(["JavaScript"],  ["phone"]);</pre><p>In this example, we seek out an agency specialized in hiring developers and then ask for a developer with JavaScript skills providing a phone as an employee benefit.</p></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+

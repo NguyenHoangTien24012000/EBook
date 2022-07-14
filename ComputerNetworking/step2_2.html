@@ -1,0 +1,656 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 class="h2" id="ch12"><a id="page_311"></a><strong>Chapter 12<br>Unicast Loop-Free Paths (1)</strong></h2>
+        <div class="sidebar">
+        <p class="sb-noindent"><strong>Learning Objectives</strong></p>
+        <p class="sb-noindent">After reading this chapter, you should be able to understand:</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The relationship between calculating a set of shortest paths and calculating a set of loop-free paths</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The concept of a Loop-Free Alternate and remote Loop-Free Alternate paths</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The difference between a minimum spanning tree and a Shortest Path Tree, and how they are calculated</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The waterfall or continental divide and P/Q models of preventing routing loops</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The concept of a greedy algorithm in finding loop-free paths</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The Bellman-Ford algorithm for finding loop-free paths</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The horizon point and split horizon</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> How to find loop-free paths in the Diffusing Update Algorithm (DUAL)</p>
+        </div>
+        <p class="noindent">Network engineers typically think of the control plane as doing a wide variety of things, from calculating the shortest path through the network to distributing policy used to forward packets. The idea of the <em>shortest path</em>, however, sneaks in the concept of the optimal path. Likewise, the idea of policy also sneaks in the concept of optimization of network resources. While both policy and the shortest path are important, neither one of these is at the root of what the control plane does. The job <a id="page_312"></a>of the control plane is to find a set of loop-free paths through a network first; optimization is a nice add-on, but optimization can only be “done” in the context of finding a set of loop-free paths.</p>
+        <p class="indent">The question this chapter will answer, then, is</p>
+        <p class="blockquote"><strong>How does a control plane calculate loop-free paths through a network?</strong></p>
+        <p class="indent">This chapter will begin by examining the relationship between the shortest, or lowest metric, path and loop-free paths. The next topic considered is Loop-Free Alternate (LFA) paths, which are not the best paths but still loop free. Such paths are useful in designing control planes that quickly switch from the best path to an alternate loop-free path in the case of failures or changes in the network topology. Two specific mechanisms used for finding a set of loop-free paths are then discussed; two more are discussed in <a href="ch13.xhtml#ch13">Chapter 13</a>, “<a href="ch13.xhtml#ch13">Unicast Loop-Free Paths (2)</a>.”</p>
+        <div class="heading">
+        <h3 class="h3" id="ch12lev1">Which Path Is Loop Free?</h3>
+        <p class="noindent">The relationship between the <em>shortest path</em>, generally in terms of metrics, and <em>loop-free paths</em> is fairly simple: <em>the shortest path is always loop free</em>. The reason for this relationship can be expressed most simply in terms of geometry (or more specifically <em>graph theory</em>, which is a specialized field of study within discrete mathematics). <a href="ch12.xhtml#ch12fig01">Figure 12-1</a> is used to explain why.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/12fig01.jpg" aria-describedby="Al12fig01" alt="Figure represents available paths through a network." width="692" height="205"><aside class="hidden" id="Al12fig01">
+        <p>A circle labeled A is to the left with a straight line to the right, reaching circles, C, E, and H. Another line leads from A to reach a circle B at the top. A line leads from B to reach the circle, H. A line leads downward from A to reach circles, D, F, G, and H. A line to the right of H has Destination mentioned.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch12fig01"></a><strong>Figure 12-1</strong> <em>Available Paths Through a Network</em></p>
+        </div>
+        <p class="indent">What are the paths available from A, B, C, and D toward the destination?</p>
+        <p class="bullt">• From A: [B,H]; [C,E,H]; [D,F,G,H]</p>
+        <p class="bull">• From B: [H]; [A,C,E,H]; [A,D,F,G,H]</p>
+        <p class="bullb">• From D: [F,G,H]; [A,C,E,H]; [A,B,H]</p>
+        <p class="indent"><a id="page_313"></a>If every device in the network must choose the path it will use toward the destination independently (without reference to the path chosen by any other device), it is possible to form persistent loops. For instance, A could choose the path [D,F,G,H], and D could choose the path [A,C,E,H]. Device A will then forward traffic toward the destination to D, and D will then forward traffic toward the destination to A. There must be some rule other than <em>choose a path</em> implemented by the algorithm used to calculate a path on each device, such as <em>choose the shortest (or lowest cost) path</em>. But why does choosing the shortest (or lowest cost) path prevent the loop? <a href="ch12.xhtml#ch12fig02">Figure 12-2</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/12fig02.jpg" aria-describedby="Al12fig02" alt="Figure shows longer paths containing shorter ones." width="700" height="186"><aside class="hidden" id="Al12fig02">
+        <p>A circle A is at the top with a straight line to the right meeting circles, D, F, G, and H. The line continues after H, with Destination mentioned. A circle labeled D follows and is to the left. A straight line overlaps a circle A. Four circles, D, F, G, and H are enclosed in brackets below. Destination is mentioned at the right.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch12fig02"></a><strong>Figure 12-2</strong> <em>Longer Paths Contain Shorter Ones</em></p>
+        </div>
+        <p class="indent"><a href="ch12.xhtml#ch12fig02">Figure 12-2</a> assumes A chooses the path [D,F,G,H] to the destination, and D chooses the path through A to the destination. What D cannot know, because it is calculating a path to the destination without any knowledge of what A has calculated, is that A is using the path through D itself to reach the destination. How can the control plane avoid such a loop? By observing that the cost of a path along a loop must always contain the cost of the loop as well as the loop-free element of the path. In this case, the path through A, from the perspective of D, must include the cost from D to the destination. Hence the cost through A, from the perspective of D, will always be greater than the lowest available cost from D. This leads to the following observation:</p>
+        <p class="blockquote"><strong>The lowest cost (or shortest) path cannot contain a path that passes through the calculating node</strong>; or rather, <strong>the shortest path is always loop free</strong>.</p>
+        <p class="indent">There are two important points about this observation.</p>
+        <p class="indent"><em>First,</em> this observation does <em>not</em> say paths with higher costs are <em>definitely</em> loops, only that the lowest cost path <em>must not</em> be a loop. It is possible to expand the rule to discover a wider set of loop-free paths beyond the lowest cost path; these are called Loop-Free Alternates.</p>
+        <p class="indent"><a id="page_314"></a><em>Second</em>, this observation holds only if every node in the network has the same view of the network topology. Nodes can have different views of the network topology for a number of reasons; for instance:</p>
+        <p class="bullt">• The network topology has changed, and all the nodes have not yet been notified of the change; hence microloops.</p>
+        <p class="bull">• Some information about the network topology has been removed from the topology database through summarization or aggregation.</p>
+        <p class="bullb">• The metrics have been configured so the lowest cost path is inconsistent from different perspectives.</p>
+        <p class="indent">Control planes used in real networks are carefully crafted to either work around or minimize the impact of different devices having different views of the network topology, potentially causing a looped path. For instance:</p>
+        <p class="bullt">• Control planes are carefully tuned to minimize the time differential between learning of a topology change and modifying forwarding (or to drop traffic during topology changes, rather than forwarding it).</p>
+        <p class="bull">• When summarizing topology or aggregating reachability, care is taken to preserve cost information.</p>
+        <p class="bullb">• Network design “best common practices” encourage the use of symmetric metrics, and many implementations make it difficult or impossible to configure links with truly dangerous metrics, such as a zero link cost.</p>
+        <p class="indent">It often takes a great deal of design work to find, and work around or prevent, the unintended subversion of the shortest path rule in real-world control plane protocols.</p>
+        <div class="sidebar1">
+        <p class="title1"><strong>Why Not Use a Node List?</strong></p>
+        <p class="noindent">An obvious question, at this point, should be: <em>why not simply use a node list to find loop-free routes?</em> For instance, in <a href="ch12.xhtml#ch12fig01">Figure 12-1</a>, if A calculates a path through D, can D just somehow obtain the path A has calculated, discover that D itself is in the path, and hence not use the path through A?</p>
+        <p class="indent">The first problem with this mechanism is in the discovery process. How should D learn about the path A has chosen, and A learn about the path D <a id="page_315"></a>has chosen, without causing a race condition? The two devices could choose one another as their next hop toward the destination at the same moment and then inform one another at the same moment, resulting in both choosing some other path at the same time. The result could either be a stable set of loop-free paths, the two devices cycling between choosing one another and having no path to the destination, or satable condition where there is no path to the destination.</p>
+        <p class="indent">The second problem with this mechanism is summarization—the intentional removal of information about the network topology to reduce the amount of state carried in the control plane. The control plane will only have metrics to work with wherever the topology is summarized; hence it is better to use a rule based on metrics, or costs, rather than the set of nodes through which a path passes.</p>
+        <p class="indent">Note both of these problems can be solved; there are, in fact, path-vector algorithms that rely on a list of nodes to calculate loop-free paths through a network. While these systems are widely deployed, they are often considered too complex to be deployed in many network engineering situations. Hence metric-, or cost-, based systems are widely used.</p>
+        </div>
+        <div class="heading">
+        <h3 class="h3" id="ch12lev2">Trees</h3>
+        <p class="noindent">The simple shortest path rule is used to build a description of a set of paths, rather than a single path, in real-world networks. While a number of different kinds of trees can be used to represent a set of paths through a topology or network, there are two commonly used to describe computer networks: the Minimum Spanning Tree (MST) and the Shortest Path Tree (SPT). The difference between these two kinds of trees is often subtle. The network shown in <a href="ch12.xhtml#ch12fig03">Figure 12-3</a> will be used to illustrate the MST and SPT.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/12fig03.jpg" aria-describedby="Al12fig03" alt="Figure represents the minimum spanning tree and the shortest path tree." width="700" height="801"><aside class="hidden" id="Al12fig03">
+        <p>Base Topology is mentioned at the top with a circle A to the right. Two lines labeled 1 lead to circles, B and C. A line labeled 4 leads from B to reach a circle labeled E. A line labeled 2 leads from C to reach a circle labeled D. A line labeled 3 leads from D to reach a circle labeled E. Minimum Spanning Tree is mentioned at the top with a circle A to the right. Two lines labeled 1 lead to circles, B and C. A grayed out line labeled 4 leads from B to reach a circle labeled E. A line labeled 2 leads from C to reach a circle labeled D. A line labeled 3 leads from D to reach a circle labeled E. Shortest Path Tree is mentioned at the top with a circle A to the right. Two lines labeled 1 lead to circles, B and C. A line labeled 4 leads from B to reach a circle labeled E. A line labeled 2 leads from C to reach a circle labeled D. A grayed out line labeled 3 leads from D to reach a circle labeled E.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch12fig03"></a><strong>Figure 12-3</strong> <em>The Minimum Spanning Tree and the Shortest Path Tree</em></p>
+        </div>
+        <p class="indentb">In <a href="ch12.xhtml#ch12fig03">Figure 12-3</a>, a number of different paths will touch every node; for instance, from A’s perspective:</p>
+        <p class="indenthangingN">1. [A,B,E,D,C] and [A,C,D,E,B], each with a total cost of 10</p>
+        <p class="indenthangingN">2. [A,B,E] with a cost of 5 and [A,C,D] with a cost of 3, for a total cost of 8</p>
+        <p class="indenthangingN">3. [A,C,D,E] with a cost of 6 and [A,B] with a cost of 1, for a total cost of 7</p>
+        <p class="indentt">An <em>MST</em> is a tree that visits each node in the network with the minimum overall cost (normally measured as the sum of all the links chosen in the network). <a id="page_316"></a>An algorithm that computes the MST will choose option 3, as it has the lowest total cost along the set of edges required to reach every node in the network.</p>
+        <p class="indent">An <em>SPT</em> describes the shortest path to each destination in the network, independent of the total cost of the graph. An algorithm that calculates an SPT would choose, from A’s perspective:</p>
+        <p class="bullt">• [A,B] to B with a cost of 1, as this path is shorter than [A,C,D,E,B] with a cost of 10</p>
+        <p class="bull">• [A,B,E] to E with a cost of 5, as this is shorter than [A,C,D,E] with a cost of 6</p>
+        <p class="bull"><a id="page_317"></a>• [A,C] to C with a cost of 1, as this is shorter than [A,B,E,D,C] with a cost of 10</p>
+        <p class="bullb">• [A,C,D] to D with a cost of 3, as this is shorter than [A,B,E,D] with a cost of 8</p>
+        <p class="indent">Comparing the set of shortest paths to the set of paths that will touch every node, above, an algorithm that calculates an SPT would choose option 2, rather than 3 in the preceding list. In other words, the SPT will ignore the total cost of the edges in the MST to find the shortest path to each reachable destination (in this case, nodes), while the MST will ignore the shortest path to each reachable destination in order to minimize the cost of the entire graph.</p>
+        <p class="indent">Network control planes most often compute SPTs, rather than MSTs, using some form of <em>greedy algorithm</em>. While SPTs are not optimal for solving all network traffic flow problems, they are generally better than MSTs in the types of traffic flow problems that network control planes must solve.</p>
+        <div class="sidebar1">
+        <p class="title1"><strong>Greedy Algorithms</strong></p>
+        <p class="noindent">Greedy algorithms choose locally optimal solutions to solve larger problems. For instance, in calculating the shortest path through a network, a greedy algorithm may choose to visit closer neighboring nodes (can be reached across a link with lower cost) before nodes that are farther away (can be reached across a link with a higher cost). In this way, greedy algorithms can be said to relax computation, normally by either ignoring or approximating global optimization.</p>
+        <p class="indent">Sometimes greedy algorithms can fail; when they do fail, they can fail spectacularly, providing the worst possible solution. For instance, with the right set of metrics, it is possible for a greedy algorithm, such as Dijkstra’s (described in <a href="ch13.xhtml#ch13">Chapter 13</a>, “<a href="ch13.xhtml#ch13">Unicast Loop-Free Paths (2)</a>”), to calculate the set of longest paths through a network, rather than the set of shortest. Hence greedy algorithms are sometimes considered a <em>heuristic</em>, as they <em>approximate</em> the solution to a hard problem, or can solve it in constrained environments, rather than actually solving the general problem.</p>
+        <p class="indent">In the real world, computer networks are designed in a way to make these algorithms compute the best possible solution to the problem at hand in every case—namely, finding the shortest set of paths through a network.</p>
+        </div>
+        <div class="heading">
+        <h3 class="h3" id="ch12lev3">Alternate Loop-Free Paths</h3>
+        <p class="noindent">The shortest path rule, as described in the preceding section, is a negative test, rather than a positive one; it can always be used to find a loop-free path among a set of <a id="page_318"></a>available paths, but not to determine which other paths in the set might also happen to be loop free. <a href="ch12.xhtml#ch12fig04">Figure 12-4</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/12fig04.jpg" aria-describedby="Al12fig04" alt="Figure represents alternate loop-free paths." width="701" height="205"><aside class="hidden" id="Al12fig04">
+        <p>A circle labeled A is to the left with two lines labeled 1 meeting circles B and D. A straight line labeled 2 leads from A to reach a circle C. A line labeled 2 leads from C to reach a circle labeled F. A line labeled 2 leads from D to reach a circle labeled E. A line labeled 1 leads from E to reach F. A line labeled 2 leads from B to reach F. Destination is mentioned adjacent to F.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch12fig04"></a><strong>Figure 12-4</strong> <em>Alternate Loop-Free Paths</em></p>
+        </div>
+        <p class="indent">In <a href="ch12.xhtml#ch12fig04">Figure 12-4</a>, it is easy to observe that the shortest path from A to the destination is along the path [A,B,F]. It is also easy to observe that the paths [A,C,F] and [A,D,E,F] are alternate paths to the same destination. But are these paths loop free? The answer depends on the meaning of <em>loop free:</em> normally a loop-free path is one in which the traffic will not loop through any node (will not visit any node in the topology more than once). While this definition is generally good, it is possible to narrow the definition in the case of a single node with multiple next hops over which it can send traffic toward a reachable destination. Specifically, the definition can be narrowed to:</p>
+        <p class="blockquote"><strong>A path is loop free if the next hop device will not forward traffic toward a specific destination back to me (the sending node).</strong></p>
+        <p class="indent">In this case, the path through C, from A’s perspective, can be said to be loop free if C does not forward traffic toward the destination through A. In other words, if A transmits a packet to C for <em>Destination</em>, C will not forward the packet back to A, but rather will forward the packet closer to <em>Destination</em>. This definition simplifies the problem of finding alternate loop-free paths somewhat. Rather than considering the entire path toward the destination, A needs to only consider whether or not any particular neighbor will forward traffic back to A itself when forwarding traffic towards the destination.</p>
+        <p class="indent">Consider, for instance, the path [A,C,F]. If A sends a packet to C for the destination beyond F, will C forward this packet back to A? The paths available to C are</p>
+        <p class="bullt">• [C,A,B,F], with a total cost of 5</p>
+        <p class="bull">• [C,A,D,E], with a total cost of 6</p>
+        <p class="bullb">• [C,F], with a total cost of 2</p>
+        <p class="indent"><a id="page_319"></a>Given C is going to choose the shortest path to the destination, it will choose [C,F], and hence will not forward the traffic back to A. Turning this into a question: why will C not forward traffic back to A? Because it has a path that is <em>lower cost than any path through A</em> to reach the destination. This can be generalized and called a <em>downstream neighbor:</em></p>
+        <p class="blockquote"><strong>Any neighbor with a path that is shorter than the local path to the destination will not loop traffic back to me (the sending node).</strong></p>
+        <p class="indent">Or rather, given that the local cost is represented as LC, and the neighbor’s cost is represented as NC, then</p>
+        <p class="blockquote"><strong>If NC &lt; LC, then the neighbor is downstream.</strong></p>
+        <p class="indent">Now consider the second alternate path shown in <a href="ch12.xhtml#ch12fig04">Figure 12-4</a>: [A,D,E,F]. Once again, if A sends traffic toward the destination to D, will D loop the traffic back to A? The paths D has available are</p>
+        <p class="bullt">• [D,A,C,F], with a total cost of 5</p>
+        <p class="bull">• [D,A,B,F], with a total cost of 4</p>
+        <p class="bullb">• [D,E,F], with a total cost of 3</p>
+        <p class="indent">Assuming D will use the shortest available path, D would forward any such traffic through E, rather than back through A. This can be generalized and called a Loop-Free Alternate (LFA):</p>
+        <p class="blockquote"><strong>Any neighbor with a path that is shorter than the local path to the destination plus the cost of the neighbor to reach me (the local node) will not loop traffic back to me (the local node).</strong></p>
+        <p class="indent">Or rather, given the local cost is represented as LC, the neighbor’s cost is represented as NC, and the cost back to the local node (from the neighbor’s perspective) is BC:</p>
+        <p class="blockquote"><strong>If NC + BC &lt; LC, then the neighbor is an LFA.</strong></p>
+        <p class="indent">There are two other models often used to explain Loop-Free Alternates: the waterfall model and P/Q Space. It is useful to look at these models in a little more detail.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch12lev4"><a id="page_320"></a><strong>Waterfall (or Continental Divide) Model</strong></h4>
+        <p class="noindent">One way to prevent loops in the routes calculated by a control plane is to simply not advertise routes to neighbors that would forward traffic back to me (the sending node). This is called split horizon; it leads to the concept of traffic flowing through a network acting like water along a waterfall, or stream bed, taking the path of least resistance toward the destination, as shown in <a href="ch12.xhtml#ch12fig05">Figure 12-5</a>.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/12fig05.jpg" aria-describedby="Al12fig05" alt="Figure represents traffic flow from a metric-based packet divide." width="623" height="766"><aside class="hidden" id="Al12fig05">
+        <p>Two dotted rectangles intersect each other with an arrow pointing the intersection, labeled Packet Divide. A circle, A has a line leading to the top, labeled Source 1. A line leads downward, reaching a circle labeled B. A line leads from B to reach a circle labeled E. A line moves downward from E, labeled Destination. A line leads from E to reach a circle labeled D. A line leads from D to reach a circle labeled C. A line moves upward from C labeled Source 2. A line leads from C to meet A.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch12fig05"></a><strong>Figure 12-5</strong> <em>Traffic Flow from a Metric-based Packet Divide</em></p>
+        </div>
+        <p class="indent">In <a href="ch12.xhtml#ch12fig05">Figure 12-5</a>, if traffic enters the network at C (at Source 2) and is destined beyond E, it will flow down the right side of the ring. If, however, traffic enters the <a id="page_321"></a>network at A and is destined beyond E, it will flow down the left side of the ring. To prevent traffic destined beyond E from looping on this ring, one simple thing the control plane can do is either not allow A to advertise the destination to C, or not allow C to advertise the destination to A. Preventing one of these two routers from advertising to the other is called split horizon, because it stops a route from being propagated across a horizon, or rather beyond the point where any particular device knows traffic being passed along a particular link will be looped.</p>
+        <p class="indent">Split horizon is implemented by only allowing a device to advertise reachability through interfaces it is not using to reach the destination in question. In this case:</p>
+        <p class="bullt">• D is using E to reach the destination, so it will not advertise reachability toward E</p>
+        <p class="bull">• C is using D to reach the destination, so it will not advertise reachability toward D</p>
+        <p class="bull">• B is using E to reach the destination, so it will not advertise reachability toward E</p>
+        <p class="bullb">• A is using B to reach the destination, so it will not advertise reachability toward B</p>
+        <p class="indent">Hence, A blocks B from knowing about the alternate path that it has to the destination through C, and C blocks D from knowing about the alternate path that it has to the destination through A. A Loop-Free Alternate path will cross this split horizon point in the network. In <a href="ch12.xhtml#ch12fig05">Figure 12-5</a>, A can calculate that C’s path cost is less than A’s path cost, so any traffic A forwards to C toward the destination will be forwarded along some other path than the one A knows about. C, in LFA terms, is a downstream neighbor of A.</p>
+        <p class="indent">An alternate way to look at the LFA calculation, then, is to find the split horizon point in the ring and determine whether or not the devices on either side of the split horizon point would forward traffic through the packet divide.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch12lev5"><strong>P/Q Space</strong></h4>
+        <p class="noindent">Another model to describe how LFAs work is <em>P/Q Space;</em> <a href="ch12.xhtml#ch12fig06">Figure 12-6</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/12fig06.jpg" aria-describedby="Al12fig06" alt="Figure represents P Space and Q Space." width="646" height="676"><aside class="hidden" id="Al12fig06">
+        <p>Two dotted rhombuses at the top and bottom are labeled Q Space and P Space respectively. Both intersect each other with a circle A in between. Two lines lead from A to reach circles, B and C. A line leads from B to reach a circle labeled E. A line leads downward from E labeled Destination. A line leads from E to reach a circle labeled D. A line leads downward from D labeled Source. A line leads upward from D to reach a circle labeled C. A line leads from C to reach A.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch12fig06"></a><strong>Figure 12-6</strong> <em>P Space and Q Space</em></p>
+        </div>
+        <p class="indent">It is easiest to begin with a definition of the two spaces. Assuming the [E,D] link is to be protected from failure:</p>
+        <p class="bullt">• Calculate a reverse Shortest Path Tree from E (E uses the cost of the paths toward itself, rather than the costs away from itself, in calculating this tree, because traffic is flowing toward D on this path).</p>
+        <p class="bull">• Remove the [E,D] link, along with any nodes only reachable by passing through the link.</p>
+        <p class="bull">• The remaining nodes that E can reach are the Q space.</p>
+        <p class="bull"><a id="page_322"></a>• Calculate a Shortest Path Tree from D.</p>
+        <p class="bull">• Remove the [E,D] link, along with any nodes only reachable by passing through the link.</p>
+        <p class="bullb">• The remaining nodes that D can reach are in the P space.</p>
+        <p class="indent">If D can find a router in the Q space to which to forward traffic if the [E,D] link fails, this is an LFA.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch12lev6"><strong>Remote Loop-Free Alternates</strong></h4>
+        <p class="noindent">What if there is no LFA? It is sometimes possible to find a remote Loop-Free Alternate (rLFA), which can carry the traffic to the destination, as well. The rLFA is not <a id="page_323"></a>directly connected to the calculating router, but is rather one or more hops away; this means the traffic must be carried through the routers between the calculating router and the remote next hop; this is normally accomplished by tunneling the traffic.</p>
+        </div>
+        <p class="indent">These models can explain rLFAs without looking at the math required to calculate them. Understanding where a ring will “divide” into P and Q, or into the two halves divided by split horizon helps you quickly understand where an rLFA can be used to work around a failure even if no LFA is present. Returning to <a href="ch12.xhtml#ch12fig06">Figure 12-6</a>, for instance, if the [E,D] link fails, D must simply wait for the network to converge to begin forwarding traffic toward the destination. The best path from E has been removed from D’s tree by the failure, and E has no LFA it can forward traffic to.</p>
+        <p class="indent">Return to the restricted definition of a loop-free path that this section began with—any neighbor to which a device can forward traffic without the traffic being returned. There is no particular reason why the neighbor to which a device sends packets in the case of a local link failure must be locally connected. <a href="ch09.xhtml#ch09">Chapter 9</a>, “<a href="ch09.xhtml#ch09">Network Virtualization</a>,” describes the ability to create a tunnel, or an overlay topology, that can carry traffic between any two nodes in the network.</p>
+        <p class="indentb">Given the ability to tunnel traffic across C, so C does not forward traffic based on the actual destination, but rather on a tunnel header, D can forward traffic directly to A, bypassing the loop. When the [E,D] link fails, then, D can do the following:</p>
+        <p class="indenthangingN">1. Calculate the closest point in the network where traffic can be tunneled and will not return to C itself.</p>
+        <p class="indenthangingN">2. Form a tunnel to that router.</p>
+        <p class="indenthangingN">3. Encapsulate the traffic into the tunnel header.</p>
+        <p class="indenthangingN">4. Forward the traffic.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">In actual implementations, the rLFA tunnel would be precalculated, rather than calculated at the time of failure. These rLFA tunnels do not necessarily need to be visible to the normal forwarding process, as well. This text is arranged for clarity of <em>how</em> this process works, rather than focusing on how it is normally implemented.</p>
+        </div>
+        <p class="indent">D will forward the traffic to the tunnel destination, rather than the original destination; this bypasses C’s local forwarding table entry for the original destination, which would loop the traffic back to C. The calculation of such intersection <a id="page_324"></a>points will be discussed in the section on Dijkstra’s Shortest Path First algorithm in <a href="ch13.xhtml#ch13">Chapter 13</a>.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch12lev7">Bellman-Ford Loop-Free Path Calculation</h3>
+        <p class="noindent">Bellman-Ford is one of the simpler protocols to understand, as it is generally implemented by comparing newly learned information about a destination with existing information about the same destination. If the newly discovered route is better than the currently known route, the higher cost route is simply replaced in the path list—as dictated by the shortest path rule for finding loop-free paths through the network. By iterating over the entire topology in this way, a set of shortest paths to each destination is found. <a href="ch12.xhtml#ch12fig07">Figure 12-7</a> is used to illustrate the process.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/12fig07.jpg" aria-describedby="Al12fig07" alt="Figure represents a sample network to run Bellman-Ford." width="631" height="624"><aside class="hidden" id="Al12fig07">
+        <p>A circle labeled A (1) is at the top with two lines, 1 and 2 meeting circles, C (3) and B (2). A line labeled 2 leads from B (2) to reach a circle labeled E (5). A line labeled 1 leads from C (3) to reach a circle labeled D (4). A line labeled 1 leads from D (4) to reach E (5). A line labeled 1 leads from B (2) to reach a circle labeled F (6). Another line labeled 1 leads from F (6) to reach a circle labeled G (7). Two lines labeled 1 and 2 lead from E (5) and D (4) respectively to meet a circle labeled H (8).</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch12fig07"></a><strong>Figure 12-7</strong> <em>A Sample Network to Run Bellman-Ford</em></p>
+        </div>
+        <div class="note">
+        <p class="title"><a id="page_325"></a><strong>Note</strong></p>
+        <p class="notepara">While Bellman-Ford is mostly known for its distributed variant implemented in widely deployed protocols such as the <em>Routing Information Protocol (RIP)</em>, it was originally designed as a search algorithm performed on a single structure describing a topology of nodes and edges. Bellman-Ford is discussed as an <em>algorithm</em> here. A distributed algorithm similar to Bellman-Ford is discussed in the next section.</p>
+        </div>
+        <div class="sidebar1">
+        <p class="title1"><strong>Bellman-Ford as an Algorithm</strong></p>
+        <p class="noindent">Although first proposed by Alfonso Shimbel in 1955,<sup><a id="ch12fn1"></a><a href="ch12.xhtml#ch12fn-1">1</a></sup> and again by Edward F. Moore in 1957,<sup><a id="ch12fn2"></a><a href="ch12.xhtml#ch12fn-2">2</a></sup> this algorithm is named after Richard Bellman, who published it in 1958,<sup><a id="ch12fn3"></a><a href="ch12.xhtml#ch12fn-3">3</a></sup> and Lester Ford, Jr., who published it in 1956.<sup><a id="ch12fn4"></a><a href="ch12.xhtml#ch12fn-4">4</a></sup></p>
+        <p class="indent">Bellman-Ford will calculate a Shortest Path Tree to each reachable destination in a worst case of O(V*E), where <em>V</em> is the number of nodes (vertices) in the network, and <em>E</em> is the number of links (edges). Essentially, this means the amount of time Bellman-Ford takes to operate over a topology and calculate a Shortest Path Tree is linear against the number of devices and links; doubling the number of either will double the amount of time it takes to run. Doubling both at the same time will increase the run time by a factor of 4.</p>
+        <p class="indent">Bellman-Ford is thus a moderately slow algorithm when used against larger topologies in the worst case, when the nodes in the topology table start out ordered from the farthest from the root to the closest to the root. If the topology table is sorted from the closest to the root to the farthest, Bellman-Ford can terminate in O(E), which is much faster; in the real world, it is difficult to ensure either ordering, so the actual time required to build a Shortest Path Tree is normally somewhere between O(V*E) and O(E).</p>
+        <p class="indent">Bellman-Ford is a greedy algorithm, operating by assuming every node in the network other than the local node is only reachable through an infinite cost, and replacing these infinite costs with actual costs as the topology is walked. Assuming all nodes are infinitely distant is called relaxing the calculation, as it uses an approximate distance for all unknown destinations in the network, replacing them with a real cost once it has been calculated.</p>
+        </div>
+        <div class="note">
+        <p class="title"><a id="page_326"></a><strong>Note</strong></p>
+        <p class="notepara">The actual runtime of any algorithm used for calculating a Shortest Path Tree is normally swamped by the amount of time required to carry information about topology changes through the network; see <a href="ch14.xhtml#ch14">Chapter 14</a>, “<a href="ch14.xhtml#ch14">Reacting to Topology Changes</a>,” for more information on this topic. Implementations of all of these protocols, particularly in their distributed form, will contain a number of optimizations to reduce their runtime to far below the worst case, so while the worst case is given as a reference point, it often has little (or no) bearing on the performance of each algorithm in actual deployed networks.</p>
+        </div>
+        <p class="indent">To run Bellman-Ford over this topology, it must first be converted into a set of vectors and distances, and stored in a data structure, such as shown in <a href="ch12.xhtml#ch12tab01">Table 12-1</a>.</p>
+        <div class="tab-heading">
+        <p class="tab-caption"><a id="ch12tab01"></a><strong>Table 12-1</strong> <em>Topology, or Edges, Represented as a Table for Bellman-Ford</em></p>
+        <table class="tablewidth">
+        <tbody>
+        <tr>
+        <td class="bg1"><p class="thead"><strong>Row</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>Source (s)</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>Destination (d)</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>Distance (cost)</strong></p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">F (6)</p></td>
+        <td class="tbody_first"><p class="noindent">G (7)</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">2</p></td>
+        <td class="tbody_first"><p class="noindent">E (5)</p></td>
+        <td class="tbody_first"><p class="noindent">H (8)</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">3</p></td>
+        <td class="tbody_first"><p class="noindent">D (4)</p></td>
+        <td class="tbody_first"><p class="noindent">H (8)</p></td>
+        <td class="tbody_first"><p class="noindent">2</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">4</p></td>
+        <td class="tbody_first"><p class="noindent">D (4)</p></td>
+        <td class="tbody_first"><p class="noindent">E (5)</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">5</p></td>
+        <td class="tbody_first"><p class="noindent">B (2)</p></td>
+        <td class="tbody_first"><p class="noindent">F (6)</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">6</p></td>
+        <td class="tbody_first"><p class="noindent">B (2)</p></td>
+        <td class="tbody_first"><p class="noindent">E (5)</p></td>
+        <td class="tbody_first"><p class="noindent">2</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">7</p></td>
+        <td class="tbody_first"><p class="noindent">C (3)</p></td>
+        <td class="tbody_first"><p class="noindent">D (4)</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">8</p></td>
+        <td class="tbody_first"><p class="noindent">A (1)</p></td>
+        <td class="tbody_first"><p class="noindent">B (2)</p></td>
+        <td class="tbody_first"><p class="noindent">2</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">9</p></td>
+        <td class="tbody_first"><p class="noindent">A (1)</p></td>
+        <td class="tbody_first"><p class="noindent">C (3)</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div>
+        <p class="indent">There are nine entries in this table because there are nine links (edges) in the network. Shortest path algorithms calculate a unidirectional tree (in one direction along the graph). In the network in <a href="ch12.xhtml#ch12fig07">Figure 12-7</a>, the SPT is shown originating at node 1, and calculation is shown moving away from node 1, which will be the point from which the calculation takes place. The algorithm, in pseudocode, is as follows:</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">The data structures in this example are 1 referenced (or based), which means the first row is 1 rather than 0, to make the numbering clearer.</p>
+        </div>
+        <p class="codelink"><a href="ch12_images.xhtml#p12pro01a" id="p12pro01">Click here to view code image</a></p>
+        <p class="pre">
+        // create a set to hold the response, with one entry for each node<br>
+        // the first slot in the resulting structure will represent node 1,<br>
+        <a id="page_327"></a>
+        // the second node 2 etc.<br>
+        define route[nodes] {<br>
+        &nbsp;&nbsp;predecessor // as a node<br>
+        &nbsp;&nbsp;cost // as an integer<br>
+        }<br>
+        <br>
+        // set the source (me) to 0 cost<br>
+        // position 1 in the array is the origination point’s entry<br>
+        route[1].predecessor = NULL<br>
+        route[1].cost = 0<br>
+        // table 1, above, is held in an array called topo<br>
+        &nbsp;<br>
+        // walk the topo (edges) table once for each entry in the route<br>
+        // (results) table, replacing longer entries with shorter ones<br>
+        i = nodes<br>
+        while i &gt; 0 {<br>
+        &nbsp;&nbsp;j = 1<br>
+        &nbsp;&nbsp;while j &lt;= nodes { // iterates over every row in the topology table<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;source_router = topo[j].s<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;destination_router = topo[j].d<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;link_cost = topo[j].cost<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;if route[source_router].cost == NULL {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;source_router_cost = INFINITY<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;} else {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;source_router_cost = route[source_router].cost<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;if route[destination_router].cost == NULL {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;destination_router_cost = INFINITY<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;} else {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;destination_router_cost = route[destination_router].cost<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;if source_router_cost + link_cost &lt;= destination_router_cost {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;route[destination_router].cost = source_router_cost + link_cost<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;route[destination_router].predecessor = source_router<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;j = j + 1 //or j++ depending on what pseudocode this is representing<br>
+        &nbsp;&nbsp;}<br>
+        i = i - 1<br>
+        }</p>
+        <p class="indent"><a id="page_328"></a>This code is deceptive in appearing more complex than it really is. The key line is the comparison <em>if route[topo[j].s].cost + topo[j].cost &lt; route[topo[j].d].cost;</em> it is useful to focus on this line through an example. In the first run through the outer loop (which is run once for each entry in the results table, called <em>route</em> here):</p>
+        <p class="bullt">• For the first line of the topo table:</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>j</em> is 1 so <em>topo[j].s</em> is node 6 (F), the source of the vector in the edge table</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>j</em> is 1, so topo<em>[j].d</em> is node 7 (G), the destination of the vector in the edge table</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>route[6].cost =</em> infinity, <em>topo[1].cost</em> = 1, and <em>route[7].cost</em> = infinity</p>
+        <p class="bull1"><span class="pd_ash">•</span> infinity + 1 == infinity, so the condition fails and nothing else happens</p>
+        <p class="bull">• Any topo table entry with a source cost of infinity will give the same result, as infinity + anything will always equal infinity; the rest of the rows containing a source with a cost of infinity will be skipped.</p>
+        <p class="bull">• For the eighth line of the topo table (the eighth edge):</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>j</em> is 8, so <em>topo[j].s</em> is node 1 (A), the source of the vector in the edge table</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>j</em> is 8, so topo<em>[j].d</em> is node 2 (B), the destination of the vector in the edge table</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>route[1].cost</em> = 0, <em>topo[8].cost</em> = 2, and <em>route[2].cost</em> = infinity</p>
+        <p class="bull1"><span class="pd_ash">•</span> 0 + 2 &lt;= infinity, so the condition succeeds</p>
+        <p class="bull1"><span class="pd_ash">•</span> route[2].predecessor is set to 1, and route[2].cost is set to 2</p>
+        <p class="bull">• For the ninth line of the topo table (the ninth edge):</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>j</em> is 9, so <em>topo[j].s</em> is node 1 (A), the source of the vector in the edge table</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>j</em> is 9, so topo<em>[j].d</em> is node 3 (C), the destination of the vector in the edge table</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>route[1].cost</em> = 0, <em>topo[9].cost</em> = 1, and <em>route[3].cost</em> = infinity</p>
+        <p class="bull1"><span class="pd_ash">•</span> 0 + 1 &lt;= infinity, so the condition succeeds</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>route[3].predecessor</em> is set to 1, and <em>route[3].cost</em> is set to 1</p>
+        <p class="indentt">In the second run of the outer loop:</p>
+        <p class="bullt">• For the fifth line of the topo table (the fifth edge):</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>j</em> is 5, so <em>topo[j].s</em> is node 2 (B), the source of the vector in the edge table</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>j</em> is 5, so topo<em>[j].d</em> is node 6 (F), the destination of the vector in the edge table</p>
+        <p class="bull1"><a id="page_329"></a><span class="pd_ash">•</span> <em>route[2].cost</em> = 2, <em>topo[5].cost</em> = 1, and <em>route[6].cost</em> = infinity</p>
+        <p class="bull1"><span class="pd_ash">•</span> 2 + 1 &lt;= infinity, so the condition succeeds</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>route[6].predecessor</em> is set to 2, and <em>route[6].cost</em> is set to 3</p>
+        <p class="bull">• For the sixth line of the topo table (the sixth edge):</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>j</em> is 6, so <em>topo[j].s</em> is 2 (B), the source of the vector in the edge table</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>j</em> is 6, so <em>topo[j].d</em> is 5 (E), the destination of the vector in the edge table</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>route[2].cost</em> = 2, <em>topo[6].cost</em> = 2, and <em>route[5].cost</em> = infinity</p>
+        <p class="bull1"><span class="pd_ash">•</span> 2 + 2 &lt;= infinity, so the condition succeeds</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>route[5].predecessor</em> is set to 2, and <em>route[5].cost</em> is set to 4</p>
+        <p class="bull1"><span class="pd_ash">•</span> The remainder of this run is shown in <a href="ch12.xhtml#ch12tab02">Table 12-2</a>.</p>
+        <p class="indentt">In the third run of the outer loop, node 8 is of particular interest, as there are two paths to this destination.</p>
+        <p class="bullt">• For the second line of the topo table (the second edge):</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>j</em> is 2, so <em>topo[j].s</em> is node 5 (E), the source of the vector in the edge table</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>j</em> is 2, so topo<em>[j].d</em> is node 8 (H), the destination of the vector in the edge table</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>route[5].cost</em> = 4, <em>topo[2].cost</em> = 1, and <em>route[8].cost</em> = infinity</p>
+        <p class="bull1"><span class="pd_ash">•</span> 4+1 &lt;= infinity, so the condition succeeds</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>route[8].predecessor</em> is set to 5, and <em>route[8].cost</em> is set to 5</p>
+        <p class="bull">• For the third line of the topo table (the third edge):</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>j</em> is 3, so <em>topo[j].s</em> is node 4 (D), the source of the vector in the edge table</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>j</em> is 3, so <em>topo[j].d</em> is node 8 (H), the destination of the vector in the edge table</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>route[4].cost</em> = 2, <em>topo[3].cost</em> = 2, and <em>route[8].cost</em> = 5</p>
+        <p class="bull1"><span class="pd_ash">•</span> 2+2 &lt;= 4, so the condition succeeds</p>
+        <p class="bull1"><span class="pd_ash">•</span> <em>route[8].predecessor</em> is set to 4, and <em>route[8].cost</em> is set to 4</p>
+        <p class="indentt"><a id="page_330"></a>The interesting point in the third cycle through the <em>topo</em> table is the entry for the edge [5,8] is processed first, which sets 8’s (H’s) predecessor to 5 and cost to 5. When the next line in the <em>topo</em> table is processed, however, the [4,8] edge, the algorithm discovers a shorter path to node 8 and replaces the existing one. <a href="ch12.xhtml#ch12tab02">Table 12-2</a> shows the state of the <em>route</em> table with each pass through the <em>topo</em> table.</p>
+        <div class="tab-heading">
+        <p class="tab-caption"><a id="ch12tab02"></a><strong>Table 12-2</strong> <em>Bellman-Ford Cycles Across the Sample Network</em></p>
+        <table class="tablewidth">
+        <tbody>
+        <tr>
+        <td class="bg1" rowspan="2"><p class="thead">&nbsp;</p></td>
+        <td class="bg1" colspan="2"><p class="thead"><strong>A (1)</strong></p></td>
+        <td class="bg1" colspan="2"><p class="thead"><strong>B (2)</strong></p></td>
+        <td class="bg1" colspan="2"><p class="thead"><strong>C (3)</strong></p></td>
+        <td class="bg1" colspan="2"><p class="thead"><strong>D (4)</strong></p></td>
+        <td class="bg1" colspan="2"><p class="thead"><strong>E (5)</strong></p></td>
+        <td class="bg1" colspan="2"><p class="thead"><strong>F (6)</strong></p></td>
+        <td class="bg1" colspan="2"><p class="thead"><strong>G (7)</strong></p></td>
+        <td class="bg1" colspan="2"><p class="thead"><strong>H (8)</strong></p></td>
+        </tr>
+        <tr>
+        <td class="bg1"><p class="thead"><strong>P</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>C</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>P</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>C</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>P</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>C</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>P</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>C</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>P</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>C</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>P</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>C</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>P</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>C</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>P</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>C</strong></p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent"><strong>First Cycle</strong></p></td>
+        <td class="tbody_first"><p class="noindent">N</p></td>
+        <td class="tbody_first"><p class="noindent">0</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">2</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">N</p></td>
+        <td class="tbody_first"><p class="noindent">I</p></td>
+        <td class="tbody_first"><p class="noindent">N</p></td>
+        <td class="tbody_first"><p class="noindent">I</p></td>
+        <td class="tbody_first"><p class="noindent">N</p></td>
+        <td class="tbody_first"><p class="noindent">I</p></td>
+        <td class="tbody_first"><p class="noindent">N</p></td>
+        <td class="tbody_first"><p class="noindent">I</p></td>
+        <td class="tbody_first"><p class="noindent">N</p></td>
+        <td class="tbody_first"><p class="noindent">I</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent"><strong>Second Cycle</strong></p></td>
+        <td class="tbody_first"><p class="noindent">N</p></td>
+        <td class="tbody_first"><p class="noindent">0</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">2</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">3</p></td>
+        <td class="tbody_first"><p class="noindent">2</p></td>
+        <td class="tbody_first"><p class="noindent">2</p></td>
+        <td class="tbody_first"><p class="noindent">4</p></td>
+        <td class="tbody_first"><p class="noindent">2</p></td>
+        <td class="tbody_first"><p class="noindent">3</p></td>
+        <td class="tbody_first"><p class="noindent">N</p></td>
+        <td class="tbody_first"><p class="noindent">I</p></td>
+        <td class="tbody_first"><p class="noindent">N</p></td>
+        <td class="tbody_first"><p class="noindent">I</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent"><strong>Third Cycle</strong></p></td>
+        <td class="tbody_first"><p class="noindent">N</p></td>
+        <td class="tbody_first"><p class="noindent">0</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">2</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">3</p></td>
+        <td class="tbody_first"><p class="noindent">2</p></td>
+        <td class="tbody_first"><p class="noindent">2</p></td>
+        <td class="tbody_first"><p class="noindent">4</p></td>
+        <td class="tbody_first"><p class="noindent">2</p></td>
+        <td class="tbody_first"><p class="noindent">3</p></td>
+        <td class="tbody_first"><p class="noindent">6</p></td>
+        <td class="tbody_first"><p class="noindent">4</p></td>
+        <td class="tbody_first"><p class="noindent">4</p></td>
+        <td class="tbody_first"><p class="noindent">4</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div>
+        <p class="indent">In <a href="ch12.xhtml#ch12tab02">Table 12-2</a>, the top line represents an entry in the routing table and a node that is reachable in the network. For instance, A (1) represents the best path to A, B (2) represents the best path to B, etc. The <em>P</em> column represents the <em>predecessor</em>, or the node through which A must pass to reach the destination indicated. The <em>C</em> represents the cost to reach this destination. The sample network can be completed in three cycles, given the algorithm is coded to detect the completion of the tree. The pseudocode, as shown, does not have any test for this completion and would run the full 8 cycles (one for each node) anyway.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">Bellman-Ford can also support negative cost edges (unlike Dijkstra’s algorithm); as these do not normally exist in a network, the process for handling these is not shown here.</p>
+        </div>
+        <div class="heading">
+        <h3 class="h3" id="ch12lev8">Garcia’s Diffusing Update Algorithm</h3>
+        <p class="noindent">The Diffusing Update Algorithm (DUAL) is one of the two algorithms discussed here originally designed to be implemented in a distributed network. It is unique in also having the removal of reachability and topology information contained in the algorithm’s state machine. The other algorithms discussed here leave the removal of information to the implementation of the protocol, rather than considering this aspect of the algorithm’s operation within the algorithm itself.</p>
+        </div>
+        <div class="sidebar1">
+        <p class="title1"><a id="page_331"></a><strong>The Origins of the Diffusing Update Algorithm</strong></p>
+        <p class="noindent">By 1993, Bellman-Ford and Dijkstra had been implemented as distributed algorithms in several routing protocols. The experience gained from these early implementations and deployments led to a “second wave” of research into and thinking around the problem of routing in packet switched networks, resulting in path vector and DUAL. The abstract from the 1993 paper by J. J. Garcia -Luna- Aceves summarizes much of this previous work and experience, and proposes a new distributed computation system (rather than strictly an algorithm) to find the shortest path through a network more efficiently. In the earlier days of network engineering, memory, processor, and network utilization were three primary concerns in designing a protocol; processors were either 6- or 8-bit; memory was measured in kilobytes, and bandwidth was measured in kilobytes per second. Hence, the development of a protocol that was very efficient in these terms was a major breakthrough in deploying large-scale networks. The abstract of the original Garcia-Luna-Aceves paper is worth repeating here:</p>
+        <p class="indent"><em>Abstract—A family of distributed algorithms for the dynamic computation of the shortest paths in a computer network or internet is presented, validated, and analyzed. According to these algorithms, each node maintains a vector with its distance to every other node. Update messages from a node are sent only to its neighbors; each such message contains a distance vector of one or more entries, and each entry specifies the length of the selected path to a network destination, as well as an indication of whether the entry constitutes an update, a query, or a reply to a previous query. The new algorithms treat the problem of distributed shortest-path routing as one of diffusing computations, which was first proposed by Dijkstra and Scholten. They improve on algorithms introduced previously by Chandy and Misra, Jaffe and Moss, Merlin and Segall, and the author. The new algorithms are shown to converge in finite time after an arbitrary sequence of link cost or topological changes, to be loop-free at every instant, and to outperform all other loop-free routing algorithms previously proposed from the standpoint of the combined temporal, message, and storage complexities</em>.<sup><a id="ch12fn5"></a><a href="ch12.xhtml#ch12fn-5">5</a></sup></p>
+        <p class="indent">The protocol resulting from this paper, Enhanced Interior Gateway Routing Protocol (EIGRP), was widely deployed at scales that other protocols simply could not attain. DUAL, like Bellman-Ford, is a greedy algorithm, and would run (if it were implemented as a nondistributed algorithm) in O(E*V) in the worst case when calculating the initial set of Shortest Path Trees. Special optimizations, however, allow DUAL to operate very quickly in the case of topology changes.</p>
+        </div>
+        <p class="indent"><a id="page_332"></a>As DUAL is designed as a distributed algorithm, it is best to describe its operation across a network; <a href="ch12.xhtml#ch12fig08">Figure 12-8</a> and <a href="ch12.xhtml#ch12fig09">Figure 12-9</a> are used for this purpose. To explain DUAL, this example will trace the flow of A learning about three destinations and then processing changes in the state of reachability for these same destinations. The first example will consider the case where there is an alternate path, but no downstream neighbor; the second will consider the case there is an alternate path and a downstream neighbor.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/12fig08.jpg" aria-describedby="Al12fig08" alt="Figure represents the first network for demonstrating the diffusing update algorithm." width="547" height="420"><aside class="hidden" id="Al12fig08">
+        <p>A circle labeled A has three lines below, labeled 1, 1, and 2, reaching circles, B, C, and H. A line labeled 2 leads from B to reach a circle labeled C. A line labeled 1 leads from C to reach a circle labeled E. A line labeled 1 leads from E to reach a circle labeled H. A line labeled 1 leads from H to reach a square labeled D.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch12fig08"></a><strong>Figure 12-8</strong> <em>First Network for Demonstrating the Diffusing Update Algorithm</em></p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/12fig09.jpg" aria-describedby="Al12fig09" alt="Figure represents second network for demonstrating the diffusing update algorithm." width="453" height="517"><aside class="hidden" id="Al12fig09">
+        <p>A circle labeled A is at the top with three lines labeled 1, 1, and 2 reaching circles, B, C, and H. A line labeled 2 leads from B to reach C. A line labeled 1 leads from C to reach a circle labeled E. A line labeled 1 leads from H to E. A line labeled 1 leads from E to a square labeled D.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch12fig09"></a><strong>Figure 12-9</strong> <em>Second Network for Demonstrating the Diffusing Update Algorithm</em></p>
+        </div>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">While the original DUAL paper refers to neighbor adjacencies, they will not be described in this discussion. Rather, it will simply be assumed such neighbors exist, and hence the transmission of control plane data is reliable.</p>
+        </div>
+        <p class="indentb">In <a href="ch12.xhtml#ch12fig08">Figure 12-8</a>, learning D from A’s perspective:</p>
+        <p class="indenthangingN">1. A learns two paths to D:</p>
+        <p class="indenthangingNA">a. Through H with a cost of 3.</p>
+        <p class="indenthangingNA">b. Through C with a cost of 4.</p>
+        <p class="indenthangingN"><a id="page_333"></a>2. A will not learn the path through B, because B is using A as its successor:</p>
+        <p class="indenthangingNA">a. A is the best path B has to reach D.</p>
+        <p class="indenthangingNA">b. As B is using the path through A to reach D (the destination), it will not advertise the route it knows about D (through C) to A.</p>
+        <p class="indenthangingNA">c. B will <em>split horizon</em> its advertisement of D toward A to prevent possible forwarding loops from forming.</p>
+        <p class="indenthangingN">3. A compares the available paths and chooses the shortest path as loop free:</p>
+        <p class="indenthangingNA">a. The path through H is marked as the <em>successor</em>.</p>
+        <p class="indenthangingNA">b. The <em>feasible distance</em> is set to the cost along the shortest path, which is 3.</p>
+        <p class="indenthangingN">4. A checks the remaining paths to determine if any of them are downstream neighbors:</p>
+        <p class="indenthangingNA">a. C’s cost is 3.</p>
+        <p class="indenthangingNP1">A knows this because C advertises the route to D with its local metric, which is 3. A saves C’s local metric in its <em>topology table</em>.</p>
+        <p class="indenthangingNP1">Hence, A knows the local cost at C and the local cost at A.</p>
+        <p class="indenthangingNA"><a id="page_334"></a>b. 3 (the cost at C) &gt;= 3 (the cost at A), so this route <em>may</em> be a loop, Hence, C does not meet the <em>feasibility condition</em>.</p>
+        <p class="indenthangingNA">c. C is not marked as a downstream neighbor.</p>
+        <p class="indentt">Downstream neighbors are called <em>feasible successors</em> in DUAL.</p>
+        <p class="indentb">Assume the [A,H] link fails. DUAL does not rely on periodic updates, so A cannot simply wait for another update with valid information; rather A must actively pursue an alternate path. This is, therefore, a <em>diffused</em> process of alternate path discovery. If the [A,H] link fails, considering just D:</p>
+        <p class="indenthangingN">1. A examines its local table for any feasible successors (downstream neighbors).</p>
+        <p class="indenthangingN">2. There are no feasible successors, so A must discover an alternate loop-free path to D (if one exists).</p>
+        <p class="indenthangingN">3. A sends a <em>query</em> to each neighbor to determine if there is some alternate loop-free path to D.</p>
+        <p class="indenthangingN">4. At C:</p>
+        <p class="indenthangingNA">a. C’s successor is E (not A, from whom it received the query).</p>
+        <p class="indenthangingNA">b. E’s cost is lower than A’s cost to D; hence C’s path is not a loop.</p>
+        <p class="indenthangingNA">c. C <em>replies</em> with its current metric of 3 to A.</p>
+        <p class="indenthangingN">5. At B:</p>
+        <p class="indenthangingNA">a. A is B’s current successor.</p>
+        <p class="indenthangingNA">b. Through the query, B now discovers its best path to D has failed, and it must also find an alternate path.</p>
+        <p class="indenthangingNA">c. <em>B’s processing is not considered here, but rather is left as an exercise for the reader</em>.</p>
+        <p class="indenthangingNA">d. B replies to A that it has no alternate path (responds with an infinite metric).</p>
+        <p class="indenthangingN">6. A receives these replies:</p>
+        <p class="indenthangingNA">a. The path through C is the only one available, with a cost of 4.</p>
+        <p class="indenthangingNA">b. A marks the path through C as its successor.</p>
+        <p class="indenthangingNA">c. There are no other paths to D; hence there is no feasible successor (downstream neighbor).</p>
+        <p class="indent">In <a href="ch12.xhtml#ch12fig09">Figure 12-9</a>, the destination (D) has been moved from H to E; this will be used for the second example.</p>
+        <p class="indentb"><a id="page_335"></a>In this example, there is a feasible successor (downstream neighbor). Learning D from A’s perspective:</p>
+        <p class="indenthangingN">1. A learns two paths to D:</p>
+        <p class="indenthangingNA">a. Through H with a cost of 4.</p>
+        <p class="indenthangingNA">b. Through C with a cost of 3.</p>
+        <p class="indenthangingN">2. A will not learn any path through B:</p>
+        <p class="indenthangingNA">a. B has two paths to D.</p>
+        <p class="indenthangingNA">b. Through both C and A with a cost of 4.</p>
+        <p class="indenthangingNA">c. B is using both A and C as its successors in this case.</p>
+        <p class="indenthangingNA">d. B will <em>split horizon</em> its advertisement of D toward A because A is marked as a successor.</p>
+        <p class="indenthangingN">3. A compares the available paths and chooses the shortest path as loop free:</p>
+        <p class="indenthangingNA">a. The path through C is marked as the <em>successor</em>.</p>
+        <p class="indenthangingNA">b. The <em>feasible distance</em> is set to the cost along the shortest path, which is 3.</p>
+        <p class="indenthangingN">4. A checks the remaining paths to determine if any of them are downstream neighbors:</p>
+        <p class="indenthangingNA">a. H’s cost is 2.</p>
+        <p class="indenthangingNA">b. 2 (the cost at H) &lt;= 3 (the cost at A), so this route <em>cannot</em> be a loop; hence H does meet the <em>feasibility condition</em>.</p>
+        <p class="indenthangingNA">c. H is marked as a feasible successor (downstream neighbor).</p>
+        <p class="indent">If the [A,C] link fails just considering A:</p>
+        <p class="indenthangingN">1. A will examine its local topology table for a feasible successor.</p>
+        <p class="indenthangingN">2. A feasible successor exists through H.</p>
+        <p class="indenthangingN">3. A switches its local table to H as the best path.</p>
+        <p class="indenthangingNA">a. No diffusing update has been run, so no paths have been verified or recalculated.</p>
+        <p class="indenthangingNA">b. Hence, the feasible distance cannot be changed; it remains at 3.</p>
+        <p class="indenthangingN">4. A sends an update to its neighbors noting its cost to reach D has changed from 3 to 4.</p>
+        <p class="indenthangingNP"><em>The impact of this update is not described here, but consider that B is using A as a successor.</em></p>
+        <p class="indentt"><a id="page_336"></a>As you can see, processing when a feasible successor exists is much faster and simpler than without. In networks where a routing protocol using DUAL (specifically EIGRP) has been deployed, one primary design goal will be limiting the scope of any queries generated in the case where there is no feasible successor. Query scope is the primary determinant of how quickly the DUAL algorithm completes and hence how quickly the network converges.</p>
+        <p class="indent"><a href="ch12.xhtml#ch12fig10">Figure 12-10</a> illustrates a basic DUAL finite state machine.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/12fig10.jpg" aria-describedby="Al12fig10" alt="Figure represents a Simple DUAL Finite State Machine." width="702" height="647"><aside class="hidden" id="Al12fig10">
+        <p>A flowchart shows a circle labeled route gets worse at the top. An arrow leads downward to a rectangular box labeled is there a feasible successor? A line labeled yes leads to the left, reaching a box labeled switch to the feasible successor. A line labeled no leads to the right, meeting a box labeled send queries to neighbors. An arrow leads downward from switch to the feasible successor to send metric update to neighbors. A dotted line leads from send queries to neighbors to a circle labeled route gets better. An arrow leads downward to a box labeled calculate shortest path (successor). An arrow follows to reach a box labeled calculate feasible successors. An arrow leads downward to reach a box labeled send updates to neighbors.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch12fig10"></a><strong>Figure 12-10</strong> <em>A Simple DUAL Finite State Machine</em></p>
+        </div>
+        <p class="indentb">Things included in <em>route gets worse</em> could include</p>
+        <p class="bullt">• Failure of a connected link or neighbor</p>
+        <p class="bull">• Receiving an update for a route with a higher metric</p>
+        <p class="bullb">• Receiving a query from the current successor route gets worse</p>
+        <p class="indent"><a id="page_337"></a>Things included in <em>route gets better</em> could include</p>
+        <p class="bullt">• A new route learned from a neighbor</p>
+        <p class="bull">• A new neighbor discovered, along with the routes this neighbor can reach</p>
+        <p class="bullb">• Receiving all queries sent to neighbors when a <em>route gets worse</em></p>
+        <div class="heading">
+        <h3 class="h3" id="ch12lev9">Final Thoughts</h3>
+        <p class="noindent">This chapter is the first of two discussing calculating loop-free paths through a network. The shortest path rule is the foundation of most calculation mechanisms; Bellman-Ford and DUAL, the foundation of most widely deployed <em>distance-vector</em> protocols (classifications of protocols are considered in more depth in <a href="ch15.xhtml#ch15">Chapters 15</a> through <a href="ch17.xhtml#ch17">17</a>, which discuss distributed and centralized control planes). The next chapter considers one more algorithm that relies on the shortest path rule, and then turns to path vector, and finally disjoint paths.</p>
+        </div>
+        <div class="heading">
+        <h3 class="h3" id="ch12lev10">Further Reading</h3>
+        <p class="ref">Bellman, Richard. “On a Routing Problem.” <em>Quarterly of Applied Mathematics</em> 16 (1958): 87–90.</p>
+        </div>
+        <p class="ref">“Enhanced Interior Gateway Routing Protocol (EIGRP) Wide Metrics White Paper.” <em>Cisco</em>. Accessed January 28, 2017. <a href="http://www.cisco.com/c/en/us/products/collateral/ios-nx-os-software/enhanced-interior-gateway-routing-protocol-eigrp/whitepaper_C11-720525.html">http://www.cisco.com/c/en/us/products/collateral/ios-nx-os-software/enhanced-interior-gateway-routing-protocol-eigrp/whitepaper_C11-720525.html</a>.</p>
+        <p class="ref">Ford, L. R. <em>Network Flow Theory</em>. Santa Monica, CA: RAND Corporation, 1956.</p>
+        <p class="ref">Garcia-Luna-Aceves, J. J. “Loop-Free Routing Using Diffusing Computations.” <em>IEEE/ACM Transactions on Networking</em> 1, no. 1 (February 1993): 130–41.</p>
+        <p class="ref">Hendrick, C. <em>Routing Information Protocol</em>. Request for Comments 1058. RFC Editor, 1988. doi:10.17487/rfc1058.</p>
+        <p class="ref">Malkin, Gary S. <em>RIP Version 2</em>. Request for Comments 2453. RFC Editor, 1998. doi:10.17487/rfc2453.</p>
+        <p class="ref">Malkin, Gary S., and Robert E. Minnear. <em>RIPng for IPv6</em>. Request for Comments 2080. RFC Editor, 1997. doi:10.17487/rfc2080.</p>
+        <p class="ref"><a id="page_338"></a>Moore, Edward F. “The Shortest Path through a Maze.” In <em>Proceedings of the International Symposium on Switching Theory 1957, Part II</em>. Cambridge MA: Harvard University Press, 1959.</p>
+        <p class="ref">Perlman, Radia. “An Algorithm for Distributed Computation of a Spanningtree in an Extended LAN.” <em>SIGCOMM Computer Communication Review</em> 15, no. 4 (September 1985): 44–53. doi:10.1145/318951.319004.</p>
+        <p class="ref">———. <em>Interconnections: Bridges, Routers, Switches, and Internetworking Protocols</em>. 2nd edition. Reading, MA: Addison-Wesley Professional, 1999.</p>
+        <p class="ref">Retana, Alvaro, Russ White, and Don Slice. <em>EIGRP for IP: Basic Operation and Configuration</em>. 1st edition. Boston, MA: Addison-Wesley Professional, 2000.</p>
+        <p class="ref">Russ White. “CAP Theorem and Routing.” <em>Rule 11 Reader</em>, March 25, 2016. <a href="https://rule11.tech/cap-theorem-routing/">https://rule11.tech/cap-theorem-routing/</a>.</p>
+        <p class="ref">———. “Ordered FIB.” <em>Packet Pushers</em>, March 25, 2014. <a href="http://packetpushers.net/ordered-fib/">http://packetpushers.net/ordered-fib/</a>.</p>
+        <p class="ref">———. “Video: Do Remote LFAs Really Solve Microloops?” <em>Rule 11 Reader</em>, September 11, 2017. <a href="https://rule11.tech/video-remote-lfas-really-solve-microloops/">https://rule11.tech/video-remote-lfas-really-solve-microloops/</a>.</p>
+        <p class="ref">Savage, Donnie, Steven Moore, James Ng, Russ White, Donald Slice, and Peter Paluch. <em>Cisco’s Enhanced Interior Gateway Routing Protocol (EIGRP)</em>. Request for Comments 7868. RFC Editor, 2016. <a href="https://rfc-editor.org/rfc/rfc7868.txt">https://rfc-editor.org/rfc/rfc7868.txt</a>.</p>
+        <p class="ref">Shimbel, A. “Structure in Communication Nets.” In <em>Proceedings of the Symposium on Information Networks</em>. New York: Polytechnic Press of the Polytechnic Institute of Brooklyn, n.d., 199–203.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch12lev11">Review Questions</h3>
+        <p class="indenthangingN">1. Explain the relationship between the calculation of shortest paths and loop-free paths through a network.</p>
+        </div>
+        <p class="indenthangingN">2. What are the conditions an alternate path must meet to be considered a Loop-Free Alternate?</p>
+        <p class="indenthangingN">3. Explain the difference between the waterfall and P/Q space models of under-standing where loops will form using a network diagram containing seven routers in a ring and a single destination reachable through one of these routers.</p>
+        <p class="indenthangingN">4. When is an algorithm for solving the problem of loop-free paths called “greedy”?</p>
+        <p class="indenthangingN"><a id="page_339"></a>5. Compare the state machine given in the chapter for DUAL to the state machine given in the EIGRP RFC. What is left out, what is combined, etc.? What are the advantages and disadvantages of having more or less detailed state machine diagrams? When would you prefer one or the other?</p>
+        <p class="indenthangingN">6. Draw a small network of around 10 or 11 nodes, and walk through the process of running the Bellman-Ford and Diffusing Update algorithms on it. Will DUAL find any Loop-Free Alternates in this network? Are there any places where a remote Loop-Free Alternate can be calculated?</p>
+        <p class="indenthangingN">7. In the network from question 6, assume a single link has failed; trace the reaction of DUAL to this event? Will queries be required? Why or why not?<a id="page_340"></a></p>
+        <p class="footnotet"><a id="ch12fn-1"></a><a href="ch12.xhtml#ch12fn1">1</a>. Shimbel, “Structure in Communication Nets.”</p>
+        <p class="footnote"><a id="ch12fn-2"></a><a href="ch12.xhtml#ch12fn2">2</a>. Moore, “The Shortest Path through a Maze.”</p>
+        <p class="footnote"><a id="ch12fn-3"></a><a href="ch12.xhtml#ch12fn3">3</a>. Bellman, “On a Routing Problem.” 87–90.</p>
+        <p class="footnote"><a id="ch12fn-4"></a><a href="ch12.xhtml#ch12fn4">4</a>. Ford, <em>Network Flow Theory.</em></p>
+        <p class="footnote"><a id="ch12fn-5"></a><a href="ch12.xhtml#ch12fn5">5</a>. Garcia-Luna-Aceves, “Loop-Free Routing Using Diffusing Computations.” 130–41.</p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780134762814/files/9780134762852.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

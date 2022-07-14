@@ -1,0 +1,84 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="Cross-cutting features and AOP"><div class="titlepage"><div><div><h1 class="title"><a id="ch12lvl1sec79"></a>Cross-cutting features and AOP</h1></div></div></div><p>When we introduced the SOLID principles in <span><a class="link" href="ch11.html" title="Chapter&nbsp;11.&nbsp;SOLID Principles">Chapter 11</a></span>, <span class="emphasis"><em>SOLID Principles</em></span>, we discussed the Single Responsibility Principle. Based on this principle, a component must be focused on a single responsibility, that is, it has to implement the features that concern only a single aspect of the application. Often, however, in a complex application, we need cross-cutting features that can be intrusive and forced to enter in a component some code that is not strictly correlated with its specific goal. These features include, the following:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc">Error handling</li><li class="listitem" style="list-style-type: disc">Logging and tracing</li><li class="listitem" style="list-style-type: disc">Authorization control</li><li class="listitem" style="list-style-type: disc">Transaction control</li></ul></div><p>These and other features are usually included in any application, but in most cases, they tend to pollute the code introducing unrelated logic.</p><div class="section" title="The log management example"><div class="titlepage"><div><div><h2 class="title"><a id="ch12lvl2sec107"></a>The log management example</h2></div></div></div><p>Let's analyze this problem with an example. Suppose we have a constructor function for objects having a method that makes the sum of two numbers:</p><pre class="programlisting">function Calculator() {} 
+ 
+        Calculator.prototype.sum = function(x, y) { 
+            var result =  x + y; 
+         
+            return result; 
+          }; 
+        </pre><p>Now, imagine you want to log the execution of the method by tracing the input parameters and its result. We need to change the preceding code as in the following example:</p><pre class="programlisting">function Calculator() {} 
+         
+        Calculator.prototype.sum = function(x, y) { 
+          console.log("Calling sum on " + x + " and " + y); 
+          var result =  x + y; 
+         
+          console.log("Result of sum is " + result); 
+          return result; 
+        }; 
+        </pre><p>This change, in addition to violating the Single Responsibility Principle, makes the code more complex and less maintainable.</p></div><div class="section" title="Using inheritance"><div class="titlepage"><div><div><h2 class="title"><a id="ch12lvl2sec108"></a>Using inheritance</h2></div></div></div><p>Can we use any different approach to avoid modifying the method's code? One approach might be to use the inheritance and create a derived version of our calculator:</p><pre class="programlisting">function LoggedCalculator() { 
+          Calculator.apply(this, arguments); 
+        } 
+         
+         
+        LoggedCalculator.prototype.sum = function(x, y) { 
+          console.log("Calling sum on " + x + " and " + y); 
+          var result =  Calculator.prototype.sum(x, y); 
+         
+          console.log("Result of sum is " + result); 
+          return result; 
+        }; 
+        </pre><p>The <code class="literal">LoggedCalculator()</code> constructor allows us to achieve the desired result without having to change the code of the base constructor <code class="literal">Calculator()</code>. However, all the clients of the <code class="literal">Calculator</code> instances must use the <code class="literal">LoggedCalculator()</code> constructor, turning the generation of log back an intrusive problem.</p></div><div class="section" title="The Aspect-Oriented Programming approach"><div class="titlepage"><div><div><h2 class="title"><a id="ch12lvl2sec109"></a>The Aspect-Oriented Programming approach</h2></div></div></div><p>A solution to handle such a problem is to use the approach proposed by <span class="strong"><strong>Aspect-Oriented Programming</strong></span> (<span class="strong"><strong>AOP</strong></span>), a programming paradigm to increase the functionality of software entities (objects, methods, and so on.) without being intrusive. From a conceptual point of view, the AOP allows adding behavior to the existing code from the outside, without modifying the code itself.</p><p>Let's see how we can apply an AOP approach to our calculator example by analyzing the following code:</p><pre class="programlisting">var originalSum = Calculator.prototype.sum; 
+         
+        Calculator.prototype.sum = function(x, y) { 
+          console.log("Calling sum on " + x + " and " + y); 
+          var result =  originalSum(x, y); 
+         
+          console.log("Result of sum is " + result); 
+          return result; 
+        }; 
+        </pre><p>The technique described here is to replace the original method with a method that also logs messages. With this arrangement, we do not need to modify the original method nor to modify the code that uses the method.</p><div class="note" title="Note" style=""><div class="inner"><h3 class="title"><a id="note24"></a>Note</h3><p>At the time of writing, among the proposals included in a future ECMAScript specification (probably ES8) there are decorators. These are expressions that we can add to the definition of a property, a class or an object literal, that modifies the original definition. The introduction of this syntactic element significantly simplifies the adoption of an AOP approach in the management of cross-cutting features.</p></div></div></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

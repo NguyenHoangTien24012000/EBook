@@ -1,0 +1,1407 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 9. Asynchronous Programming"><div class="chapter" id="ch09">
+        <h1><span class="label">Chapter 9. </span>Asynchronous Programming</h1>
+        
+        
+        <p><a data-type="indexterm" data-primary="asynchronous programming" id="ix_async_program_ch9"></a>JavaScript was built as a single-threaded programming language, with one call stack, one memory heap, and able to execute just one code routine at a time. But over the years, JavaScript has grown. It’s acquired the ability to send network messages, read files, and wait for user confirmation—all operations that might take time and could lock up the user interface. To handle these operations safely, JavaScript has introduced its own asynchronous programming patterns.</p>
+        
+        <p><a data-type="indexterm" data-primary="callback function" data-secondary="asynchronous programming and" id="idm45475177284040"></a>In the early days, JavaScript’s asynchronous support revolved around <em>callbacks</em>. With a callback, you request an operation (say, fetching an image from the web) and the browser does the work on another thread, outside of your application code. When the image has finished downloading and your application is idle, JavaScript triggers your callback and passes the data back to your code. The end result is that your application code is still single-threaded, but you have the ability to launch asynchronous work through a set of standardized web APIs.</p>
+        
+        <p><a data-type="indexterm" data-primary="promises (Promise object)" id="idm45475177281816"></a><a data-type="indexterm" data-primary="await keyword" id="idm45475156256744"></a>Callbacks are still found all over JavaScript, but in recent years they’ve been wrapped with more polished language features, like <em>promises</em> and the <code>async</code> and <code>await</code> keywords. The underlying plumbing is the same, but now it’s possible to create sophisticated applications that manage concurrent asynchronous tasks, handle sequences of asynchronous calls, and deal gracefully with unexpected errors.</p>
+        
+        <p>In this chapter, you’ll use callback and promises to manage asynchronous tasks. You’ll also see how you can break out of JavaScript’s single-threaded model and perform continuous background work with the Web Worker API.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Updating the Page During a Loop"><div class="sect1" id="updating_page_during_loop">
+        <h1>Updating the Page During a Loop</h1>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Problem"><div class="sect2" id="idm45475156251944">
+        <h2>Problem</h2>
+        
+        <p><a data-type="indexterm" data-primary="page updating during loop" id="ix_page_update_async"></a><a data-type="indexterm" data-primary="asynchronous programming" data-secondary="page updating during loop" id="ix_async_page_update"></a>You want to update the page during a long, CPU-intensive operation, but the browser won’t repaint the window while it’s busy.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Solution"><div class="sect2" id="idm45475156182392">
+        <h2>Solution</h2>
+        
+        <p><a data-type="indexterm" data-primary="setTimeout() function" data-secondary="asynchronous programming" id="idm45475156181144"></a>Use the <code>setTimeout()</code> function periodically to queue your work. Contrary to the name, you don’t need to set a delay with <code>setTimeout()</code>. Instead, use a timeout value of <code>0</code> to schedule the next step in your operation to execute immediately, as soon as the UI thread is idle.</p>
+        
+        <p>For example, consider this loop, which increments a counter for 10 seconds (10,000 milliseconds). After each pass through the loop, it attempts to change the text in a <code>&lt;p&gt;</code> element named <code>status</code>:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kd">function</code> <code class="nx">doWork</code><code class="p">()</code> <code class="p">{</code>
+          <code class="c1">// Get the &lt;p&gt; element to change</code>
+          <code class="kr">const</code> <code class="nx">statusElement</code> <code class="o">=</code> <code class="nb">document</code><code class="p">.</code><code class="nx">getElementById</code><code class="p">(</code><code class="s1">'status'</code><code class="p">);</code>
+        
+          <code class="c1">// Track the time and the number of passes through the loop</code>
+          <code class="kr">const</code> <code class="nx">startTime</code> <code class="o">=</code> <code class="nb">Date</code><code class="p">.</code><code class="nx">now</code><code class="p">();</code>
+          <code class="kd">let</code> <code class="nx">counter</code> <code class="o">=</code> <code class="mi">0</code><code class="p">;</code>
+        
+          <code class="nx">statusElement</code><code class="p">.</code><code class="nx">innerText</code> <code class="o">=</code> <code class="s1">'Processing started'</code><code class="p">;</code>
+        
+          <code class="k">while</code> <code class="p">((</code><code class="nb">Date</code><code class="p">.</code><code class="nx">now</code><code class="p">()</code> <code class="o">-</code> <code class="nx">startTime</code> <code class="o">&lt;</code> <code class="mi">10000</code><code class="p">))</code> <code class="p">{</code>
+            <code class="nx">counter</code> <code class="o">+=</code> <code class="mi">1</code><code class="p">;</code>
+            <code class="nx">statusElement</code><code class="p">.</code><code class="nx">innerText</code> <code class="o">=</code> <code class="sb">`Just generated number </code><code class="si">${</code><code class="nx">counter</code><code class="si">}</code><code class="sb">`</code><code class="p">;</code>
+          <code class="p">}</code>
+        
+          <code class="nx">statusElement</code><code class="p">.</code><code class="nx">innerText</code> <code class="o">=</code> <code class="s1">'Processing completed'</code><code class="p">;</code>
+        <code class="p">}</code></pre>
+        
+        <p>If you run this code, you won’t see any of the “Just generated number” messages. Instead, the page will become unresponsive for 10 seconds, then display “Processing completed.”</p>
+        
+        <p>To fix the problem, you move the work (in this case, incrementing the counter and showing a message) to a separate function. <a data-type="indexterm" data-primary="setTimeout() function" data-secondary="asynchronous programming" id="idm45475156174632"></a>Then, instead of calling this function over and over again in a loop, you call it with <code>setTimeout()</code>. Each time, the function increments the counter, updates the page, and then calls <code>setTimeout()</code> for <em>another</em> pass, until the 10-second time limit has finished:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kd">function</code> <code class="nx">doWorkInChunks</code><code class="p">()</code> <code class="p">{</code>
+           <code class="c1">// Get the &lt;p&gt; element to change</code>
+           <code class="kr">const</code> <code class="nx">statusElement</code> <code class="o">=</code> <code class="nb">document</code><code class="p">.</code><code class="nx">getElementById</code><code class="p">(</code><code class="s2">"status"</code><code class="p">);</code>
+        
+           <code class="c1">// Track the time and the number of passes through the loop</code>
+           <code class="kr">const</code> <code class="nx">startTime</code> <code class="o">=</code> <code class="nb">Date</code><code class="p">.</code><code class="nx">now</code><code class="p">();</code>
+           <code class="kd">let</code> <code class="nx">counter</code> <code class="o">=</code> <code class="mi">0</code><code class="p">;</code>
+        
+           <code class="nx">statusElement</code><code class="p">.</code><code class="nx">innerText</code> <code class="o">=</code> <code class="s1">'Processing started'</code><code class="p">;</code>
+        
+           <code class="c1">// Create an anonymous function that does one chunk of work</code>
+           <code class="kr">const</code> <code class="nx">doChunkedTask</code> <code class="o">=</code> <code class="p">()</code> <code class="o">=&gt;</code> <code class="p">{</code>
+              <code class="k">if</code> <code class="p">(</code><code class="nb">Date</code><code class="p">.</code><code class="nx">now</code><code class="p">()</code> <code class="o">-</code> <code class="nx">startTime</code> <code class="o">&lt;</code> <code class="mi">10000</code><code class="p">)</code> <code class="p">{</code>
+                <code class="nx">counter</code> <code class="o">+=</code> <code class="mi">1</code><code class="p">;</code>
+                <code class="nx">statusElement</code><code class="p">.</code><code class="nx">innerText</code> <code class="o">=</code> <code class="sb">`Just generated number </code><code class="si">${</code><code class="nx">counter</code><code class="si">}</code><code class="sb">`</code><code class="p">;</code>
+        
+                <code class="c1">// Call the function again, for the next chunk</code>
+                <code class="nx">setTimeout</code><code class="p">(</code><code class="nx">doChunkedTask</code><code class="p">,</code> <code class="mi">0</code><code class="p">);</code>
+              <code class="p">}</code>
+              <code class="k">else</code> <code class="p">{</code>
+                <code class="nx">statusElement</code><code class="p">.</code><code class="nx">innerText</code> <code class="o">=</code> <code class="s1">'Processing completed'</code><code class="p">;</code>
+             <code class="p">}</code>
+           <code class="p">};</code>
+        
+          <code class="c1">// Start the process by calling the function for the first time</code>
+          <code class="nx">doChunkedTask</code><code class="p">();</code>
+        <code class="p">}</code></pre>
+        
+        <p><a data-type="indexterm" data-primary="anonymous functions" id="idm45475156104568"></a><a data-type="indexterm" data-primary="functions" data-secondary="anonymous" id="idm45475156103736"></a>Here, the <code>doChunkedTask</code> variable holds an anonymous function that’s defined with arrow function syntax (<a data-type="xref" href="ch06.html#arrow_functions">“Using Arrow Functions”</a>). You don’t need to use an anonymous function or arrow syntax, but it simplifies the code. The <code>doChunkedTask</code> function gets access to everything that’s in scope when you create it, including the <code>startTime</code> and <code>statusElement</code> variables. As a result, you don’t need to worry about passing this information to the function, which would be necessary if you declared it separately.</p>
+        
+        <p>When you run this code, you’ll see the numbers quickly flash by in the paragraph on the web page, and then be replaced with the completion message after 10 seconds.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Discussion"><div class="sect2" id="idm45475155968440">
+        <h2>Discussion</h2>
+        
+        <p><a data-type="indexterm" data-primary="Web Worker API (Worker object)" id="idm45475155967000"></a>JavaScript has a mature solution for asynchronous work with the <em>web workers</em> feature (see <a data-type="xref" href="#using_web_workers">“Using a Web Worker to Perform a Background Task”</a>). However, you don’t always need this level of sophistication. Web workers are great if you have a long-running task, an asynchronous operation that needs to accept chunks of data as it works, or an asynchronous operation that needs support for cancellation. But if you’re dealing with a relatively short task and you have more modest requirements—for example, you just want to update the page during a brief burst of CPU-intensive work—the <code>setTimeout()</code> approach works perfectly well.</p>
+        
+        <p>In the example presented here, the <code>setTimeout()</code> method is called repeatedly. Each time, the page relinquishes control and waits for the browser to schedule the requested function, which it does as soon as the main application thread is idle (in this case, almost instantaneously). To understand how this works, it’s important to realize that <code>setTimeout()</code> does not set <em>exactly</em> when a function will run. Instead, it sets a <em>minimum</em> time interval. When the <code>setTimeout()</code> timer ends, it asks the browser to execute the function, but it’s up to the browser to schedule this request. If the browser is busy, the request will be delayed. (In fact, even if the browser isn’t busy, modern browsers throttle a sequence of requests so it is never triggered more frequently than once every 4 milliseconds.) But in practice these delays are very small, and calling <code>setTimeout()</code> with a value of 0 milliseconds causes your code to be triggered almost immediately.</p>
+        
+        <p>The <code>setTimeout()</code> method isn’t the only method JavaScript has for scheduling work with a timer. <a data-type="indexterm" data-primary="setInterval() method, web workers" id="idm45475155959256"></a>There’s also the <code>window.setInterval()</code> method, which calls a function repeatedly, with a fixed wait time before each subsequent call. And if you want to use a timer to create an animation (for example, by redrawing objects in a <code>&lt;canvas&gt;</code>), it’s better to use <code>requestAnimationFrame()</code>, which synchronizes itself with the browser’s repainting operations to make sure you don’t waste resources calculating an animation more frequently that it can be shown.</p>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p>Both the <code>setTimeout()</code> and the <code>setInterval()</code> methods are ancient parts of JavaScript. However, they are not obsolete or deprecated. For more complex scenarios, you should web workers rather than roll your own custom solutions built on <code>setTimeout()</code> or <code>setInterval()</code>. However, both methods are still acceptable.</p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="See Also"><div class="sect2" id="idm45475155953592">
+        <h2>See Also</h2>
+        
+        <p><a data-type="xref" href="#using_web_workers">“Using a Web Worker to Perform a Background Task”</a> describes how to carry out more ambitious operations in the background using web workers.<a data-type="indexterm" data-primary="" data-startref="ix_async_page_update" id="idm45475155951448"></a><a data-type="indexterm" data-primary="" data-startref="ix_page_update_async" id="idm45475155950504"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Using a Function That Returns a Promise"><div class="sect1" id="async_call_with_promise">
+        <h1>Using a Function That Returns a Promise</h1>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Problem"><div class="sect2" id="idm45475155947816">
+        <h2>Problem</h2>
+        
+        <p><a data-type="indexterm" data-primary="functions" data-secondary="returning Promise object" id="ix_function_promise"></a><a data-type="indexterm" data-primary="promises (Promise object)" data-secondary="using function that returns" id="ix_promise_return_func"></a><a data-type="indexterm" data-primary="asynchronous programming" data-secondary="Promise object, using function that returns" id="ix_async_promise"></a>You want to run code when an asynchronous task completes (successfully or unsuccessfully). You want to be notified about task completion through a <code>Promise</code> object.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Solution"><div class="sect2" id="idm45475155941960">
+        <h2>Solution</h2>
+        
+        <p>A <code>Promise</code> is an object that helps you manage an asynchronous task. It tracks the status of the task and—most importantly—handles the callbacks that notify your code when the task succeeds or fails. Technically, promises don’t add new functionality to JavaScript, but they do make it easier to cleanly coordinate a sequence of asynchronous operations.</p>
+        
+        <p><a data-type="indexterm" data-primary="promises (Promise object)" data-secondary="methods" id="ix_promise_method"></a><a data-type="indexterm" data-primary="methods" data-secondary="promises" id="ix_method_promise"></a>In order to use promises, the API you’re calling must support them. There’s rarely any ambiguity about this, because APIs that support promises have methods that return <code>Promise</code> objects. Older APIs that <em>don’t</em> use promises will ask you to supply one or more callback functions or handle a specific event. (If you want to use a promise with a callback-based API, see <a data-type="xref" href="#promisifying_callback_function">“Promisifying an Asynchronous Function That <span class="keep-together">Uses a Callback</span>”</a> instead.)</p>
+        
+        <p>To specify what should happen after a promise finishes, you call <code>Promise.then()</code> and supply a function. To specify what should happen in the case of an error, you call <code>Promise.catch()</code> and supply a different function. To add some clean-up code that should run after the promise has succeeded <em>or</em> failed, you call <code>Promise.finally()</code> with a third function.</p>
+        
+        <p>Here’s a naïve implementation of promises, using the Fetch API:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="c1">// Create the promise</code>
+        <code class="kr">const</code> <code class="nx">promise</code> <code class="o">=</code> <code class="nx">fetch</code><code class="p">(</code>
+         <code class="s1">'https://upload.wikimedia.org/wikipedia/commons/b/b2/Eagle_nebula_pillars.jpg'</code><code class="p">);</code>
+        
+        <code class="c1">// Supply a function that logs successful requests</code>
+        <code class="nx">promise</code><code class="p">.</code><code class="nx">then</code><code class="p">(</code> <code class="kd">function</code> <code class="nx">onSuccess</code><code class="p">(</code><code class="nx">response</code><code class="p">)</code> <code class="p">{</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="sb">`HTTP status: </code><code class="si">${</code><code class="nx">response</code><code class="p">.</code><code class="nx">status</code><code class="si">}</code><code class="sb">`</code><code class="p">);</code>
+        <code class="p">});</code>
+        
+        <code class="c1">// Supply a function that logs errors</code>
+        <code class="nx">promise</code><code class="p">.</code><code class="k">catch</code><code class="p">(</code> <code class="kd">function</code> <code class="nx">onError</code><code class="p">(</code><code class="nx">error</code><code class="p">)</code> <code class="p">{</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">error</code><code class="p">(</code><code class="sb">`Error: </code><code class="si">${</code><code class="nx">error</code><code class="si">}</code><code class="sb">`</code><code class="p">);</code>
+        <code class="p">});</code>
+        
+        <code class="c1">// Supply a function that runs either way</code>
+        <code class="nx">promise</code><code class="p">.</code><code class="k">finally</code><code class="p">(</code> <code class="kd">function</code> <code class="nx">onFinally</code><code class="p">()</code> <code class="p">{</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="s1">'All done'</code><code class="p">);</code>
+        <code class="p">});</code></pre>
+        
+        <p>If the call succeeds, you’ll see the HTTP status appear in the console window, followed by the “All done” message.</p>
+        
+        <p>This example shows the structure of a basic promise call, but it isn’t the way we typically write promise-based code, for two reasons. First, for more compact and readable code, we favor declaring the functions with arrow function syntax (<a data-type="xref" href="ch06.html#arrow_functions">“Using Arrow Functions”</a>). Second, the <code>then()</code>, <code>catch()</code>, and <code>finally()</code> methods are usually chained into one statement. This is possible because these methods all return the same <code>Promise</code> object.</p>
+        
+        <p>Here’s the more compact and more typical way to write this code:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">fetch</code><code class="p">(</code>
+         <code class="s1">'https://upload.wikimedia.org/wikipedia/commons/b/b2/Eagle_nebula_pillars.jpg'</code><code class="p">)</code>
+        <code class="p">.</code><code class="nx">then</code><code class="p">(</code><code class="nx">response</code> <code class="o">=&gt;</code> <code class="p">{</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="sb">`HTTP status: </code><code class="si">${</code><code class="nx">response</code><code class="p">.</code><code class="nx">status</code><code class="si">}</code><code class="sb">`</code><code class="p">);</code>
+        <code class="p">})</code>
+        <code class="p">.</code><code class="k">catch</code><code class="p">(</code><code class="nx">error</code> <code class="o">=&gt;</code> <code class="p">{</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">error</code><code class="p">(</code><code class="sb">`Error: </code><code class="si">${</code><code class="nx">error</code><code class="si">}</code><code class="sb">`</code><code class="p">);</code>
+        <code class="p">})</code>
+        <code class="p">.</code><code class="k">finally</code><code class="p">(()</code> <code class="o">=&gt;</code> <code class="p">{</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="s1">'All done'</code><code class="p">);</code>
+        <code class="p">});</code></pre>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p>This promise-based example uses just a single statement, and you’re able to break the line wherever you like. One common convention, which we’ve used here, is to break the statement just <em>before</em> the dot operator, so the next line begins with <code>.then</code> or <code>.catch</code>. This way, the code is easy to follow and has an error-handling layout that’s similar to synchronous code. This is also the structure applied by the Prettier code formatter (<a data-type="xref" href="ch01.html#using_prettier">“Styling Code Consistently with a Formatter”</a>).<a data-type="indexterm" data-primary="" data-startref="ix_method_promise" id="idm45475155691752"></a><a data-type="indexterm" data-primary="" data-startref="ix_promise_method" id="idm45475155690776"></a></p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Discussion"><div class="sect2" id="idm45475155941304">
+        <h2>Discussion</h2>
+        
+        <p>A <code>Promise</code> object is not a result, but a <em>placeholder</em> for a result that will be available in the future.</p>
+        
+        <p>As soon as you create a <code>Promise</code> object, its code begins to execute. It’s even possible that the <code>Promise</code> may finish its work before you call <code>then()</code> or <code>catch()</code>. This won’t change how your code works. If you call <code>then()</code> on a promise that’s already resolved (successfully), or <code>catch()</code> on a promise that’s already rejected (with an error), your code runs right away.</p>
+        
+        <p><a data-type="indexterm" data-primary="chaining, method" id="idm45475155683944"></a><a data-type="indexterm" data-primary="method chaining" id="idm45475155683240"></a>The simple solution shown here uses chaining to attach a success function (with <code>then()</code>) and a failure function (with <code>catch()</code>). However, it’s also common to use chaining to tie multiple asynchronous tasks together, so they run one after the other. The <code>fetch()</code> function provides a good example. It returns a promise that resolves once the server responds. However, if you want to read the body of this message, you need to start a second asynchronous operation. (This sounds needlessly painful, but it makes perfect sense, because the amount of data being sent could be huge, so you don’t want to risk blocking your code while you retrieve it. In JavaScript, I/O operations are always asynchronous.)</p>
+        
+        <p><a data-type="indexterm" data-primary="blob() response type" id="idm45475155680328"></a>Here’s an example that performs an asynchronous <code>fetch</code> request, then reads the results as a binary stream using <code>response.blob()</code>, which returns a second <code>Promise</code> object. <a data-type="indexterm" data-primary="images (img element)" data-seealso="SVG" id="idm45475155678024"></a><a data-type="indexterm" data-primary="images (img element)" data-secondary="accessing" id="ix_img_elem"></a>Now <code>then()</code> is called on that object to add a third step—turning the binary data into a Base64-encoded string that can be shown in an <code>&lt;img&gt;</code> element:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">fetch</code><code class="p">(</code>
+         <code class="s1">'https://upload.wikimedia.org/wikipedia/commons/b/b2/Eagle_nebula_pillars.jpg'</code><code class="p">)</code>
+        <code class="p">.</code><code class="nx">then</code><code class="p">(</code><code class="nx">response</code> <code class="o">=&gt;</code> <code class="nx">response</code><code class="p">.</code><code class="nx">blob</code><code class="p">())</code>
+        <code class="p">.</code><code class="nx">then</code><code class="p">(</code><code class="nx">blob</code> <code class="o">=&gt;</code> <code class="p">{</code>
+          <code class="kr">const</code> <code class="nx">img</code> <code class="o">=</code> <code class="nb">document</code><code class="p">.</code><code class="nx">getElementById</code><code class="p">(</code><code class="s1">'imgDownload'</code><code class="p">);</code>
+          <code class="nx">img</code><code class="p">.</code><code class="nx">src</code> <code class="o">=</code> <code class="nx">URL</code><code class="p">.</code><code class="nx">createObjectURL</code><code class="p">(</code><code class="nx">blob</code><code class="p">);</code>
+        <code class="p">});</code></pre>
+        
+        <p>Good code formatting is important, because a promise chain can become quite long. But if organized consistently, your asynchronous calls can look similar to a linear block of code, which is a significant improvement over the past, when developers coined the term <em>callback hell</em> to describe nested pyramids of consecutive callback functions.</p>
+        
+        <p>When chaining multiple promises, you call <code>catch()</code> and <code>finally()</code> at the end of the chain, if you decide to use them. That gives you one place to collect unhandled errors that occur during any stage of the promise chain. You can even throw your own exceptions in a <code>then()</code> function to signify failure and end the chain:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">fetch</code><code class="p">(</code>
+         <code class="s1">'https://upload.wikimedia.org/wikipedia/commons/b/b2/Eagle_nebula_pillars.jpg'</code><code class="p">)</code>
+        <code class="p">.</code><code class="nx">then</code><code class="p">(</code><code class="nx">response</code> <code class="o">=&gt;</code> <code class="p">{</code>
+          <code class="k">if</code> <code class="p">(</code><code class="o">!</code><code class="nx">response</code><code class="p">.</code><code class="nx">ok</code><code class="p">)</code> <code class="p">{</code>
+            <code class="c1">// Ordinarily, it's not an error if the server responds to our request</code>
+            <code class="c1">// Now, let's treat any response other than HTTP 200 OK as an error</code>
+            <code class="k">throw</code> <code class="k">new</code> <code class="nb">Error</code><code class="p">(</code><code class="sb">`HTTP code: </code><code class="si">${</code><code class="nx">response</code><code class="p">.</code><code class="nx">status</code><code class="si">}</code><code class="sb">`</code><code class="p">);</code>
+          <code class="p">}</code>
+          <code class="k">else</code> <code class="p">{</code>
+            <code class="k">return</code> <code class="nx">response</code><code class="p">.</code><code class="nx">blob</code><code class="p">();</code>
+          <code class="p">}</code>
+        <code class="p">})</code>
+        <code class="p">.</code><code class="nx">then</code><code class="p">(</code><code class="nx">blob</code> <code class="o">=&gt;</code> <code class="p">{</code>
+          <code class="kr">const</code> <code class="nx">img</code> <code class="o">=</code> <code class="nb">document</code><code class="p">.</code><code class="nx">getElementById</code><code class="p">(</code><code class="s1">'imgDownload'</code><code class="p">);</code>
+          <code class="nx">img</code><code class="p">.</code><code class="nx">src</code> <code class="o">=</code> <code class="nx">URL</code><code class="p">.</code><code class="nx">createObjectURL</code><code class="p">(</code><code class="nx">blob</code><code class="p">);</code>
+        <code class="p">})</code>
+        <code class="p">.</code><code class="k">catch</code><code class="p">(</code><code class="nx">error</code> <code class="o">=&gt;</code> <code class="p">{</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="s1">'An error occurred in the first or second promise'</code><code class="p">);</code>
+        <code class="p">});</code></pre>
+        
+        <p>As soon as an unhandled error occurs, the entire promise chain is derailed. You can react to this error to perform logging or some other diagnostic task, but you can’t resume the promises that were abandoned further down the chain. If you don’t catch an error in a promise, it’s eventually raised as the <code>window.unhandledrejection</code> event and, if not canceled there, it’s logged to the console.<a data-type="indexterm" data-primary="" data-startref="ix_img_elem" id="idm45475155622072"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="See Also"><div class="sect2" id="idm45475155689240">
+        <h2>See Also</h2>
+        
+        <p><a data-type="xref" href="ch13.html#ch13">Chapter&nbsp;13</a> explains the Fetch API in more detail. <a data-type="xref" href="#concurrent_promises">“Executing Multiple Promises Concurrently”</a> shows how to link concurrent tasks with a promise. <a data-type="xref" href="#using_await">“Waiting for a Promise to Finish with Await and Async”</a> shows how to use <code>fetch()</code> with the <code>await</code> keyword.<a data-type="indexterm" data-primary="" data-startref="ix_async_promise" id="idm45475155507896"></a><a data-type="indexterm" data-primary="" data-startref="ix_promise_return_func" id="idm45475155506888"></a><a data-type="indexterm" data-primary="" data-startref="ix_function_promise" id="idm45475155505944"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Promisifying an Asynchronous Function That Uses a Callback"><div class="sect1" id="promisifying_callback_function">
+        <h1>Promisifying an Asynchronous Function That <span class="keep-together">Uses a Callback</span></h1>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Problem"><div class="sect2" id="idm45475155502856">
+        <h2>Problem</h2>
+        
+        <p><a data-type="indexterm" data-primary="promises (Promise object)" data-secondary="callback function change to promise" id="ix_promise_callback_func"></a><a data-type="indexterm" data-primary="callback function" data-secondary="change to promise" id="ix_callback_promise"></a><a data-type="indexterm" data-primary="asynchronous programming" data-secondary="callback function change to promise" id="ix_async_callback_promise"></a>You want to change a callback-based asynchronous function to use a promise.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Solution"><div class="sect2" id="idm45475155497544">
+        <h2>Solution</h2>
+        
+        <p><a data-type="indexterm" data-primary="methods" data-secondary="promises" id="idm45475155495976"></a><a data-type="indexterm" data-primary="promises (Promise object)" data-secondary="methods" id="idm45475155495000"></a>Create another function to wrap your asynchronous function. This function creates and returns a new <code>Promise</code> object. When the asynchronous task finishes, the function calls either <code>Promise.resolve()</code> if it succeeded or <code>Promise.reject()</code> if it failed.</p>
+        
+        <p>Here’s an example of a function that acts like a traditional, callback-based asynchronous function. It uses a timer to perform its asynchronous work:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kd">function</code> <code class="nx">factorializeNumber</code><code class="p">(</code><code class="nx">number</code><code class="p">,</code> <code class="nx">successCallback</code><code class="p">,</code> <code class="nx">failureCallback</code><code class="p">)</code> <code class="p">{</code>
+          <code class="k">if</code> <code class="p">(</code><code class="nx">number</code> <code class="o">&lt;</code> <code class="mi">0</code><code class="p">)</code> <code class="p">{</code>
+            <code class="nx">failureCallback</code><code class="p">(</code>
+              <code class="k">new</code> <code class="nb">Error</code><code class="p">(</code><code class="s1">'Factorials are only defined for positive numbers'</code><code class="p">));</code>
+          <code class="p">}</code>
+          <code class="k">else</code> <code class="k">if</code> <code class="p">(</code><code class="nx">number</code> <code class="o">!==</code> <code class="nb">Math</code><code class="p">.</code><code class="nx">trunc</code><code class="p">(</code><code class="nx">number</code><code class="p">))</code> <code class="p">{</code>
+            <code class="nx">failureCallback</code><code class="p">(</code><code class="k">new</code> <code class="nb">Error</code><code class="p">(</code><code class="s1">'Factorials are only defined for integers'</code><code class="p">));</code>
+          <code class="p">}</code>
+          <code class="k">else</code> <code class="p">{</code>
+            <code class="nx">setTimeout</code><code class="p">(</code> <code class="p">()</code> <code class="o">=&gt;</code> <code class="p">{</code>
+              <code class="k">if</code> <code class="p">(</code><code class="nx">number</code> <code class="o">===</code> <code class="mi">0</code> <code class="o">||</code> <code class="nx">number</code> <code class="o">===</code> <code class="mi">1</code><code class="p">)</code> <code class="p">{</code>
+                <code class="nx">successCallback</code><code class="p">(</code><code class="mi">1</code><code class="p">);</code>
+              <code class="p">}</code>
+              <code class="k">else</code> <code class="p">{</code>
+                <code class="kd">let</code> <code class="nx">result</code> <code class="o">=</code> <code class="nx">number</code><code class="p">;</code>
+                <code class="k">while</code> <code class="p">(</code><code class="nx">number</code> <code class="o">&gt;</code> <code class="mi">1</code><code class="p">)</code> <code class="p">{</code>
+                  <code class="nx">number</code> <code class="o">-=</code> <code class="mi">1</code><code class="p">;</code>
+                  <code class="nx">result</code> <code class="o">*=</code> <code class="nx">number</code><code class="p">;</code>
+                <code class="p">}</code>
+                <code class="nx">successCallback</code><code class="p">(</code><code class="nx">result</code><code class="p">);</code>
+              <code class="p">}</code>
+            <code class="p">},</code> <code class="mi">5000</code><code class="p">);</code>  <code class="c1">// This hard-coded 5-second delay simulates a long async process</code>
+          <code class="p">}</code>
+        <code class="p">}</code></pre>
+        
+        <p>There’s no benefit to calculating factorials asynchronously or to using a timer. This example is just a stand-in for any older API that uses callbacks.</p>
+        
+        <p>Right now, you can use the <code>factorializeNumber()</code> function like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kd">function</code> <code class="nx">logResult</code><code class="p">(</code><code class="nx">result</code><code class="p">)</code> <code class="p">{</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="sb">`5! = </code><code class="si">${</code><code class="nx">result</code><code class="si">}</code><code class="sb">`</code><code class="p">);</code>
+        <code class="p">}</code>
+        
+        <code class="kd">function</code> <code class="nx">logError</code><code class="p">(</code><code class="nx">error</code><code class="p">)</code> <code class="p">{</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="sb">`Error: </code><code class="si">${</code><code class="nx">error</code><code class="p">.</code><code class="nx">message</code><code class="si">}</code><code class="sb">`</code><code class="p">);</code>
+        <code class="p">}</code>
+        
+        <code class="nx">factorializeNumber</code><code class="p">(</code><code class="mi">5</code><code class="p">,</code> <code class="nx">logResult</code><code class="p">,</code> <code class="nx">logError</code><code class="p">);</code></pre>
+        
+        <p>The easiest way to promisify the <code>factorializeNumber()</code> function is to create a new function that wraps it:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kd">function</code> <code class="nx">factorializeNumberPromise</code><code class="p">(</code><code class="nx">number</code><code class="p">)</code> <code class="p">{</code>
+          <code class="k">return</code> <code class="k">new</code> <code class="nb">Promise</code><code class="p">((</code><code class="nx">resolve</code><code class="p">,</code> <code class="nx">reject</code><code class="p">)</code> <code class="o">=&gt;</code> <code class="p">{</code>
+            <code class="nx">factorializeNumber</code><code class="p">(</code><code class="nx">number</code><code class="p">,</code>
+              <code class="nx">result</code> <code class="o">=&gt;</code> <code class="p">{</code>
+                <code class="nx">resolve</code><code class="p">(</code><code class="nx">result</code><code class="p">);</code>
+              <code class="p">},</code>
+              <code class="nx">error</code> <code class="o">=&gt;</code> <code class="p">{</code>
+                <code class="nx">reject</code><code class="p">(</code><code class="nx">error</code><code class="p">);</code>
+              <code class="p">});</code>
+          <code class="p">});</code>
+        <code class="p">}</code></pre>
+        
+        <p>Now you can call <code>factorializeNumberPromise()</code>, receive a <code>Promise</code> object, and handle the result with <code>Promise.then()</code>:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">factorializeNumberPromise</code><code class="p">(</code><code class="mi">5</code><code class="p">)</code>
+        <code class="p">.</code><code class="nx">then</code><code class="p">(</code> <code class="nx">result</code> <code class="o">=&gt;</code> <code class="p">{</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="sb">`5! = </code><code class="si">${</code><code class="nx">result</code><code class="si">}</code><code class="sb">`</code><code class="p">);</code>
+        <code class="p">});</code></pre>
+        
+        <p>You can also catch potential errors, and even create a whole chain of asynchronous operations.</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">factorializeNumberPromise</code><code class="p">(</code><code class="s1">'Bad value'</code><code class="p">)</code>
+        <code class="p">.</code><code class="nx">then</code><code class="p">(</code> <code class="nx">result</code> <code class="o">=&gt;</code> <code class="p">{</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="sb">`6! = </code><code class="si">${</code><code class="nx">result</code><code class="si">}</code><code class="sb">`</code><code class="p">);</code>
+        <code class="p">})</code>
+        <code class="p">.</code><code class="k">catch</code><code class="p">(</code> <code class="nx">error</code> <code class="o">=&gt;</code> <code class="p">{</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="nx">error</code><code class="p">);</code>
+        <code class="p">});</code></pre>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Discussion"><div class="sect2" id="idm45475155496952">
+        <h2>Discussion</h2>
+        
+        <p>Before going deeper into this solution, it’s important to address one possible misconception right away. It’s easy to create a function that returns a <code>Promise</code> object. However, this does <em>not</em> make your code asynchronous. Your code will run synchronously on the UI thread, as usual. (It’s similar to calling <code>setTimeout()</code> with a delay of 0.)</p>
+        
+        <p>To get around this limitation, the <code>factorializeNumber()</code> example uses a timer to simulate an asynchronous API. If you really want to run your own code in the background on another thread, you need to use the Web Workers API (<a data-type="xref" href="#using_web_workers">“Using a Web Worker to Perform a Background Task”</a>).</p>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p>In JavaScript you’ll use promises often, but you’ll create them rarely. The most common reason for creating a <code>Promise</code> object is because you’re wrapping older callback-based code, as in this example.</p>
+        </div>
+        
+        <p>To make a promisified version of a function, you need a function that creates a <code>Promise</code> object and returns it. That’s the main job of the <code>factorializeNumberPromise()</code> function. And although creating a <code>Promise</code> is easy, it can look complex at first because there are two layers of nested functions at work. t its heart, the <code>Promise</code> object wraps a function that has this structure:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kd">function</code><code class="p">(</code><code class="nx">resolve</code><code class="p">,</code> <code class="nx">reject</code><code class="p">)</code> <code class="p">{</code>
+          <code class="p">...</code>
+        <code class="p">}</code></pre>
+        
+        <p><a data-type="indexterm" data-primary="methods" data-secondary="promises" id="idm45475155055256"></a><a data-type="indexterm" data-primary="promises (Promise object)" data-secondary="methods" id="idm45475155054408"></a>The promise function receives two parameters, which are essentially callback functions. You use these functions to signal the completion of the promise. Call <code>resolve()</code> (with your return value) to successfully end the promise, or <code>reject()</code> (with an error object) to indicate a failure. Alternately, if an unhandled error occurs anywhere in your promise function, the <code>Promise</code> object will catch it and automatically call <code>reject()</code>, passing the error along.</p>
+        
+        <p>Inside the promise function, you launch your asynchronous task. Or, in the <code>factorializeNumberPromise()</code> example, you call the existing <code>factorializeNumber()</code> function that starts the timer. You still need to use the callback functions to interface with the old <code>factorializeNumber()</code> function. The difference is that now you will forward them through the promise by calling <code>resolve()</code> or <code>reject()</code>. For example, here’s the function for the <code>successCallback</code>, which calls <code>resolve()</code>:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kd">function</code><code class="p">(</code><code class="nx">resolve</code><code class="p">,</code> <code class="nx">reject</code><code class="p">)</code> <code class="p">{</code>
+          <code class="nx">factorializeNumber</code><code class="p">(</code><code class="nx">number</code><code class="p">,</code>
+            <code class="kd">function</code> <code class="nx">successCallback</code><code class="p">(</code><code class="nx">result</code><code class="p">)</code> <code class="p">{</code>
+              <code class="nx">resolve</code><code class="p">(</code><code class="nx">result</code><code class="p">);</code>
+            <code class="p">},</code>
+            <code class="p">...</code>
+          <code class="p">);</code>
+        <code class="p">}</code></pre>
+        
+        <p>And here’s the failure callback that calls <code>reject()</code>:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kd">function</code><code class="p">(</code><code class="nx">resolve</code><code class="p">,</code> <code class="nx">reject</code><code class="p">)</code> <code class="p">{</code>
+          <code class="nx">factorializeNumber</code><code class="p">(</code><code class="nx">number</code><code class="p">,</code>
+            <code class="kd">function</code> <code class="nx">successCallback</code><code class="p">(</code><code class="nx">result</code><code class="p">)</code> <code class="p">{</code>
+              <code class="nx">resolve</code><code class="p">(</code><code class="nx">result</code><code class="p">);</code>
+            <code class="p">},</code>
+            <code class="kd">function</code> <code class="nx">failureCallback</code><code class="p">(</code><code class="nx">error</code><code class="p">)</code> <code class="p">{</code>
+              <code class="nx">reject</code><code class="p">(</code><code class="nx">error</code><code class="p">);</code>
+            <code class="p">});</code>
+          <code class="p">);</code>
+        <code class="p">}</code></pre>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p>The <code>Promise.reject()</code> method takes one argument, which represents the reason for the failure. This reason can be any type of object, but it’s strongly recommended that you use an instance of the <code>Error</code> object or a custom object that derives from <code>Error</code> (<a data-type="xref" href="ch10.html#throwing_custom_errors">“Throwing a Custom Error”</a>). In the current example, the failure callback already sends an <code>Error</code> object, so we can simply pass that to <code>reject()</code>.</p>
+        </div>
+        
+        <p>The full solution makes the code more compact by declaring the <code>successCallback</code>, the <code>failureCallback</code>, and the promise function that holds them with arrow syntax (<a data-type="xref" href="ch06.html#arrow_functions">“Using Arrow Functions”</a>).</p>
+        
+        <p>It is possible to write a generic promisifying function that can promisify any callback-based function. In fact, some libraries, like BlueBird.js, provide this functionality. However, in most cases it’s simpler and less confusing to use promisification judiciously—for example, when you want to unify one asynchronous task with another one that already uses promises—rather than attempt to wrap every old asynchronous API.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="See Also"><div class="sect2" id="idm45475155066472">
+        <h2>See Also</h2>
+        
+        <p>If you’re developing for the Node runtime environment, you can use the <code>promisify</code> utility to wrap a function with a promise, as described in <a data-type="xref" href="ch19.html#managing_callback_hell">“Managing Callback Hell”</a>.<a data-type="indexterm" data-primary="" data-startref="ix_async_callback_promise" id="idm45475154893080"></a><a data-type="indexterm" data-primary="" data-startref="ix_promise_callback_func" id="idm45475154892136"></a><a data-type="indexterm" data-primary="" data-startref="ix_callback_promise" id="idm45475154891224"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Executing Multiple Promises Concurrently"><div class="sect1" id="concurrent_promises">
+        <h1>Executing Multiple Promises Concurrently</h1>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Problem"><div class="sect2" id="idm45475154888600">
+        <h2>Problem</h2>
+        
+        <p><a data-type="indexterm" data-primary="promises (Promise object)" data-secondary="concurrent multiple promise execution" id="ix_multi-promise_concurr"></a><a data-type="indexterm" data-primary="asynchronous programming" data-secondary="concurrent multiple promise execution" id="ix_async_multi-promise"></a>You want to execute multiple promises at the same time, and react once all the promises have finished their work.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Solution"><div class="sect2" id="idm45475154884440">
+        <h2>Solution</h2>
+        
+        <p><a data-type="indexterm" data-primary="all() method" id="ix_all_method"></a>Use the static <code>Promise.all()</code> method to combine multiple promises into a single promise and wait for them all to resolve successfully (or for any one of them to fail).</p>
+        
+        <p>To demonstrate how this works, imagine you have a function that returns a promise that resolves after a wait of roughly 0 to 10 seconds. Here’s a <code>randomWaitPromise()</code> function that does exactly that using <code>setTimeout()</code>. Treat it as a stand-in for any asynchronous operation:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kd">function</code> <code class="nx">randomWaitPromise</code><code class="p">()</code> <code class="p">{</code>
+          <code class="k">return</code> <code class="k">new</code> <code class="nb">Promise</code><code class="p">((</code><code class="nx">resolve</code><code class="p">,</code> <code class="nx">reject</code><code class="p">)</code> <code class="o">=&gt;</code> <code class="p">{</code>
+            <code class="c1">// Decide how long to wait</code>
+            <code class="kr">const</code> <code class="nx">waitMilliseconds</code> <code class="o">=</code> <code class="nb">Math</code><code class="p">.</code><code class="nx">round</code><code class="p">(</code><code class="nb">Math</code><code class="p">.</code><code class="nx">random</code><code class="p">()</code> <code class="o">*</code> <code class="mi">10000</code><code class="p">);</code>
+        
+            <code class="c1">// Simulate an asynchronous task with setTimeout()</code>
+            <code class="nx">setTimeout</code><code class="p">(()</code> <code class="o">=&gt;</code> <code class="p">{</code>
+              <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="sb">`Resolved after </code><code class="si">${</code><code class="nx">waitMilliseconds</code><code class="si">}</code><code class="sb">`</code><code class="p">);</code>
+        
+              <code class="c1">// Return the number of seconds waited</code>
+              <code class="nx">resolve</code><code class="p">(</code><code class="nx">waitMilliseconds</code><code class="p">);</code>
+            <code class="p">},</code> <code class="nx">waitMilliseconds</code><code class="p">);</code>
+          <code class="p">});</code>
+        <code class="p">}</code></pre>
+        
+        <p>Now you can use <code>randomWaitPromise()</code> to quickly create any number of new promises. To wait for several promises to finish, you need to place all the <code>Promise</code> objects in an array, and pass that array to the <code>Promise.all()</code> method. <code>Promise.all()</code> returns a new promise that represents the completion of all your promises. Using that, you can call <code>then()</code> and <code>catch()</code> to build a promise chain, like usual:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="c1">// Create three promises</code>
+        <code class="kr">const</code> <code class="nx">promise1</code> <code class="o">=</code> <code class="nx">randomWaitPromise</code><code class="p">();</code>
+        <code class="kr">const</code> <code class="nx">promise2</code> <code class="o">=</code> <code class="nx">randomWaitPromise</code><code class="p">();</code>
+        <code class="kr">const</code> <code class="nx">promise3</code> <code class="o">=</code> <code class="nx">randomWaitPromise</code><code class="p">();</code>
+        <code class="kr">const</code> <code class="nx">promises</code> <code class="o">=</code> <code class="p">[</code><code class="nx">promise1</code><code class="p">,</code> <code class="nx">promise2</code><code class="p">,</code> <code class="nx">promise3</code><code class="p">];</code>
+        
+        <code class="c1">// Wait for all of them, then log the result</code>
+        <code class="nb">Promise</code><code class="p">.</code><code class="nx">all</code><code class="p">(</code><code class="nx">promises</code><code class="p">).</code><code class="nx">then</code><code class="p">(</code><code class="nx">values</code> <code class="o">=&gt;</code> <code class="p">{</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="sb">`All done with: </code><code class="si">${</code><code class="nx">values</code><code class="si">}</code><code class="sb">`</code><code class="p">);</code>
+        <code class="p">});</code></pre>
+        
+        <p>There’s no <code>Promise.catch()</code> in this chain, because it’s impossible for this code to fail.</p>
+        
+        <p>When you run this example, each promise will write to the console as it finishes. When the last, slowest promise resolves, you’ll get the final “All done” message:</p>
+        
+        <pre data-type="programlisting">Resolved after 790
+        Resolved after 4329
+        Resolved after 6238
+        All done with: 790,6238,4329</pre>
+        <div data-type="tip"><h6>Tip</h6>
+        <p>When you’re using several promises at a time, it’s common to pass an object with some sort of identifier to your promise (like a URL or an ID). Then, when the promise resolves it can pass back an object that includes this identifying detail. This way, you can determine which result goes with which promise. This tracking is convenient, but it isn’t necessary, because you can tell which result is which by their order. The order of the results that you receive in the results array matches the order of the promises that you submitted originally in the promises array.</p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Discussion"><div class="sect2" id="idm45475154883848">
+        <h2>Discussion</h2>
+        
+        <p>One advantage of asynchronous programming is being able to collapse your wait time. In other words, rather than wait for one task to complete, and then another, and then another, you can start all three at once. In real life, this is somewhat of a specialized scenario. It’s far more common to have an asynchronous task that depends on the results from another asynchronous task, in which case you need to chain one task after the other. But if this isn’t the case, you can save considerable time by running multiple promises at once and waiting for them with <code>Promise.all().</code></p>
+        
+        <p><code>Promise.all()</code> uses a <em>fail-fast</em> behavior. <a data-type="indexterm" data-primary="fail-fast behavior" id="idm45475154700280"></a>As soon as one of the promises is rejected (either deliberately by calling <code>Promise.reject()</code> or with an unhandled error), the combined promise you created with <code>Promise.all()</code> is also rejected, triggering whatever function you attached to the promise chain with <code>Promise.catch()</code>. The other promises will still run, and you can get their results from the corresponding <code>Promise</code> objects. For example, if <code>promise1</code> rejects, nothing stops you from calling <code>promise2.then()</code> to get its result. But in practice, when you use <code>Promise.all()</code> you will probably treat a failure in one promise as the end of your combined operation. Otherwise, it would be easier to keep your promises separate, or use one of the alternative <code>Promise</code> methods listed below.</p>
+        
+        <p>There are other static <code>Promise</code> methods besides <code>all()</code> that accept multiple promises and return a single combined promise. They all have slightly different behavior:</p>
+        <dl>
+        <dt><code>Promise.allSettled()</code></dt>
+        <dd>
+        <p><a data-type="indexterm" data-primary="allSettled() method" id="idm45475154692936"></a>Resolves when every promise has been resolved <em>or</em> rejected. (This is unlike <code>Promise.all()</code>, which only resolves if <em>all</em> the promises are successful.) The function you attach with <code>Promise.then()</code> receives an array of result objects, one for each promise. Each result object has two properties: <code>status</code> indicates if the promise was fulfilled or rejected, and <code>value</code> has the returned value or error object.</p>
+        </dd>
+        <dt><code>Promise.any()</code></dt>
+        <dd>
+        <p><a data-type="indexterm" data-primary="any() method" id="idm45475154688056"></a>Resolves as soon as one promise has resolved successfully. It provides the value for that promise only.</p>
+        </dd>
+        <dt><code>Promise.race()</code></dt>
+        <dd>
+        <p><a data-type="indexterm" data-primary="race() method" id="idm45475154685832"></a>Resolves as soon as one promise has resolved successfully or been rejected. It’s the most specialized of all the <code>Promise</code> methods, but it can be used to build some sort of custom scheduling system that queues up new asynchronous tasks as existing ones are finished.<a data-type="indexterm" data-primary="" data-startref="ix_async_multi-promise" id="idm45475154684328"></a><a data-type="indexterm" data-primary="" data-startref="ix_multi-promise_concurr" id="idm45475154683352"></a><a data-type="indexterm" data-primary="" data-startref="ix_all_method" id="idm45475154682440"></a></p>
+        </dd>
+        </dl>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Waiting for a Promise to Finish with Await and Async"><div class="sect1" id="using_await">
+        <h1>Waiting for a Promise to Finish with Await and Async</h1>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Problem"><div class="sect2" id="idm45475154679752">
+        <h2>Problem</h2>
+        
+        <p><a data-type="indexterm" data-primary="functions" data-secondary="async" id="ix_function_async"></a><a data-type="indexterm" data-primary="promises (Promise object)" data-secondary="await and async for waiting for promise" id="ix_promise_async_await"></a><a data-type="indexterm" data-primary="await keyword" id="ix_await_keyword"></a><a data-type="indexterm" data-primary="asynchronous programming" data-secondary="await and async for waiting for promise" id="ix_async_await_promise"></a>Instead of creating a promise chain, you want to write linear logic that’s easier to read and looks more like synchronous code.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Solution"><div class="sect2" id="idm45475154673480">
+        <h2>Solution</h2>
+        
+        <p>Don’t call <code>Promise.then()</code>. Instead, use the <code>await</code> keyword on your promise:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="s1">'taskPromise is working asynchronously'</code><code class="p">);</code>
+        <code class="nx">await</code> <code class="nx">taskPromise</code><code class="p">;</code>
+        <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="s1">'taskPromise has finished'</code><code class="p">);</code></pre>
+        
+        <p>The code after <code>await</code> doesn’t run until the awaited promise has been resolved or rejected. The execution of your code pauses, but without blocking the thread, locking up the UI, or preventing other timers and events from triggering.</p>
+        
+        <p><a data-type="indexterm" data-primary="async function, await keyword in" id="ix_async_await_key"></a>But there’s a catch. The <code>await</code> keyword is only useable inside an <code>async</code> function. That means you may need some rearranging to use <code>await</code>. Consider the <code>fetch()</code> example from <a data-type="xref" href="#async_call_with_promise">“Using a Function That Returns a Promise”</a>. With promises, it looks like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kr">const</code> <code class="nx">url</code> <code class="o">=</code>
+         <code class="s1">'https://upload.wikimedia.org/wikipedia/commons/b/b2/Eagle_nebula_pillars.jpg'</code><code class="p">;</code>
+        
+        <code class="nx">fetch</code><code class="p">(</code><code class="nx">url</code><code class="p">)</code>
+        <code class="p">.</code><code class="nx">then</code><code class="p">(</code><code class="nx">response</code> <code class="o">=&gt;</code> <code class="p">{</code>
+          <code class="c1">// The fetch operation has completed</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="sb">`HTTP status: </code><code class="si">${</code><code class="nx">response</code><code class="p">.</code><code class="nx">status</code><code class="si">}</code><code class="sb">`</code><code class="p">);</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="s1">'All asynchronous steps completed'</code><code class="p">);</code>
+        <code class="p">})</code></pre>
+        
+        <p>With the <code>async</code> and <code>await</code> keywords, you can structure it like this:</p>
+        <pre data-type="programlisting" data-code-language="javascript"><strong><code class="nx">async</code></strong><code> </code><code class="kd">function</code><code> </code><code class="nx">getImage</code><code class="p">(</code><code class="p">)</code><code> </code><code class="p">{</code><code>
+          </code><code class="kr">const</code><code> </code><code class="nx">url</code><code> </code><code class="o">=</code><code>
+        </code><code class="s1">'https://upload.wikimedia.org/wikipedia/commons/b/b2/Eagle_nebula_pillars.jpg'</code><code class="p">;</code><code>
+        
+          </code><code class="kr">const</code><code> </code><code class="nx">response</code><code> </code><code class="o">=</code><code> </code><strong><code class="nx">await</code></strong><code> </code><code class="nx">fetch</code><code class="p">(</code><code class="nx">url</code><code class="p">)</code><code class="p">;</code><code>
+        
+          </code><code class="c1">// The fetch operation has completed and the promise is resolved or rejected
+        </code><code>  </code><code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="sb">`</code><code class="sb">HTTP status: </code><code class="si">${</code><code class="nx">response</code><code class="p">.</code><code class="nx">status</code><code class="si">}</code><code class="sb">`</code><code class="p">)</code><code class="p">;</code><code>
+        </code><code class="p">}</code><code>
+        
+        </code><code class="nx">getImage</code><code class="p">(</code><code class="p">)</code><code class="p">.</code><code class="nx">then</code><code class="p">(</code><code class="p">(</code><code class="p">)</code><code> </code><code class="o">=&gt;</code><code> </code><code class="p">{</code><code>
+          </code><code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="s1">'All asynchronous steps completed'</code><code class="p">)</code><code class="p">;</code><code>
+        </code><code class="p">}</code><code class="p">)</code><code class="p">;</code><code>
+        </code></pre>
+        
+        <p>You can also use traditional exception-catching blocks around awaited operations, instead of the <code>Promise.catch()</code> method:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">async</code> <code class="kd">function</code> <code class="nx">getImage</code><code class="p">()</code> <code class="p">{</code>
+          <code class="kr">const</code> <code class="nx">url</code> <code class="o">=</code>
+        <code class="s1">'https://upload.wikimedia.org/wikipedia/commons/b/b2/Eagle_nebula_pillars.jpg'</code><code class="p">;</code>
+        
+          <code class="k">try</code> <code class="p">{</code>
+            <code class="kr">const</code> <code class="nx">response</code> <code class="o">=</code> <code class="nx">await</code> <code class="nx">fetch</code><code class="p">(</code><code class="nx">url</code><code class="p">);</code>
+            <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="sb">`HTTP status: </code><code class="si">${</code><code class="nx">response</code><code class="p">.</code><code class="nx">status</code><code class="si">}</code><code class="sb">`</code><code class="p">);</code>
+          <code class="p">}</code>
+          <code class="k">catch</code><code class="p">(</code><code class="nx">err</code><code class="p">)</code> <code class="p">{</code>
+            <code class="nx">console</code><code class="p">.</code><code class="nx">error</code><code class="p">(</code><code class="sb">`Error: </code><code class="si">${</code><code class="nx">error</code><code class="si">}</code><code class="sb">`</code><code class="p">);</code>
+          <code class="p">}</code>
+          <code class="k">finally</code> <code class="p">{</code>
+            <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="s1">'All done'</code><code class="p">);</code>
+          <code class="p">}</code>
+        <code class="p">}</code></pre>
+        
+        <p>The advantage of using <code>await</code> for just one call is relatively small. However, <code>await</code> can make your code considerably cleaner if you have a whole sequence of asynchronous operations that need to occur one after the other. Ordinarily, you would handle this with a promise chain that calls <code>Promise.then()</code> multiple times. But with <code>await</code>, the code looks like ordinary synchronous code. Here’s an example that duplicates the image-reading example from <a data-type="xref" href="#async_call_with_promise">“Using a Function That Returns a Promise”</a> to send an asynchronous web request, and then asynchronously read the image data that’s returned:</p>
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">async</code><code> </code><code class="kd">function</code><code> </code><code class="nx">getImage</code><code class="p">(</code><code class="p">)</code><code> </code><code class="p">{</code><code>
+          </code><code class="kr">const</code><code> </code><code class="nx">url</code><code> </code><code class="o">=</code><code>
+           </code><code class="s1">'https://upload.wikimedia.org/wikipedia/commons/b/b2/Eagle_nebula_pillars.jpg'</code><code class="p">;</code><code>
+        
+          </code><code class="c1">// Wait (asynchronously) for the response
+        </code><code>  </code><code class="kr">const</code><code> </code><code class="nx">response</code><code> </code><code class="o">=</code><code> </code><strong><code class="nx">await</code></strong><code> </code><code class="nx">fetch</code><code class="p">(</code><code class="nx">url</code><code class="p">)</code><code class="p">;</code><code>
+        
+          </code><code class="k">if</code><code> </code><code class="p">(</code><code class="nx">response</code><code class="p">.</code><code class="nx">ok</code><code class="p">)</code><code> </code><code class="p">{</code><code>
+            </code><code class="c1">// Wait (asynchronously) for the blob to be read
+        </code><code>    </code><code class="kr">const</code><code> </code><code class="nx">blob</code><code> </code><code class="o">=</code><code> </code><strong><code class="nx">await</code></strong><code> </code><code class="nx">response</code><code class="p">.</code><code class="nx">blob</code><code class="p">(</code><code class="p">)</code><code class="p">;</code><code>
+        
+            </code><code class="c1">// Now show the image
+        </code><code>    </code><code class="kr">const</code><code> </code><code class="nx">img</code><code> </code><code class="o">=</code><code> </code><code class="nb">document</code><code class="p">.</code><code class="nx">getElementById</code><code class="p">(</code><code class="s1">'imgDownload'</code><code class="p">)</code><code class="p">;</code><code>
+            </code><code class="nx">img</code><code class="p">.</code><code class="nx">src</code><code> </code><code class="o">=</code><code> </code><code class="nx">URL</code><code class="p">.</code><code class="nx">createObjectURL</code><code class="p">(</code><code class="nx">blob</code><code class="p">)</code><code class="p">;</code><code>
+          </code><code class="p">}</code><code>
+        </code><code class="p">}</code><code>
+        </code></pre>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Discussion"><div class="sect2" id="idm45475154672888">
+        <h2>Discussion</h2>
+        
+        <p>The <code>await</code> keyword handles promises in a way that looks like synchronous code, but doesn’t lock up your application. Consider a statement like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kr">const</code> <code class="nx">response</code> <code class="o">=</code> <code class="nx">await</code> <code class="nx">fetch</code><code class="p">(</code><code class="nx">url</code><code class="p">);</code></pre>
+        
+        <p>From the point of view of your code, it’s as though execution stops and the <code>fetch()</code> function becomes synchronous. But in reality, JavaScript takes the remainder of your function and attaches it to the promise returned by <code>fetch()</code>, just as if you passed it to <code>Promise.then()</code>. As a result, the rest of your code is <em>scheduled</em> and the UI thread isn’t blocked. Your application is free to handle other events and timers while it waits for the fetch operation to finish.</p>
+        
+        <p>The <code>await</code> keyword only works in an <code>async</code> function. You can’t use <code>await</code> in the top level of web page code. Instead, you need to create a new <code>async</code> function to hold it, like the <code>getImage()</code> function in this example:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">async</code> <code class="kd">function</code> <code class="nx">getImage</code><code class="p">()</code> <code class="p">{</code>
+          <code class="p">...</code>
+        <code class="p">}</code></pre>
+        
+        <p>Now that <code>getImage()</code> is an <code>async</code> function, it will automatically return a <code>Promise</code> object. You attach the code that runs when <code>getImage()</code> finishes using <code>Promise.then()</code>, as you would with any promise chain.</p>
+        
+        <p>If you forget that <code>getImage()</code> is an asynchronous function, you might call it but forget to use the promise. This is a common mistake by developers who are new to <code>async</code> and <code>await</code>:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="c1">// This probably isn't right, because you're discarding the Promise object</code>
+        <code class="nx">getImage</code><code class="p">();</code></pre>
+        
+        <p>Instead, you need to accept the <code>Promise</code> object returned by <code>getImage()</code>, and call <code>then()</code> and <code>catch()</code> to attach the code that should run next, and your error-handling code, respectively:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">getImage</code><code class="p">()</code>
+        <code class="p">.</code><code class="nx">then</code><code class="p">(</code><code class="nx">response</code> <code class="o">=&gt;</code> <code class="p">{</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="s1">'Image download finished'</code><code class="p">);</code>
+        <code class="p">})</code>
+        <code class="p">.</code><code class="k">catch</code><code class="p">(</code><code class="nx">error</code> <code class="o">=&gt;</code> <code class="p">{</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">error</code><code class="p">(</code><code class="sb">`Error: </code><code class="si">${</code><code class="nx">error</code><code class="si">}</code><code class="sb">`</code><code class="p">);</code>
+        <code class="p">});</code></pre>
+        
+        <p>You might wonder why you’re dealing with a promise when the <code>async</code> and <code>await</code> keywords are supposed to save you from that effort. The answer is that you always need to manage the root-level <code>Promise</code> object that starts your asynchronous operation.</p>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p><a data-type="indexterm" data-primary="modules" data-seealso="web apps/APIs" id="idm45475154093816"></a><a data-type="indexterm" data-primary="modules" data-secondary="await keyword in" id="idm45475154092616"></a>There’s one relatively recent exception. You can use <code>await</code> in the top-level code of a module (see <a data-type="xref" href="ch08.html#using_es6_modules">“Organizing Your JavaScript Classes with Modules”</a>). If you use this ability, make sure you place the statement that uses <code>await</code> inside a <code>try...catch</code> exception-handling block to catch any unhandled errors.</p>
+        </div>
+        
+        <p>The <code>await</code> keyword becomes more useful when you need to perform multiple asynchronous operations and make decisions along the way. For example, imagine you need to write code that waits for an asynchronous task to finish, evaluates its result, and then decides what task to launch next. You can implement this pattern with promises, but the logic is harder to follow. With <code>await</code>, it’s organized like traditional synchronous code:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kr">const</code> <code class="nx">step1</code> <code class="o">=</code> <code class="nx">await</code> <code class="nx">someAsyncTask</code><code class="p">();</code>
+        
+        <code class="k">if</code> <code class="p">(</code><code class="nx">step1</code> <code class="o">===</code> <code class="nx">someResult</code><code class="p">)</code> <code class="p">{</code>
+          <code class="kr">const</code> <code class="nx">step2</code> <code class="o">=</code> <code class="nx">await</code> <code class="nx">differentAsyncTask</code><code class="p">();</code>
+          <code class="p">...</code>
+        <code class="p">}</code>
+        <code class="k">else</code> <code class="p">{</code>
+          <code class="kr">const</code> <code class="nx">step2</code> <code class="o">=</code> <code class="nx">await</code> <code class="nx">anotherAsyncTask</code><code class="p">();</code>
+          <code class="p">...</code>
+        <code class="p">}</code></pre>
+        
+        <p>Given that this code looks so clean and straightforward, you might wonder why you <em>wouldn’t</em> use <code>await</code>. Like all abstractions, <code>await</code> hides some details of the underlying <code>Promise</code> object and makes certain situations more difficult. For example, it’s a common mistake with <code>await</code> to wait for a series of actions to complete one after another with separate <code>await</code> statements, when what you really want is to launch all of them at once. Here’s a demonstration of the problem:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kr">const</code> <code class="nx">response1</code> <code class="o">=</code> <code class="nx">await</code> <code class="nx">slowFunction</code><code class="p">(</code><code class="nx">dataObject1</code><code class="p">);</code>
+        <code class="kr">const</code> <code class="nx">response2</code> <code class="o">=</code> <code class="nx">await</code> <code class="nx">slowFunction</code><code class="p">(</code><code class="nx">dataObject2</code><code class="p">);</code>
+        <code class="kr">const</code> <code class="nx">response3</code> <code class="o">=</code> <code class="nx">await</code> <code class="nx">slowFunction</code><code class="p">(</code><code class="nx">dataObject3</code><code class="p">);</code></pre>
+        
+        <p><a data-type="indexterm" data-primary="all() method" id="idm45475154023976"></a>You could solve this situation with <code>Promise.all()</code> (as described in <a data-type="xref" href="#concurrent_promises">“Executing Multiple Promises Concurrently”</a>). But that’s not necessary. You can still use <code>await</code>, as long as you make sure all the promises are started first. Here’s a correction:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kr">const</code> <code class="nx">promise1</code> <code class="o">=</code> <code class="nx">slowFunction</code><code class="p">(</code><code class="nx">dataObject1</code><code class="p">);</code>
+        <code class="kr">const</code> <code class="nx">promise2</code> <code class="o">=</code> <code class="nx">slowFunction</code><code class="p">(</code><code class="nx">dataObject2</code><code class="p">);</code>
+        <code class="kr">const</code> <code class="nx">promise3</code> <code class="o">=</code> <code class="nx">slowFunction</code><code class="p">(</code><code class="nx">dataObject3</code><code class="p">);</code>
+        
+        <code class="kr">const</code> <code class="nx">response1</code> <code class="o">=</code> <code class="nx">await</code> <code class="nx">promise1</code><code class="p">;</code>
+        <code class="kr">const</code> <code class="nx">response2</code> <code class="o">=</code> <code class="nx">await</code> <code class="nx">promise2</code><code class="p">;</code>
+        <code class="kr">const</code> <code class="nx">response3</code> <code class="o">=</code> <code class="nx">await</code> <code class="nx">promise3</code><code class="p">;</code></pre>
+        
+        <p>This works because a promise starts running code as soon as it is created. By the time the code has assigned <code>promise1</code>, <code>promise2</code>, and <code>promise3</code>, all three asynchronous processes are underway. And although <code>await</code> is often used with a function that returns a promise, it works on any <code>Promise</code> object.</p>
+        
+        <p>It also doesn’t matter which promise you wait for first, because you can safely use <code>await</code> on a promise that’s already completed. No matter what you do, you won’t get past this section of your code until each promise is resolved or rejected. (Technically, that means this code follows the same behavior as <code>Promise.allSettled()</code> rather than <code>Promise.all()</code>, because the code keeps waiting for <em>all</em> the promises to be dealt with, even if one of them has failed.)<a data-type="indexterm" data-primary="" data-startref="ix_async_await_promise" id="idm45475153908728"></a><a data-type="indexterm" data-primary="" data-startref="ix_promise_async_await" id="idm45475153907752"></a><a data-type="indexterm" data-primary="" data-startref="ix_await_keyword" id="idm45475153906808"></a><a data-type="indexterm" data-primary="" data-startref="ix_async_await_key" id="idm45475153905864"></a><a data-type="indexterm" data-primary="" data-startref="ix_function_async" id="idm45475153904920"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Creating an Asynchronous Generator Function"><div class="sect1" id="async_generator">
+        <h1>Creating an Asynchronous Generator Function</h1>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Problem"><div class="sect2" id="idm45475153902968">
+        <h2>Problem</h2>
+        
+        <p><a data-type="indexterm" data-primary="functions" data-secondary="generator function" id="ix_function_generator2"></a><a data-type="indexterm" data-primary="generator function" id="ix_gen_func_async"></a><a data-type="indexterm" data-primary="asynchronous programming" data-secondary="generator function" id="ix_async_gen_func"></a>You want to create a generator for an operation that returns values asynchronously.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Solution"><div class="sect2" id="idm45475153898008">
+        <h2>Solution</h2>
+        
+        <p><a data-type="indexterm" data-primary="async keyword" id="ix_async_keyword"></a>Use the <code>async</code> keyword with the specialized generator function syntax shown in <a data-type="xref" href="ch06.html#creating_generator_functions">“Creating a Generator Function That Yields <span class="keep-together">Multiple Values</span>”</a>.</p>
+        
+        <p>Consider this exceedingly simple generator that yields a never-ending sequence of random numbers:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kd">function</code><code class="o">*</code> <code class="nx">getRandomIntegers</code><code class="p">(</code><code class="nx">max</code><code class="p">)</code> <code class="p">{</code>
+          <code class="k">while</code> <code class="p">(</code><code class="kc">true</code><code class="p">)</code> <code class="p">{</code>
+            <code class="k">yield</code> <code class="nb">Math</code><code class="p">.</code><code class="nx">floor</code><code class="p">(</code><code class="nb">Math</code><code class="p">.</code><code class="nx">random</code><code class="p">()</code> <code class="o">*</code> <code class="nb">Math</code><code class="p">.</code><code class="nx">floor</code><code class="p">(</code><code class="nx">max</code><code class="p">)</code> <code class="o">+</code> <code class="mi">1</code><code class="p">);</code>
+          <code class="p">}</code>
+        <code class="p">}</code></pre>
+        
+        <p>Which you call like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kr">const</code> <code class="nx">randomGenerator</code> <code class="o">=</code> <code class="nx">getRandomIntegers</code><code class="p">(</code><code class="mi">6</code><code class="p">);</code>
+        
+        <code class="c1">// Get 10 random values between 1 and 6</code>
+        <code class="k">for</code> <code class="p">(</code><code class="kd">let</code> <code class="nx">i</code><code class="o">=</code><code class="mi">0</code><code class="p">;</code> <code class="nx">i</code><code class="o">&lt;</code><code class="mi">10</code><code class="p">;</code> <code class="nx">i</code><code class="o">++</code><code class="p">)</code> <code class="p">{</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="nx">randomGenerator</code><code class="p">.</code><code class="nx">next</code><code class="p">());</code>
+        <code class="p">}</code></pre>
+        
+        <p>To make the generator asynchronous, you simply add the <code>async</code> keyword, exactly as you do with an ordinary function:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><strong><code class="nx">async</code></strong><code> </code><code class="kd">function</code><code class="o">*</code><code> </code><code class="nx">getRandomIntegers</code><code class="p">(</code><code class="nx">max</code><code class="p">)</code><code> </code><code class="p">{</code><code>
+          </code><code class="k">while</code><code> </code><code class="p">(</code><code class="kc">true</code><code class="p">)</code><code> </code><code class="p">{</code><code>
+            </code><code class="k">yield</code><code> </code><code class="nb">Math</code><code class="p">.</code><code class="nx">floor</code><code class="p">(</code><code class="nb">Math</code><code class="p">.</code><code class="nx">random</code><code class="p">(</code><code class="p">)</code><code> </code><code class="o">*</code><code> </code><code class="nb">Math</code><code class="p">.</code><code class="nx">floor</code><code class="p">(</code><code class="nx">max</code><code class="p">)</code><code> </code><code class="o">+</code><code> </code><code class="mi">1</code><code class="p">)</code><code class="p">;</code><code>
+          </code><code class="p">}</code><code>
+        </code><code class="p">}</code></pre>
+        
+        <p><a data-type="indexterm" data-primary="promises (Promise object)" data-secondary="in asynchronous generator function" data-secondary-sortas="asynchronous generator function" id="idm45475153760104"></a>And as with any other <code>async</code> function, an asynchronous generator function will not yield direct results. Instead, it will yield <code>Promise</code> objects that wrap the results. You can call <code>Promise.then()</code> to get the result, when it’s ready. Here’s an example that shows what’s happening:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kr">const</code> <code class="nx">randomGenerator</code> <code class="o">=</code> <code class="nx">getRandomIntegers</code><code class="p">(</code><code class="mi">6</code><code class="p">);</code>
+        
+        <code class="c1">// Get 10 random values between 1 and 6</code>
+        <code class="k">for</code> <code class="p">(</code><code class="kd">let</code> <code class="nx">i</code><code class="o">=</code><code class="mi">0</code><code class="p">;</code> <code class="nx">i</code><code class="o">&lt;</code><code class="mi">10</code><code class="p">;</code> <code class="nx">i</code><code class="o">++</code><code class="p">)</code> <code class="p">{</code>
+          <code class="kr">const</code> <code class="nx">promise</code> <code class="o">=</code> <code class="nx">randomGenerator</code><code class="p">.</code><code class="nx">next</code><code class="p">();</code>
+          <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="s1">'Received promise.'</code><code class="p">);</code>
+          <code class="nx">promise</code><code class="p">.</code><code class="nx">then</code><code class="p">(</code><code class="nx">result</code> <code class="o">=&gt;</code> <code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="sb">`Received result: </code><code class="si">${</code><code class="nx">result</code><code class="p">.</code><code class="nx">value</code><code class="si">}</code><code class="sb">`</code><code class="p">));</code>
+        <code class="p">}</code></pre>
+        
+        <p>When you run this, you’ll see a list of “Received promise” messages, immediately followed by the list of results.</p>
+        
+        <p><a data-type="indexterm" data-primary="await keyword" id="idm45475153613432"></a>Often, asynchronous generators are combined with the <code>await</code> keyword. <a data-type="indexterm" data-primary="for await loop" id="idm45475153612312"></a>A common shortcut is the <code>for await</code> loop, which waits to request new values from the generator until the previous promise has resolved. Here’s an example that uses this technique to search for random numbers, one number at a time:</p>
+        <pre data-type="programlisting" data-code-language="javascript"><code class="c1">// This function uses a for await loop to perform consecutive awaits
+        </code><code class="nx">async</code><code> </code><code class="kd">function</code><code> </code><code class="nx">searchRandomNumbers</code><code class="p">(</code><code class="nx">searchNumber</code><code class="p">,</code><code> </code><code class="nx">generator</code><code class="p">)</code><code> </code><code class="p">{</code><code>
+          </code><strong><code class="k">for</code><code> </code><code class="nx">await</code></strong><code> </code><code class="p">(</code><code class="kr">const</code><code> </code><code class="nx">value</code><code> </code><code class="k">of</code><code> </code><code class="nx">generator</code><code class="p">)</code><code> </code><code class="p">{</code><code>
+            </code><code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="nx">value</code><code class="p">)</code><code class="p">;</code><code>
+            </code><code class="k">if</code><code> </code><code class="p">(</code><code class="nx">value</code><code> </code><code class="o">===</code><code> </code><code class="nx">searchNumber</code><code class="p">)</code><code> </code><code class="k">return</code><code class="p">;</code><code>
+          </code><code class="p">}</code><code>
+        </code><code class="p">}</code><code>
+        
+        </code><code class="c1">// Use the searchRandomNumbers() function to generate random numbers
+        </code><code class="c1">// from 1 to 100, asynchronously, until we find 42
+        </code><code class="kr">const</code><code> </code><code class="nx">randomGenerator</code><code> </code><code class="o">=</code><code> </code><code class="nx">getRandomIntegers</code><code class="p">(</code><code class="mi">100</code><code class="p">)</code><code class="p">;</code><code>
+        </code><code class="nx">searchRandomNumbers</code><code class="p">(</code><code class="mi">42</code><code class="p">,</code><code> </code><code class="nx">randomGenerator</code><code class="p">)</code><code class="p">.</code><code class="nx">then</code><code class="p">(</code><code class="nx">result</code><code> </code><code class="o">=&gt;</code><code> </code><code class="p">{</code><code>
+          </code><code class="nx">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="s1">'Number found'</code><code class="p">)</code><code class="p">;</code><code>
+        </code><code class="p">}</code><code class="p">)</code><code class="p">;</code><code>
+        </code></pre>
+        
+        <p>You’ll notice that the code that uses the asynchronous iterator is now itself wrapped in an <code>async</code> function. This is because you can’t use <code>await</code> in top-level code (as explained in <a data-type="xref" href="#using_await">“Waiting for a Promise to Finish with Await and Async”</a>).</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Discussion"><div class="sect2" id="idm45475153897416">
+        <h2>Discussion</h2>
+        
+        <p>Generator functions provide a streamlined way to return on-demand values. After each <code>yield</code> statement, JavaScript pauses the generator function. But the context around it (all the local variables and passed-in arguments) is preserved until the next value is requested by the calling code.</p>
+        
+        <p>The example in the solution doesn’t do any real asynchronous work, and the random numbers are available immediately. You could simulate an asynchronous process in this example by adding a timeout. But it’s more interesting to consider an example that shows asynchronous generators using a true asynchronous API.</p>
+        
+        <p>Asynchronous generators are most useful for tasks that access an external resource and have some latency. For example, you might see them in web request or filestream APIs. Here’s a generator that uses the Fetch API to retrieve its list of random numbers from a web service:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">async</code> <code class="kd">function</code><code class="o">*</code> <code class="nx">getRandomWebIntegers</code><code class="p">(</code><code class="nx">max</code><code class="p">)</code> <code class="p">{</code>
+          <code class="c1">// Construct a URL to get a random number in the requested range</code>
+          <code class="kr">const</code> <code class="nx">url</code> <code class="o">=</code> <code class="nx">https</code><code class="o">:</code><code class="c1">//www.random.org/integers/?num=1&amp;min=1&amp;max=' + max +</code>
+          <code class="s1">'&amp;col=1&amp;base=10&amp;format=plain&amp;rnd=new'</code><code class="p">;</code>
+        
+          <code class="k">while</code> <code class="p">(</code><code class="kc">true</code><code class="p">)</code> <code class="p">{</code>
+            <code class="c1">// Start the request (and wait asynchronously for the response)</code>
+            <code class="kr">const</code> <code class="nx">response</code> <code class="o">=</code> <code class="nx">await</code> <code class="nx">fetch</code><code class="p">(</code><code class="nx">url</code><code class="p">);</code>
+        
+            <code class="c1">// Start reading the text asynchronously</code>
+            <code class="kr">const</code> <code class="nx">text</code> <code class="o">=</code> <code class="nx">await</code> <code class="nx">response</code><code class="p">.</code><code class="nx">text</code><code class="p">();</code>
+        
+            <code class="c1">// Yield the result and wait for the next request</code>
+            <code class="k">yield</code> <code class="nb">Number</code><code class="p">(</code><code class="nx">text</code><code class="p">);</code>
+          <code class="p">}</code>
+        <code class="p">}</code></pre>
+        
+        <p>Now, each time the calling code requests a value, the generator starts an asynchronous <code>fetch()</code> operation and returns a promise. When <code>fetch()</code> finishes, the promise resolves. The calling code could start several asynchronous calls at once by calling <code>next()</code> multiple times on the generator. But it’s much more common to use a <code>for await</code> loop to go one-by-one. Either way, there’s no need to change the code from what was used in the original solution. If you run this version of the example, you’ll see that each random number takes a short but measurable delay before it appears in the developer console.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="See Also"><div class="sect2" id="idm45475153386088">
+        <h2>See Also</h2>
+        
+        <p><a data-type="xref" href="ch06.html#creating_generator_functions">“Creating a Generator Function That Yields <span class="keep-together">Multiple Values</span>”</a> explains how to create nonasynchronous generators. <a data-type="xref" href="#using_await">“Waiting for a Promise to Finish with Await and Async”</a> explains how to create ordinary asynchronous functions.<a data-type="indexterm" data-primary="" data-startref="ix_async_gen_func" id="idm45475153383256"></a><a data-type="indexterm" data-primary="" data-startref="ix_gen_func_async" id="idm45475153382312"></a><a data-type="indexterm" data-primary="" data-startref="ix_async_keyword" id="idm45475153381368"></a><a data-type="indexterm" data-primary="" data-startref="ix_function_generator2" id="idm45475153380424"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Using a Web Worker to Perform a Background Task"><div class="sect1" id="using_web_workers">
+        <h1>Using a Web Worker to Perform a Background Task</h1>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Problem"><div class="sect2" id="idm45475153377736">
+        <h2>Problem</h2>
+        
+        <p><a data-type="indexterm" data-primary="Web Worker API (Worker object)" id="ix_web_worker_api"></a><a data-type="indexterm" data-primary="asynchronous programming" data-secondary="web workers" id="ix_async_web_worker"></a>You want long-running code to execute on a separate thread, so it doesn’t block the user interface.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Solution"><div class="sect2" id="idm45475153373912">
+        <h2>Solution</h2>
+        
+        <p>Use the Web Worker API. You create a <code>Worker</code> object, which runs all its code on a background thread. Although the <code>Worker</code> object is isolated from the rest of your code (it can’t access the DOM, the page, or any global variables, for instance), you can communicate with it by sending messages back and forth.</p>
+        
+        <p><a data-type="xref" href="#web_worker_example">Figure&nbsp;9-1</a> shows an example page that calculates all the prime numbers in a given range. Because the page uses web workers, the interface remains responsive while the job is underway. For example, it’s still possible to type in the text boxes or click the Cancel button.</p>
+        
+        <figure class="no-frame"><div id="web_worker_example" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492055747/files/assets/jsc3_0901.png" alt="jsc3 0901" width="1445" height="973">
+        <h6><span class="label">Figure 9-1. </span>A web worker calculates prime numbers</h6>
+        </div></figure>
+        
+        <p><a data-type="indexterm" data-primary="postMessage() function" id="idm45475153367240"></a>The Start button triggers a function called <code>startSearch()</code>. It creates a new worker, attaches functions to handle the <code>Worker.error</code> and <code>Worker.message</code> events, and finally starts the operation by calling <code>Worker.postMessage()</code>. Here’s the relevant code in the script for the web page:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="c1">// Keep a reference to the worker so we can cancel it, if needed</code>
+        <code class="kd">let</code> <code class="nx">worker</code><code class="p">;</code>
+        
+        <code class="kd">function</code> <code class="nx">startSearch</code><code class="p">()</code> <code class="p">{</code>
+          <code class="c1">// Create the worker</code>
+          <code class="nx">worker</code> <code class="o">=</code> <code class="k">new</code> <code class="nx">Worker</code><code class="p">(</code><code class="s1">'prime-worker.js'</code><code class="p">);</code>
+        
+          <code class="kr">const</code> <code class="nx">statusDisplay</code> <code class="o">=</code> <code class="nb">document</code><code class="p">.</code><code class="nx">getElementById</code><code class="p">(</code><code class="s1">'status'</code><code class="p">);</code>
+          <code class="nx">statusDisplay</code><code class="p">.</code><code class="nx">textContent</code> <code class="o">=</code> <code class="s1">'Search started.'</code><code class="p">;</code>
+        
+          <code class="c1">// Report error message on the page</code>
+          <code class="nx">worker</code><code class="p">.</code><code class="nx">onerror</code> <code class="o">=</code> <code class="nx">error</code> <code class="o">=&gt;</code> <code class="p">{</code>
+            <code class="nx">statusDisplay</code><code class="p">.</code><code class="nx">textContent</code> <code class="o">=</code> <code class="nx">error</code><code class="p">.</code><code class="nx">message</code><code class="p">;</code>
+          <code class="p">};</code>
+        
+          <code class="c1">// Respond to messages from the worker, and display the final result</code>
+          <code class="c1">// (the list of primes) on the page when it's received</code>
+          <code class="nx">worker</code><code class="p">.</code><code class="nx">onmessage</code> <code class="o">=</code> <code class="nx">event</code> <code class="o">=&gt;</code> <code class="p">{</code>
+            <code class="kr">const</code> <code class="nx">primes</code> <code class="o">=</code> <code class="nx">event</code><code class="p">.</code><code class="nx">data</code><code class="p">;</code>
+        
+            <code class="nb">document</code><code class="p">.</code><code class="nx">getElementById</code><code class="p">(</code><code class="s1">'primeContainer'</code><code class="p">).</code><code class="nx">textContent</code> <code class="o">=</code> <code class="nx">primes</code><code class="p">.</code><code class="nx">join</code><code class="p">(</code><code class="s1">', '</code><code class="p">);</code>
+          <code class="p">};</code>
+        
+          <code class="c1">// Get the search range and tell the worker to start</code>
+          <code class="kr">const</code> <code class="nx">fromNumber</code> <code class="o">=</code> <code class="nb">document</code><code class="p">.</code><code class="nx">getElementById</code><code class="p">(</code><code class="s1">'from'</code><code class="p">).</code><code class="nx">value</code><code class="p">;</code>
+          <code class="kr">const</code> <code class="nx">toNumber</code> <code class="o">=</code> <code class="nb">document</code><code class="p">.</code><code class="nx">getElementById</code><code class="p">(</code><code class="s1">'to'</code><code class="p">).</code><code class="nx">value</code><code class="p">;</code>
+          <code class="nx">worker</code><code class="p">.</code><code class="nx">postMessage</code><code class="p">({</code><code class="nx">from</code><code class="o">:</code> <code class="nx">fromNumber</code><code class="p">,</code> <code class="nx">to</code><code class="o">:</code> <code class="nx">toNumber</code><code class="p">});</code>
+        <code class="p">}</code></pre>
+        
+        <p>The <code>prime-worker.js</code> file contains the code that the web worker runs. That includes a <code>findPrimes()</code> function (not shown here) which holds the logic for finding prime numbers using the <a href="https://oreil.ly/6CyO9">Sieve of Eratosthenes</a>. The <code>prime-worker.js</code> file also handles the <code>Worker.message</code> event, which is triggered whenever the page calls <code>Worker.postMessage()</code>. In this example, the page calls <code>postMessage()</code> to send the range of numbers to the worker and begin the search:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="c1">// This is the code the worker uses to handle messages from the page</code>
+        <code class="nx">onmessage</code> <code class="o">=</code> <code class="p">(</code><code class="nx">event</code><code class="p">)</code> <code class="o">=&gt;</code> <code class="p">{</code>
+          <code class="c1">// Get the sent object from event.data and call the time-consuming</code>
+          <code class="c1">// findPrimes() method to do the search</code>
+          <code class="kr">const</code> <code class="nx">primes</code> <code class="o">=</code> <code class="nx">findPrimes</code><code class="p">(</code><code class="nb">Number</code><code class="p">(</code><code class="nx">event</code><code class="p">.</code><code class="nx">data</code><code class="p">.</code><code class="nx">from</code><code class="p">),</code> <code class="nb">Number</code><code class="p">(</code><code class="nx">event</code><code class="p">.</code><code class="nx">data</code><code class="p">.</code><code class="nx">to</code><code class="p">));</code>
+        
+          <code class="c1">// Send back the result</code>
+          <code class="nx">postMessage</code><code class="p">(</code><code class="nx">primes</code><code class="p">);</code>
+        <code class="p">};</code></pre>
+        
+        <p>The only remaining ingredient is the event handler for the Cancel button, which shuts down the web worker, even if it’s in the middle of its search:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kd">function</code> <code class="nx">cancelSearch</code><code class="p">()</code> <code class="p">{</code>
+          <code class="c1">// Cancel the worker, provided the page has created it</code>
+          <code class="k">if</code> <code class="p">(</code><code class="nx">worker</code><code class="p">)</code> <code class="nx">worker</code><code class="p">.</code><code class="nx">terminate</code><code class="p">();</code>
+        <code class="p">}</code></pre>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Discussion"><div class="sect2" id="idm45475153109624">
+        <h2>Discussion</h2>
+        
+        <p>Ordinarily, the JavaScript code you write runs on a single application thread. JavaScript uses a scheduling system that’s based on an event loop. It continually watches for events, listens to timer ticks, and waits for callbacks from asynchronous APIs. When it receives functions to run, it queues them up in the order they arrive. If you decide to write CPU-intensive code (like performing time-consuming calculations), you’ll tie up the main thread and prevent other functions from running until your work is finished.</p>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p><a data-type="indexterm" data-primary="web apps/APIs" data-secondary="Fetch API" id="idm45475153131304"></a><a data-type="indexterm" data-primary="data" data-secondary="Fetch API to request" id="idm45475153130328"></a><a data-type="indexterm" data-primary="Fetch API" id="idm45475153129384"></a>You may be confused about how ordinary JavaScript code is single-threaded, but JavaScript provides certain APIs (like <code>fetch</code>) that are able to work asynchronously. This is because these APIs are provided by services in the browser and, ultimately, the operating system. They go outside of the JavaScript environment. For example, web requests made with <code>fetch()</code> are made on a separate thread, not the main application thread used for your application.</p>
+        </div>
+        
+        <p>The Web Worker API gives you a way to escape JavaScript’s single-threaded execution model. With web workers, you are able to run code concurrently, on a separate thread from the main application user interface. To ensure that you don’t have to deal with messy problems like thread safety, race conditions, and locks, web workers are kept in a separate execution context. They can’t interact with a web page, the browser window, or the rest of your code. To emphasize this fact, the <code>Worker</code> object asks that you put your web worker code in a separate file, which you then supply when you create the worker:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">worker</code> <code class="o">=</code> <code class="k">new</code> <code class="nx">Worker</code><code class="p">(</code><code class="s1">'prime-worker.js'</code><code class="p">);</code></pre>
+        
+        <p><a data-type="indexterm" data-primary="postMessage() function" id="idm45475153123400"></a>Once you understand this limitation, the rest of the web worker model is quite intuitive. All the communication between the application and a worker happens through message passing. To send a message, you call <code>postMessage()</code>. In the prime number example, the page sends an object literal with two properties, <code>to</code> and <code>from</code>, to represent the search range:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">worker</code><code class="p">.</code><code class="nx">postMessage</code><code class="p">({</code><code class="nx">from</code><code class="o">:</code> <code class="nx">fromNumber</code><code class="p">,</code> <code class="nx">to</code><code class="o">:</code> <code class="nx">toNumber</code><code class="p">});</code></pre>
+        
+        <p>When the worker responds, it calls <code>postMessage()</code> to send array of prime numbers:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">postMessage</code><code class="p">(</code><code class="nx">primes</code><code class="p">);</code></pre>
+        
+        <p>There’s no limit to how often you can send messages. For example, you could create a worker, call <code>postMessage()</code> to send it some work, leave it idle for a while, and then call <code>postMessage()</code> to send it more work. Web workers can also use the <code>setTimeout()</code> and <code>setInterval()</code> functions to schedule periodic work.</p>
+        
+        <p>There are two ways to stop a worker. First, a worker can stop itself by calling <code>close()</code>. More commonly, the page that created the worker will shut it down by calling <code>worker.terminate()</code>. Once a worker is stopped in this way, it can’t be resurrected.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="See Also"><div class="sect2" id="idm45475153140904">
+        <h2>See Also</h2>
+        
+        <p>To see the full code, including the prime number search routine, refer to <a href="https://github.com/javascripteverywhere/cookbook">the book’s sample code</a>. For a revised version of this example that uses more sophisticated message passing, see <a data-type="xref" href="#web_worker_with_progress">“Adding Progress Support to a Web Worker”</a>.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Adding Progress Support to a Web Worker"><div class="sect1" id="web_worker_with_progress">
+        <h1>Adding Progress Support to a Web Worker</h1>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Problem"><div class="sect2" id="idm45475152972312">
+        <h2>Problem</h2>
+        
+        <p>You want your web worker to report progress while it’s running a task.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Solution"><div class="sect2" id="idm45475152970728">
+        <h2>Solution</h2>
+        
+        <p>You can use the standard message-passing behavior of your worker. Use a property of your message object to distinguish between different types of messages.</p>
+        
+        <p>For example, consider a version of the prime number example (from <a data-type="xref" href="#web_worker_with_progress">“Adding Progress Support to a Web Worker”</a>) that sends two types of messages: progress notifications (while the work is underway) and the prime number list (when the work is finished).</p>
+        
+        <p>To allow the application to tell the difference between these two types of messages, it adds a string <code>messageType</code> property, which it sets to either <code>"Progress"</code> or <span class="keep-together"><code>"PrimeList"</code></span>. Here’s the rewritten code to return the result:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">onmessage</code> <code class="o">=</code> <code class="kd">function</code><code class="p">(</code><code class="nx">event</code><code class="p">)</code> <code class="p">{</code>
+          <code class="c1">// Perform the prime number search.</code>
+          <code class="kr">const</code> <code class="nx">primes</code> <code class="o">=</code> <code class="nx">findPrimes</code><code class="p">(</code><code class="nb">Number</code><code class="p">(</code><code class="nx">event</code><code class="p">.</code><code class="nx">data</code><code class="p">.</code><code class="nx">from</code><code class="p">),</code> <code class="nb">Number</code><code class="p">(</code><code class="nx">event</code><code class="p">.</code><code class="nx">data</code><code class="p">.</code><code class="nx">to</code><code class="p">));</code>
+        
+          <code class="c1">// Send back the results.</code>
+          <code class="nx">postMessage</code><code class="p">(</code>
+            <code class="p">{</code><code class="nx">messageType</code><code class="o">:</code> <code class="s2">"PrimeList"</code><code class="p">,</code> <code class="nx">data</code><code class="o">:</code> <code class="nx">primes</code><code class="p">}</code>
+          <code class="p">);</code>
+        <code class="p">};</code></pre>
+        
+        <p>Now the prime-number calculation code also needs to use <code>postMessage()</code> to report on its progress. It uses a rate-limiting check to round the progress to the nearest percent, and to make sure it doesn’t notify about the same progress more than once:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kd">function</code> <code class="nx">findPrimes</code><code class="p">(</code><code class="nx">fromNumber</code><code class="p">,</code> <code class="nx">toNumber</code><code class="p">)</code> <code class="p">{</code>
+          <code class="c1">// Prepare the prime number search range</code>
+          <code class="p">...</code>
+        
+          <code class="c1">// This is the loop that searches for primes</code>
+          <code class="k">for</code> <code class="p">(</code><code class="kd">let</code> <code class="nx">i</code> <code class="o">=</code> <code class="mi">0</code><code class="p">;</code> <code class="nx">i</code> <code class="o">&lt;</code> <code class="nx">list</code><code class="p">.</code><code class="nx">length</code><code class="p">;</code> <code class="nx">i</code><code class="o">+=</code><code class="mi">1</code><code class="p">)</code> <code class="p">{</code>
+        
+            <code class="c1">// Check if the current number is prime</code>
+            <code class="p">...</code>
+        
+            <code class="c1">// Calculate and report the progress</code>
+            <code class="kd">var</code> <code class="nx">progress</code> <code class="o">=</code> <code class="nb">Math</code><code class="p">.</code><code class="nx">round</code><code class="p">(</code><code class="nx">i</code><code class="o">/</code><code class="nx">list</code><code class="p">.</code><code class="nx">length</code><code class="o">*</code><code class="mi">100</code><code class="p">);</code>
+        
+            <code class="c1">// Only send a progress update if the progress has changed at least 1%</code>
+            <code class="k">if</code> <code class="p">(</code><code class="nx">progress</code> <code class="o">!==</code> <code class="nx">previousProgress</code><code class="p">)</code> <code class="p">{</code>
+              <code class="nx">postMessage</code><code class="p">(</code>
+               <code class="p">{</code><code class="nx">messageType</code><code class="o">:</code> <code class="s1">'Progress'</code><code class="p">,</code> <code class="nx">data</code><code class="o">:</code> <code class="nx">progress</code><code class="p">}</code>
+              <code class="p">);</code>
+              <code class="nx">previousProgress</code> <code class="o">=</code> <code class="nx">progress</code><code class="p">;</code>
+            <code class="p">}</code>
+        
+          <code class="p">}</code>
+        
+          <code class="c1">// Clean up and return the list of prime numbers</code>
+          <code class="p">...</code>
+        <code class="p">}</code></pre>
+        
+        <p><a data-type="indexterm" data-primary="messageType property" id="idm45475152908216"></a>When the page receives a message, it checks the <code>messageType</code> property to determine the type of message and then acts accordingly. If it’s a prime list, it shows the results in the page. If it’s a progress notification, it updates the progress text, as shown in <a data-type="xref" href="#web_worker_progress_example">Figure&nbsp;9-2</a>.</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">worker</code><code class="p">.</code><code class="nx">onmessage</code> <code class="o">=</code> <code class="nx">event</code> <code class="o">=&gt;</code> <code class="p">{</code>
+          <code class="kr">const</code> <code class="nx">message</code> <code class="o">=</code> <code class="nx">event</code><code class="p">.</code><code class="nx">data</code><code class="p">;</code>
+        
+          <code class="k">if</code> <code class="p">(</code><code class="nx">message</code><code class="p">.</code><code class="nx">messageType</code> <code class="o">===</code> <code class="s1">'PrimeList'</code><code class="p">)</code> <code class="p">{</code>
+            <code class="kr">const</code> <code class="nx">primes</code> <code class="o">=</code> <code class="nx">message</code><code class="p">.</code><code class="nx">data</code><code class="p">;</code>
+            <code class="nb">document</code><code class="p">.</code><code class="nx">getElementById</code><code class="p">(</code><code class="s1">'primeContainer'</code><code class="p">).</code><code class="nx">textContent</code> <code class="o">=</code> <code class="nx">primes</code><code class="p">.</code><code class="nx">join</code><code class="p">(</code><code class="s1">', '</code><code class="p">);</code>
+          <code class="p">}</code>
+          <code class="k">else</code> <code class="k">if</code> <code class="p">(</code><code class="nx">message</code><code class="p">.</code><code class="nx">messageType</code> <code class="o">===</code> <code class="s1">'Progress'</code><code class="p">)</code> <code class="p">{</code>
+            <code class="nx">statusDisplay</code><code class="p">.</code><code class="nx">textContent</code> <code class="o">=</code> <code class="sb">`</code><code class="si">${</code><code class="nx">message</code><code class="p">.</code><code class="nx">data</code><code class="si">}</code><code class="sb"> % done ...`</code><code class="p">;</code>
+          <code class="p">}</code>
+        <code class="p">};</code></pre>
+        
+        <figure class="no-frame"><div id="web_worker_progress_example" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492055747/files/assets/jsc3_0902.png" alt="jsc3 0902" width="1355" height="961">
+        <h6><span class="label">Figure 9-2. </span>A web worker reports progress as it works</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Discussion"><div class="sect2" id="idm45475152970104">
+        <h2>Discussion</h2>
+        
+        <p>To enforce thread safety, there’s no way for an application and a web worker to interact except by passing messages. You can send any object you want as a message, as long as it can be serialized to JSON. It’s much the same as when you’re sending a message to a remote website.</p>
+        
+        <p>You might decide to create your own custom class for messages to formalize the structure you’re using. However, keep in mind that once the object is sent between threads, it will look exactly like an ordinary object literal. It won’t have a custom prototype or any methods, and you won’t be able to test its type with <code>instanceof</code>. Similarly, you might think of using the enumerated values trick from <a data-type="xref" href="ch07.html#symbol_for_enums">“Creating Enums with Symbol”</a>, but it won’t work because the application and the worker can’t share their symbols.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="See Also"><div class="sect2" id="idm45475152662968">
+        <h2>See Also</h2>
+        
+        <p><a data-type="indexterm" data-primary="service workers" id="idm45475152661800"></a><a data-type="indexterm" data-primary="shared workers" id="idm45475152660872"></a>JavaScript also has two specialized APIs that build on the Web Worker API. You can used <a href="https://oreil.ly/jGV06"><em>shared workers</em></a> if you want to interact with the same worker from different windows. And you can use more advanced <a href="https://oreil.ly/vh3L3"><em>service workers</em></a> to create workers that, once installed, stay alive even when your page isn’t open. <a data-type="indexterm" data-primary="" data-startref="ix_async_program_ch9" id="idm45475152658216"></a><a data-type="indexterm" data-primary="" data-startref="ix_async_web_worker" id="idm45475152657272"></a><a data-type="indexterm" data-primary="" data-startref="ix_web_worker_api" id="idm45475152656328"></a>The idea behind this API is to help you build caching, synchronization, and notification services that make a website behave more like a native app.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        </div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492055747/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

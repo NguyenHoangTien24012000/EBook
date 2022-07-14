@@ -1,0 +1,120 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="Creating and using mixins"><div class="titlepage"><div><div><h1 class="title"><a id="ch04lvl1sec31"></a>Creating and using mixins</h1></div></div></div><p>The term <span class="strong"><strong>mixin</strong></span> is usually used to specify a collection of functions available to be shared among objects or classes. It can be somehow considered similar to abstract classes in classical OOP languages. Usually, the mixin functions are not directly used, but they are <span class="emphasis"><em>borrowed</em></span> to others objects or classes in order to extend them without creating a strict relationship as it could be with inheritance. Let's introduce mixins in JavaScript with a simple example.</p><div class="section" title="Mixing prototypes"><div class="titlepage"><div><div><h2 class="title"><a id="ch04lvl2sec33"></a>Mixing prototypes</h2></div></div></div><p>Consider our <code class="literal">Person()</code> constructor function in its minimal implementation:</p><pre class="programlisting">function Person(name, surname) { 
+        this.name = name; 
+        this.surname = surname; 
+      } 
+      </pre><p>Then consider a simple object literal implementing a <code class="literal">getFullName()</code> method that returns the full name based on the existing <code class="literal">name</code> and <code class="literal">surname</code> properties:</p><pre class="programlisting">var myMixin = { 
+        getFullName: function() { 
+          return this.name + " " + this.surname; 
+        } 
+      }; 
+      </pre><p>This object is our mixin. It implements a generic function, not bound to a specific object constructor and available to be <span class="emphasis"><em>mixed</em></span> with the members of other objects. In order to enable the mixing of the members, we need a specific function such as the following:</p><pre class="programlisting">function augment(destination, source) { 
+        for (var methodName in source) { 
+          if (source.hasOwnProperty(methodName)) { 
+            destination[methodName] = source[methodName]; 
+          } 
+        } 
+        return destination; 
+      } 
+      </pre><p>The goal of this function is to add (or replace) methods of the object passed as second argument to the object represented by the first argument. Often such function is named <span class="emphasis"><em>extend</em></span>, but we prefer to call it <span class="emphasis"><em>augment</em></span> in order to avoid confusion with inheritance extension.</p><div class="note" title="Note" style=""><div class="inner"><h3 class="title"><a id="note10"></a>Note</h3><p>ECMAScript 6 introduced the method <code class="literal">Object.assign()</code> that has exactly the same behavior of our an&nbsp;<code class="literal">augment()</code> function. So, we may actually replace each occurrence of an&nbsp;<code class="literal">augment()</code> invocation with <code class="literal">Object.assign()</code>.</p></div></div><p>With this tool, we can easily add the members of our mixin to the members created by the <code class="literal">Person()</code> constructor:</p><pre class="programlisting">augment(Person.prototype, myMixin); 
+      </pre><p>Now, when we will create a <code class="literal">Person</code> instance, it will include the <code class="literal">getFullName()</code> method taken from the mixin:</p><pre class="programlisting">var johnSmith = new Person("John", "Smith"); 
+       
+      console.log(johnSmith.getFullName());    //result: "John Smith" 
+      </pre><p>Of course, we can add methods from different mixins and compose the public interface of our objects as needed. For example, assuming that we have different mixins collecting functionalities grouped by topic, we can mix members with the following code:</p><pre class="programlisting">augment(Person.prototype, namingMixin); 
+      augment(Person.prototype, movingMixin); 
+      augment(Person.prototype, studyingMixin); 
+      </pre><p>Here, we add to the <code class="literal">Person()</code> prototype from a mixin that provides utilities concerning name and surname management (<code class="literal">namingMixin</code>), a mixin with methods describing movement (<code class="literal">movingMixin</code>), and a mixin that has methods regarding study activities (<code class="literal">studyingMixin</code>).</p><p>A more accurate mixin function might allow us to select which members to add:</p><pre class="programlisting">function augment(destination, source, ...methodNames) { 
+        if (methodNames) { 
+          for (var methodName of methodNames) { 
+            if (source.hasOwnProperty(methodName)) { 
+              destination[methodName] = source[methodName]; 
+            } 
+          } 
+        } else { 
+          for (var methodName in source) { 
+            if (source.hasOwnProperty(methodName)) { 
+              destination[methodName] = source[methodName]; 
+            } 
+          } 
+        } 
+       
+        return destination; 
+      } 
+      </pre><p>In this case, we added the rest parameter <code class="literal">methodNames</code> to allow an indefinite number of parameters after the source and destination ones. If a list of method names is passed, the function adds just them to the destination object. This allows us to select members to add from a mixin, as in the following example:</p><pre class="programlisting">augment(Person.prototype, namingMixin, "getFullName"); 
+      augment(Person.prototype, movingMixin, "goLeft", "goRight"); 
+      augment(Person.prototype, studyingMixin, "readTopic",  "writeTopic", "repeatTopic");</pre></div><div class="section" title="Mixing classes"><div class="titlepage"><div><div><h2 class="title"><a id="ch04lvl2sec34"></a>Mixing classes</h2></div></div></div><p>We can apply the mixin pattern based on prototype augmentation to classes as well. Let's consider, for example, the <code class="literal">Person</code> class definition:</p><pre class="programlisting">class Person { 
+        constructor(name, surname) { 
+          this.name = name; 
+          this.surname = surname; 
+        } 
+      } 
+      </pre><p>Since classes are equivalent to standard constructor functions, they can be extended with the <code class="literal">augment()</code> function or the <code class="literal">Object.assign()</code> method, as shown by the following code:</p><pre class="programlisting">augment(Person.prototype, myMixin); 
+      </pre><p>As for the constructors case, we can create a <code class="literal">Person</code> instance with the <code class="literal">getFullName()</code> method:</p><pre class="programlisting">var johnSmith = new Person("John", "Smith"); 
+       
+      console.log(johnSmith.getFullName());    //result: "John Smith" 
+      </pre><p>Although this approach is fully functional, a more consistent approach should be integrated with class syntax. To achieve this goal, we define a function that extends a generic class with our mixin:</p><pre class="programlisting">function mixNamingWith(superclass) { 
+        return class extends superclass { 
+          getFullName() { 
+            return this.name + " " + this.surname; 
+          } 
+        } 
+      } 
+      </pre><p>This function takes a class as argument and returns a subclass extended with our <code class="literal">getFullName()</code> method. This allows us to define a new class that includes methods from the mixin, as follows:</p><pre class="programlisting">class ExtendedPerson extends mixNamingWith(Person) { } 
+       
+      var johnSmith = new ExtendedPerson("John", "Smith"); 
+       
+      console.log(johnSmith .getFullName());    //result: "John Smith" 
+      </pre><p>If we need to compose a class from many mixin, we can make nested calls to mixin functions as shown here:</p><pre class="programlisting">class ExtendedPerson extends 
+            mixNamingWith( 
+              mixMovingWith( 
+                mixStudyingWith( 
+                  Person 
+                ) 
+              ) 
+            ) { } 
+      </pre></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

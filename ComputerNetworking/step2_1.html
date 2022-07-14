@@ -1,0 +1,456 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 class="h2" id="ch11"><a id="page_281"></a><strong>Chapter 11<br>Topology Discovery</strong></h2>
+        <div class="sidebar">
+        <p class="sb-noindent"><strong>Learning Objectives</strong></p>
+        <p class="sb-noindent">After reading this chapter, you should understand:</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The basic terms <em>node</em> or <em>vertex</em> and <em>edge</em> as used in graph theory, and how they relate to network devices</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> What a reachable destination is</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The two basic things a control plane must discover about a network</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> How network devices discover one another and detect the lack of two-way connectivity</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> How the MTU can be discovered through the network</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The difference between proactive control planes with reactive reachability learning, proactive control planes, and reactive control planes</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The problems that need to be solved in redistributing information between control planes.</p>
+        </div>
+        <p class="noindent">Network diagrams typically show just a few types of devices, including routers, switches, systems connected to the network (generally speaking, various sorts of hosts), and various sorts of appliances (such as firewalls). These are often interconnected with links, represented as lines. An example is provided in <a href="ch11.xhtml#ch11fig01">Figure 11-1</a>.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/11fig01.jpg" aria-describedby="Al11fig01" alt="Figure shows an example of topology discovery." width="698" height="217"><aside class="hidden" id="Al11fig01">
+        <p>A computer labeled A is to the left with a line leading to a router labeled B. Two lines lead from B to reach routers, C and D. A line moves from C and D to reach a router labeled E. A line leads from E to reach a computer labeled F.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch11fig01"></a><strong>Figure 11-1</strong> <em>Topology Discovery Example</em></p>
+        </div>
+        <p class="indent">Network diagrams, like many forms of abstraction, hide a lot of information to make the information included more accessible. First, network diagrams tend to be <a id="page_282"></a>somewhere between logical and physical representations of the network. Such diagrams normally do not show every physical connection in the network; for instance, a network diagram may show a bundle of links as a single link, or a single physical wire that has been multiplexed as several logical links (such as Ethernet, or some other broadcast link, which is a single physical channel used by multiple devices to communicate).</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">There is often some confusion about the term <em>multiplexing</em> in network engineering. Many engineers tend to think of sharing two virtual links (see <a href="ch09.xhtml#ch09">Chapter 9</a>, “<a href="ch09.xhtml#ch09">Network Virtualization</a>”) as the only form of network multiplexing. However, <em>any time</em> there are multiple devices sharing a single link, a situation ultimately requiring some form of addressing, time-based division of traffic, or frequency-based division of traffic, multiplexing is being used. Virtualization can be seen as a second layer of multiplexing, or multiplexing on top of multiplexing.</p>
+        </div>
+        <div class="sidebar1">
+        <p class="title1"><strong>Definition by Platypus Considered Harmful</strong></p>
+        <p class="noindent">It is often tempting to try to make definitions precise in all situations. As tempting as this is, however, you should resist it. Imagine, for a moment, the first human on the face of the Earth wakes up on the first day of her existence and discovers a platypus. As the platypus lays eggs, has fur, and is warm blooded like a mammal and has a bill like a bird, it would be tempting for this first human to define the rest of the animals based on the platypus. <a id="page_283"></a>Starting with the platypus is going to cause a problem: it is going to stretch the original set of classifiers out of shape enough to make further classification almost impossible.</p>
+        <p class="indent">Hence, it is important not to let the platypus determine your definitions. Rather, start from the most common cases and allow the edges to be somewhat soft. Sometimes devices must be able to shift roles when the context shifts, and sometimes ideas, technologies, and devices just aren’t going to fit into a neat category. It is better to allow the categories to stand for the general case, and note the exceptions, than it is to end up with convoluted definitions and classifiers that ultimately are ineffective at their primary job, which is to describe things.</p>
+        <p class="indent">There is a balance here, of course—it may be that a definition becomes “not useful” over time, as a greater number of exceptions are discovered to the rule. On the other hand, it is almost never useful to discard a definition for a single exception.</p>
+        <p class="indent">There are many cases of this problem in network engineering; you will encounter two early in this chapter. The first of these is <em>multiplexing</em>, as noted in the previous note; the second is <em>node</em>, which is defined in the text following this sidebar.</p>
+        </div>
+        <p class="indent">Second, network diagrams often leave out the logical complexity of services. The control plane, however, cannot mask these sorts of complexities out.</p>
+        <p class="indent">Instead, the control plane must gather information about the network locally and from other control planes, advertise it to other devices running the control plane, and build a set of tables the data plane can use to forward traffic across each device in the network, from source to destination. This chapter is going to consider the problem:</p>
+        <p class="blockquote"><strong>How does the control plane learn about the network?</strong></p>
+        <p class="indent">This question can be broken down into multiple parts:</p>
+        <p class="bullt">• What is the control plane trying to learn about? Or perhaps, what are the components of a network topology?</p>
+        <p class="bull">• How does the control plane learn about devices connected to the network?</p>
+        <p class="bullb">• What are the basic classifications used in describing the advertisement of information about the network?</p>
+        <div class="note">
+        <p class="title"><a id="page_284"></a><strong>Note</strong></p>
+        <p class="notepara">The mechanisms used to carry information about the network are not considered in this chapter, as they are typically intimately tied to the way in which the set of loop-free paths is calculated.</p>
+        </div>
+        <div class="heading">
+        <h3 class="h3" id="ch11lev1">Nodes, Edges, and Reachable Destinations</h3>
+        <p class="noindent">The first problem to solve is really a meta-question: what kinds of information does a control plane need to learn and distribute in order to build loop-free paths through a network? A word of warning about the following section, however: Networking terms are difficult to nail down, as individual terms are often used to describe a variety of “things” in the network, depending on the context in which they are used.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch11lev2"><strong>Node</strong></h4>
+        <p class="noindent">A node either processes packets (including forwarding packets), sends packets, or receives packets in a network. The term is taken from graph theory, where they can also be called vertices, although this term is more loosely applied in network engineering. There are several kinds of nodes in a network, including</p>
+        </div>
+        <p class="bullt">• <strong>Transit node:</strong> Any device that is designed to accept packets on one interface, process them in some way, and send them on another interface. Examples of transit nodes are routers and switches; they are often just called <em>nodes</em>, as they will be here, rather than <em>transit nodes</em>.</p>
+        <p class="bullb">• <strong>Leaf node:</strong> Also called an end system or host; any device designed to run applications that generate and/or accept packets from one or more interfaces. These are network <em>sources</em> and <em>sinks;</em> most often these nodes are actually called <em>hosts</em>, rather than <em>leaf nodes</em>, to differentiate them from the shorthand <em>nodes</em>, which typically means a <em>transit node</em>.</p>
+        <p class="indent">There are many readily apparent holes in these two definitions. What should a device be called that accepts a packet on one interface, terminates the connection in a local process or application, generates a new packet, and then transmits that new packet out of a different interface? The problem becomes more difficult if the <a id="page_285"></a>information contained in the two packets is roughly the same, as in the case of a <em>proxy server</em>, or some other similar device. In these cases, it is useful to classify the device as either a leaf or a node within a specific context, <em>depending on the role it is taking in relation to other devices within the context</em>. To give an example, from the perspective of a host, a proxy server acts as a network forwarding device, as the operation of the proxy server is (somewhat) transparent to the host. From the perspective of an adjacent node, however, proxy servers are hosts, as they terminate traffic streams, and (generally) participate in the control plane the same way a host would.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch11lev3"><strong>Edge</strong></h4>
+        <p class="noindent">An edge is any connection between two network devices across which packets are forwarded. The nominal case is a point-to-point link connecting two routers—but this is not the only case. In graph theory, an edge <em>only</em> connects precisely two nodes. In network engineering, there are the notions of multiplexed, multipoint, and other kinds of multiplexed links. These are most often modeled as a set of point-to-point links, particularly when building a set of loop-free paths through the network. In network diagrams, however, multiplexed links are often drawn as a single link with multiple nodes attached.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch11lev4"><strong>Reachable Destination</strong></h4>
+        <p class="noindent">A reachable destination can describe a single host or service, or a set of hosts or services, reachable through the network. The nominal example of a reachable destination is either a host or a set of hosts on a <em>subnet</em>, but it is important to remember the term can also describe a <em>service</em> in some contexts, such as a particular process running on a single device, or many copies of a service available on a number of devices. <a href="ch11.xhtml#ch11fig02">Figure 11-2</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/11fig02.jpg" aria-describedby="Al11fig02" alt="Figure shows an illustration of reachable destinations." width="669" height="608"><aside class="hidden" id="Al11fig02">
+        <p>A computer labeled A is to the left with a line leading to the right, reaching a router labeled B. Two lines lead from B to reach routers, C and E. A line leads upward from C to reach a computer labeled D. A line leads upward from D to reach a dotted circle labeled S1. A line leads from E to reach three computers, F, G, and H. A line leads from F to reach a dotted circle labeled S1. A line leads from G to reach a dotted circle labeled S2.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch11fig02"></a><strong>Figure 11-2</strong> <em>An Illustration of Reachable Destinations</em></p>
+        </div>
+        <p class="indent">In the network illustrated in <a href="ch11.xhtml#ch11fig02">Figure 11-2</a>, reachable destinations may include</p>
+        <p class="bullt">• Any of the individual hosts, such as A, D, F, G, and H</p>
+        <p class="bull">• Any of the individual nodes, such as B, C, or E</p>
+        <p class="bull">• A service or process running on a single host, such as S2</p>
+        <p class="bull">• A service or process running on multiple hosts, such as S1</p>
+        <p class="bullb">• A set of devices attached to a single physical link, or edge, such as F, G, and H</p>
+        <p class="indent"><a id="page_286"></a>This last reachable destination is also represented as an <em>interface</em> onto a particular link or edge in the network. Hence, router E could have a number of reachable destinations, including</p>
+        <p class="bullt">• The interface onto the link connecting router E to C</p>
+        <p class="bull">• The interface onto the link connecting router E to B</p>
+        <p class="bull">• The interface onto the link connecting router E to the hosts F, G, and H</p>
+        <p class="bull">• The network representing reachability to the hosts F, G, and H</p>
+        <p class="bull">• Any number of internal services that might be advertised as individual addresses, ports, or protocol numbers</p>
+        <p class="bullb">• Any number of internal addresses attached to virtual links that do not exist in the physical network, but might be used to represent internal state within the device (not shown in <a href="ch11.xhtml#ch11fig02">Figure 11-2</a>)</p>
+        <p class="indent"><a id="page_287"></a>The concept of a <em>reachable destination</em>, then, can mean a lot of different things depending on the context. In most networks, a reachable destination is either a single host, a single link (and the hosts attached to the link), or a set of links (and the hosts attached to those links) <em>aggregated</em> into a single reachable destination.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">An example of reachable destinations being aggregated is provided in <a href="ch05.xhtml#ch05">Chapter 5</a>, “<a href="ch05.xhtml#ch05">Higher Layer Data Transports</a>.” Using a shorter prefix length IP address to represent a set of longer prefix subnets is a form of aggregation.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch11lev5"><strong>Topology</strong></h4>
+        <p class="noindent">The topology is <em>the set of links (or edges) and nodes that describe the entire network</em>. Normally, the topology is described and drawn as a graph, but it can also be represented in a data structure designed to be consumed by machines, or a tree, which is normally designed to be consumed by humans.</p>
+        </div>
+        <p class="indent">Topological information can be summarized by simply making destinations that are physically (or virtually) connected several hops away appear to be directly attached to a local node, and then removing the information about the links and nodes in any routing information carried in the control plane from the point of summarization. <a href="ch11.xhtml#ch11fig03">Figure 11-3</a> illustrates this concept</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/11fig03.jpg" aria-describedby="Al11fig03" alt="Figure represents summarization of topology information in the control plane." width="700" height="530"><aside class="hidden" id="Al11fig03">
+        <p>A section labeled Before Summarization has a computer labeled A to the left with a line leading to a router labeled B. Two lines lead from B, reaching routers, C and D. Two lines lead from C and D to reach a router labeled E. A line from E reaches a router labeled F. A section labeled After summarization has a router labeled F to the right with a line moving to the left, reaching a router labeled E. Four lines lead from E, reaching routers, C, B, and D. It also reaches a computer labeled A.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch11fig03"></a><strong>Figure 11-3</strong> <em>Summarization of Topology Information in the Control Plane</em></p>
+        </div>
+        <div class="heading">
+        <h3 class="h3" id="ch11lev6">Learning about the Topology</h3>
+        <p class="noindent">It would seem simple enough to learn about the network topology: examine the attached links. What appears simple in networks, however, often turns out to be complex. Examining the local interface can tell you about the <em>link</em>, but not about other network devices attached to the link. Further, even if you can detect another network device running the same control plane on a particular link, this does not mean the other device can detect <em>you</em>. There are, then, several issues to explore.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch11lev7"><strong>Detecting Other Network Devices</strong></h4>
+        <p class="noindent">Given routers A, B, and C are attached to a single link, as illustrated in <a href="ch11.xhtml#ch11fig04">Figure 11-4</a>, what mechanisms can they use to detect one another, as well as exchange information about their capabilities?</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/11fig04.jpg" aria-describedby="Al11fig04" alt="Figure represents network device neighbor discovery in the Control Plane." width="700" height="306"><aside class="hidden" id="Al11fig04">
+        <p>A router labeled A is to the left with a line leading to the right and connecting to two routers, B and C. A vertical dotted line is to the right. The same arrangement is on the right with all three routers connected via dotted lines.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch11fig04"></a><strong>Figure 11-4</strong> <em>Network Device Neighbor Discovery in the Control Plane</em></p>
+        </div>
+        <p class="indent">The first point to note about the network shown on the left side of <a href="ch11.xhtml#ch11fig04">Figure 11-4</a> is <em>the interfaces do not correspond to neighbors</em>. The actual neighbor relationships <a id="page_288"></a>are shown on the right side of <a href="ch11.xhtml#ch11fig04">Figure 11-4</a>. Each router in this network has two neighbors, but only one interface. This illustrates the point that the control plane cannot use interface information to discover neighbors; there must be some other mechanism the control plane can use to find neighbors.</p>
+        <p class="indent"><a id="page_289"></a>Manual configuration is one widely deployed solution to this problem. Particularly in control planes designed to overlay another control plane, or control planes designed to build neighbor relationships across multiple routed hops through the network, manual configuration is often the easiest mechanism available. From a complexity perspective, manual configuration adds very little to the protocol itself; there is no need for any form of multicast neighbor advertisements, for instance. On the other hand, manual configuration of neighbors does require configuring the neighbor information, which increases complexity from a configuration point of view. In the network in <a href="ch11.xhtml#ch11fig04">Figure 11-4</a>, router A would need to have neighbor relationships configured with B and C, router B would need to have neighbor relationships configured with A and C, and router C would need to have neighbor relationships configured with A and B. Even if the configuration of neighbors is automated, manual configuration deepens and broadens the interaction surfaces between the management and control planes.</p>
+        <p class="indent">Inferring neighbors from routing advertisements is a solution that was once widespread, but has become less common. In this scheme, each device advertises reachability and/or topology information on a periodic basis. The first time a router receives routing information from some other device, it adds the remote device to a local neighbor table. So long as a neighboring device continues sending routing information on a regular basis, the neighbor relationship will be considered active, or <em>up</em>.</p>
+        <p class="indent">When inferring neighbors from routing advertisements, it is important to be able to determine when a neighbor has failed (so reachability and topology information learned from the neighbor can be removed from any local tables). The most common way to solve this problem is with a pair of timers: the <em>hold</em> or <em>dead</em> timer, and the <em>update</em> or <em>advertisement</em> timer. So long as the neighbor sends an update or advertisement within the dead or hold timer, it is considered up or active. If an entire dead period passes without receiving any updates, the neighbor is considered dead, and some action is taken to either validate the topology and reachability information learned from the neighbor, or it is simply removed from the table.</p>
+        <p class="indent">The normal relationship between the dead and update timer is 3×—the dead timer is set to three times the update timer. Hence, if a neighbor does not send three updates or advertisements in a row, the dead timer wakes up, and begins processing the down neighbor.</p>
+        <p class="indent">Explicit hellos are the most common neighbor discovery mechanism. Hello packets are transmitted based on a <em>hello timer</em>, and the neighbor is considered dead if a hello is not received during the interval of a dead or hold timer. This is similar to the dead and update timers used in inferring neighbors from routing advertisements. Hellos typically contain information about the neighboring system, such as capabilities supported, device level identifiers, etc.</p>
+        <p class="indent">Centralized registration is another mechanism sometimes used to discover, and propagate information about, neighboring devices. Each device connecting to the network will send information about itself to some service, and, in turn, learn about <a id="page_290"></a>other devices connected to the network from this centralized service. This centralized service must somehow be discovered, of course, which is generally accomplished using one of the other mechanisms mentioned.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch11lev8"><strong>Detecting Two-Way Connectivity</strong></h4>
+        <p class="noindent">In control planes with more complex adjacency formation processes—particularly protocols that rely on hellos to form neighbor relationships—it is important to detect if two routers can see one another (communicate bidirectionally) before forming a relationship. Ensuring two-way connectivity not only prevents unidirectional links from creeping into the forwarding table, but it also prevents a constant cycle of neighbor formation—discover a new neighbor, build the correct local tables, advertise reachability to the new neighbor, time out waiting for a hello or some other information, remove the neighbor, or discover the new neighbor. There are three broad options in managing two-way connectivity between network devices.</p>
+        </div>
+        <p class="indent">Do not bother checking for two-way connectivity. Some protocols do not try to determine if two-way connectivity exists between network devices in the control plane, but rather assume a neighbor from which packets are being received must also be reachable.</p>
+        <p class="indent">Carry a list of neighbors heard from on the link. For protocols that use hellos to discover neighbors and maintain liveness, carrying a list of reachable neighbors on the same link is a common method to ensure two-way connectivity exists. <a href="ch11.xhtml#ch11fig05">Figure 11-5</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/11fig05.jpg" aria-describedby="Al11fig05" alt="Figure represents two-way handshake for control plane two-way connectivity check." width="553" height="312"><aside class="hidden" id="Al11fig05">
+        <p>A router labeled A is to the left with a line leading to the right and reaching a router labeled B. A dotted line below leads from A to B and is labeled Hello/neighbor list: Empty. A dotted line below leads from B to A and is labeled Hello/neighbor list: A. A dotted line follows, leading from A to B and labeled Hello/neighbor list: B. A bidirectional dotted line lies at the bottom, labeled Two way connectivity established.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch11fig05"></a><strong>Figure 11-5</strong> <em>Two-Way Handshake for Control Plane Two-Way Connectivity Check</em></p>
+        </div>
+        <p class="indentb">In <a href="ch11.xhtml#ch11fig05">Figure 11-5</a>, assume router A is powered on before B. In this case:</p>
+        <p class="indenthangingN">1. A will send hellos with an empty neighbor list, as it has not heard hellos from any other network device on the link.</p>
+        <p class="indenthangingN">2. When B is powered on, it will receive A’s hello, and hence include A in a list of neighbors it has heard in its hello packets.</p>
+        <p class="indenthangingN"><a id="page_291"></a>3. When A receives B’s hello, it will, in turn, include B in its “heard from” neighbor list in its hello packets.</p>
+        <p class="indenthangingN">4. When both A and B are reporting one another in their “heard from” neighbor lists, both routers can be certain two-way connectivity has been established.</p>
+        <p class="indent1">This process is often called a <em>three-way handshake</em>, based on the three steps:</p>
+        <p class="indenthangingN">1. A must send a hello to B, so B can include A in its neighbor list.</p>
+        <p class="indenthangingN">2. B must receive A’s hello, and include A in its neighbor list.</p>
+        <p class="indenthangingN">3. A must receive B’s hello with itself (A) in B’s neighbor list.</p>
+        <p class="indentt">Rely on an underlying transport protocol. Finally, control planes can rely on an underlying transport mechanism to ensure two-way connectivity exists. This is an uncommon solution, but there are some widely deployed solutions. For instance, the Border Gateway Protocol (BGP), explained in <a href="ch16.xhtml#ch16">Chapter 16</a>, “Link State and Path Vector Control Planes,” relies on the Transmission Control Protocol (TCP), considered in <a href="ch05.xhtml#ch05">Chapter 5</a>, “<a href="ch05.xhtml#ch05">Higher Layer Data Transports</a>,” to ensure two-way connectivity between BGP speakers.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch11lev9"><strong>Detecting the Maximum Transmission Unit</strong></h4>
+        <p class="noindent">It is often useful for a control plane to move beyond just checking for two-way connectivity. Many control planes also check to make certain the Maximum Transmission Unit (MTU) on both interfaces onto the link are configured with the same MTU. <a href="ch11.xhtml#ch11fig06">Figure 11-6</a> illustrates the problem being solved with a link-level MTU check in the control plane.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/11fig06.jpg" aria-describedby="Al11fig06" alt="Figure represents the impact of a mismatched MTU on the control plane." width="700" height="557"><aside class="hidden" id="Al11fig06">
+        <p>A router labeled A is to the left with a line leading to the right, meeting a router labeled B. 1500 MTU is mentioned adjacent to A. 1000 MTU is mentioned adjacent to B. A dotted line below leads from A to B and is labeled Hello (small packet). A dotted line follows, leading from B to A and labeled Hello (small packet). A bidirectional arrow falls below and is labeled Two way connectivity. An arrow leads from A to B and is labeled Routing information (large packet). Text follows that read Too large for receiver Time out waiting for acknowledgement. A dotted arrow leads from A to B and is labeled Routing information (large packet). Text follows that read: Too large for receiver Time out waiting for acknowledgement. Three dots are at the bottom.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch11fig06"></a><strong>Figure 11-6</strong> <em>The Impact of a Mismatched MTU on the Control Plane</em></p>
+        </div>
+        <p class="indent">In a situation where the MTU is mismatched between two interfaces on the same link, it is possible for a neighbor relationship to form but routing and other information to fail to be carried between the network devices. While many protocols have some mechanism to prevent information about the resulting unidirectional links from being used in calculating loop-free paths through the network, it is still useful to detect this situation so it can be explicitly reported and repaired. Several techniques are commonly used by control plane protocols to either explicitly detect this condition, or to at least prevent the initial stages of neighbor formation from taking place.</p>
+        <p class="indent">The control plane protocol can include the locally configured MTU in a field in the hello packets. Rather than just checking for the existence of a neighbor during the three-way handshake, each router can also check to make certain the MTU on both ends of the link match before adding a newly detected network device as a neighbor.</p>
+        <p class="indent"><a id="page_292"></a>Another option is to pad the hello packets to the MTU of the local interface. If the padded, maximum-sized, hello packet is not received by some other device on the link, the initial stages of the neighbor relationship will not complete. The three-way handshake cannot be completed if both devices are not receiving one another’s hello packets.</p>
+        <p class="indent">Finally, the control plane protocol can rely on an underlying transport to regulate packet sizes so the communicating devices can receive them. This mechanism is primarily used in control planes designed to overlay some other control plane, particularly in the case of interdomain routing and network virtualization. Overlay control planes often rely on Path MTU (PMTU) discovery to provide an accurate MTU between two devices connected through multiple hops.</p>
+        <p class="indent">The MTU size itself can have a large impact on the performance of a control plane in terms of its speed of convergence. For instance, assume a protocol must send information describing 500,000 destinations over a multihop link with 500ms of delay, and each destination requires 512 bits to describe:</p>
+        <p class="bullt">• If the MTU is less than 1,000 bits, the control plane will require 500,000 round trips to exchange the entire database of reachable destinations, or around 500,000 × 500ms, which is 250,000 seconds, or close to 70 hours.</p>
+        <p class="bullb"><a id="page_293"></a>• If the MTU is 1,500 octets, or 12,000 bits, the control plane will require around 21,000 round trips to describe the entire database of reachable destinations, or around 21,000 × 500ms, which is around 175 minutes.</p>
+        <p class="indent">The importance of compressing such a database, using some sort of windowing mechanism to reduce the number of full round trips required to exchange the reachability information and increasing the MTU, is readily apparent.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch11lev10">Learning about Reachable Destinations</h3>
+        <p class="noindent">Neighbor discovery allows the control plane to learn about the topology of the network, but how is information about reachable destinations learned? In <a href="ch11.xhtml#ch11fig07">Figure 11-7</a>, how does router D learn about hosts A, B, and C?</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/11fig07.jpg" aria-describedby="Al11fig07" alt="Figure represents the process of discovering reachability." width="700" height="280"><aside class="hidden" id="Al11fig07">
+        <p>Three computers, A, B, and C are to the left with lines leading to the right, reaching a router labeled D. A line leads from D to the right, meeting a router labeled E. The line continues to the right, reaching a computer labeled F.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch11fig07"></a><strong>Figure 11-7</strong> <em>Discovering Reachability</em></p>
+        </div>
+        <p class="indent">There are two broad classes of solutions to this problem—<em>reactive</em> and <em>proactive</em>—discussed in the following sections.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch11lev11"><strong>Learning Reactively</strong></h4>
+        <p class="noindent">In <a href="ch11.xhtml#ch11fig07">Figure 11-7</a>, assume host A has just been powered on, and the network is only using dynamic learning based on transmitted data traffic. How can router D learn about this newly attached host? One possibility is for A to simply start sending packets. For instance, if A is manually configured to send all packets toward destinations it does not know how to reach (essentially, anything that is <em>off segment</em>, a concept considered in <a href="ch06.xhtml#ch06">Chapter 6</a>, “<a href="ch06.xhtml#ch06">Interlayer Discovery</a>”) to D, A has to send at least one packet for D to discover its existence. On learning of A, D can cache any relevant information for some time—generally for as long as A appears to be sending traffic. If A does not send traffic for some time, D can time the entry for A in its local cache out.</p>
+        </div>
+        <p class="indent"><a id="page_294"></a>This process of discovering reachability based on actual traffic flow is <em>reactive discovery</em>. From a complexity perspective, reactive discovery trades optimal traffic flow against the information known about, and potentially carried, in the control plane.</p>
+        <p class="indent"><strong>It will take some amount of time for reactive discovery mechanisms to operate</strong>— that is, for D to learn about the existence of A once the host starts sending packets. For instance, if host F begins sending traffic toward A the moment A is powered on, traffic may be forwarded through the network to D, but D will not have the information required to forward the traffic onto the link, and hence to A. During the time between host A being powered on and D discovering its existence, packets will be dropped—a situation that will appear, to F, to be a network failure at the worst, and some additional jitter (or perhaps an unpredictable response across the network) at best.</p>
+        <p class="indent"><strong>Cached entries will need to be timed out over time.</strong> This will normally require balancing a number of factors, including how large the cache is, how much device information is cached, and how often the cache entry has been used in some past time period.</p>
+        <p class="indent">How long it will take to time out this cached information and any security risk of some other device using stale information is the foundation for an attack. For instance, if A moves its connection from D to E, the information D has learned about A will remain in D’s cache for some time. During this time, if another device connects to the network to D, it can impersonate A. The longer cached information is valid, the more possible it is to execute this type of attack.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch11lev12"><strong>Learning Proactively</strong></h4>
+        <p class="noindent">Some reachability information can be learned proactively, which means the router does not need to wait for an attached host to start sending traffic to learn about it. This capability tends to be important in environments where hosts can be highly mobile; for instance, in a data center fabric where virtual machines may move between physical devices while keeping their address or other identifying information, or in networks that support wireless devices, such as mobile phones. There are four widely used ways to learn reachability information proactively, covered here:</p>
+        </div>
+        <p class="bullt">• <strong>A neighbor discovery protocol</strong> can be run between the edge networking nodes (or devices) and connected hosts. The information learned from such a neighbor discovery protocol can then be used to inject reachability information in the control plane. While neighbor discovery protocols are widely deployed, the information learned through these protocols is not widely used to inject reachability information into the control plane.</p>
+        <p class="bull">• <strong>Reachability information can be learned through device configuration.</strong> Almost all network devices (such as routers) will have a reachable address <a id="page_295"></a>configured or discovered on all host-facing interfaces. Network devices can then advertise these attached interfaces as reachable destinations. In this situation, the link (or wire), the network, or the subnet is the reachable destination, rather than individual hosts. This is the most common way for routers to learn network layer reachability information.</p>
+        <p class="bull">• <strong>Hosts can register with an identity service.</strong> In some systems, a service (whether centralized or distributed) keeps track of where hosts are attached, including such information as the first hop router through which traffic should be sent to reach them, name to address mapping, services each host is capable of providing, services each host is searching for and/or using, and other information. Identity services are common, although they are not often highly visible to network engineers. Such systems are very common in high mobility environments, such as consumer-facing wireless networks.</p>
+        <p class="bullb">• <strong>The control plane can pull information from an address management system,</strong> if one is deployed throughout the network. This is a very uncommon solution, however. Most of the interaction between the control plane and address management systems would be through local device configuration; the address management system assigns an address to an interface, and the control plane picks up this interface configuration to be advertised as a reachable destination.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch11lev13">Advertising Reachability and Topology</h3>
+        <p class="noindent">Once topology and reachability information are learned, the control plane must distribute this information through the network. While the method used to advertise this information is somewhat dependent on the mechanism used to calculate loop-free paths (as which information is required where to calculate loop-free paths will vary depending on how these paths are calculated), there are some common problems and solutions that will apply to every possible system. The primary problems are <em>deciding when to advertise reachability</em> and <em>reliably transporting information through the network</em>.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch11lev14"><strong>Deciding When to Advertise Reachability and Topology</strong></h4>
+        <p class="noindent">When should the control plane advertise topology and reachability information? The obvious answer might be “when it is learned”—but the obvious answer is often the wrong answer. Determining when to advertise information actually involves a careful balance between optimal network performance and managing the amount of control plane state. <a href="ch11.xhtml#ch11fig08">Figure 11-8</a> will be used to illustrate.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/11fig08.jpg" aria-describedby="Al11fig08" alt="Figure represents the process of when to advertise reachability and topology information." width="668" height="426"><aside class="hidden" id="Al11fig08">
+        <p>Two computers, A and B are to the left with lines leading to a router labeled C. Two lines lead from C to reach routers, D and E. Two lines lead from D to reach two computers, F and G. A line leads from E to reach a computer labeled H.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch11fig08"></a><strong>Figure 11-8</strong> <em>When to Advertise Reachability and Topology Information</em></p>
+        </div>
+        <p class="indent"><a id="page_296"></a>Assume hosts A and F are sending data to one another almost constantly, but B, G, and H do not send traffic at all for some extended period. Two obvious questions arise in this situation:</p>
+        <p class="bullt">• While it might make sense for router C to maintain reachability information about B, why should D and E maintain this information?</p>
+        <p class="bullb">• Why should router E maintain reachability information about host A?</p>
+        <p class="indent">From a complexity perspective, there is a direct tradeoff between the amount of information carried and held in the control plane and the ability of the network to accept and forward traffic quickly. Considering the first question, for instance, the tradeoff appears as C’s ability to send traffic from B to G on receiving it versus C maintaining less information in its forwarding tables, but being required to obtain the information required to forward traffic through some mechanism on receiving packets that need to be forwarded. There are three broad solutions to this problem.</p>
+        <p class="bullt">• <strong>A Proactive Control Plane:</strong> The control plane can proactively discover the topology, calculate a set of loop-free paths through the network, and advertise reachability information.</p>
+        <p class="bull">• <strong>Proactive Topology Discovery with Reactive Reachability:</strong> The control plane can proactively discover the topology and calculate a set of loop-free <a id="page_297"></a>paths. However, the control plane can wait until reachability information is needed to forward packets before discovering and/or advertising reachability.</p>
+        <p class="bullb">• <strong>A Reactive Control Plane:</strong> The control plane can reactively discover the topology, calculate a set of loop-free paths through the network (generally on a per destination basis), and advertise reachability information.</p>
+        <p class="indent">If C learns, keeps, and distributes reachability information proactively, or this network is running a proactive control plane, then new flows of traffic can be forwarded through the network without any delays. If the devices illustrated are running a reactive control plane, C would</p>
+        <p class="bullt">• Wait until the first packet in the flow toward G (for instance)</p>
+        <p class="bull">• Discover the path to G using some mechanism</p>
+        <p class="bull">• Install the path locally</p>
+        <p class="bullb">• Begin forwarding traffic toward G</p>
+        <p class="indent">The same process would need to be performed at D for traffic being forwarded toward A from G and F (remember flows are almost always bidirectional). During the time the control plane is learning a path to the destination, traffic is (almost always) being dropped, because the network devices do not have any forwarding information for this reachable destination (from the network device’s perspective, the reachable destination does not exist). The time required to discover and build the correct forwarding information may fall between a few hundred milliseconds to a few seconds; during this time, the host and applications will not know whether or not connectivity will eventually be established, or if the destination is just unreachable.</p>
+        <p class="indent">Control planes can be broadly classified into</p>
+        <p class="bullt">• Proactive systems advertise reachability information throughout the network before it is needed. Another way to phrase this is to say proactive control planes keep reachability information for every destination installed at every network device, regardless of whether the information is being used or not. Proactive systems increase the amount of state carried and stored in the control plane to make the network more transparent to hosts, or rather more optimal for short-lived and time-sensitive flows.</p>
+        <p class="bullb">• Reactive systems wait until forwarding information is needed to obtain it, or rather they react to the events in the data plane to build control plane information. Reactive systems decrease the amount of state carried in the control plane by making the network less responsive to applications, and less optimal for short-lived or time-sensitive flows.</p>
+        <p class="indent"><a id="page_298"></a>As with all tradeoffs in network engineering, the two options described here are not exclusive. It is possible to implement a control plane that contains some proactive, and some reactive, elements. For instance, it is possible to build a control plane that has minimal amounts of reachability information describing rather suboptimal paths through the network, but that can discover more optimal paths if a longer lived, or quality of service sensitive flow, is detected.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch11lev15"><strong>Reactive Distribution of Reachability</strong></h4>
+        <p class="noindent">Returning to <a href="ch11.xhtml#ch11fig08">Figure 11-8</a> as a reference, assume a reactive control plane has been deployed, and B would like to start exchanging data flows with G. How can C develop the forwarding information required to correctly switch this traffic?</p>
+        </div>
+        <p class="indent">The router can send a query through the network or send a query to a controller to discover a path to the destination. For instance:</p>
+        <p class="bullt">• When B first connects to the network, and C learns about this newly attached host, C could send information about B as a reachable destination to a controller attached to the network.</p>
+        <p class="bullb">• In the same way, when G connects to the network, and D learns about this newly attached host, D could send information about G as a reachable destination to a controller attached to the network.</p>
+        <p class="indent">Because the controller learns about every host (or reachable destination) attached to the network (and, in some systems, the entire topology of the network, as well), when C needs to learn how to reach host G, the router can query the controller, which can provide this information.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">The concept of a centralized controller implies a single controller providing information for the entire network, but this is not how the term <em>centralized control plane</em> is commonly used throughout the network engineering world. The idea of <em>centralization</em>, however, is rather loose in network engineering. Rather than indicating a single device, <em>centralized</em> is generally used to mean <em>not carried hop by hop through the network, and not computed by each network device independently</em>. See <a href="ch18.xhtml#ch18">Chapter 18</a>, “<a href="ch18.xhtml#ch18">Centralized Control Planes</a>,” for more information.</p>
+        </div>
+        <p class="indent">The router (or host) can send an <em>explorer</em> packet that records the route from the source to the destination and report this information to the source of the explorer, which is then used as a source route. <a href="ch11.xhtml#ch11fig09">Figure 11-9</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/11fig09.jpg" aria-describedby="Al11fig09" alt="Figure represents the source route discovery." width="700" height="472"><aside class="hidden" id="Al11fig09">
+        <p>Two computers, A and B are at the left with two lines leading to a router labeled C. Two lines lead from C to reach routers, D and E. Lines move from D and E to reach a router labeled F. A line leads from F to reach a router labeled G. The line continues to reach a computer labeled H. A dashed arrow points to A and is labeled 1. Send packet to H. A dashed line points to a dashed arrow between A and C, labeled 2. Send explorer. A dashed line points to a dashed arrow between C and D, labeled 3. Send explorer. Two dashed lines reach two arrows meeting B to C and C to E and labeled 3. Send explorer. A dashed line leads to B labeled 4. Ignore explorer. A dashed line meets arrows adjacent to E and D labeled 5. Send explorer. A dashed line leads to a dashed arrow between F and G labeled 6. Send explorer. A dashed line leads to a dashed arrow between G and H labeled 7. Send explorer. A dashed arrow moves from H to A, labeled 8. Send response along recorded path.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch11fig09"></a><strong>Figure 11-9</strong> <em>Source Route Discovery</em></p>
+        </div>
+        <p class="indentb"><a id="page_299"></a>Using <a href="ch11.xhtml#ch11fig09">Figure 11-9</a>, and assuming host-based source routing:</p>
+        <p class="indenthangingN">1. Host A needs to send a packet to H but does not have a path.</p>
+        <p class="indenthangingN">2. A sends an <em>explorer</em> to its default gateway, router C.</p>
+        <p class="indenthangingN">3. C does not have a route to the destination, so it forwards the explorer packet onto all links other than the one it received the packet on; hence to B, D, and E.</p>
+        <p class="indenthangingN">4. B is a host, has no further interfaces, and is not the target of the explorer, so it ignores the explorer packet.</p>
+        <p class="indenthangingN">5. Neither D nor E has a path to H, so they both forward the explorer onto all interfaces except the one they received the packet on; hence onto the multi-access link shared between themselves and F.</p>
+        <p class="indenthangingN">6. F receives two copies of the same explorer packet; it chooses one based on some local criteria (such as the first received, or some control plane policy) and forwards it onto all the interfaces on which it did not receive the packet, toward G.</p>
+        <p class="indenthangingN">7. G receives the packet and, given it does not have a path to reach H, forwards it onto the only other link it has, which leads to H.</p>
+        <p class="indenthangingN">8. H receives the explorer and responds.</p>
+        <p class="indentt"><a id="page_300"></a>In this scheme, each device along the path adds itself to a list of <em>traversed nodes</em> before forwarding the explorer packet to <em>all interfaces except the one on which it was received</em>. In this way, when H receives the explorer packet (which is ultimately directed at finding a path to H), the packet now describes a complete path from A to H. When H replies to the explorer, it places this path into the body of the packet; when A receives the response, it will now have a complete path from A to H.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">In some implementations, A would not either generate or receive the response to the explorer packet. Rather C, the first hop router, could perform these functions. In the same way, H itself may not respond to these explorer packets, but rather G, or any other network device along the path that has information about how to reach G. The general concept and processing remain the same in these cases, however.</p>
+        </div>
+        <p class="indent">To send packets to H, then, A inserts this path into the packet header in the form of a <em>source route</em> containing the path [A,C,D,F,G,H]. When each router receives this packet, it will examine the source route in the header to determine which router to forward the traffic to next. For instance, C will examine the source route information in the packet header and determine the packet needs to be sent to D next, while D will examine this information and determine it needs to send the packet to F.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">In some implementations, every explorer is actually sent to the destination, which then determines which path traffic should take. There are, in fact, a number of different ways to implement source routing; the process given here is just one example to explain the general idea of source routing.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch11lev16"><strong>Proactive Distribution of Reachability</strong></h4>
+        <p class="noindent">Proactive control planes, in contrast to reactive control planes, distribute reachability and topology information throughout the network when the information becomes available, rather than when it is needed to forward packets. The primary challenge proactive control planes face is in ensuring that reachability and topology information is carried reliably between the nodes in the network, resulting in every device having the same reachability information.</p>
+        </div>
+        <a id="page_301"></a>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">This is really a distributed database problem; <a href="ch14.xhtml#ch14">Chapter 14</a>, “<a href="ch14.xhtml#ch14">Reacting to Topology Changes</a>,” considers the distribution of reachability and topology within the context of a database in more detail.</p>
+        </div>
+        <p class="indent">Dropping control plane information can result in permanent routing loops or create <em>routing black holes</em> (so called because they consume traffic transmitted to destinations with no trace), both of which seriously reduce the usefulness of the network for applications (probably an understatement). There are several widely used mechanisms to ensure the reliable transportation of control plane information through a network.</p>
+        <p class="indent"><strong>A control plane can transmit information periodically, timing out older information.</strong> This is similar to neighbor formation, in that each router in the network will transmit the reachability information it has to all neighbors (or on all interfaces, depending on the control plane), based on a timer, usually called an <em>update</em> or <em>advertisement</em> timer. Reachability information, once received, is held in a local table and timed out over some time period, often called the <em>hold timer</em> (again, just like a neighbor discovery hello).</p>
+        <p class="indent">The remaining mechanisms described here rely on an existing neighbor discovery system to ensure the reliable delivery—and continued reliability—of reachability information. In all of these systems:</p>
+        <p class="bullt">• The list of neighbors is used to drive not only the transmission of new reachability information, but also verifying the correct receipt of reachability information.</p>
+        <p class="bullb">• So long as a neighbor is active, or alive, reachability information received from that neighbor is assumed to remain valid.</p>
+        <p class="indent">Within the context of neighbor-based reachability distribution, there are several commonly used mechanisms to make certain reachability information is carried device to device; often any given control plane will deploy more than one of the techniques described here.</p>
+        <p class="indent"><strong>The control plane can use sequence numbers (or some other mechanism) to ensure correct replication.</strong> Sequence numbers can actually be used to describe individual packets and large blocks of reachability information; <a href="ch11.xhtml#ch11fig10">Figure 11-10</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/11fig10.jpg" aria-describedby="Al11fig10" alt="Figure represents sequence numbers used to ensure reliable replication." width="701" height="236"><aside class="hidden" id="Al11fig10">
+        <p>A rectangular row at the top has four blocks with Packet Header, Packet Sequence, NLRI Sequence, and NLRI (part 1) enclosed. A bidirectional arrow at the top is labeled Describes the contents of this packet with an arrow pointing downward to Packet Sequence. An arrow moves downward from NLRI Sequence labeled Describes the content of this NLRI. An arrow points upward to NLRI (part 1) and downward to NLRI (part 2). A rectangular box below has Packet Header, Packet Sequence, and NLRI (part 2) enclosed. A bidirectional arrow lies below labeled Describes the contents of this packet with an arrow pointing upward to Packet Sequence.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch11fig10"></a><strong>Figure 11-10</strong> <em>Sequence Numbers Used to Ensure Reliable Replication</em></p>
+        </div>
+        <p class="indent">On receiving a packet, the receiver can send an acknowledgment of the receipt of the packet by noting the sequence numbers it has received. A separate sequence number can be used to describe individual Network Layer Reachability <a id="page_302"></a>Information (NLRI) as it is carried through the network. NLRI information spread out over several packets can then be described using a single sequence number.</p>
+        <p class="indent"><strong>The control plane can describe the database to ensure correct replication.</strong> For instance, a control plane could describe the information in the database as</p>
+        <p class="bullt">• A list of sequence numbers matching individual entries containing reachability information contained in the database</p>
+        <p class="bull">• Groups of contiguous sequence numbers contained in the database (a somewhat more compact way to represent all the sequence numbers)</p>
+        <p class="bull">• A set of sequence numbers paired with hashes of the information within each reachability information entry; this has the advantage of not only describing the entries in the database, but also of providing a way for the receiver to verify the contents of each entry, yet without carrying the entire database to perform the check</p>
+        <p class="bullb">• A hash across blocks of reachability entries contained in the database, which can be calculated across the same entries by the receiver and directly compared to determine if entries are missing</p>
+        <p class="indent">These kinds of database descriptors can be transmitted periodically, or only when there are changes, or even in other specific situations to not only ensure the network devices have synchronized databases, but also to determine what is missing or in error, so the additional information can be requested.</p>
+        <p class="indent">Each of these schemes has advantages and disadvantages; generally, protocols will implement a scheme that allows an implementation to not only check for missing information, but also information that has been inadvertently corrupted either in memory or during transmission.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch11lev17"><a id="page_303"></a>Redistribution between Control Planes</h3>
+        <p class="noindent">There are many instances where it is more effective, or in line with specific policy restrictions, for a control plane to learn reachability and topology information from another control plane, rather than through the mechanisms outlined up to this point in this chapter. Some examples might be as follows:</p>
+        </div>
+        <p class="bullt">• Two organizations need to interconnect their networks, but neither wants to allow the other to control the policies and operation of their control planes</p>
+        <p class="bull">• A large organization is made up of many business units, each of which is allowed to run its own internal network based on local conditions and application requirements.</p>
+        <p class="bullb">• An organization needs some way to allow two control planes to interoperate while transitioning from one to the other.</p>
+        <p class="indent">The reasons for allowing one control plane to learn reachability information from another are almost boundless. Given the requirement, many network devices allow operators to redistribute information between control planes. Redistributing reachability raises two control plane–related problems: how to handle metrics and how to prevent routing loops.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">Redistribution can be seen as exporting routes out of one protocol and into another. In fact, import/export and redistribution are often used to mean the same thing, either by different vendors, or even in different situations by the same vendor.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch11lev18"><strong>Redistribution and Metrics</strong></h4>
+        <p class="noindent">The relationship between link properties, policies, and metrics are defined by each control plane protocol independently of other protocols; in fact, a more descriptive, or otherwise more useful, metric system is what sometimes attracts operators to a specific control plane protocol. <a href="ch11.xhtml#ch11fig11">Figure 11-11</a> illustrates two sections of a network running two different control planes, each of which uses a different method to calculate link metrics.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/11fig11.jpg" aria-describedby="Al11fig11" alt="Figure represents the process of redistribution and metrics." width="702" height="357"><aside class="hidden" id="Al11fig11">
+        <p>A computer labeled A is to the left with a line labeled 10g/Metric 100 leading to a router labeled B. Two lines labeled 100G/Metric 10 and 10G/Metric 100 lead from B to routers, C and D. A line labeled 10G/Metric 100 leads from C to a computer labeled E. A line labeled 100G/Metric 10 leads from C to a router labeled F. A line labeled 10G/Metric 20 leads from D to a router labeled G. Routers F and G are connected with a line labeled 10G/Metric 20. The left portion is enclosed in a box labeled Protocol X. The right portion is enclosed in a box labeled Protocol Y. Routers C and D are at the center of the two boxes.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch11fig11"></a><strong>Figure 11-11</strong> <em>Redistribution and Metrics</em></p>
+        </div>
+        <p class="indent">Protocols X and Y, in this network, have been configured using two different systems for assigning metrics. In deploying protocol X, the administrator divided 1,000 by the link speed in gigabits. In deploying protocol Y, the administrator set up a <a id="page_304"></a>“table of metrics,” based on a best guess at the highest and lowest speed links they might have for the next 10 to 15 years, and assigned metrics to different link speeds within this table. The result, as the illustration shows, is incompatible metrics:</p>
+        <p class="bullt">• 10G links in protocol X have a metric of 100, while in protocol Y they have a metric of 20.</p>
+        <p class="bullb">• 100G links in both protocol X and Y have a metric of 10.</p>
+        <p class="indent">Assuming the lower metric is preferred, if the metrics are added, the [B,C,F] link would be considered a more desirable path than the [B,D,G] link. If the bandwidth is considered, however, both links would be considered equally desirable.</p>
+        <p class="indent">If redistribution is configured between these two protocols, how should these metrics be handled? There are three common solutions to this problem.</p>
+        <p class="indent"><strong>The administrator can assign a metric at each redistribution point,</strong> which is carried as part of the internal protocol metric. For instance, the administrator might assign a metric of 5 to the destination E at router C when redistributing from protocol X into Y. This destination, E, is injected into protocol Y with a metric of 5 by router C. At router F, the metric to E would be 25 through C. At G, the cost to reach E would be 35, along the path [F,C]. The desirability of using any particular exit point for any specific destination is chosen by the operator when these manual metrics are assigned.</p>
+        <p class="indent"><strong>The metric of the “other” protocol can be accepted as part of the internal protocol metric.</strong> This does not work in the case where one protocol has a wider <a id="page_305"></a>range of available metrics than the other. For instance, if protocol Y has a maximum metric of 63, the 10G metrics from protocol X will be “above maximum”; a situation that is not likely to be optimal. Assuming no such restriction, router C would inject a route to E with a cost of 100 into protocol Y. The cost to reach E at router F would be 110; the cost at G would be 130 through [F,C].</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">You might recognize a tradeoff between control plane state and optimal use of the network here, another instance of the complexity tradeoffs in real-world protocol design. Carrying the external metric in a separate field adds control plane state, but allows more optimal steering of traffic through the network. Assigning or consuming the external metric reduces control plane state, but at the cost of being able to optimize traffic flow.</p>
+        </div>
+        <p class="indent"><strong>The external metric can be carried as a separate field,</strong> so each network device can make a separate determination about the best path to each external destination. This third solution is the most widely used, as it provides the best ability to steer traffic between the two networks. In this solution, C injects reachability to E with an external cost of 100. At F, there are two metrics in the advertisement describing reachability to E; the internal metric to reach the redistribution (or exit) point is 20, and the metric to reach E within the external network is 100. At G, the internal metric to reach the exit point is 30, and the external metric is 100.</p>
+        <p class="indent">How would an implementation use both of these metrics? Should the protocol choose the closest exit point, or rather the lowest internal metric? This would optimize the local network usage, and potentially deoptimize the usage of network resources in the external network. Should the protocol choose the exit point closest to the external destination, or rather the lowest external metric? This would optimize network resources in the external network, potentially at the cost of deoptimizing the use of network resources in the local network. Or should the protocol try to combine these two metrics in some way, to optimize the use of resources in both networks as much as possible?</p>
+        <p class="indent">Some protocols choose to always optimize local or external resources, while others will provide operators with a configuration option. For instance, a protocol may allow external metrics to be carried as different <em>types</em> of metrics, where one type is considered larger than any internal metric (hence preferring the lowest internal metric first, and using the external metric as a tie breaker), and the other type is where the internal and external metrics are considered equivalent (hence adding the internal and external metrics to make a path decision).</p>
+        <a id="page_306"></a>
+        <div class="heading">
+        <h4 class="h4" id="ch11lev19"><strong>Redistribution and Routing Loops</strong></h4>
+        <p class="noindent">In the discussion above, you might have noticed that destinations redistributed from one protocol to another always appear as if they are connected to the redistributing router. In essence, redistribution acts as a form of summarization (which means topology information is removed, rather than reachability information), as described earlier in this chapter. While this point isn’t crucial to redistribution metrics, it is important to consider in the ability of the control plane to choose the optimal path. In some specific cases, deoptimization can lead to a complete failure of the control plane to choose loop-free paths; <a href="ch11.xhtml#ch11fig12">Figure 11-12</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/11fig12.jpg" aria-describedby="Al11fig12" alt="Figure represents the redistribution routing loop." width="702" height="309"><aside class="hidden" id="Al11fig12">
+        <p>A computer labeled A is to the left with a line labeled 10 leading to a router labeled B. Two lines lead from B labeled 1, reaching routers, C and D. Two lines lead from C and D labeled 1 reaching a router labeled E. The left portion is labeled Protocol X and the right portion is labeled Protocol Y. Two routers, C and D are at the center.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch11fig12"></a><strong>Figure 11-12</strong> <em>Redistribution Routing Loop</em></p>
+        </div>
+        <p class="indentb">To build the routing loop in this network:</p>
+        <p class="indenthangingN">1. The route to host A is redistributed from protocol X to Y with a manually configured metric of 1.</p>
+        <p class="indenthangingN">2. Router E prefers the route through C with a total metric (internal and external) of 2.</p>
+        <p class="indenthangingN">3. Router D prefers the route through E with a total metric of 3.</p>
+        <p class="indenthangingN">4. Router D redistributes the route to host A into protocol X with the existing metric of 3.</p>
+        <p class="indenthangingN">5. Router B has two routes to A: one with a cost of 10 (directly) and one with a metric of 4 through D.</p>
+        <p class="indenthangingN">6. Router B chooses the path through D, creating a routing loop.</p>
+        <p class="indenthangingN">7. And so on (the loop will continue until each protocol reaches its maximum metric).</p>
+        <p class="indentt"><a id="page_307"></a>This example is a little stretched to create a routing loop in a trivial network, but all routing loops caused by redistribution are similar in their structure. It is important, in this example, that not only has topology information been lost (the route to A has been summarized, appearing, from E’s perspective, to be directly attached to C), but metric information has been lost as well (the original route, with a cost of 11, is redistributed into protocol Y with a cost of 1 at C). There are a number of common mechanisms used to prevent this routing loop from forming.</p>
+        <p class="indent"><strong>The routing protocol can always prefer internal over external routes.</strong> In this case, if B always prefers the internal route to A over the external path through D, the routing loop cannot form. Many routing protocols will use an ordering preference when installing routes into the local routing table (or Routing Information Base, RIB), to always prefer internal routes over external ones. The reason for this preference is to prevent routing loops of this type from forming.</p>
+        <p class="indent"><strong>Filters could be configured to prevent individual destinations from being redistributed twice.</strong> In this network, router D could be configured to prevent any external route received in protocol Y from being redistributed into protocol X. In a situation where there are only two protocols (or networks) with control plane information redistributed between them, this can be a simple solution. In cases where the filters need to be configured for each destination, the filters can quickly become difficult to manage. Mistakes in configuring these filters can either cause some destinations to become unreachable (routing black holes), or permit a loop to form, potentially causing a failure in the control plane.</p>
+        <p class="indent"><strong>Routes can be tagged when they are redistributed, and then filtered based on these tags at other redistribution points.</strong> For instance, when the route to A is redistributed into protocol Y at C, the route could be administratively tagged with some number, such as <em>100</em>, so the route can be easily identified. At router D, a filter could be configured to block any route marked with the tag <em>100</em>, preventing the routing loop from forming. Many protocols allow a route to carry an administrative tag (sometimes called a <em>community</em>, or some other similar name), and then to filter routes based on this tag.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch11lev20">Final Thoughts on Topology Discovery</h3>
+        <p class="noindent">This chapter covered a lot of ground, mostly in the process of considering a wide array of problems that control planes face in some fundamental areas. For each of these problems, a range of solutions was offered, many of which are implemented by real control plane protocols used in running networks throughout the world.</p>
+        </div>
+        <p class="indent">Discovering the topology on a per link basis was the first problem considered, including detecting other network devices, determining if two-way connectivity exists between devices, and determining the MTU (and whether or not it matches). <a id="page_308"></a>Learning about reachable destinations was the second problem considered. Two broad classes of solutions were considered here: reactive and proactive. Advertising reachability information was divided into the same two broad classes, reactive and proactive, but reliable transmission of information through the network was also considered in some detail. Finally, redistribution between routing protocols was considered, as this is a common way for a control plane to learn about reachable destinations in an indirect way.</p>
+        <p class="indent">You will meet these problems, and their solutions, again in considering actual protocol implementations in <a href="ch15.xhtml#ch15">Chapter 15</a>, “<a href="ch15.xhtml#ch15">Distance Vector Control Planes</a>,” and <a href="ch16.xhtml#ch16">Chapter 16</a>, “<a href="ch16.xhtml#ch16">Link State and Path Vector Control Planes</a>,” which consider distributed and centralized control plane implementations in more detail. Each of these problems and their solutions are fundamental to the operation of successful control plane protocols in the real world.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch11lev21">Further Reading</h3>
+        <p class="ref">Alekseev, V. B., V. P. Kozyrev, and A. A. Sapozhenko. “Graph Theory,” February 2011. <a href="https://www.encyclopediaofmath.org/index.php/Graph_theory">https://www.encyclopediaofmath.org/index.php/Graph_theory</a>.</p>
+        </div>
+        <p class="ref">Caldwell, Chris K. “Graph Theory Tutorials,” 1995. <a href="http://primes.utm.edu/graph/">http://primes.utm.edu/graph/</a>.</p>
+        <p class="ref">Doyle, Jeff, and Jennifer DeHaven Carroll. <em>Routing TCP/IP, Volume 1</em>. 2nd edition. New Delhi, India: Cisco Press, 2005.</p>
+        <p class="ref">“Enhanced Interior Gateway Routing Protocol.” <em>Cisco</em>. Accessed September 4, 2017. <a href="https://www.cisco.com/c/en/us/support/docs/ip/enhanced-interior-gateway-routing-protocol-eigrp/16406-eigrp-toc.html">https://www.cisco.com/c/en/us/support/docs/ip/enhanced-interior-gateway-routing-protocol-eigrp/16406-eigrp-toc.html</a>.</p>
+        <p class="ref">Huang, Peng, Chuanxiong Guo, Lidong Zhou, Jacob R. Lorch, Yingnong Dang, Murali Chintalapati, and Randolph Yao. “Gray Failure: The Achilles’ Heel of Cloud-Scale Systems.” In <em>Proceedings of the 16th Workshop on Hot Topics in Operating Systems</em>, 150–55. HotOS ’17. New York, NY, USA: ACM, 2017. doi:10.1145/3102980.3103005.</p>
+        <p class="ref">Krebs, Valdis. “The Social Life of Routers.” <em>Internet Protocol Journal</em>, December 2000. <a href="http://www.orgnet.com/SocialLifeOfRouters.pdf">http://www.orgnet.com/SocialLifeOfRouters.pdf</a>.</p>
+        <p class="ref">Lahey, Kevin. <em>TCP Problems with Path MTU Discovery</em>. Request for Comments 2923. RFC Editor, 2000. doi:10.17487/RFC2923.</p>
+        <p class="ref">Mathis, Matt, and John Heffner. <em>Packetization Layer Path MTU Discovery</em>. Request for Comments 4821. RFC Editor, 2007. doi:10.17487/RFC4821.</p>
+        <p class="ref">McCann, Jack, Stephen E. Deering, Jeffrey Mogul, and Robert M. Hinden. <em>Path MTU Discovery for IP Version 6</em>. Request for Comments 8201. RFC Editor, 2017. doi:10.17487/RFC8201.</p>
+        <p class="ref"><a id="page_309"></a>Medved, Jan, Nitin Bahadur, Hariharan Ananthakrishnan, Xufeng Liu, Robert Varga, and Alexander Clemm. “A Data Model for Network Topologies.” Internet-Draft. Internet Engineering Task Force, March 2017. <a href="https://tools.ietf.org/html/draft-ietf-i2rs-yang-network-topo-12">https://tools.ietf.org/html/draft-ietf-i2rs-yang-network-topo-12</a>.</p>
+        <p class="ref">Moy, John. <em>OSPF Version 2</em>. Request for Comments. RFC Editor, April 1998. doi:10.17487/RFC2328.</p>
+        <p class="ref">Rekhter, Yakov, Susan Hares, and Tony Li. <em>A Border Gateway Protocol 4 (BGP-4)</em>.</p>
+        <p class="ref">Request for Comments 4271. RFC Editor, 2006. doi:10.17487/rfc4271.</p>
+        <p class="ref">Retana, Alvaro, Russ White, and Don Slice. <em>EIGRP for IP: Basic Operation and Configuration</em>. 1st edition. Boston, MA: Addison-Wesley Professional, 2000.</p>
+        <p class="ref">Savage, Donnie, Steven Moore, James Ng, Russ White, Donald Slice, and Peter Paluch. <em>Cisco’s Enhanced Interior Gateway Routing Protocol (EIGRP)</em>. Request for Comments 7868. RFC Editor, 2016. <a href="https://rfc-editor.org/rfc/rfc7868.txt">https://rfc-editor.org/rfc/rfc7868.txt</a>.</p>
+        <p class="ref">White, Russ, Alvaro Retana, and Don Slice. <em>Optimal Routing Design</em>. 1st edition. Cisco Press, 2005.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch11lev22">Review Questions</h3>
+        <p class="indenthangingN">1. Classify each device as either a transit or a leaf node:</p>
+        </div>
+        <p class="indenthangingNA">a. A mobile phone being used as a hot spot</p>
+        <p class="indenthangingNA">b. A router</p>
+        <p class="indenthangingNA">c. A database server</p>
+        <p class="indenthangingNA">d. A switch</p>
+        <p class="indenthangingNA">e. A proxy server</p>
+        <p class="indenthangingN">2. Explain the difference between aggregation and summarization as it is used in the chapter (and throughout this book).</p>
+        <p class="indenthangingN">3. Note the kind of neighbor discovery, two-way connectivity check, and link MTU discovery used in each of the following routing protocols:</p>
+        <p class="indenthangingNA">a. Open Shortest Path First (OSPF)</p>
+        <p class="indenthangingNA">b. Intermediate System to Intermediate System (IS-IS)</p>
+        <p class="indenthangingNA">c. Routing Information Protocol (RIP)</p>
+        <p class="indenthangingNA">d. Border Gateway Protocol (BGP)</p>
+        <p class="indenthangingN"><a id="page_310"></a>4. Classify each of the following protocols as reactively or proactively discovering the topology and calculating the set of loop-free paths through the network:</p>
+        <p class="indenthangingNA">a. Spanning Tree Protocol (STP)</p>
+        <p class="indenthangingNA">b. Open Shortest Path First (OSPF)</p>
+        <p class="indenthangingNA">c. BABEL</p>
+        <p class="indenthangingNA">d. OpenFlow</p>
+        <p class="indenthangingN">5. Classify each of the following protocols as reactively or proactively discovering and advertising reachable destinations:</p>
+        <p class="indenthangingNA">a. Spanning Tree Protocol (STP)</p>
+        <p class="indenthangingNA">b. Open Shortest Path First (OSPF)</p>
+        <p class="indenthangingNA">c. BABEL</p>
+        <p class="indenthangingNA">d. OpenFlow</p>
+        <p class="indenthangingN">6. Describe a situation where an overflow in a cache used to hold forwarding information can cause the control plane to forward packets until the cache is either timed out or otherwise cleared.</p>
+        <p class="indenthangingN">7. Read the explanation of a gray failure (from the paper noted in the “Further Reading” section). How do you think gray failures might relate to the discovery of neighbor status and checking for two-way connectivity?</p>
+        <p class="indenthangingN">8. Assume you could tag routes as they are being redistributed, and then filter based on those tags at all other redistribution points. Can you explain how this kind of tagging could be used to prevent redistribution routing loops?</p>
+        <p class="indenthangingN">9. It seems it would be possible to build a table that converts metrics from one protocol to another automatically during the redistribution process, and yet very few (almost no) routing protocols are designed with this kind of capability. What would be the problem with such a system?</p>
+        <p class="indenthangingN1">10. One protocol, the Enhanced Interior Gateway Routing Protocol (EIGRP), does allow a routing process to set the external metrics directly from the external routing process. Can you figure out the circumstances when this is possible, and explain why?</p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780134762814/files/9780134762852.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

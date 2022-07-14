@@ -1,0 +1,83 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h1 class="h1" id="part1"><a id="page_1"></a><strong>P<small>ART</small> I<br>The Data Plane</strong></h1>
+        <p class="noindent">To begin, the primary job of a network is to carry data from one attached host to another. This might appear to be simple at first glance, but it is actually fraught with problems. An illustration might be helpful here; <a href="part1.xhtml#p1fig01">Figure PI-1</a> is used to illustrate the complexity.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/p1fig01.jpg" aria-describedby="Alp1fig01" alt="A block diagram represents the data plane problem space." width="539" height="210"><aside class="hidden" id="Alp1fig01">
+        <p>The diagram shows three blocks. The first block has three sub-blocks which reads, application, network software, and network hardware. The second block has two sub-blocks switching process and network hardware. The third block has three sub-blocks which reads, application, network software, and network hardware. Block 1 is connected to block 2. Block 2 is connected to block 3.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="p1fig01"></a><strong>Figure PI-1</strong> <em>The Data Plane Problem Space</em></p>
+        </div>
+        <p class="indentb">Beginning at the upper-left corner of the illustration:</p>
+        <p class="indenthangingN">1. The application generates some data. This data must be formatted in a way that allows the receiving application to understand what has been transmitted— the data must be marshalled. The mechanism used to marshal the data must be efficient in many ways, including fast and easy to encode, fast and easy to decode, flexible enough to allow for changes in encoding without breaking too many things, and adding the smallest amount of overhead possible during data transmission.</p>
+        <p class="indenthangingN"><a id="page_2"></a>2. The network software needs to encapsulate the data, and get it ready to actually be transmitted. Somehow the network software needs to know the address of the destination host. The network that connects the source and destination is a <em>shared resource</em>, and hence some form of multiplexing must be available so the source can direct the information at the correct destination. Generally this will involve some form of addressing.</p>
+        <p class="indenthangingN">3. The data must be moved out of memory at the source and onto the network proper—the actual wire (or optical cable, or wireless link) that will carry the information between network-connected devices.</p>
+        <p class="indenthangingN">4. Network devices must have some way to discover the ultimate destination of the information—a second form of the multiplexing problem—and determine if there is any other processing that needs to be done on the information while it is in transit between the source and destination.</p>
+        <p class="indenthangingN">5. The information, after passing through the network device, must once again be encoded and moved out of memory onto the wire. At every point where information is moved from memory to some form of physical media, the information will need to be queued; there will often be more data to transmit than can be placed onto any particular physical media at any given time. This is where quality of service comes into play.</p>
+        <p class="indenthangingN">6. The information, as carried through the network, must now be copied off the physical media and back into memory. It must be checked for errors—this is error control—and there must be some way for the receiver to tell the transmitter it is running out of memory in which to store the incoming information— this is flow control.</p>
+        <p class="indentt">The network device in the middle of the diagram is of particular interest. A network device—such as a router, switch, or middle box—connects two physical media together to build an actual network. Perhaps the simplest question to begin with is this: why are these devices required in the first place? Routers and switches are obviously complex devices, with their own internal architecture (which will be covered in this chapter at a high level); why add this complexity to a network? There are two fundamental reasons.</p>
+        <p class="indent">The original reason for building these devices was to connect different kinds of physical media together. For instance, within a building it might be practical to run ARCnet or thicknet Ethernet (to use examples from the time when network devices were first invented). The distance these media can traverse, however, is very short— on the order of hundreds of meters. Somehow these networks must be extended between buildings, between campuses, between cities, and eventually between <a id="page_3"></a>continents, using some sort of multiplexed (or inverse multiplexed) telephone circuit like a T1 or DS3. These two different media types use different kinds of signaling; there must be some sort of device that translates one kind of signaling into another.</p>
+        <p class="indent">The second reason is this: scale quickly became an issue. The nature of the physical world is such that you have two choices when it comes to putting data on a wire:</p>
+        <p class="bullt">• The wire can connect precisely two computers; in this case, every pair of computers needs to be physically connected to every other computer it needs to communicate with.</p>
+        <p class="bullb">• The wire can be shared among many computers (the wire can be a shared media).</p>
+        <p class="indent">To solve the problem the first way, you need a lot of wire. Solving the problem the second way seems like the obvious solution, but it presents another set of problems—specifically, how is the bandwidth available on the wire shared among all the devices? At some point, if there are enough devices on a single shared media, any sort of scheme used to enable resource sharing will, itself, consume as much or more bandwidth as any individual device connected to the wire. At some point, even a 100G link, shared among enough hosts, will leave each individual host with very little available resources.</p>
+        <p class="indent">The solution to this situation is the network device—the router or switch—that separates two shared media, only passing traffic between the two as needed. With some logical planning, devices that need to talk to each other more often can be placed closer together (in terms of network topology), conserving bandwidth in other places. Routing and switching has moved far beyond these humble beginnings, of course, but these are the root problems engineers solved by injecting network devices into networks.</p>
+        <p class="indent">There are other difficult problems to solve in this space beyond the bare carrying of information from a source to a destination; many times it is useful to be able to virtualize the network, which generally means creating a tunnel between two devices in the network.</p>
+        <p class="indent">The series of chapters in <a href="part1.xhtml#part1">Part I</a> consider the sometimes incredibly difficult problems in simply carrying data from one end of a network to the other, along with a range of possible solutions for each of these problems. Along the way, various chapters also explore the concept of layering in data transport protocols, and its importance to breaking this complex domain into more solvable chunks. Layering, however, brings its own set of problems into the transport world, so <a href="part1.xhtml#part1">Part I</a> also needs to consider how to resolve the problems caused by the introduction of layering—specifically, interlayer discovery.</p>
+        <p class="indent"><a id="page_4"></a>The chapters in this part include:</p>
+        <p class="bullt">• <strong><a href="ch01.xhtml#ch01">Chapter 1</a>: <a href="ch01.xhtml#ch01">Fundamental Concepts</a></strong>, which discusses business drivers, circuit switching, packet switching, and network complexity</p>
+        <p class="bull">• <strong><a href="ch02.xhtml#ch02">Chapter 2</a>: <a href="ch02.xhtml#ch02">Data Transport Problems and Solutions</a></strong>, which discusses marshaling data, dictionaries, grammars, metadata, error detection, error correction, addressing, multiplexing, multicast, anycast, and flow control</p>
+        <p class="bull">• <strong><a href="ch03.xhtml#ch03">Chapter 3</a>: <a href="ch03.xhtml#ch03">Modeling Network Transport</a></strong>, which discusses the value of modeling, the Department of Defense (DoD) model, the Open Systems Interconnect (OSI) model, the Recursive Internet Architecture (RINA) model, connection-oriented and connectionless transport mechanisms</p>
+        <p class="bull">• <strong><a href="ch04.xhtml#ch04">Chapter 4</a>: <a href="ch04.xhtml#ch04">Lower Layer Transports</a></strong>, which discusses Ethernet and 802.11 Wireless</p>
+        <p class="bull">• <strong><a href="ch05.xhtml#ch05">Chapter 5</a>: <a href="ch05.xhtml#ch05">Higher Layer Data Transports</a></strong>, which discusses the Internet Protocol (IP), the Transmission Control Protocol (TCP), QUIC, and the Internet Control Message Protocol (ICMP)</p>
+        <p class="bull">• <strong><a href="ch06.xhtml#ch06">Chapter 6</a>: <a href="ch06.xhtml#ch06">Interlayer Discovery</a></strong>, which discusses mapping identifiers and services between layers, the Domain Name System (DNS), the Address Resolution Protocol (ARP), Neighbor Discovery (ND), Stateless Address Autoconfiguration (SLAAC), and the concept of the default gateway</p>
+        <p class="bull">• <strong><a href="ch07.xhtml#ch07">Chapter 7</a>: <a href="ch07.xhtml#ch07">Packet Switching</a></strong>, which discusses the process of copying a packet off of the physical media, processing the packet, moving a packet through the network device, and finally copying a packet onto the physical medium</p>
+        <p class="bull">• <strong><a href="ch08.xhtml#ch08">Chapter 8</a>: <a href="ch08.xhtml#ch08">Quality of Service</a></strong>, which discusses why Quality of Service (QoS) is needed, traffic classification, Class of Service, Type of Service, QoS trust boundaries, jitter, and fairness in queueing</p>
+        <p class="bull">• <strong><a href="ch09.xhtml#ch09">Chapter 9</a>: <a href="ch09.xhtml#ch09">Network Virtualization</a></strong>, which discusses use cases for network virtualization, tunneling, switching tunneled packets, the problems network virtualization must solve, Segment Routing (SR), Software-Defined Wide Area Networks (SD-WAN), virtualization tradeoffs, and shared fate</p>
+        <p class="bull">• <strong><a href="ch10.xhtml#ch10">Chapter 10</a>: <a href="ch10.xhtml#ch10">Transport Security</a></strong>, which discusses data exhaust, asymmetric and symmetric encryption, key exchange, hiding user information, man-inthe-middle (MitM) attacks, and Transport Level Security (TLS)</p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780134762814/files/9780134762852.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

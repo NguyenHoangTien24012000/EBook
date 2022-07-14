@@ -1,0 +1,486 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 class="h2" id="ch20"><a id="page_529"></a><strong>Chapter 20<br>Examples of Information Hiding</strong></h2>
+        <div class="sidebar">
+        <p class="sb-noindent"><strong>Learning Objectives</strong></p>
+        <p class="sb-noindent">After reading this chapter, you should understand:</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The mechanisms used to summarize and aggregate control plane information in Intermediate System to Intermediate System (IS-IS)</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The mechanisms used to summarize and aggregate control plane information in Open Shortest Path First (OSPF)</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The interaction between summarization, aggregation, and external routing information in Open Shortest Path First</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Aggregation in the Border Gateway Protocol (BGP)</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The Border Gateway Protocol as a reachability overlay</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Controller-driven segment routing</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Exponential backoff</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Link state flooding reduction</p>
+        </div>
+        <p class="noindent">The preceding chapter considered the problems that information hiding is designed to prevent or resolve, including positive feedback loops, as part of an overall pattern of security, and to reduce the amount and velocity of state in a control plane. This chapter will provide several examples of information hiding deployed in networks and protocols. The first section here will describe summarization in <a id="page_530"></a>Intermediate System to Intermediate System (IS-IS) and Open Shortest Path First (OSPF); as described in earlier chapters, summarization here means the removal of topology information, rather than reachability information. The second section will describe aggregation in the Border Gateway Protocol (BGP), which originally included the interesting feature of preserving topology information within aggregated routes. An example of layering will be considered next, specifically external routes carried in BGP layered over internal routes carried in IS-IS. The final section will describe exponential backoff in some detail, as applied to BGP neighbor dampening and the distribution of control plane state and calculation of loop-free paths in IS-IS.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch20lev1">Summarizing Topology Information</h3>
+        <p class="noindent">When reading this section, remember that summarization is removing topology information to manage control plane state, and aggregation is removing reachability information to manage control plane state. This section will consider summarization in the context of link state protocols, as distance vector protocols remove topology information at every hop in the network—even the Enhanced Interior Gateway Routing Protocol (EIGRP), which keeps a small radius of topology information.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch20lev2"><strong>Intermediate System to Intermediate System</strong></h4>
+        <p class="noindent">IS-IS is a link state protocol used in many large-scale networks, including transit providers and data center (cloud) fabrics. The amount and velocity of state carried in a link state control plane can overwhelm slower processors with smaller amounts of memory, such as might be used in lower-cost routers and switches, or devices that must fit into limited physical spaces. Consider the network illustrated in <a href="ch20.xhtml#ch20fig01">Figure 20-1</a>.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/20fig01.jpg" aria-describedby="Al20fig01" alt="Network diagram used as an example to illustrate Flooding copies in a link state protocol." width="575" height="108"><aside class="hidden" id="Al20fig01">
+        <p>Four routers B, C, D, and E are placed at the center such that all the four are connected to each other. Router A is placed at the left and is connected to routers B and C. Router F is placed at the right and is connected to routers D and E. Router A is shown to be connected to and advertise a network path with address 2001:db8:3e8:100::/64.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch20fig01"></a><strong>Figure 20-1</strong> <em>Flooding copies in a link state protocol</em></p>
+        </div>
+        <div class="note">
+        <p class="title"><a id="page_531"></a><strong>Note</strong></p>
+        <p class="notepara">In the early years of networking, routers were often shipped with much less computing power and storage than are available at the time of this writing. Even the routers deployed today for small office and home use can have more available resources than midrange routers used in early networks, and “low-end” routers deployed today often have more available resources than the most capable routers just a few years ago. It is always important to consider this when looking at protocol design and deployment, particularly in the area of summarization and aggregation.</p>
+        </div>
+        <p class="indent">In <a href="ch20.xhtml#ch20fig01">Figure 20-1</a>, if the status of 100::/64 changes, D and E will receive three or four different copies of the Link State Packet (LSP) generated by A (depending on which LSP arrives at which intermediate system, or IS, when). Further, if the [A,B] link fails, F will receive an update about this topology change, even though it has no impact on E’s ability to reach 100::/64. There are a number of ways to reduce the control plane state in this network; this section considers one method included in every link state protocol: flooding domains.</p>
+        <p class="indent">A flooding domain is a set of routers (intermediate systems in the case of IS-IS) with completely synchronized databases. When the flooding domain boundary is crossed, topology information will be summarized, and reachability information may be aggregated.</p>
+        <p class="indent">To understand flooding domains, it is best to start with a quick review of Open Systems Interconnect (OSI) addressing, which is used in IS-IS. <a href="ch20.xhtml#ch20fig02">Figure 20-2</a> will help illustrate this addressing scheme.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/20fig02.jpg" aria-describedby="Al20fig02" alt="Figure illustrates the components of OSI addressing scheme." width="593" height="346"><aside class="hidden" id="Al20fig02">
+        <p>Four OSI addresses are given at the center of the figure and its components are described. The addresses are A: 49.0011.2222.0000.0000.000A, B: 49.0011.2222.0000.0000.000B, C: 49.0011.3333.0000.0000.000C, and D: 49.0011.3333.0000.0000.000A. The component "49" is described "Always use 49 here to indicate private addressing." The component "0011" is described "Use this for internal network organization (almost always set to the same numbers in real deployments.)" The component that reads either "2222" or "3333" is described "This normally used to indicate the flooding domain (or the area.)" The remaining part of the address is described "This is set by the intermediate system based on a local physical interface address." The part from the beginning until the "2222 or 3333" component is described "Any two devices sharing the same address from here to the left, the area ID, are considered to be in the same flooding domain by intermediate systems."</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch20fig02"></a><strong>Figure 20-2</strong> <em>OSI addressing</em></p>
+        </div>
+        <p class="indent">There are two primary sections of the OSI address to consider in <a href="ch20.xhtml#ch20fig02">Figure 20-2</a>. The right three parts of the address between the dots are unique to each IS, and are generally calculated based on a local physical (Media Access Control, or MAC) address (as these are almost always designed to be unique for each physical interface or piece of hardware). The left sections, which are variable in length (although almost always used as shown in Internet Protocol, or IP, networks), are considered the “area ID” by the IS. Any two intermediate systems with the same information to the left of the right three dotted sections of their OSI address (called the area identifier, or area ID), are considered part of the same level 1 flooding domain, and will form a level 1 adjacency. Likewise, any two intermediate systems with different information in the left sections of their OSI addresses will form a <em>level 2</em> adjacency, and hence will be considered part of the level 2 flooding domain. There may be many different level 1 flooding domains in an IS-IS network, but there can be only one level 2 flooding domain.</p>
+        <div class="note">
+        <p class="title"><a id="page_532"></a><strong>Note</strong></p>
+        <p class="notepara">IS-IS forms level 2 adjacencies between each pair of intermediate systems, regardless of the area identifier. To simplify the explanation of flooding domains, however, this text will assume that neighbors capable of forming level 1 adjacencies will form <em>only</em> level 1 adjacencies. This will be revisited later in this chapter to provide more detail on this point.</p>
+        </div>
+        <p class="indent"><a href="ch20.xhtml#ch20fig03">Figure 20-3</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/20fig03.jpg" aria-describedby="Al20fig03" alt="Network diagram illustrates the concept of flooding domain in IS-IS." width="714" height="190"><aside class="hidden" id="Al20fig03">
+        <p>Two flooding domains are shown, indicated by dotted edged rectangles. The left is the level 2 flooding domain, slightly smaller than the right, which is the level 1 flooding domain. The two domains share routers B and C. Level 2 has a router A with OSI address "49.0011.2222.0000.0000.000A," advertising connection path "2001:db8:3e8:100::/64." This is connected to routers B and C. The OSI address of router B is "49.0011.5555.0000.0000.000B" and OSI address of router C is "49.0011.5555.0000.0000.000C." These two routers are connected to each other and are as well connected to routers D and E in the level 1 domain. The OSI address of router D is "49.0011.5555.0000.0000.000D." The OSI address of router E is "49.0011.5555.0000.0000.000E." These two routers are connected to router F of the level 1 domain. The OSI address of router F is "49.0011.5555.0000.0000.000F." This router is connected to a network path with address "2001:db8:3e8:101::/64."</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch20fig03"></a><strong>Figure 20-3</strong> <em>Flooding domains in IS-IS</em></p>
+        </div>
+        <p class="indent">In <a href="ch20.xhtml#ch20fig03">Figure 20-3</a>, A has a different area ID than B and C; A has 49.0011.2222, while B and C have 49.0011.5555. Hence, [A,B] and [A,C] will be level 2 adjacencies. [B,C], [B,D], [C,E], [B,E], [C,D], [D,F], and [E,F] will all be level 1 adjacencies. Each adjacency type will exchange only the database associated with the correct adjacency level; <a href="ch20.xhtml#ch20fig04">Figure 20-4</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/20fig04.jpg" aria-describedby="Al20fig04" alt="Network diagram illustrates the concept of shared databases in IS-IS flooding domains." width="713" height="198"><aside class="hidden" id="Al20fig04">
+        <p>Four routers B, C, D, and E are placed at the center such that all the four are connected to each other. Router A is placed at the left and is connected to routers B and C. Router F is placed at the right and is connected to routers D and E. Two dashed horizontal lines at the bottom indicate the boundary of the level 1 and level 2 databases. Routers A, B, and C belong to the single, shared level 2 database. Routers B, C, D, E, and F belong to the single, shared level 1 database. The OSI address of router A is "49.0011.2222.0000.0000.000A" and this is connected to a network path with address "2001:db8:3e8:100::/64." The OSI address of B is "49.0011.5555.0000.0000.000B." The OSI address of C is "49.0011.5555.0000.0000.000C." The OSI address of D is "49.0011.5555.0000.0000.000D." The OSI address of E is "49.0011.5555.0000.0000.000E." The OSI address of F is "49.0011.5555.0000.0000.000F," and F is connected to a network path with address "2001:db8:3e8:101::/64."</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch20fig04"></a><strong>Figure 20-4</strong> <em>Shared databases in IS-IS flooding domains</em></p>
+        </div>
+        <p class="indent"><a id="page_533"></a>In <a href="ch20.xhtml#ch20fig04">Figure 20-4</a>, A, B, and C all have a synchronized (shared) level 2 database; B, C, D, E, and F all have a synchronized (shared) level 1 database.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">To be precise, every IS builds and maintains both a level 1 and a level 2 database. If you were to examine F, for instance, you would find it has a level 1 database containing information about every link, node (IS), and reachable destination in the 49.0011.5555 flooding domain. The level 2 flooding domain at F, however, would contain a single entry, for F itself. Why does the level 2 database at F have a single entry? F only builds level 1 adjacencies with D and E; it will not synchronize anything in its level 2 database across a level 1 adjacency. Hence, it builds a level 2 database but will not share the contents (synchronize) the contents of this database with any adjacent neighbors.</p>
+        </div>
+        <p class="indent">This arrangement certainly seems to reduce the scope of the reachability and topology information in the network; as the information about 100::/64 is in the level 2 flooding database at A, it will be shared just across level 2 adjacencies; hence only B and C will receive this information. But how can a host connected to F (at 101::/64, for instance) reach this destination? F does not receive a copy of the level 2 database, and therefore cannot know about 100::/64.</p>
+        <p class="indent">IS-IS solves this through the <em>attached bit</em>. B and C, because they are <em>attached</em> to the level 2 flooding domain (remember there can be only one level 2 flooding domain in an IS-IS network), will set the <em>attached bit</em> in their advertisements. This causes D, E, and F to create a default route in their local routing tables to point toward B and C. Traffic originating someplace on 101::/64, then, will be switched based on this default route at F toward either D or E, and then toward B or C from D or E. When the traffic reaches B or C, it will follow the specific route installed in the local routing table based on the information contained in the level 2 database toward the destination.</p>
+        <p class="indent"><a id="page_534"></a>What about the return traffic? If 101::/64 is shared to B, C, D, E, and F through a level 1 flooding database, A cannot know about this destination. Hence, hosts attached to the 100::/64 network will not be able to send traffic toward a host on the 101::/64 network. IS-IS solves this problem through redistribution between the two databases. Any destinations in the level 1 flooding database are automatically redistributed into the level 2 flooding database as if they are attached to the redistributing IS. The cost to reach the destination from the redistribution point is preserved in the new route injected into level 2 to provide (some level of) optimal routing through the network.</p>
+        <p class="indent">What if you want to carry a more specific route toward 100::/64 into the level 1 flooding domain in the network shown in <a href="ch20.xhtml#ch20fig04">Figure 20-4</a>? Most IS-IS implementations allow this through redistribution from the level 2 database into the level 1 database through route leaking. To prevent routing loops (consider what would happen if 100::/64 were redistributed from the level 2 database into the level 1 database and back again), routes redistributed from the level 2 flooding domain into a level 1 flooding domain have the down bit set; this means the route has been redistributed <em>down</em> the flooding domain hierarchy and should not be redistributed back up the hierarchical level structure.</p>
+        <p class="indent">IS-IS, then, both aggregates routing information and summarized topology information at a flooding domain boundary. It is possible to leak more specific reachability information through the aggregate (the attached bit, which causes a ::/0 route to be installed in the local routing table of each IS in the level 1 flooding domain), so route aggregation can be “undone,” if the network designer decides it is important to do so.</p>
+        <p class="indent">An interesting point to note about IS-IS flooding domains is this: there are no “hard boundaries” of any kind between the level 1 and level 2 flooding domains. It is perfectly valid for every IS in a network to be a part of the level 2 flooding domain, as well as some level 1 flooding domain. <a href="ch20.xhtml#ch20fig05">Figure 20-5</a> illustrates a network in which some intermediate systems are in both level 1 and level 2 flooding domains.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/20fig05.jpg" aria-describedby="Al20fig05" alt="Network diagram illustrates the concept of overlapping flooding domains in IS-IS." width="709" height="368"><aside class="hidden" id="Al20fig05">
+        <p>Four flooding domains are shown in the network diagram, indicated using rectangular blocks to encapsulate the contents of the domains. The first, 49.0011.1111, has three routers A, B, and C. The second, 49.0011.3333, has two routers D and F. The third, 49.0011.4444, has four routers, G, H, M, and N. The network setup is as follows. Router A is connected to routers B and C, which are also connected to each other. Router C is connected to routers D and E, which are also connected to each other. Router D is connected to F and G, which are in turn connected to each other. Router E is also connected to router G. This router G is connected to routers H and M, which are connected to each other. Router H is connected to router N.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch20fig05"></a><strong>Figure 20-5</strong> <em>Overlapping flooding domains in IS-IS</em></p>
+        </div>
+        <p class="indent">Four flooding domains are illustrated in <a href="ch20.xhtml#ch20fig05">Figure 20-5</a>. The first, 49.0011.1111, contains A, B, and C. The second, 49.0011.3333, contains D and F. The third, 49.0011.4444, contains G, H, M, and N. The fourth flooding domain is the overlaying level 2 flooding domain, which contains C, E, D, G, and F. The first interesting point here is all the intermediate systems in the level 2 flooding domain are also in a level 1 flooding domain with the exception of E. Each of the intermediate systems in both a level 1 and level 2 flooding domain have formed a level 2 adjacency with each of its connected neighbors in the level 2 flooding domain, and are <a id="page_535"></a> synchronizing their level 2 database with their level 2 neighbors. For instance, C has four adjacencies:</p>
+        <p class="bullt">• A, with which it is synchronizing only the level 1 database</p>
+        <p class="bull">• B, with which it is synchronizing only the level 1 database</p>
+        <p class="bull">• D, with which it is synchronizing only the level 2 database</p>
+        <p class="bullb">• E, with which it is synchronizing only the level 2 database</p>
+        <p class="indent">The second interesting point is that D and F are in a level 1 flooding domain, 49.0011.3333, completely overlapped by the level 2 flooding domain. D and F have formed both a level 1 and level 2 adjacency across the link between them, and are synchronizing both the level 2 database and the 49.0011.3333 database. It is possible for two adjacent intermediate systems with the same area ID to form a level 2 adjacency; it is not possible for two adjacent intermediate systems with different area IDs to form a level 1 adjacency.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch20lev3"><strong>Open Shortest Path First</strong></h4>
+        <p class="noindent">OSPF is also a link state protocol, and hence also subject to the same sorts of limitations as IS-IS; a rapidly changing topology can sometimes overwhelm slower <a id="page_536"></a>processors with smaller amounts of memory. To prevent this, network designers can break up the flooding domains in an OSPF network into <em>areas</em>. OSPF areas are implemented differently from the flooding domains in IS-IS; <a href="ch20.xhtml#ch20fig06">Figure 20-6</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/20fig06.jpg" aria-describedby="Al20fig06" alt="Network diagram illustrating the concept of flooding domains implementation in OSPF." width="709" height="341"><aside class="hidden" id="Al20fig06">
+        <p>The network diagram has three areas that are comprised of the following setup. Area 1 has three routers A, B, and C. Router C is shared by Area 1 with Area 0. Area 0 has routers E and D connected to each other and to the shared router C. Router D is also connected to router F at the bottom and another router G, which is shared by area 0 with area 2. Router E is also connected to the shared router G. Area 2 has routers H and M connected to each other and the shared router G. The router H is connected to another router N inside the area.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch20fig06"></a><strong>Figure 20-6</strong> <em>Flooding domains in OSPF</em></p>
+        </div>
+        <p class="indent">While some of the mechanisms are similar, there are some important differences between the two.</p>
+        <p class="indent"><em>First</em>, OSPF areas cannot overlap; Area Border Routers (ABRs) connect two flooding domains (or areas) together and have two databases (one per area). Every other router in the network has one link state database (LSDB), which contains reachability and topology information. The outlying area IDs can identify which area a particular router is in; <em>area 0</em> acts as a centralized area connecting all of the outlying areas together.</p>
+        <p class="indent"><em>Second</em>, OSPF summarizes by default, but it does not aggregate by default. OSPF carries information in a series of Link State Advertisement (LSA) types, each type carrying a different kind of information. The most common types are</p>
+        <p class="bullt">• <strong>Router:</strong> Information about the originating router, connected neighbors, and connected destinations</p>
+        <p class="bull">• <strong>Network LSA:</strong> A pseudonode</p>
+        <p class="bull">• <strong>Inter-Area Prefix (or</strong> <em><strong>summary</strong></em><strong>) LSA:</strong> Summarized reachability information</p>
+        <p class="bull">• <strong>Inter-Area Router LSA:</strong> Information about the originating router</p>
+        <p class="bull">• <strong>AS-External LSA:</strong> External reachability information</p>
+        <p class="bullb">• <strong>AS-External Not-So-Stubby Area (NSSA) LSA:</strong> External reachability information</p>
+        <p class="indent"><a id="page_537"></a>Many of these LSA types are used to carry information between flooding domains; <a href="ch20.xhtml#ch20fig07">Figure 20-7</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/20fig07.jpg" aria-describedby="Al20fig07" alt="Network diagram illustrates the concept of OSPF link state advertisement between flooding domains." width="673" height="307"><aside class="hidden" id="Al20fig07">
+        <p>The diagram has two areas: area 0 and area 1. An area border router B is placed commonly at the boundary of the two routers. Area 0 is connected to the ABR B. Area 1 has one router C connected to the common ABR B through connection path with address "2001:db8:3e8:102::/64." Area 1 has an ASBR router D at its AS boundary, which is connected to a network path with address "2001:db8:3e8:100::/64." The routers C and D are connected to each other through a network path with address "2001:db8:3e8:101::/64."</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch20fig07"></a><strong>Figure 20-7</strong> <em>OSPF Link State Advertisements between flooding domains</em></p>
+        </div>
+        <p class="indent">The set of LSAs carried between two areas depends on the <em>type</em> of the outlying (nonarea 0) area. Several of these are described in the following sections.</p>
+        <div class="heading">
+        <h5 class="h5" id="ch20level1"><em><strong>Normal Area</strong></em></h5>
+        <p class="noindent">An Area Border Router (ABR) sitting between a normal area and area 0 will summarize topology information by default, but not aggregate routing information. It is best to begin with the information B knows about area 1, and then examine what information B would send toward A, in area 0. In this network, B would have in its area 1 LSDB:</p>
+        </div>
+        <p class="bullt">• An AS-external LSA for 100::/64 originated by D</p>
+        <p class="bull">• A network LSA (pseudonode) for the [C,D] broadcast link, which would include a connection to C, D, and 101::/64</p>
+        <p class="bull">• A router LSA from D with a connection to the [C,D] network LSA (pseudonode), a connection to C, and a connection to 101::/64</p>
+        <p class="bull">• A router LSA from C with a connection to the [C,D] network LSA (pseudonode), a connection to C, a connection to 101::/64, a connection to B, and a connection to 102::/64</p>
+        <p class="bullb">• A router LSA from B with a connection to C and a connection to 102::/64</p>
+        <p class="indent"><a id="page_538"></a>If no aggregation is manually configured, A would receive the following information about area 1:</p>
+        <p class="bullt">• An AS-external LSA for 100::/64 originated by D. External LSAs are not modified in any way by the ABR in a normal OSPF area.</p>
+        <p class="bullb">• A summary LSA including 101::64 and 102::/64 originated at B. From the perspective of the Shortest Path Tree, these two routes will appear to be connected to B itself, with B’s cost to reach each destination preserved in the summary LSA.</p>
+        <p class="indent">Route aggregation can be manually configured in OSPF implementations; for instance, the 100::/64, 101::/64, and 102::/64 reachable destinations in OSPF area 1 in <a href="ch20.xhtml#ch20fig07">Figure 20-7</a> could be aggregated into a 100::/60. In this case, B would advertise a single route in its summary LSA toward A, 100::/60.</p>
+        <div class="heading">
+        <h5 class="h5" id="ch20level2"><em><strong>Stub Area</strong></em></h5>
+        <p class="noindent">OSPF stub areas are designed to support outlying areas with no external reachability; all topology and reachability information is internal to OSPF. Because of this, routers in OSPF stub areas are not allowed to carry redistributed routing information into the outlying area; likewise, external routing information from the rest of the network is not carried into the stub area. Because of this, D would not be able to redistribute the 100::/64 route into area 1. In this network, B would have in its area 1 LSDB:</p>
+        </div>
+        <p class="bullt">• A network LSA (pseudonode) for the [C,D] broadcast link, which would include a connection to C, D, and 101::/64</p>
+        <p class="bull">• A router LSA from D with a connection to the [C,D] network LSA (pseudo-node), a connection to C, and a connection to 101::/64</p>
+        <p class="bull">• A router LSA from C with a connection to the [C,D] network LSA (pseudo-node), a connection to C, a connection to 101::/64, a connection to B, and a connection to 102::/64</p>
+        <p class="bullb">• A router LSA from B with a connection to C and a connection to 102::/64</p>
+        <p class="indent">If no aggregation is manually configured, A would receive the following information about area 1:</p>
+        <p class="blockquote">A summary LSA including 101::/64 and 102::/64 originated at B. From the perspective of the Shortest Path Tree, these two routes will appear to be connected to B itself, with B’s cost to reach each destination preserved in the summary LSA.</p>
+        <p class="indent"><a id="page_539"></a>The ABR, B in <a href="ch20.xhtml#ch20fig07">Figure 20-7</a>, will also transmit a default route (::/0) into the outlying flooding domain (area 1, in this case), so C and D can reach any external destinations connected to other areas in the network. B, C, and D would still know about the [A,B] link, as this is internal routing information.</p>
+        <div class="heading">
+        <h5 class="h5" id="ch20level3"><em><strong>Totally Stubby Area</strong></em></h5>
+        <p class="noindent">If an area is configured as a totally stubby area, routers within the area cannot originate (redistribute) external routing information into OSPF, and external routes are not carried into the area. In this case, the LSDB at B would be the same as in the stub area case, and the LSAs advertised by B toward A would also be the same as the stub area case. The primary difference between a stub area and a totally stubby area is the handling of reachability information <em>into</em> area 1 from area 0. In a totally stubby area, the ABR (B, in the network in <a href="ch20.xhtml#ch20fig07">Figure 20-7</a>) will generate a summary LSA into area 1 with just a default route (::/0). C and D would have no knowledge of the topology or the reachable destinations beyond area 0, such as the existence of A or the [A,B] link.</p>
+        </div>
+        <div class="heading">
+        <h5 class="h5" id="ch20level4"><em><strong>Not-so-Stubby Area</strong></em></h5>
+        <p class="noindent">Routers in an NSSA can redistribute routing information into the network from other sources (such as another routing protocol, or statically configured routes), but external routes from other OSPF routers (in area 0) are blocked at the ABR. Because AS-external LSAs are not allowed within the flooding domain, a special kind of LSA is used instead: the AS-external NSSA LSA (a type 7 LSA in OSPFv4). In <a href="ch20.xhtml#ch20fig07">Figure 20-7</a>, B would have the following LSDB entries if area 1 is configured as an NSSA:</p>
+        </div>
+        <p class="bullt">• A network LSA (pseudonode) for the [C,D] broadcast link, which would include a connection to C, D, and 101::/64</p>
+        <p class="bull">• A router LSA from D with a connection to the [C,D] network LSA (pseudo-node), a connection to C, and a connection to 101::/64</p>
+        <p class="bull">• A router LSA from C with a connection to the [C,D] network LSA (pseudo-node), a connection to C, a connection to 101::/64, a connection to B, and a connection to 102::/64</p>
+        <p class="bull">• A router LSA from B with a connection to C and a connection to 102::/64</p>
+        <p class="bullb">• An AS-external NSSA LSA from D carrying 100::/64</p>
+        <p class="indent">The special NSSA AS-external cannot be leaked outside the area, so the ABR must translate it into a standard AS-external LSA before sending it into area 0. Given this <a id="page_540"></a>translation, if no aggregation is manually configured, A would receive the following information about area 1:</p>
+        <p class="bullt">• An AS-external LSA for 100::/64 originated by D. External LSAs are not modified in any way by the ABR in a normal OSPF area.</p>
+        <p class="bullb">• A summary LSA including 101::64 and 102::/64 originated at B. From the perspective of the Shortest Path Tree, these two routes will appear to be connected to B itself, with B’s cost to reach each destination preserved in the summary LSA.</p>
+        <div class="heading">
+        <h5 class="h5" id="ch20level5"><em><strong>Totally Not-so-Stubby Area</strong></em></h5>
+        <p class="noindent">The totally not-so-stubby area (totally NSSA) is</p>
+        </div>
+        <p class="bullt">• Similar to the totally stubby area because the ABR just sends a single summary LSA containing a default route (::/0) into the outlying area</p>
+        <p class="bullb">• Similar to the not-so-stubby area (NSSA) because routers within the area can originate external routes using the AS-external NSSA LSA, which the ABR translates into an AS-external LSA, which is then transmitted into area 0</p>
+        <div class="heading">
+        <h5 class="h5" id="ch20level6"><em><strong>The Inter-area Router LSA</strong></em></h5>
+        <p class="noindent">It is possible, in the right situation, for the summarization of topology information to cause a router in area 0 to choose a less than optimal path to external destination. <a href="ch20.xhtml#ch20fig08">Figure 20-8</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/20fig08.jpg" aria-describedby="Al20fig08" alt="Network diagram illustrates the concept of Suboptimal routing with OSPF external routes." width="649" height="334"><aside class="hidden" id="Al20fig08">
+        <p>The network diagram shows two areas: area 0 and area 1. These two areas share two routers B and C. Router A in area 0 connects to both the routers B and C and similarly router D in area 1 connects to both routers B and C. The AS boundary is marked through router D. The cost per link is as follows: AB - 15, AC - 10, BD - 10, and CD - 20. The router D is shown to be connected to a network path with address: "2001:db8:3e8:100::/64."</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch20fig08"></a><strong>Figure 20-8</strong> <em>Suboptimal routing with OSPF external routes</em></p>
+        </div>
+        <p class="indent"><a id="page_541"></a>In <a href="ch20.xhtml#ch20fig08">Figure 20-8</a>, if A just has a single AS-external route toward 100::/64, it will choose the closest ABR connected to area 1 (the outlying area that the route is being redistributed into). In this case, A would choose C, sending all traffic toward the 100::/64 destination along a path with a total cost of 30. There is a path with a total cost of 25 available, but A does not “know” about this path, as the internal topology of area 1 is hidden through the OSPF summarization process at the ABRs.</p>
+        <p class="indent">To resolve this problem, OSPF ABRs will generate an inter-area router LSA for each ASBR (or each router which is redistributing reachable destinations into OSPF). The inter-area router LSA contains the ABR’s cost to reach a particular ASBR. In this network, then, assuming area 1 is some sort of area that supports redistribution, A will have at least the following entries in its LSDB:</p>
+        <p class="bullt">• An AS-external LSA for 2001:db8:3e8:100::/64 originated by D (this could potentially be a translated AS-external NSSA LSA, but A will not know the difference between these two possibilities)</p>
+        <p class="bull">• An inter-area router LSA generated by B with a cost of 10 to reach D</p>
+        <p class="bullb">• An inter-area router LSA generated by C with a cost of 20 to reach D</p>
+        <p class="indent">Using this information, A can compare</p>
+        <p class="bullt">• The cost through B toward 100::/64, by adding the cost to B to the cost from B to D, for a total cost of 25</p>
+        <p class="bullb">• The cost through C toward 100::/64, by adding the cost to C to the cost from C to D, for a total cost of 30</p>
+        <p class="indent">The additional LSA provides the information A needs to choose the optimal path to the 100::/64 external destination, through B.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">This discussion around optimal routing and inter-area router LSAs should bring to mind the discussion in <a href="ch01.xhtml#ch01">Chapter 1</a> around state, optimization, and surface. This is a specific instance where removing state from the control plane can result in suboptimal traffic flows, and where adding information back in is used as a technique to make traffic flows more optimal again.</p>
+        </div>
+        <div class="heading">
+        <h5 class="h5" id="ch20level7"><em><strong>Final Thoughts on OSPF Stub Areas</strong></em></h5>
+        <p class="noindent">If you find the various area types confusing, you are not alone; network engineers struggle with remembering which area type permits what kind of information. If you <a id="page_542"></a>can remember three simple rules, however, you can easily figure out what sort of information should be where in any OSPF implementation:</p>
+        </div>
+        <p class="bullt">• Stub means no externals are allowed in the area at all.</p>
+        <p class="bull">• Not-so means externals are allowed out of the area.</p>
+        <p class="bullb">• Totally means no internals are allowed into the area.</p>
+        <p class="indent">Area types are designed to decrease the amount of information carried between flooding domains, reducing the amount of information any particular router in the network needs to store and process. Many OSPF implementations can also <em>filter</em> the information inserted into a summary LSA; this is often called type 3 filtering, even though the summary LSA may not be a type 3 in every version of OSPF.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch20lev4">Aggregation</h3>
+        <p class="noindent">Aggregation reduces the state in the network by combining multiple reachable destinations into a single destination. Most of the time, aggregation entails summarization, as seen in the example of routing information transiting flooding domains in IS-IS. This is true of OSPF, as well—in almost all cases, aggregating routing information involves summarizing topology information as well.</p>
+        </div>
+        <p class="indent">Is there any case where aggregation is used without summarization? There is an older feature in the Border Gateway Protocol (BGP), now generally deprecated and almost never really deployed, that does aggregate routes without discarding all of available topology information. <a href="ch20.xhtml#ch20fig09">Figure 20-9</a> is used to illustrate.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/20fig09.jpg" aria-describedby="Al20fig09" alt="Network diagram illustrates the concept of BGP atomic aggregate." width="605" height="286"><aside class="hidden" id="Al20fig09">
+        <p>The network diagram shows 5 Autonomous systems with AS numbers 65000, 65001, 65002, 65003, and 65004. These autonomous systems share common routers for connection establishment. The AS with number 65004 is connected to a router A that advertises the network path with address "2001:db8:3e8:100::/64." The AS with number 65000 is connected to a router B that advertises the network path with address "2001:db8:3e8:101::/64." The connection between the systems 65001 and 65002 is shown to be with address "2001:db8:3e8:100::/60."</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch20fig09"></a><strong>Figure 20-9</strong> <em>The BGP atomic aggregate</em></p>
+        </div>
+        <p class="indent"><a id="page_543"></a>In <a href="ch20.xhtml#ch20fig09">Figure 20-9</a>, a series of BGP Autonomous Systems (AS) have been connected in a ring. Assume the following:</p>
+        <p class="bullt">• 100::/64 is advertised through the [65004,65001] boundary, toward AS65000 and AS65002.</p>
+        <p class="bull">• 100::/64 is filtered at the [65004,65003] boundary toward AS65003.</p>
+        <p class="bullb">• The 100::/64 and 101::/64 routes are aggregated at the [65001,65002] boundary toward AS65002.</p>
+        <p class="indent">If some router in AS65004 prefers the aggregate over the longer prefix route within AS65004 (such as a local filter), it is possible a routing loop can form in this network. This type of situation can occur because BGP relies on the AS path to prevent loops across an internetwork. How can this problem be resolved? The most obvious solution would be to somehow include enough information about the AS path to prevent the 100::/60 route from being leaked back into any AS where a component of the aggregate is connected.</p>
+        <p class="indent">To prevent such loops from forming, BGP required any speaker aggregating routing information to include an atomic aggregate in the aggregate update. The atomic aggregate included the full list of every AS in the path of any of the component routes making up the aggregate. In this case, the 100::/60 aggregate advertised into AS60552 would have an AS path with one entry, 65001, but it would also contain an atomic aggregate containing [65004, 65000]. When the eBGP speaker between Autonomous Systems 65003 and 65004 receives the 100::/60 aggregate, it can examine the atomic aggregate attribute and determine at least some component of the aggregated route originated in AS65004. Hence, the eBGP speaker at the edge of AS65003 can reject the aggregate route, preventing the loop.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">There have been many proposals to remove the atomic aggregate from BGP; the most recent is Deprecate Atomic Aggregate.<sup><a id="ch20fn1"></a><a href="ch20.xhtml#ch20fn-1">1</a></sup></p>
+        </div>
+        <div class="heading">
+        <h3 class="h3" id="ch20lev5">Layering</h3>
+        <p class="noindent">While layering is not normally considered a form of information hiding by network engineers, it definitely does hide <em>full</em> information about the topology and reachability from some set of forwarding devices. Two examples—using BGP as an overlay to <a id="page_544"></a>carry external routing information and Segment Routing (SR) combined with a controller to produce a traffic engineering (TE) overlay—will be used to illustrate layering.</p>
+        </div>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">It is impossible for an introductory-level book, such as this one, to give an in-depth overview of the many possible layering protocols and systems invented and deployed in networks. To give a small sample: Layer 3 virtual private networks (L3VPNs) based in MPLS and IP and IP tunnels, Layer 2 virtual private networks (L2VPNs), Ethernet VPNS (eVPNs), traffic-engineered overlays using Path Computation Element Protocol (PCEP), VXLAN (which has a native control plane, although the tunneling encapsulation is often used with a different control plane), 802.1q virtual local area networks (VLANs), Transparent Connection of Lots of Links (TRILL) VLANs, and SR. Covering these topics would require another entire book, and this one is quite large enough. Readers who would like to read more on these topics should look at the “Further Reading” section at the end of this chapter for more information.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch20lev6"><strong>The Border Gateway Protocol as a Reachability Overlay</strong></h4>
+        <p class="noindent">The Border Gateway Protocol (BGP) was originally designed to carry inter-Autonomous System (inter-AS) information; it was explicitly <em>not</em> designed to carry reachability information within an AS. The basic design was to separate internal reachability (within the AS) from external reachability (outside the AS, or in the default free zone, or DFZ), in order to</p>
+        </div>
+        <p class="bullt">• Prevent changes outside the network from impacting the operation of the network itself</p>
+        <p class="bullb">• Allow different policies to be applied to internal and external routes</p>
+        <p class="indent">The first reason, to prevent changes external to the network from impacting the operation of the network itself, should be a familiar reason to hide information—to break up a network into multiple failure domains. <a href="ch20.xhtml#ch20fig10">Figure 20-10</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/20fig10.jpg" aria-describedby="Al20fig10" alt="Network diagram illustrates the concept of implementing BGP as an overlay." width="713" height="293"><aside class="hidden" id="Al20fig10">
+        <p>The network setup is shown to have three autonomous systems: AS65000, AS65001, and AS65002. Router A belongs to AS65000. AS65001 has four routers B, C, D, and E, connected to form a ring topology. Router F belongs to AS65002. A is connected to B, while F is connected to E. Router C of AS65001 is shown to be connected to a network path with address "2001:db8:3e8:100f::/64." Router F of AS65002 is shown to be connected to a network path with address "2001:db8:3e8:100::/64."</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch20fig10"></a><strong>Figure 20-10</strong> <em>BGP as an overlay</em></p>
+        </div>
+        <p class="indent">In <a href="ch20.xhtml#ch20fig10">Figure 20-10</a>:</p>
+        <p class="bullt">• IS-IS is running on B, C, D, and E to provide reachability and topology information within the AS.</p>
+        <p class="bull"><a id="page_545"></a>• E and F are configured with an external BGP (eBGP) session.</p>
+        <p class="bull">• A and B are configured with an eBGP session.</p>
+        <p class="bull">• Each pair of [B,C], [B,D], [D,E], and [C,E] is configured with an interior (iBGP) session.</p>
+        <p class="bullb">• C and D are acting as route reflectors for B and E.</p>
+        <p class="indent">Tracing the path of the route advertisement to 100::/64 through the network:</p>
+        <p class="bullt">• F advertises 100::/64 to E over the eBGP session; the AS path is set to [65002].</p>
+        <p class="bull">• E advertises the 100::/64 route to D and C, which then reflect the route to B.</p>
+        <p class="bullb">• B advertises the route to A over the eBGP session; the AS path is set to [65002,65001].</p>
+        <p class="indent">The Interior Gateway Protocol (IGP), which runs within the AS, does not need to carry the 100::/64 route at all. IS-IS carries just internal destinations, such as 100f::/64. Another way to put this is, IS-IS provides the internal reachability to allow BGP to form sessions through the AS, while BGP carries the reachability information allowing other Autonomous Systems to transit the local AS (to forward traffic from A, through AS65001, and on to F).</p>
+        <p class="indent">This separation of duties is a form of layering; BGP overlays IS-IS (the IGP), using the IGP to form adjacencies and discover paths within the AS along which it can forward traffic. IS-IS, on the other hand, does not need to know about any externally reachable destinations. How does this divide the network into two failure domains?</p>
+        <p class="indent"><a id="page_546"></a><em>First</em>, IS-IS (or any other IGP) is not impacted by changes to topology and reachability information external to the AS. If the link between F and 100::/64 changes, the IS-IS processes running on B, C, D, and E do not need to recalculate anything, as nothing in the network has changed from their perspective.</p>
+        <p class="indent"><em>Second</em>, peering Autonomous Systems are shielded from changes within AS65001. For instance, if the [C,E] link fails, the path has not changed from the perspective of A; the AS path remains the same, so BGP does not need to reconverge.</p>
+        <p class="indent">The fate of internal and external topology and reachability information is (at least to a large degree) separated from one another; hence the internal routing and the external routing are two different failure domains.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">There has been some research into how often, and under what circumstances, AS level policies, combined with route changes within an AS, will “leak” out to the rest of the DFZ.<sup><a id="ch20fn2"></a><a href="ch20.xhtml#ch20fn-2">2</a></sup> These kinds of information leaks cross what should be a failure domain boundary, merging the failure domains at least in some small part. This is an example of leaky abstractions, which are discussed in <a href="ch01.xhtml#ch01">Chapter 1</a>.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch20lev7"><strong>Segment Routing with a Controller Overlay</strong></h4>
+        <p class="noindent">SR is perhaps the simplest possible use of Multiprotocol Label Switching (MPLS) short of manually configured point-to-point tunnels through a network. The general idea behind SR is to stack a set of labels at one edge of the network, so each device along the path can forward based on the outermost label exposed on the stack. As each device pops the outermost label off the stack, a new label is exposed describing the next hop in the path. <a href="ch20.xhtml#ch20fig11">Figure 20-11</a> is used for illustration.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/20fig11.jpg" aria-describedby="Al20fig11" alt="Network diagram shows a network setup used to explain the concept of Segment Routing." width="713" height="324"><aside class="hidden" id="Al20fig11">
+        <p>Controller G is placed at the top of the setup. Router B, C, D, and E are connected to form a ring topology. The MPLS labels for these routers are 30, 31, 32, and 33 respectively. Router A is connected to B and router F is connected to E. The MPLS label for F is 34. F is connected to network path with address "2001:db8:3e8:100::/64." The cost per link is as follows: BD - 10, BC - 15, CE - 10, DE - 10, and EF - 10. The controller is connected to all the routers in the setup and the connection is distinguished by dotted lined arrows.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch20fig11"></a><strong>Figure 20-11</strong> <em>Segment routing sample network</em></p>
+        </div>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">SR is described here at a very high level. There are many more details in the design, deployment, and operation of SR; please refer to the “Further Reading” section at the end of the chapter for good references on SR.</p>
+        </div>
+        <p class="indent">In <a href="ch20.xhtml#ch20fig11">Figure 20-11</a>, A receives a packet destined to 100::/64. Based on IP routing, this packet will be forwarded across the lowest-cost path, along [A,B,D,E,F]. What if the network operator wants the packet to travel along the alternate path, [A,B,C,E,F]? It <a id="page_547"></a>is possible to modify the metrics along the paths, of course, but this would impact <em>all</em> the traffic entering the network at A and destined to 100::/64.</p>
+        <p class="indent">Several overlay technologies can solve this type of problem using a number of different control planes and a number of different encapsulations. If you multiply every possible encapsulation with every possible control plane, you will probably find there are more ways to solve this problem than can be explained in normal terms. Perhaps the real explanation is bored engineers who enjoy the challenge of solving the same problem in as many ways as possible. SR is a relatively simple way to solve this problem. If the operator has SR deployed on his network, he can</p>
+        <p class="bullt">• Compute the path from A to F through [B,C,E].</p>
+        <p class="bull">• Discover the MPLS label for each device along the way; the resulting label stack would be [30,31,33,34].</p>
+        <p class="bullb">• Impose this label stack on the packet while it is being switched at A.</p>
+        <p class="indent">Once this label stack has been imposed at A, the switching path would be</p>
+        <p class="bullt">• A would forward the packet to label 30, which is B.</p>
+        <p class="bull">• When B receives this packet, it pops the outermost label on the stack; the stack is now [31,33,34].</p>
+        <p class="bull">• B will switch the packet toward 31, the outermost label on the stack, which is C.</p>
+        <p class="bull"><a id="page_548"></a>• When C receives this packet, it pops the outermost label on the stack; the stack is now [33,34].</p>
+        <p class="bull">• C will switch the packet toward 33, which is E.</p>
+        <p class="bull">• When E receives this packet, it pops the outermost label on the stack; the stack is now [34].</p>
+        <p class="bullb">• E will switch the packet toward 34, which is F.</p>
+        <p class="indent">Finally, F will pop the final label off the stack and forward the traffic based on the destination IP address. Where does the label that stack A imposes come from? There are, as always, a large number of possibilities, but in order to keep the example as simple as possible, assume there is a controller located someplace on the network, labeled as G in <a href="ch20.xhtml#ch20fig11">Figure 20-11</a>.</p>
+        <p class="indent">This controller can participate in the routing protocol to discover the topology of the network and the reachable destinations (including what MPLS label has been assigned to each device). After combining this information with a set of policies, it can calculate the correct traffic-engineered path through the network and then signal A about what label stack to impose on this particular flow.</p>
+        <p class="indent">This kind of layering reduces state (hides information) by</p>
+        <p class="bullt">• Allowing the traffic engineering policy to be pulled out of the distributed control plane, reducing the state in the distributed control plane considerably</p>
+        <p class="bullb">• Removing the process of neighbor discovery and other distributed elements from the purview of the distributed control plane</p>
+        <p class="indent">Even if the policy controller fails, the network will still forward traffic, which means the controller has been placed into a different failure domain.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch20lev8">Slowing Down State Velocity</h3>
+        <p class="noindent">A third technique often used in protocols to hide information is to simply slow down the rate at which information is distributed through the network. Slowing down state velocity does not technically <em>hide</em> information in the permanent sense: it either allows network devices to “bunch up information” requiring shorter bursts of processing spaced farther apart, it allows network devices to take on information at a steady pace, or it removes duplicate copies of control plane state from the network. There are many different ways to reduce the velocity of state in a network control plane, but two examples are considered here: exponential backoff and flooding reduction.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch20lev9"><a id="page_549"></a><strong>Exponential Backoff</strong></h4>
+        <p class="noindent">Exponential backoff is used in a wide variety of contexts, including</p>
+        </div>
+        <p class="bullt">• In slowing down (<em>dampening</em>) the speed at which routes are propagated throughout an internetwork</p>
+        <p class="bull">• In slowing down (<em>dampening</em>) the speed at which interface state change is allowed to propagate in some network operating system implementations</p>
+        <p class="bull">• In slowing down the speed at which a link state protocol will compute a new Shortest Path Tree (SPT) on receiving new topology information</p>
+        <p class="bullb">• In slowing down the speed at which routing information is distributed by a link state protocol in response to a change in the state of a link</p>
+        <p class="indent">This section will use running SPF in a link state protocol as an example, but you should keep in mind there are many places where exponential backoff can be used. To understand exponential backoff, several definitions will be needed:</p>
+        <p class="bullt">• <strong>Initial wait:</strong> The amount of time the implementation will wait after receiving an event before processing it</p>
+        <p class="bull">• <strong>Second wait:</strong> Multiplied by an exponential offset to set the wait time on subsequent events</p>
+        <p class="bull">• <strong>Max wait:</strong> Used for two purposes:</p>
+        <p class="bull1"><span class="pd_ash">•</span> The amount of time the implementation will wait after an event before setting the wait timer back to initial wait</p>
+        <p class="bull1"><span class="pd_ash">•</span> The maximum amount of time the implementation will <em>ever</em> set the wait timer</p>
+        <p class="bullb">• <strong>Wait timer:</strong> The amount of time the implementation will wait before processing the items currently in the processing queue</p>
+        <p class="indent">The exponential backoff process looks something like this in pseudocode:</p>
+        <p class="codelink"><a href="ch20_images.xhtml#p20pro01a" id="p20pro01">Click here to view code image</a></p>
+        <p class="pre"><a id="page_550"></a>// initial_wait == initial wait time<br>
+        // second_wait == second wait time<br>
+        // max_wait == max wait time<br>
+        // next_wait == how long before the wait_timer expires<br>
+        // begin by expiring the reset_timer<br>
+        when reset_timer expires {<br>
+        &nbsp;&nbsp;stop wait_timer<br>
+        &nbsp;&nbsp;next_wait = initial_wait<br>
+        &nbsp;&nbsp;backoff = 1<br>
+        }<br>
+        when event_occurs {<br>
+        &nbsp;&nbsp;if wait_timer is running {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;next_wait = backoff * second_wait<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;if next_wait &gt;&nbsp;max_wait {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;next_wait = max_wait<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;backoff = backoff * 2<br>
+        &nbsp;&nbsp;} else {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;next_wait = initial_wait<br>
+        &nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;set event to process at wait_time<br>
+        &nbsp;&nbsp;start reset_timer to expire in max_wait * 2<br>
+        &nbsp;&nbsp;start wait_timer to expire in next_wait<br>
+        }</p>
+        <p class="indent"><a href="ch20.xhtml#ch20fig12">Figure 20-12</a> is used to explain exponential backoff in determining when to run SPF.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/20fig12.jpg" aria-describedby="Al20fig12" alt="Diagrammatic representation of the concept of the exponential backoff in determining when to run SPF." width="713" height="448"><aside class="hidden" id="Al20fig12">
+        <p>The diagram resembles a staircase, where the height of each stair increases gradually at each level. There are 6 levels in total, the first two levels being the start and end points of the ground level, each level marked as an event, such as the first level is marked the first event, the second level is marked the second event and so on. After the sixth event, the signal is stagnant for a period of time and falls down back to ground level. The gap between the first event and second event is labeled "initial wait" and is 1x second wait. At the second event, it is 2x second wait. At the fourth event, it is 4x second wait. At the fifth event, it is 8x second wait. After the sixth event, where the signal is stagnant, the wait is marked as 2x max wait, and at the end when it falls to ground level, it is marked wait returns to initial.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch20fig12"></a><strong>Figure 20-12</strong> <em>Exponential backoff</em></p>
+        </div>
+        <p class="indentb">Assume some router is configured to use exponential backoff to reduce the amount of processing required for running SPF. Using <a href="ch20.xhtml#ch20fig12">Figure 20-12</a>, the sequence of events might look like this:</p>
+        <p class="indenthangingN">1. The router begins with the <em>wait_time</em> set to <em>initial_wait</em>.</p>
+        <p class="indenthangingN">2. The router receives a new link state entry (whether an LSA or an LSP doesn’t matter for this example; it could be OSPF or IS-IS).</p>
+        <p class="indenthangingN">3. The event is accepted, and</p>
+        <p class="indenthangingNA">a. A timer is set to <em>max_wait * 2</em>; this can be called the <em>reset_timer</em>.</p>
+        <p class="indenthangingNA">b. A timer is set for this specific event; once this timer expires, the event will be processed.</p>
+        <p class="indenthangingN">4. Before <em>reset_timer</em> expires, a second event is received.</p>
+        <p class="indenthangingNA">a. The <em>reset_timer</em> is restarted, so it will again expire in <em>max_wait * 2</em>.</p>
+        <p class="indenthangingNA">b. A timer is set for this specific event; once this timer expires, the event will be processed.</p>
+        <p class="indenthangingNA">c. The <em>wait_time</em> is set to <em>second_timer * 1</em>, as this is the second event.</p>
+        <p class="indenthangingN"><a id="page_551"></a>5. Before <em>reset_timer</em> expires, a second event is received.</p>
+        <p class="indenthangingNA">a. The <em>reset_timer</em> is restarted, so it will again expire in <em>max_wait * 2</em>.</p>
+        <p class="indenthangingNA">b. A timer is set for this specific event; once this timer expires, the event will be processed.</p>
+        <p class="indenthangingNA">c. The <em>wait_time</em> is set to <em>second_timer * 2</em>, as this is the third event.</p>
+        <p class="indentt">The <em>wait_time</em> is set to the event number multiplied by 2 (this can be configured on some implementations), so the <em>wait_time</em> doubles with each event. If the <em>wait_time</em> ever reaches the <em>max_wait</em>, it will be capped at <em>max_wait</em>. And if the reset timer ever expires, which is <em>max_wait * 2</em> from the last event, the entire system resets to its initial state. This process produces a <em>wait_time</em> as shown in <a href="ch20.xhtml#ch20fig12">Figure 20-12</a>; the timer value increases exponentially until it reaches a cap. If no events happen for some long period, the entire system resets.</p>
+        <p class="indent">Why an exponential backoff? Because it allows the system to react quickly at first, but then to slow down its reaction time until the system is at the slowest acceptable speed. In the case of an SPF run, the first SPF run would occur quickly, but as more link state updates are received, the SPF runs are spread farther apart until some maximum is reached. This allows for fast reactions to individual events, while dampening the rate at which a large number of quickly occurring events is processed.</p>
+        <a id="page_552"></a>
+        <div class="heading">
+        <h4 class="h4" id="ch20lev10"><strong>Link State Flooding Reduction</strong></h4>
+        <p class="noindent">In deploying link state protocols onto highly meshed mobile networks, the amount of flooding required to converge can be a limiting factor. <a href="ch20.xhtml#ch20fig13">Figure 20-13</a> is used to illustrate.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/20fig13.jpg" aria-describedby="Al20fig13" alt="Diagrammatic representation of the flooding reduction." width="420" height="346"><aside class="hidden" id="Al20fig13">
+        <p>20 routers are placed on a five cross four grid. The columns are labeled col a to d and the rows are labeled row 1 to 5. The routers are interconnected such that they form a mesh topology. The routers in each row are encapsulated using rectangular blocks. These blocks of row 1, row 2, row 3, row 4, and row 5 are labeled T0, T1, T2, T3, and T0 respectively.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch20fig13"></a><strong>Figure 20-13</strong> <em>A spine and leaf fabric as a flooding reduction example</em></p>
+        </div>
+        <p class="indentb">In <a href="ch20.xhtml#ch20fig13">Figure 20-13</a>:</p>
+        <p class="bullt">• The columns and rows are marked instead of each individual router being marked; A1, for instance, is at the top-left corner, while D5 is at the lower-right corner.</p>
+        <p class="bullb">• The tier numbers are marked on the right side; routers in T0 are Top of Rack (ToR) switches (or routers).</p>
+        <p class="indent1">If some change occurs at A5, then</p>
+        <p class="bullt">• A5 will flood a link state change to every router in row 4.</p>
+        <p class="bullb">• Every router in row 4 will flood a link state change to A3.</p>
+        <p class="indent">A3, then, will receive four copies of the same link state change; in fact, every router in the fabric will receive at least four copies of the same link state change, and some will receive more copies. How can the number of copies be reduced in this topology? By building a view of the routers two hops away from any router that is flooding a change, and somehow signaling just one of them to reflood the link state <a id="page_553"></a>change to its neighbors. For instance, if A5 can discover that A4 can reach every router two hops away from A5 itself, A5 can send the link state change to B4-D4 formatted so they will not reflood it, while sending the update to A4 in a way that allows A4 to reflood the change.</p>
+        <p class="indent">But how can A5 determine which routers are two hops away? At least two methods have been devised and implemented:</p>
+        <p class="bullt">• Each router can report its full set of neighbors to every neighbor, rather than just the neighbors on this link. For instance, A4 can report the set of neighbors [A3,B3,C3,D3,B5,C5,D5] to A5, rather than just [A5] (as it would normally do to verify two-way connectivity during adjacency formation).</p>
+        <p class="bullb">• Once the initial adjacencies are formed, an SPF can be run at A5 that is restricted to two hops.</p>
+        <p class="indent">Once A5 discovers all of its neighbor’s neighbors, it can build a minimum list of neighbors to flood to “cover” the entire set of two-hop neighbors. Given A4, B4, C4, and D4 <em>all have the same set of neighbors</em>, designating any of these neighbors as a “reflooder” will ensure the changes to the LSDB are synchronized through the network. Any neighbors on this list should receive changes in a way that allows them to reflood; neighbors not on this list should receive link state information in a way that does not allow them to reflood the changes. There are a number of ways a link state protocol can be modified to limit flooding scope in this way.</p>
+        <p class="indentb">To outline the process in the network shown in <a href="ch20.xhtml#ch20fig13">Figure 20-13</a>:</p>
+        <p class="indenthangingN">1. A5 discovers some change to the topology or reachability information.</p>
+        <p class="indenthangingN">2. A5 determines that A4, B4, C4, and D4 all have the same set of two-hop neighbors.</p>
+        <p class="indenthangingN">3. A5 selects one neighbor as a reflooder (or designated flooder); assume this is A4.</p>
+        <p class="indenthangingN">4. A5 floods to A4 normally.</p>
+        <p class="indenthangingN">5. A5 floods to B4, C4, and D4 using a mechanism that does not allow them to reflood the change.</p>
+        <p class="indenthangingN">6. A4 determines that A3, B3, C3, and D3 all have the same set of two-hop neighbors.</p>
+        <p class="indenthangingN">7. A4 selects one neighbor as a reflooder (or designated flooder); assume this is A3.</p>
+        <p class="indenthangingN"><a id="page_554"></a>8. A4 floods to A3 normally.</p>
+        <p class="indenthangingN">9. A4 floods to B3, C3, and D3 using a mechanism that does not allow them to reflood the change.</p>
+        <p class="indentt">There is a bit more to this technique than is outlined here; refer to the “Further Reading” section to find out more about this technique, as well as other flooding reduction mechanisms similar to this technique.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch20lev11">Final Thoughts on Failure Domains</h3>
+        <p class="noindent">The initial problem of summarizing information appears to be fairly simple; working from within the framework of a distance protocol in a simple network, it can be. In link state protocols, however, the ability to summarize without aggregation and the requirement for aggregation and summarization to take place at a specific place in the network make summarization and aggregation more difficult. Quite often, ideas and concepts are agglutinated, causing each idea to be difficult to understand on its own. Disentangling the ideas, however, to make them easier to understand can prove difficult as well. Adding in external routing information makes summarization and aggregation more complex in a link state protocol.</p>
+        </div>
+        <p class="indent">All of these concepts are extremely important for you to understand as a network engineer. Combining a base knowledge of how any given method of carrying control plane information, how each shortest path algorithm works on any given topology, and how and where information is aggregated and/or summarized can give you a quick read of how a network will work normally, as well in various failure situations.</p>
+        <p class="indent">This line of thinking provides a good segue to move from thinking about protocols to thinking about network operation.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch20lev12">Further Reading</h3>
+        <p class="ref">Dearlove, Christopher, Thomas H. Clausen, Ulrich Herberg, and Philippe Jacquet. <em>The Optimized Link State Routing Protocol Version 2</em>. Request for Comments 7181. RFC Editor, 2014. doi:10.17487/rfc7181.</p>
+        </div>
+        <p class="ref">Ferguson, Dennis, Acee Lindem, and John Moy. <em>OSPF for IPv6</em>. Request for Comments 5340. RFC Editor, 2008. doi:10.17487/rfc5340.</p>
+        <p class="ref">Hares, Susan. “Deprecate Atomic Aggregate.” Internet-Draft. Internet Engineering Task Force, March 2017. <a href="https://datatracker.ietf.org/doc/html/draft-hares-deprecate-atomic-aggregate-00">https://datatracker.ietf.org/doc/html/draft-hares-deprecate-atomic-aggregate-00</a>.</p>
+        <p class="ref"><a id="page_555"></a>“Intermediate System to Intermediate System Intra-Domain Routing Information Exchange Protocol for Use in Conjunction with the Protocol for Providing the Connectionless-Mode Network Service.” Standard. Geneva, CH: International Organization for Standardization, 2002. <a href="http://standards.iso.org/ittf/PubliclyAvailableStandards/">http://standards.iso.org/ittf/PubliclyAvailableStandards/</a>.</p>
+        <p class="ref">Jacquet, Philippe. <em>Optimized Link State Routing Protocol (OLSR)</em>. Request for Comments 3626. RFC Editor, 2003. doi:10.17487/rfc3626.</p>
+        <p class="ref">Katz, Dave. “OSPF and IS-IS: A Comparative Anatomy.” Presented at the NANOG19, Albuquerque, NM, June 12, 2000. <a href="https://nanog.org/meetings/abstract?id=1084">https://nanog.org/meetings/abstract?id=1084</a>.</p>
+        <p class="ref">Moy, John. <em>OSPF Version 2</em>. Request for Comments. RFC Editor, April 1998. doi:10.17487/RFC2328.</p>
+        <p class="ref">Nguyen, Dang-Quan, Thomas H. Clausen, Philippe Jacquet, and Emmanuel Baccelli.</p>
+        <p class="ref"><em>OSPF Multipoint Relay (MPR) Extension for Ad Hoc Networks</em>. Request for Comments 5449. RFC Editor, 2009. doi:10.17487/rfc5449.</p>
+        <p class="ref">Ogier, Richard G. <em>Use of OSPF-MDR in Single-Hop Broadcast Networks</em>. Request for Comments 7038. RFC Editor, 2013. doi:10.17487/rfc7038.</p>
+        <p class="ref">Ogier, Richard, and Phil Spagnolo. <em>Mobile Ad Hoc Network (MANET) Extension of OSPF Using Connected Dominating Set (CDS) Flooding</em>. Request for Comments 5614. RFC Editor, 2009. doi:10.17487/rfc5614.</p>
+        <p class="ref">Pelsser, Cristel, Randy Bush, Keyur Patel, Prodosh Mohapatra, and Olaf Maennel. <em>Making Route Flap Dampening Usable</em>. Request for Comments 7196. RFC Editor, 2014. doi:10.17487/RFC7196.</p>
+        <p class="ref">Przygienda, Tony, John Drake, and Alia Atlas. “RIFT: Routing in Fat Trees.” Internet-Draft. Internet Engineering Task Force, January 2017. <a href="https://datatracker.ietf.org/doc/html/draft-przygienda-rift-01">https://datatracker.ietf.org/doc/html/draft-przygienda-rift-01</a>.</p>
+        <p class="ref">Rekhter, Yakov, Susan Hares, and Tony Li. <em>A Border Gateway Protocol 4 (BGP-4)</em>.</p>
+        <p class="ref">Request for Comments 4271. RFC Editor, 2006. doi:10.17487/rfc4271.</p>
+        <p class="ref">Retana, Alvaro, and Stan Ratliff. <em>Use of the OSPF-MANET Interface in Single-Hop Broadcast Networks</em>. Request for Comments 7137. RFC Editor, 2014. doi:10.17487/rfc7137.</p>
+        <p class="ref">Roy, Abhay, Yi Yang, and Alvaro Retana. <em>Hiding Transit-Only Networks in OSPF</em>. Request for Comments 6860. RFC Editor, 2013. doi:10.17487/rfc6860.</p>
+        <p class="ref">Shen, Naiming, Les Ginsberg, and Sanjay Thyamagundalu. “IS-IS Routing for Spine-Leaf Topology.” Internet-Draft. Internet Engineering Task Force, March 2017. <a href="https://datatracker.ietf.org/doc/html/draft-shen-isis-spine-leaf-ext-03">https://datatracker.ietf.org/doc/html/draft-shen-isis-spine-leaf-ext-03</a>.</p>
+        <p class="ref">Teixeira, Renata, et al., “Impact of Hot-Potato Routing Changes in IP Networks,” <em>IEEE/ACM Transactions on Networking</em> 16, no. 6 (December 2008): 1295–307, doi:10.1109/TNET.2008.919333.</p>
+        <p class="ref"><a id="page_556"></a>Wang, Lili, Zhaohui (Jeffrey) Zhang, and Nischal Sheth. <em>OSPF Hybrid Broadcast and Point-to-Multipoint Interface Type</em>. Request for Comments 6845. RFC Editor, 2013. doi:10.17487/rfc6845.</p>
+        <p class="ref">White, Russ. <em>Intermediate System to Intermediate System (IS-IS) Routing Protocol Live-Lessons</em>. Video. LiveLessons. Cisco Press, 2016. <a href="http://www.ciscopress.com/store/intermediate-system-to-intermediate-system-is-is-routing-9780134465326?link=text&amp;cmpid=2017_02_02_CP_RussWhiteVideo">http://www.ciscopress.com/store/intermediate-system-to-intermediate-system-is-is-routing-9780134465326?link=text&amp;cmpid=2017_02_02_CP_RussWhiteVideo</a>.</p>
+        <p class="ref">White, Russ, and Shawn Zandi. “IS-IS Support for Openfabric.” Internet Draft. Internet Engineering Task Force, October 2017. <a href="https://datatracker.ietf.org/doc/html/draft-white-openfabric-03">https://datatracker.ietf.org/doc/html/draft-white-openfabric-03</a>.</p>
+        <p class="ref">White, Russ, Danny McPherson, and Srihari Sangli. <em>Practical BGP</em>. Boston, MA: Addison-Wesley Professional, 2004.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch20lev13">Review Questions</h3>
+        <p class="indenthangingN">1. Read the OpenFabric documentation provided in the “Further Reading” section. Does OpenFabric concentrate on aggregation or summarization? How does OpenFabric reduce the amount of control plane information without dividing up the network into flooding domains?</p>
+        </div>
+        <p class="indenthangingN">2. Read the Routing in Fat Trees (RIFT) documentation provided in the “Further Reading” section. Does RIFT concentrate on aggregation or summarization? Describe one technique that RIFT uses to summarize state and how RIFT handles aggregation.</p>
+        <p class="indenthangingN">3. When might it be useful to be able to configure overlapping flooding domains in IS-IS?</p>
+        <p class="indenthangingN">4. “Stub” in OSPF means what kinds of routing information will always be blocked at an ABR?</p>
+        <p class="indenthangingN">5. “Totally” in OSPF means what kinds of routing information will always be blocked at an ABR?</p>
+        <p class="indenthangingN">6. “Not so” in OSPF means what kinds of routing information will always be blocked at an ABR?</p>
+        <p class="indenthangingN">7. Read RFC7196, <em>Making Route Flap Dampening Usable</em>. What problems does this document pose for exponential backoff schemes, and what solutions does it propose to resolve these problems?</p>
+        <p class="footnotet"><a id="ch20fn-1"></a><a href="ch20.xhtml#ch20fn1">1</a>. Hares, “Deprecate Atomic Aggregate.”</p>
+        <p class="footnote"><a id="ch20fn-2"></a><a href="ch20.xhtml#ch20fn2">2</a>. Teixeira, et al., “Impact of Hot-Potato Routing Changes in IP Networks.”</p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780134762814/files/9780134762852.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

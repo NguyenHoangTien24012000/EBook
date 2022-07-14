@@ -1,0 +1,348 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 class="h2" id="ch19"><a id="page_507"></a><strong>Chapter 19<br>Failure Domains and Information Hiding</strong></h2>
+        <div class="sidebar">
+        <p class="sb-noindent"><strong>Learning Objectives</strong></p>
+        <p class="sb-noindent">When you finish reading this chapter, you should understand:</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The reason for hiding information in the control plane</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The concepts of control plane state scope and speed</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Feedback loops and the dangers of positive feedback loops</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The difference between summarizing topology and aggregating reachability</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Filtering reachability information</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Layering control planes</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Caching control plane information</p>
+        </div>
+        <p class="noindent">The intentional modification or shaping of traffic flows across a network is not the only kind of policy that network engineers must interact with. Information hiding, while not often considered a form of policy, relates to the larger goals, or policies, of building scalable, repeatable networks. These policies have consequences in terms of traffic flow, although these consequences are often unintentional rather than intentional—which means they are often ignored. This chapter and the next, <a href="ch20.xhtml#ch20">Chapter 20</a>, “<a href="ch20.xhtml#ch20">Examples of Information Hiding</a>,” are dedicated to considering this one problem, the solution space, and some widely used solution implementations. The first section in this chapter will examine the problem space, the second various kinds of <a id="page_508"></a>solutions that can be used to counter the problem, and the third section will consider information hiding in the context of network complexity.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch19lev1">The Problem Space</h3>
+        <p class="noindent">Control planes are designed to learn about and carry as much information about the network topology and reachability as possible. Why would network engineers want to limit the scope of this state, once the processing and memory have been spent to learn it? There are several answers, including</p>
+        </div>
+        <p class="bullt">• To reduce resource utilization in devices participating in the control plane, generally just to save costs</p>
+        <p class="bull">• To prevent a failure in one part of a network from impacting some other part of the network; in other words, to break up the network into failure domains</p>
+        <p class="bull">• To prevent leaking information about the topology of the network, and reachability to destinations attached to the network, to attackers; in other words, to reduce the network’s attack surface</p>
+        <p class="bullb">• To prevent positive feedback loops that can cause a complete network failure</p>
+        <p class="indent">The problems in the preceding list can be divided into two categories: reducing the scope of control plane information and reducing the speed at which control plane information is allowed to change. These will be considered in the two following sections.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch19lev2"><strong>Defining Control Plane State Scope</strong></h4>
+        <p class="noindent"><a href="ch19.xhtml#ch19fig01">Figure 19-1</a> illustrates the scope of control plane state.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/19fig01.jpg" aria-describedby="Al19fig01" alt="Diagram illustrates the scope of a control plane state." width="460" height="172"><aside class="hidden" id="Al19fig01">
+        <p>Four routers A, B, C, and D are placed on a linear topology. A is connected to the connection "2001:db8:3e8:100::/64" placed to its left.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch19fig01"></a><strong>Figure 19-1</strong> <em>The scope of control plane state</em></p>
+        </div>
+        <p class="indent"><a id="page_509"></a>There are two kinds of state carried by the control plane: topology and reachability. These two kinds of control plane state can have different scopes in a network. For instance:</p>
+        <p class="bullt">• If D has knowledge of 2001:db8:3e8:100::/64, then the scope of this reachability information is A, B, C, and D—the entire network.</p>
+        <p class="bull">• If C has knowledge of 2001:db8:3e8:100::/64, and D does not, then the scope of this reachability information is A, B, and C.</p>
+        <p class="bull">• If D knows about the link connecting A and B, or that A and B are adjacent, the scope of this topology information is A, B, C, and D—the entire network.</p>
+        <p class="bullb">• If D does not know about the link connecting A and B, or that A and B are adjacent, the scope of this topology information is A, B, and C.</p>
+        <p class="indent">Another way to look at this is to ask: if a link or reachability to a specific destination fails, which devices must participate in convergence? Any device that does not participate in convergence, perhaps by sending an update, recalculating the set of loop-free paths through the network, or switching to an alternate path, is not part of the failure domain. Any device that does need to send an update, recalculate the set of loop-free paths, or switch to an alternate path is part of the failure domain. The scope of a failure, then, determines the scope of the failure domain. In <a href="ch19.xhtml#ch19fig01">Figure 19-1</a>:</p>
+        <p class="bullt">• If D has knowledge of 2001:db8:3e8:100::/64, then D must recalculate its set of reachable destinations if 100::/64 is disconnected from A; hence D is part of the failure domain for this destination.</p>
+        <p class="bull">• If D does not have knowledge of 2001:db8:3e8:100:/64, then D does not change its local forwarding information when 100::/64 is disconnected from A; hence D is not part of the failure domain for this destination.</p>
+        <p class="bull">• If D has knowledge of the link between A and B, then D needs to recalculate the set of loop-free paths through the network if the link fails (along with any reachability information passing through the link); hence D is part of the failure domain for this specific link.</p>
+        <p class="bullb">• If D does not have knowledge of the link between A and B, then D does not need to recalculate anything when the link fails; hence D is not part of the failure domain.</p>
+        <p class="indent">This definition means failure domains must be determined for each piece of reachability and topology information. While protocols and network designs will <a id="page_510"></a>block reachability and/or topology at common points in a network, there are cases in which</p>
+        <p class="bullt">• Topology information is blocked, but not reachability information.</p>
+        <p class="bull">• Some reachability information is blocked, but not all.</p>
+        <p class="bullb">• Some reachability or topology information leaks, causing a leaky abstraction.</p>
+        <p class="indent">The scope of control plane information within a network is important because it has a very large impact on the speed at which the control plane converges. Each additional device required to recalculate because of a change in topology or reachability represents some amount of time the network will remain unconverged, and hence either some destinations will be unnecessarily unreachable, or packets will be looped across some set of links in the network because some routers have a different view of the network topology than others. Looping, in particular, is a problem, because loops quite often have the potential to become positive feedback loops, which can cause the control plane to fail to converge permanently.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch19lev3"><strong>Positive Feedback Loops</strong></h4>
+        <p class="noindent">Positive feedback loops are a bit harder to imagine than the scope of control plane information; <a href="ch19.xhtml#ch19fig02">Figure 19-2</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/19fig02.jpg" aria-describedby="Al19fig02" alt="Figure illustrates the concept of positive feedback loop with a sample circuit." width="418" height="138"><aside class="hidden" id="Al19fig02">
+        <p>Four devices A, B, C, and D are placed such that, A, C, and D are aligned on a single line, while B is at the bottom. A, B, and C are connected to their adjacent devices (AB, AC, and BC) while C is connected to device D. An arrow labeled "single input" is shown to pass through device A from its outside. An arrow flows from C to B and is labeled "sample." An arrow flows from B to A and is labeled "feedback."</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch19fig02"></a><strong>Figure 19-2</strong> <em>A sample circuit to illustrate positive feedback loops</em></p>
+        </div>
+        <p class="indent">In <a href="ch19.xhtml#ch19fig02">Figure 19-2</a>, there are four devices:</p>
+        <p class="bullt">• Device A, which adds whatever it receives from the signal input and what it receives from B</p>
+        <p class="bull">• Device B, which can either increase or decrease the size or frequency of the signal it receives from C</p>
+        <p class="bull">• Device C, which passes the signal along unchanged to D, and also samples the signal, sending the sample to B</p>
+        <p class="bullb">• Device D, which measures the signal</p>
+        <p class="indent"><a id="page_511"></a>To create a simple feedback loop, assume C samples some fraction of the signal passing through it, passing this sample to B. Device B, in turn, amplifies the sample by some factor, and passes this amplified signal back to A. <a href="ch19.xhtml#ch19fig03">Figure 19-3</a> shows the result.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/19fig03.jpg" aria-describedby="Al19fig03" alt="Diagrammatic representation of a positive feedback loop." width="719" height="394"><aside class="hidden" id="Al19fig03">
+        <p>The diagram shows the input and output variation in a positive feedback loop using signal waves and by comparing their amplitudes. Four rows divided into three sets show the signal waves and from top to bottom they represent signal input, output at A, sample at C, and output at B. Each set of waves is indicated to combinedly produce the next set of waves. The signal input is the same throughout the three sets. Output at A in the first set is the same as signal input, but in the next two sets, the amplitude is shown to have a constant increase. Sample at C in the first set has minimal amplitude, but in the next two sets, the amplitude shows a constant, minimal increase. Output at B in the first set is the same as the wave that belongs to Sample at C in the second set. Output at B in the second set is the same as the wave that belongs to Sample at C in the third set. Output at B in the third set shows an increased amplitude. The final result at D is shown as a separate wave which has a progressing increase in its amplitude, as it keeps increasing for every cycle.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch19fig03"></a><strong>Figure 19-3</strong> <em>Result of a positive feedback loop</em></p>
+        </div>
+        <p class="indent">The case shown in <a href="ch19.xhtml#ch19fig03">Figure 19-3</a> is a positive feedback loop; C amplifies the sample it receives, making the signal just a bit larger. The result, at D, is a signal with constantly increasing amplitude. When will this feedback loop stop? When some limiting factor is hit. For instance, A may reach some limit where it cannot continue to add the two signals, or perhaps C reaches some input signal limit and fails, releasing its magic smoke (as all electronics will do if driven with too much input power). It is also possible to set up a negative feedback loop, where C removes a slight bit of power each cycle; in the case of a sine wave (as shown here), this would require C to invert the sample it receives from A. Finally, it is possible to configure each component in this circuit to neither increase nor decrease the final output at D. In this case, C would be somehow tuned to compensate for any inefficiency in the wiring, or A or C’s operation, by injecting just enough feedback to A to keep the signal at the same power at D.</p>
+        <p class="indent"><a href="ch19.xhtml#ch19fig04">Figure 19-4</a> changes the amplitude of the output signal to the frequency of an event to illustrate why.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/19fig04.jpg" aria-describedby="Al19fig04" alt="Diagrammatic illustration of positive feedback loop using events." width="711" height="126"><aside class="hidden" id="Al19fig04">
+        <p>Three rows signal input, output at A and output at B are shown to have three sets of signals with events placed over them. The signals are indicated using horizontal lines, while the events are indicated using small, vertical lines placed at different intervals, at different counts on the signal lines. The first set: signal input has three sets of two events each placed at the two ends and middle of the signal line. Output at A is the same as the signal line. Output at B has only three events, placed at three different locations at regular intervals on the signal line. These three add to form the next set of signals. The next set is as follows: signal input is the same as the previous set. Output at A has three sets of three events placed at the two ends and in the middle. The frequencies of the placement of the events are not equal. Output at B has four events placed at four different points on the signal, with unequal frequencies. These three add to form the final set of signals. The signal input is the same. Output at A has three events placed at the beginning, three placed in the middle, followed by a single event, and three events placed at the end.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch19fig04"></a><strong>Figure 19-4</strong> <em>Positive feedback loop using events</em></p>
+        </div>
+        <p class="indent">In <a href="ch19.xhtml#ch19fig04">Figure 19-4</a>, B (as shown previously in <a href="ch19.xhtml#ch19fig02">Figure 19-2</a>) is programmed to send a single event for every pair of events it receives. In the original signal input, there are six event signals, so B adds three more into the feedback path toward A. In the second round, shown in the center column, the original six events from the input signal are added to the three from B, resulting in nine event signals. Based on these nine event <a id="page_512"></a>signals at the output of C, B will generate four event signals and feed them back to A. The result is that the output of A now has ten event signals. This increase in the number of signals will continue until the entire time space is saturated with event signals.</p>
+        <p class="indent">Physical and logical loops can cause links to become saturated, devices to run out of processing power or memory, or a number of other conditions that will eventually cause a network failure. <a href="ch19.xhtml#ch19fig05">Figure 19-5</a> is used to provide an example.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/19fig05.jpg" aria-describedby="Al19fig05" alt="Network diagram used to explain the permanent control plane failure caused by a positive feedback loop." width="390" height="175"><aside class="hidden" id="Al19fig05">
+        <p>Four routers D, A, B, and C are placed such that D, A, and C are aligned on the same line, while B is at the bottom. D, A, and C are connected. B is connected to A and C. D is connected to the connection with link "2001:db8:3e8:100::/64."</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch19fig05"></a><strong>Figure 19-5</strong> <em>A permanent control plane failure due to a positive feedback loop</em></p>
+        </div>
+        <p class="indent">Assume that each router in <a href="ch19.xhtml#ch19fig05">Figure 19-5</a> is capable of processing ten changes to the network per second—either a route or topology change, for instance—and there are five routes total in the routing table. Because of the speeds of the interfaces (or for some other reason), the order in which updates are transmitted through the network is always [D,A,C,B]; updates from D through [A,C] always arrive at B before updates through [D,A] directly.</p>
+        <p class="indent">The 2001:db8:3e8:100::/64 link begins to flap three times per second. It seems like the network should converge on this flap rate fine; it is 50% of the rate at which any device can support, after all. To understand the impact of the feedback loop, however, it is important to trace the entire process of convergence:</p>
+        <p class="bullt">• Each time the 100:/64 link fails or comes up, D sends an update to A; this is three failures and three recoveries, for a total of six events per second.</p>
+        <p class="bull">• For each of these events, D will send an update to A.</p>
+        <p class="bull">• For each of these events, A will send an update to B and C.</p>
+        <p class="bullb">• B will also send an update toward C for each update it receives; this effectively doubles the rate of events at C to 12 per second.</p>
+        <p class="indent"><a id="page_513"></a>During the first second C receives 12 events per second, it will fail, in turn taking down its relationships with A and B. When it comes back up, it will attempt to establish new adjacencies with each of the connected routers, which means it will send its entire database, containing five routes, to A and B. Given the 100::/64 link is still flapping at the same rate, this will drive B above its threshold, causing B to crash. It is possible, as well (depending on the timing), that A could crash.</p>
+        <p class="indent">Once A crashes, the chain of crashes through resource exhaustion will continue— if the timing is correct, or the crashes form their own self-supporting feedback loop, even if the original flapping link is repaired. Although feedback loops of this kind are not tagged as the root cause of the failure (the flapping link would be considered the root cause of the failure in this example), they are often what turns a single event into a complete failure of the control plane to converge.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch19lev4">The Solution Space</h3>
+        <p class="noindent">A number of solutions have been developed over the years to limit control plane state, including summarization, aggregation, filtering, layering, caching, and back-off timers. All of these solutions fall into one of two different ways to limit control plane state—reducing the <em>scope</em> or the <em>speed</em> of control plane information. Each of these, in turn, solves a specific problem, such as</p>
+        </div>
+        <p class="bullt">• Reducing the scope of control plane information improves security by controlling the set of devices through which a view of the network can be obtained.</p>
+        <p class="bull">• Reducing the scope of control plane information improves convergence by controlling the set of devices that must recalculate loop-free paths through the network because of any individual change.</p>
+        <p class="bull">• Reducing the scope of control plane information reduces the chance of positive feedback loops by preventing state from “looping back” through the control plane.</p>
+        <p class="bull">• Reducing the scope of control plane information reduces the chance of resource exhaustion in any particular device (and potentially lowers the cost of any particular device) by reducing the size of any tables held in memory and across which the set of loop-free paths must be calculated.</p>
+        <p class="bullb">• Reducing the speed of control plane information traveling through the network, or the velocity of state, reduces the chance of positive feedback loops forming and reduces the chance of resource exhaustion in any individual device.</p>
+        <p class="indent">The following sections consider several widely implemented and deployed techniques used to control the scope and velocity of state.</p>
+        <a id="page_514"></a>
+        <div class="heading">
+        <h4 class="h4" id="ch19lev5"><strong>Summarizing Topology Information</strong></h4>
+        <p class="noindent">Topological information can be summarized by making destinations that are physically (or virtually) connected several hops away appear to be directly attached to a local node, and then removing the information about the links and nodes in any routing information carried in the control plane from the point of summarization. <a href="ch19.xhtml#ch19fig06">Figure 19-6</a> illustrates this concept from the perspective of F, with E summarizing.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/19fig06.jpg" aria-describedby="Al19fig06" alt="Two network diagrams compares the before and after summarization of information in a control plane." width="557" height="422"><aside class="hidden" id="Al19fig06">
+        <p>Before Summarization diagram: Host A is connected to a router B, which in turn is connected to routers C and D. C and D are connected to router E, which is connected to router F in the end. After Summarization diagram: The routers C, B, D and the host A are all connected to the router E, which is connected to another router F.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch19fig06"></a><strong>Figure 19-6</strong> <em>Summarization of topology information in the control plane</em></p>
+        </div>
+        <p class="indent">Before the topology is summarized (the upper network), F might (depending on the protocol) know A is connected to B, B is connected to C and D, and C and D are connected to E. If E begins to summarize the topology information (shown in the lower network), each of these other nodes appears, from F’s perspective, to be directly connected to E. The physical topology does not change, of course, but F’s view of the topology does change.</p>
+        <p class="indent">Summarization is a form of abstraction over the network topology; the set of reachable destinations is abstracted from the network and connected so that loop-free paths are preserved, but not detailed topology information. The way this is normally done is to remove actual link information while preserving the metric information associated with each destination, as the metric information alone can be used to calculate loop-free paths.</p>
+        <p class="indent">Distance vector protocols essentially summarize topology information at every hop, as they transmit each destination with a metric between devices. In Bellman-Ford, the local device examines its local view of the network to calculate the set of loop-free paths through the network. In Garcia-Luna’s Diffusing Update Algorithm <a id="page_515"></a>(DUAL), the device keeps (in effect) one hop of topology information, the cost to each destination as seen from each of its neighbors, and uses this information to calculate alternate loop-free paths to each destination. Link state protocols carry full topology information, including links and metrics, within a single flooding domain.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch19lev6"><strong>Aggregating Reachability Information</strong></h4>
+        <p class="noindent">If you take a trip to a distant city through a series of flights, you will need</p>
+        </div>
+        <p class="bullt">• Directions from your home to the local airport</p>
+        <p class="bull">• Directions within the local airport to the correct gate to board the aircraft</p>
+        <p class="bull">• Directions from gate to gate within the airport where each flight connection is made</p>
+        <p class="bull">• Directions from the gate to the place where you pick up a rental car, or to a taxi, or to some form of public transportation</p>
+        <p class="bull">• Directions to the hotel where you will be staying</p>
+        <p class="bullb">• Directions from the hotel to the site of the meeting or conference you will be attending</p>
+        <p class="indentb">What would happen if you called your destination hotel and asked for full directions to its location from yours? Assuming the hotel staff even know how you are traveling, the directions would easily overwhelm you. Maybe they would look something like this:</p>
+        <p class="indenthangingN">1. Walk out your front door and get into your car.</p>
+        <p class="indenthangingN">2. Turn left out of your driveway, go to the first stop sign, turn left.</p>
+        <p class="indenthangingN">3. Proceed three blocks and turn right onto the entrance ramp onto the highway.</p>
+        <p class="indenthangingN">4. Merge into traffic and stay on this road for 4.1 miles.</p>
+        <p class="indenthangingN">5. …</p>
+        <p class="indenthangingN">6. When you disembark from the plane, turn left on exiting the gate.</p>
+        <p class="indenthangingN">7. Travel 400 yards to the internal airport transportation station.</p>
+        <p class="indenthangingN">8. Ascend the steps or escalator to the second level, turn left, and board the first train arriving there.</p>
+        <p class="indenthangingN">9. On the third stop, exit the train, turn left, and proceed down the steps or escalator to the first floor.</p>
+        <p class="indenthangingN1">10. …</p>
+        <p class="indentt"><a id="page_516"></a>You can see how such a set of directions might be overwhelming in their scope. In fact, they would be so overwhelming as to be confusing.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">Why are down escalators called escalators? Since they go down, shouldn’t they be called descalators?</p>
+        </div>
+        <p class="indent">The way travelers really navigate is in stages, or segments. A broad set of directions is given (board flight 123, which will take you to Chicago; then flight 456, which will take you to San Jose; rent a car; and drive to the hotel). At each of these steps, you assume there will be directions available locally to take you between any two points. For instance, you assume there will be signs on the local highway, or some software or map you can consult to provide you with directions from your home to the local airport, and then there will be signs within the airport where you are connecting between flights to guide you between the gates, etc.</p>
+        <p class="indent">This process of taking a trip in stages is, in reality, a form of abstraction. You know, when you travel, that information will become available as you proceed through the trip, and hence you do not need it <em>right now</em>. What you need is enough information to get you into a general area and then access to more detailed information when you get there.</p>
+        <p class="indent">This is precisely how aggregation in network protocols works. Aggregation removes more specific information about a particular destination as topological distance is covered in the network. <a href="ch19.xhtml#ch19fig07">Figure 19-7</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/19fig07.jpg" aria-describedby="Al19fig07" alt="Diagrammatic representation of the concept of Aggregation of reachability information." width="568" height="349"><aside class="hidden" id="Al19fig07">
+        <p>Three hosts with advertisement wire addresses "2001:db8:3e8:100::1/64, 2001:db8:3e8:100::2/64, and 2001:db8:3e8:100::3/64" are connected as a linear topology, which in turn is connected to router A, which uses the advertisement link "2001:db8:3e8:100::/64" to connect to a router D. Two other routers B with advertisement address "2001:db8:3e8:101::/64" and C with advertisement address "2001:db8:3e8:102::/64" are also connected to D. D is connected to another router E with an advertisement address "2001:db8:3e8:100::/60." This E is in turn connected to a router F through "::/0."</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch19fig07"></a><strong>Figure 19-7</strong> <em>Aggregation of reachability information</em></p>
+        </div>
+        <p class="indent"><a id="page_517"></a>In <a href="ch19.xhtml#ch19fig07">Figure 19-7</a>, there are three hosts connected to a single shared link (broadcast domain) attached to an interface on A. Each of these hosts has its own physical Media Access Control (MAC) address, which is related to an Internet Protocol (IP) address, which has been assigned either manually or through the Dynamic Host Configuration Protocol (DHCP). These addresses all fall within a single /64 range of addresses. A aggregates these host addresses into a single advertisement, traditionally considered the address of the “wire” in IP networks: 2001:db8:3e8:100::/64.</p>
+        <p class="indent">Two other routers, B and C, are advertising two other /64s; the three /64s advertised by A, B, and C fall within the same /60 address range. Router D is configured to aggregate these three /64s to the /60. E, in turn, advertises a default route (::/0) to F, which means “any IP address you do not know about, you can reach through me.” This is an aggregate sitting “above” 2001:db8:3e8:100::/60. Some useful terminology:</p>
+        <p class="bullt">• <strong>Supernet or aggregate:</strong> An address that covers, or represents, a set of longer prefix, or more specific, destinations</p>
+        <p class="bullb">• <strong>Subnet:</strong> An address that is covered, or represented by, a longer prefix, or less specific, destination in the routing table</p>
+        <p class="indent">Subnets and aggregates look identical in the routing table of any individual device. The only way you can see if a particular route is either a supernet or subnet is if the longer and shorter routes both exist in the routing table of the aggregating device at the same time. Without the subnet, you cannot tell whether a route is an aggregate or not.</p>
+        <p class="indent">A, in advertising 2001:db8:3e8:100::/64, does not <em>remove</em> any reachability from the network; rather it <em>adds</em> unreachable destinations that appear to be reachable to the control plane. Router A is advertising reachability to a large number of hosts, such as 2001:db8:3e8:100:4//64, even though this host doesn’t exist. In the same way, D is advertising unreachable address space into the network by advertising 2001:db8:3e8:100::/60, and E is advertising unreachable address space into the network by advertising ::/0.</p>
+        <p class="indent">Packets transmitted to a nonexistent host are normally just dropped by the first device with specific enough routing information to know the host doesn’t exist. For instance:</p>
+        <p class="bullt">• If a packet is forwarded by F toward E with a destination address of 2001:db8:3e8:110::1, E can drop this packet, as this destination does not fall within any of the available destinations in E’s routing table.</p>
+        <p class="bull"><a id="page_518"></a>• If a packet is forwarded by F toward E with a destination address of 2001:db8:3e8:103::1, D can drop the packet, as this destination does not fall within any of the available destinations in D’s routing table.</p>
+        <p class="bullb">• If a packet is forwarded by F toward E with a destination address of 2001:db8:3e8:100::100, A would need to drop the packet, as this destination is not in the local Address Resolution Protocol (ARP) cache at A’s connection to 2001:db8:3e8:100::/64.</p>
+        <p class="indent">There is another place where aggregation can be configured in a network: between the routing table (Routing Information Base, or RIB) and the forwarding table (Forwarding Information Base, or FIB), within an individual network device. This type of aggregation is fairly unusual; it is primarily used in situations where a device’s forwarding table is restricted to a particular size because of memory limitations.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch19lev7"><strong>Filtering Reachability Information</strong></h4>
+        <p class="noindent">Filtering reachability information, unlike aggregation, does remove reachability information from the control plane; hence filtering is normally used as an aid or part of a layered defense for network security. <a href="ch19.xhtml#ch19fig08">Figure 19-8</a> is used to illustrate.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/19fig08.jpg" aria-describedby="Al19fig08" alt="Diagrammatic representation of route filtering." width="664" height="409"><aside class="hidden" id="Al19fig08">
+        <p>Host A from a network at the left is connected to a router B placed at the organization boundary line. This router is shown to "filter all except 2001:db8:3e8:100::/64." that passes through it to A. On the other side, B advertises "::/0." B is connected to routers C and D, which are also connected to each other. C is connected to server E with advertisement address: "2001:db8:3e8:100::A0/64." D is connected to router F and is shown to "filter all except ::/0" that passes through it to F. F is connected to "001:db8:3e8:101::/64" which in turn connects to Host G.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch19fig08"></a><strong>Figure 19-8</strong> <em>Route filtering</em></p>
+        </div>
+        <p class="indent"><a id="page_519"></a>In <a href="ch19.xhtml#ch19fig08">Figure 19-8</a>, A should be able to reach E within the organization (to the right of the organizational boundary line) and no destinations outside the organization. Host A definitely should not be able to reach G, for instance, or any of the transit links or routers within the organization’s network. There are several ways to accomplish this, of course. The network administrator could place a stateful packet filter at the edge of the network to block traffic that is not part of a session originating from inside the network, or the network administrator could configure a packet filter to block A from accessing any destination other than E. While these are, of course, good ideas, it is often best to combine such filters with some control plane filter to prevent any routers in the network that A is attached to (within the cloud) from learning about these destinations. To accomplish this, the network administrator can place a filter at B blocking the advertisement of any reachable destination within the network other than the subnet that E is attached to.</p>
+        <p class="indent">At D, all routes are also filtered toward F—except the default route. While this is configured as a route filter on D, it acts like route aggregation; the default still allows G to reach E, even though F does not have a specific route, by following the default route. It is important to differentiate between the two cases: a route filter being used like aggregation and a route filter being used to prevent or block reachability to or from a particular device (or set of devices).</p>
+        <div class="heading">
+        <h4 class="h4" id="ch19lev8"><strong>Layering Control Planes</strong></h4>
+        <p class="noindent">In <a href="ch09.xhtml#ch09">Chapter 9</a>, “<a href="ch09.xhtml#ch09">Network Virtualization</a>,” the case for building virtual topologies was laid out from the perspective of the data plane: primarily to provide traffic separation, reachability separation, and to provide “over the top” network services, particularly encryption and tunneled protocol support. There is an entirely separate case to be made for layering control planes, either with virtualized topologies, or without. Consider the security example set out previously in <a href="ch19.xhtml#ch19fig08">Figure 19-8</a>; another way to solve the same problem might be to provision an overlay network, as shown in <a href="ch19.xhtml#ch19fig09">Figure 19-9</a>.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/19fig09.jpg" aria-describedby="Al19fig09" alt="Network diagram illustrating how to feature a network overlay in a control plane." width="639" height="322"><aside class="hidden" id="Al19fig09">
+        <p>Host A is connected to router B which in turn is connected to router C. Hose N is connected router C. This router C is connected to three routers E, F, and D, where F and D are connected to each other. Router E is connected to server H with advertisement address "2001:db8:3e8:100::1/64." Router F is connected to server K with advertisement address "2001:db8:3e8:101::1/64." Router D is connected to another router G which in turn is connected to server M with advertisement address "2001:db8:3e8:102::1/64." The links between B and C, C and E, and C and F are marked with separate dotted lines.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch19fig09"></a><strong>Figure 19-9</strong> <em>An overlay as control plane information hiding</em></p>
+        </div>
+        <p class="indent">In <a href="ch19.xhtml#ch19fig09">Figure 19-9</a>, A needs to access H and K, but not M; N needs to access all three. Router B is a smaller device, perhaps a small home office router, which can support just a handful of routes. It is possible, of course, to filter routing information at C such that B has just the one or two routes it needs, but this may not be scalable from a network management perspective. Nor does this provide traffic separation, which is a requirement in many places where overlay networks are used. Meeting any traffic separation requirements would necessitate building packet filters at every device along the path, adding further to the network management load.</p>
+        <p class="indent">A better option, in many cases, is to create a virtual overlay network including just the devices that need to communicate. In this case, the dashed gray lines represent <a id="page_520"></a>the virtual overlay network created to fulfill the requirements given. From an information hiding perspective, what is important to note is the following:</p>
+        <p class="bullt">• B does not need to know about D or G, the links connecting them, nor the 2001:db8:3e8:102::/64 subnet; information about these topology elements and reachable destinations are hidden from the control plane at B by building a tunnel, or virtual topology, with one end at B and the other ends at E and F.</p>
+        <p class="bullb">• The second control plane can run as a different process on C, E, and F; this second control plane also does not need to know about these topology elements or reachable destinations.</p>
+        <p class="indent">Some information about topology and reachability, then, is hidden from B entirely, and some processes on C, E, and F, without reducing the required reachability. To connect this back to the concept of failure domains, routers that do not know about specific topology elements and/or reachable destinations do not need to recalculate the set of loop-free paths through the network when those (hidden) elements change. Because of this, B can be said to be in a different failure domain than D and G. Virtualization, then, can often be treated as another form of information hiding.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch19lev9"><strong>Caching</strong></h4>
+        <p class="noindent">Caching begins with a simple observation: not all forwarding information is used all the time. Rather, particular flows pass along particular paths in a network, and particular pairs of devices (typically) only communicate for short periods of time. Storing forwarding information for short-lived flows, and in devices far off the path any particular flow might use, is a waste of resources. <a href="ch19.xhtml#ch19fig10">Figure 19-10</a> is used to illustrate.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/19fig10.jpg" aria-describedby="Al19fig10" alt="Figure illustrates the use of Caching." width="519" height="284"><aside class="hidden" id="Al19fig10">
+        <p>Host A is connected to router B which in turn is connected to three routers C, E, and D. C and E are connected to each other. C is connected to another router F. The router D, E, and F are connected to paths with addresses 2001:db8:3e8:100::/64, 2001:db8:3e8:101::/64, and 2001:db8:3e8:102::/64 respectively.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch19fig10"></a><strong>Figure 19-10</strong> <em>Considering why caching works</em></p>
+        </div>
+        <p class="indent"><a id="page_521"></a>In <a href="ch19.xhtml#ch19fig10">Figure 19-10</a>, the path from A to 2001:db8:3e8:100::/64 does not pass through C, E, or F; if A is the only device that ever originates paths toward this destination, it is a waste of memory and processing power for C, E, and F to calculate shortest paths to the 100::/64 destination. But how would E know no host attached to 101::/64 is going to send traffic to some device connected to 100::/64? There is no way, from a control plane perspective, to know this.</p>
+        <p class="indent">Instead, E must rely on traffic as it passes through the network. For instance, E could calculate a route toward 100::/64 when some packet is transmitted from a locally attached host toward some destination on the 100::/64 subnet. This is a reactive control plane. Caching is not restricted to reactive control planes, however. It is possible for E to calculate a loop-free route to 100::/64, but to not install this information into its local FIB. This is another form of FIB compression, which can be used when the size of the RIB is not limited, but the size of the FIB is (for instance, when there is a limited hardware forwarding table). FIB compression was once quite common in network devices but has generally fallen out of favor as the cost of memory has decreased and other techniques to store more forwarding information in smaller amounts of memory have been developed and deployed.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">There are also bad memories in the culture of network engineering around RIB to FIB caching schemes; in the late 1990s, many provider networks failed due to these schemes, so many network engineers avoid such schemes—and often rightly so. There are many interesting and unpredictable failure modes in RIB to FIB caching schemes, beyond those found in “normal” caching schemes.</p>
+        </div>
+        <p class="indent"><a id="page_522"></a>The key question in any caching scheme is: how long should the cached information be held? There are at least two answers to this question:</p>
+        <p class="bullt">• Remove a cache entry some specific time after it has been installed, or some specific time after its last use to forward a packet; this is timer based.</p>
+        <p class="bullb">• Remove the oldest or most specific cache entries when the cache reaches some percentage of its capacity; this is capacity based.</p>
+        <p class="indent">Normally these are combined, with the first being the “normal” process for removing stale cache information, and the second used as a “safety valve” to prevent the cache from overflowing. Caches normally rely on the number of forwarding table entries <em>in use</em> being some small percentage of the reachable destinations. Generally, the rule of thumb is somewhere around 80/20—80% of the traffic will be directed at 20% of the destinations, or, in other situations, about 20% of the total reachable destinations will need to be stored at any given time.</p>
+        <p class="indent">There are a number of problems designers face when caching forwarding information in this way. <a href="ch19.xhtml#ch19fig11">Figure 19-11</a> is used to illustrate one interesting failure mode.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/19fig11.jpg" aria-describedby="Al19fig11" alt="Figure illustrates an example for cache failure mode." width="606" height="171"><aside class="hidden" id="Al19fig11">
+        <p>Host A is connected to router B which in turn is connected to two routers C and D. These two routers are connected to a router E which is connected to network path that links to 100 hosts and has address 2001:db8:3e8:100::/64.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch19fig11"></a><strong>Figure 19-11</strong> <em>An interesting cache failure mode</em></p>
+        </div>
+        <p class="indent">In <a href="ch19.xhtml#ch19fig11">Figure 19-11</a>, E has 100 hosts attached; at the same time, C and D can support 70 entries in their forwarding table and will start removing items from cache when their forwarding table is 80% full (so when the cache reaches 56 entries, the caching algorithm begins removing the oldest entries to bring the cache under some number of total entries, say 50 for the purposes of this example). Assume caching is taking place at the individual destination IP address level, rather than at the subnet level (the reason for this will be explained in a following example). The situation that caching solutions normally assume is that A will communicate with a limited number of the 100 possible destinations at once. If A builds sessions with 20 of these destination devices for one minute, then another 20 the next minute, and so on, the cache can be “tuned” to carry information about any particular reachable destination for just a few seconds after its last use.</p>
+        <p class="indent">The worst possible case, from a caching perspective, is that A attempts to communicate with all 100 reachable hosts at once, or the cache timers are set long enough to <a id="page_523"></a>cause every one of these destinations to remain in the cache at all times. Two problems are going to develop in this case. <em>First</em>, the cache at B is going to overflow. When B receives a packet that triggers caching of the 57<sup>th</sup> destination, it will begin removing older cache entries in order to protect the cache from failing entirely. The flow dependent on the removed cache entries will, of course, continue sending packets (or perhaps reset, and begin sending packets again), again causing the cache to reach the 57<sup>th</sup> entry, and hence the oldest entries to be removed again. This is a straightforward problem, easily detected, even if it is not easily mitigated.</p>
+        <p class="indent"><em>Second</em>, the caches at C and D are likely to develop problems. It is possible to build a stable system if B splits the load perfectly between C and D. However, this is rarely going to happen in real life. Instead, what is likely to happen at A is, at best, a 60/40 split; so traffic sent by B toward 40 of the destinations is sent to C, while traffic sent by A toward the other 60 destinations is sent toward D. The result is the cache on D overflows (there would need to be 60 cache entries, which is more than the 56 allowed by the caching algorithm), causing D to start removing cache entries. The removal of this caching information will cause the session to reset, as well.</p>
+        <p class="indent">The cache churn at B, C, and D can easily develop into a positive feedback loop, where dropped packets and sessions cause a refactoring of where traffic flows in the network, in turn causing different caches to overflow, in turn (again) causing dropped packets and session resets. There are few ways to resolve this sort of problem other than the obvious ones: increase the cache size, or reduce the number of concurrent flows through the network.</p>
+        <p class="indent">One apparently obvious answer—caching to the subnet level, rather than individual hosts—will not work. <a href="ch19.xhtml#ch19fig12">Figure 19-12</a> is used to explain why this will not work.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/19fig12.jpg" aria-describedby="Al19fig12" alt="Two network diagrams compare the before and after of Caching to the subnet level." width="611" height="442"><aside class="hidden" id="Al19fig12">
+        <p>The network diagram that represents the setup before subnet caching is as follows: Host A is connected to a router B, which in turn is connected to two routers C and D. These two routers are connected to another router E, which connects to a network path with address: "2001:db8:3e8:100::/60." The network diagram that represents the setup after subnet caching has the same setup as before, except, the router D connects to a network path with address: "2001:db8:3e8:100::/64."</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch19fig12"></a><strong>Figure 19-12</strong> <em>Caching to the subnet level</em></p>
+        </div>
+        <p class="indent"><a href="ch19.xhtml#ch19fig12">Figure 19-12</a> shows two networks: one (the upper) labeled <em>before</em> and the other (the lower) labeled <em>after</em>. Assume B, C, D, and E cache to the subnet of the destination, rather than the individual host information. What happens in this network is</p>
+        <p class="bullt">• A sends a packet to 2001:db8:3e8:101::1.</p>
+        <p class="bull">• B receives this packet and discovers (through some mechanism—it does not matter what this mechanism is) that the destination is reachable through C and D.</p>
+        <p class="bull">• B determines (perhaps based on load sharing) that the traffic should travel through C; it builds a cache entry toward 2001:db8:3e8:100::/60 through C in its local forwarding table.</p>
+        <p class="bull">• A now sends a packet to 2001:db8:3e8:100::1.</p>
+        <p class="bullb">• B forwards this traffic along the path toward 100::/60, so the traffic is sent to C, then forwarded to E, where it is dropped.</p>
+        <p class="indent"><a id="page_524"></a>Why does E drop this traffic? The packet destined to 100::1 “lives” in two different network address spaces: the 100::/60 and the 100::/64. E knows about the 100::/60 address space, so it should know about every reachable destination in this space. Because E believes it knows about every destination in this address space, there is no reason for E to ask any of its neighbors about 100:1; it should already know about this specific destination. This destination, however, is connected to D, so there is no way for E to have 100::1 in its local forwarding table. In effect, E believes it <em>knows</em> 100::1, as an individual host, <em>does not exist</em>, so it will drop any traffic destined to this address.</p>
+        <p class="indent">Because of this, A has no effective way to reach any device attached to 100::/64 network; it might be that when (or if) the cache entry times out at B, the next packet will happen to be for a destination within the 100::/64 network, causing the correct set of cache entries to be built at B. Whether or not this is likely to happen, it is never a good thing for control planes to have possible states, such as this one, where reachability is variable or unpredictable.</p>
+        <p class="indent">There are a number of ways this problem could be fixed, none of which appear to be deployable in the real world. For instance, you could dictate that <em>every prefix in the network must have the same prefix length</em>, but this would rule out aggregation, which is problematic.</p>
+        <div class="note">
+        <p class="title"><a id="page_525"></a><strong>Note</strong></p>
+        <p class="notepara">There is another reason to build cache entries at the per device (or per address) level—to improve load sharing. Consider the example shown in <a href="ch19.xhtml#ch19fig11">Figure 19-11</a>; if B built its cache at the per subnet level, then B would choose one path, either through C or through D, to send all the traffic in the network. The other path would remain unused (at least until B’s cache entry timed out, at which point the used and unused paths might switch). Caching at the subnet level can cause a large set of network resources to go unused; generally this is considered a result to be avoided.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch19lev10"><strong>Slowing Down</strong></h4>
+        <p class="noindent">Everyone in the modern world should know the value of slowing down sometimes—it can reduce information overload. It is no different for a control plane; slowing down the pace at which information is presented to a device does not really reduce the processing and memory requirements so much as spread them out over time. Another point in favor of slowing down state velocity is that it can allow multiple state changes to be “gathered,” or “bunched,” into a single processing cycle. <a href="ch19.xhtml#ch19fig13">Figure 19-13</a> illustrates these concepts.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/19fig13.jpg" aria-describedby="Al19fig13" alt="Figure illustrates the concept of slowing down state velocity." width="574" height="544"><aside class="hidden" id="Al19fig13">
+        <p>A network setup is shown with five routers labeled A to E placed one below the other. These five routers connect to a single router F, which in turn connects to a router G. Three different timelines are shown and the router connection failures are marked along the timelines. The timelines are split into 5 equal partitions for easy understanding of the time of failure. Timeline 1: the connection failures for AF and BF are marked at the beginning of the first partition, while the connection failure for CF is marked at the beginning of the second partition. Connection failure for DF is marked after a while longer into the third partition of the timeline, while the connection failure EF is marked right at the middle of the fourth partition. No more connection failures are seen. Timeline 2: The connection is established for a fixed time, and connection failure for AF and BF are marked at the same point, toward the end of the first partition. Next connection failure for CF is marked toward the end of the second partition, followed by connection failure for DF marked exactly at the end of the third partition. Connection failure for EF is marked right after the beginning of the fifth partition. Timeline 3: The connection failure for AF and BF are marked at a fixed interval in the first partition. Connection failure for CF is marked at the beginning of the second partition. Connection failure for DF is marked in the middle of the third partition. Connection failure for EF is marked at the end of the timeline.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch19fig13"></a><strong>Figure 19-13</strong> <em>Examples of slowing down state velocity</em></p>
+        </div>
+        <p class="indent"><a id="page_526"></a>In <a href="ch19.xhtml#ch19fig13">Figure 19-13</a>, timeline 1 illustrates the actual order in which the links between F and another router fail; [A,F] and [B,F] fail relatively close to one another, and the remaining links fail a bit farther apart (or spread out in time). In timeline 2, F waits to advertise the control plane state change for a fixed amount of time. Because of this delay between the event occurring and reporting the event, the failures of the [A,F] and [B,F] links are reported at the same time, or in the same update. This allows G to process both events at the same time, which (should) require less processor and memory resources.</p>
+        <p class="indent">Finally, in timeline 3, an exponential backoff timer is shown. Essentially, the first time an event occurs, a timer is set, and the event is reported after the timer has expired. In timeline 3, this timer is set to 0 seconds, so the event is reported immediately (a common configuration for exponential backoffs). Once the event has been reported, a separate timer is set that must expire (or wake up) before the next event can be reported. Each event occurring after this increases this timer exponentially, causing the reporting of events to be spread out over ever-increasing amounts of time.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch19lev11">Final Thoughts on Hiding Information</h3>
+        <p class="noindent">Hiding information has several positive effects:</p>
+        </div>
+        <p class="bullt">• It breaks a network into failure domains by limiting the scope of devices that must react to any particular change in topology or reachability.</p>
+        <p class="bull">• It reduces the velocity and scope of control plane state, allowing network to scale to larger sizes while retaining network stability.</p>
+        <p class="bullb">• It is a “hook” through which to implement policy, specifically in relation to network security.</p>
+        <p class="indent">It might seem hiding more state is always better, based on these advantages. However, as with all things in network engineering, the truth is closer to a tradeoff. <em>If you have not found the tradeoff, you have not looked hard enough</em>. In the case of information hiding, refer back to <a href="ch01.xhtml#ch01">Chapter 1</a>, “<a href="ch01.xhtml#ch01">Fundamental Concepts</a>,” specifically the section on complexity, and the example given concerning stretch and route aggregation. A second instance of hiding state can be found in relation to micro-loops, which are explained in <a href="ch13.xhtml#ch13">Chapter 13</a>, “<a href="ch13.xhtml#ch13">Unicast Loop-Free Paths (2)</a>.” The more you slow down the velocity of state, the longer such microloops will exist in the network.</p>
+        <p class="indent">Hiding state is, then, a useful tool in the hands of good designers, but it can also cause many problems by negatively impacting network performance.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch19lev12"><a id="page_527"></a>Further Reading</h3>
+        <p class="ref">Bollapragada, Vijay, Russ White, and Curtis Murphy. <em>Inside Cisco IOS Software Architecture</em>. Indianapolis, IN: Cisco Press, 2000.</p>
+        </div>
+        <p class="ref">Doyle, Jeff, and Jennifer DeHaven Carroll. <em>Routing TCP/IP, Volume 1</em>. 2nd edition. New Delhi, India: Cisco Press, 2005.</p>
+        <p class="ref">Stringfield, Nakia, Russ White, and Stacia McKee. <em>Cisco Express Forwarding</em>. 1st edition. Indianapolis, IN: Cisco Press, 2007.</p>
+        <p class="ref">Teixeira, Renata, Aman Shaikh, Timothy G. Griffin, and Jennifer Rexford. “Impact of Hot-Potato Routing Changes in IP Networks.” <em>IEEE/ACM Transactions on Networking</em>, 16, no. 6 (December 2008): 1295–307. doi:10.1109/TNET.2008.919333.</p>
+        <p class="ref">White, Russ, and Denise Donohue. <em>The Art of Network Architecture: Business-Driven Design</em>. 1st edition. Indianapolis, IN: Cisco Press, 2014.</p>
+        <p class="ref">White, Russ, and Alvaro Retana. <em>IS-IS: Deployment in IP Networks</em>. 1st edition. Boston, MA: Addison-Wesley, 2003.</p>
+        <p class="ref">White, Russ, Alvaro Retana, and Don Slice. <em>Optimal Routing Design</em>. 1st edition. Indianapolis, IN: Cisco Press, 2005.</p>
+        <p class="ref">White, Russ, and Jeff Tantsura. <em>Navigating Network Complexity: Next-Generation Routing with SDN, Service Virtualization, and Service Chaining</em>. Indianapolis, IN: Addison-Wesley Professional, 2015.</p>
+        <p class="ref">White, Russell I., Steven Edward Moore, James L. Ng, and Alvaro Enrique Retana. United States Patent: 8121130—Determining an optimal route advertisement in a reactive routing environment. 8121130, issued February 21, 2012. <a href="http://patft.uspto.gov/netacgi/nph-Parser?Sect1=PTO1&amp;Sect2=HITOFF&amp;d=PALL&amp;p=1&amp;u=%2Fnetahtml%2FPTO%2Fsrchnum.htm&amp;r=1&amp;f=G&amp;l=50&amp;s1=8,121,130">http://patft.uspto.gov/netacgi/nph-Parser?Sect1=PTO1&amp;Sect2=HITOFF&amp;d=PALL&amp;p=1&amp;u=%2Fnetahtml%2FPTO%2Fsrchnum.htm&amp;r=1&amp;f=G&amp;l=50&amp;s1=8,121,130</a>. PN.&amp;OS=PN/8,121,130&amp;RS=PN/8,121,130.</p>
+        <p class="ref">———. United States Patent: 9191227—Determining a route advertisement in a reactive routing environment. 9191227, issued November 17, 2015. <a href="http://patft.uspto.gov/netacgi/nph-Parser?Sect1=PTO1&amp;Sect2=HITOFF&amp;d=PALL&amp;p=1&amp;u=%2Fnetahtml%2FPTO%2Fsrchnum.htm&amp;r=1&amp;f=G&amp;l=50&amp;s1=9191227">http://patft.uspto.gov/netacgi/nph-Parser?Sect1=PTO1&amp;Sect2=HITOFF&amp;d=PALL&amp;p=1&amp;u=%2Fnetahtml%2FPTO%2Fsrchnum.htm&amp;r=1&amp;f=G&amp;l=50&amp;s1=9191227</a>. PN.&amp;OS=PN/9191227&amp;RS=PN/9191227.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch19lev13">Review Questions</h3>
+        <p class="indenthangingN">1. Describe how you can determine the scope and speed of control plane state.</p>
+        </div>
+        <p class="indenthangingN">2. Is it possible to cause a network failure through a negative feedback loop? If so, how?</p>
+        <p class="indenthangingN"><a id="page_528"></a>3. Describe the difference between summarizing and aggregating control plane information to control state.</p>
+        <p class="indenthangingN">4. Consider the State/Optimization/Surface (SOS) model. How would you describe summarization and aggregation within this model?</p>
+        <p class="indenthangingN">5. Consider the State/Optimization/Surface model (SOS). How would you describe hiding information through layered control planes within this model?</p>
+        <p class="indenthangingN">6. What might be some limiting factors in the formation of a positive feedback loop in a network control plane?</p>
+        <p class="indenthangingN">7. Research classful Internet Protocol addressing. How might the supernet/subnet concepts fit more “neatly” into this kind of scheme than they do with classes addressing schemes?</p>
+        <p class="indenthangingN">8. Research the two patents listed in the “Further Reading” section around reactive control planes and the caching of reachability information. Describe the solution presented in these patents to the problem described in the text.</p>
+        <p class="indenthangingN">9. Describe the importance of breaking up a network into failure domains.</p>
+        <p class="indenthangingN1">10. Describe the relationship between information hiding and failure domains.</p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780134762814/files/9780134762852.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

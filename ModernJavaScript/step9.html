@@ -1,0 +1,690 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section epub:type="chapter">
+        <h2 class="ch2" id="ch09"><span epub:type="pagebreak" id="page_184"></span>Chapter 9. Asynchronous Programming</h2>
+        <figure class="image-1">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/queen.jpg" alt="Images" width="85" height="85">
+        </figure>
+        <div class="outline">
+        <p class="outh">Topics in This Chapter</p>
+        <p class="chap-lev1"><a href="#ch09lev1sec1">9.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Concurrent Tasks in JavaScript</a></p>
+        <p class="chap-lev1"><a href="#ch09lev1sec2">9.2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Making Promises</a></p>
+        <p class="chap-lev1"><a href="#ch09lev1sec3">9.3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Immediately Settled Promises</a></p>
+        <p class="chap-lev1"><a href="#ch09lev1sec4">9.4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Obtaining Promise Results</a></p>
+        <p class="chap-lev1"><a href="#ch09lev1sec5">9.5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Promise Chaining</a></p>
+        <p class="chap-lev1"><a href="#ch09lev1sec6">9.6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Rejection Handling</a></p>
+        <p class="chap-lev1"><a href="#ch09lev1sec7">9.7&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Executing Multiple Promises</a></p>
+        <p class="chap-lev1"><a href="#ch09lev1sec8">9.8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Racing Multiple Promises</a></p>
+        <p class="chap-lev1"><a href="#ch09lev1sec9">9.9&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Async Functions</a></p>
+        <p class="chap-lev1"><a href="#ch09lev1sec10">9.10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Async Return Values</a></p>
+        <p class="chap-lev1"><a href="#ch09lev1sec11">9.11&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Concurrent Await</a></p>
+        <p class="chap-lev1"><a href="#ch09lev1sec12">9.12&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Exceptions in Async Functions</a></p>
+        <p class="chap-lev1"><a href="#ch09lev1sec13">Exercises</a></p>
+        </div>
+        <p class="noindent"><span epub:type="pagebreak" id="page_185"></span>In this chapter, you will learn how to coordinate tasks that must be executed at some point in the future. We start with an in-depth look at the notion of <em>promises</em>. A promise is just what it sounds: an action that will produce a result at some point in the future, unless it dies with an exception. As you will see, promises can be executed in sequence or in parallel.</p>
+        <p class="noindent">One drawback of promises is that you need to use method calls to combine them. The <code>async</code>/<code>await</code> constructs give you a much more pleasant syntax. You write code that uses regular control flow, and the compiler translates your code to a chain of promises.</p>
+        <p class="noindent">Ideally, you could skip promises and move straight to the <code>async</code>/<code>await</code> syntax. However, I think it would be quite a challenge to understand the complexities and limitations of the syntax without knowing what it does behind your back.</p>
+        <p class="noindent">We end the chapter with a discussion of asynchronous generators and iterators. All but the last section of this chapter should be required reading for intermediate JavaScript developers because asynchronous processing is ubiquitous in web applications.</p>
+        <section>
+        <h3 class="h3" id="ch09lev1sec1">9.1 Concurrent Tasks in JavaScript</h3>
+        <p class="noindent">A program is “concurrent” when it manages multiple activities with overlapping timelines. Concurrent programs in Java or C++ use multiple threads of <span epub:type="pagebreak" id="page_186"></span>execution. When a processor has more than one core, these threads truly run in parallel. But there is a problem—programmers must be careful to protect data, so that there is no corruption when a value is updated by different threads at the same time.</p>
+        <p class="noindent">In contrast, a JavaScript program runs in a single thread. In particular, once a function starts, it will run to completion before any other part of your program starts running. That is good. You know that no other code will corrupt the data that your function uses. No other code will try to read any of the data until after the function returns. Inside your function, you can modify the program’s variables to your heart’s content, as long as you clean up before the function returns. You never have to worry about mut or deadlocks.</p>
+        <p class="noindent">The problem with having a single thread is obvious: If a program needs to wait for something to happen—most commonly, for data across the Internet—it cannot do anything else. Therefore, time-consuming operations in JavaScript are always <em>asynchronous</em>. You specify what you want, and provide callback functions that are invoked when data is available or when an error has occurred. The current function continues execution so that other work can be done.</p>
+        <p class="noindent">Let us look at a simple example: loading an image. The following function loads an image with a given URL and appends it to a given DOM element:</p>
+        <p class="codelink"><a id="rch09pr01" href="ch09_images.xhtml#ch09pr01">Click here to view code image</a></p>
+        <pre class="pre">const addImage = (url, element) =&gt; {
+          const request = new XMLHttpRequest()
+          request.open('GET', url)
+          request.responseType = 'blob'
+        
+          request.addEventListener('load', () =&gt; {
+            if (request.status == 200) {
+              const blob = new Blob([request.response], { type: 'image/png' })
+              const img = document.createElement('img')
+              img.src = URL.createObjectURL(blob)
+              element.appendChild(img)
+            } else {
+              console.log(`${request.status}: ${request.statusText}`)
+            }
+          })
+          request.addEventListener('error', event =&gt; console.log('Network error'));
+          request.send()
+        }</pre>
+        <p class="noindent">The details of the <code>XMLHttpRequest</code> API are not important, except for one crucial fact. The image data are processed in a callback—the listener to the <code>load</code> event.</p>
+        <p class="noindent">If you call <code>addImage</code>, the call returns immediately. The image is added to the DOM element much later, once the data is loaded.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_187"></span>Consider this example, where we load four images (taken from the Japanese Hanafuda card deck—see <code><a href="https://en.wikipedia.org/wiki/Hanafuda">https://en.wikipedia.org/wiki/Hanafuda</a></code>):</p>
+        <p class="codelink"><a id="rch09pr02" href="ch09_images.xhtml#ch09pr02">Click here to view code image</a></p>
+        <pre class="pre">const imgdiv = document.getElementById('images')
+        addImage('hanafuda/1-1.png', imgdiv)
+        addImage('hanafuda/1-2.png', imgdiv)
+        addImage('hanafuda/1-3.png', imgdiv)
+        addImage('hanafuda/1-4.png', imgdiv)</pre>
+        <p class="noindent">All four calls to <code>addImage</code> return immediately. Whenever the data for an image arrive, a callback is invoked and the image is added. Note that you do <em>not</em> need to worry about corruption by concurrent callbacks. The callbacks are never intermingled. They run one after another in the single JavaScript thread. However, they can come in any order. If you load the web page with this program multiple times, the image order can change—see <a href="#ch09fig01">Figure 9-1</a>.</p>
+        <div class="note">
+        <p class="note-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">All sample programs in this chapter are designed to be run in a web browser. The companion code has web pages that you can load into your browser and code snippets that you can paste into the development tools console.</p>
+        <p class="noindent">To experiment with these files on your local system, you need to run a local web server. You can install <code>light-server</code> with the command</p>
+        <pre class="pre">npm install -g light-server</pre>
+        <p class="noindent">Change to the directory containing the files to serve and run the command</p>
+        <pre class="pre">light-server -s .</pre>
+        <p class="noindent">Then point your browser to URLs such as <code><a href="http://localhost:4000/images.html">http://localhost:4000/images.html</a></code>.</p>
+        </div>
+        <figure class="figure" id="ch09fig01">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/pg187_Image_513.jpg" alt="Images" width="584" height="267">
+        <figcaption><p class="fig-title"><strong>Figure 9-1</strong>&nbsp;&nbsp;&nbsp;&nbsp;Images may load out of order</p></figcaption>
+        </figure>
+        <p class="noindent"><span epub:type="pagebreak" id="page_188"></span>When loading images, it is fairly easy to cope with out-of-order arrival—see <a href="#ch09ex01">Exercise 1</a>. But consider a more complex situation. Suppose you need to read remote data, and then, depending on the received data, read more data. For example, a web page might contain the URL of an image that you want to load.</p>
+        <p class="noindent">In that case, you need to asynchronously read the web page, with a callback that scans the contents for the image URL. Then that image must be retrieved asynchronously, with another callback that adds the image to the desired location. Each retrieval requires error handling, which leads to more callbacks. With a few levels of processing, this programming style turns into “callback hell”—deeply nested callbacks with hard-to-understand success and failure paths.</p>
+        <p class="noindent">In the following sections, you will learn how <em>promises</em> allow you to compose asynchronous tasks without nested callbacks.</p>
+        <p class="noindent">A promise is an object that promises to produce a result eventually, hopefully. The result may not be available right away, and it might never be available if an error occurs.</p>
+        <p class="noindent">That does not sound very promising, but as you will soon see, it is much easier to chain completion and error actions with promises than with callbacks.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch09lev1sec2">9.2 Making Promises</h3>
+        <p class="noindent">In this section and the next, you will see how to make promises. This is a bit technical, and you rarely need to do it yourself. It is much more common to call library functions that return a promise. Feel free to gloss over these sections until you actually need to construct promises yourself.</p>
+        <div class="note">
+        <p class="note-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">A typical example for an API that produces promises is the <em>Fetch API</em> that all modern browsers support. The call</p>
+        <p class="codelink"><a id="rch09pr03" href="ch09_images.xhtml#ch09pr03">Click here to view code image</a></p>
+        <pre class="pre">fetch('https://horstmann.com/javascript-impatient/hanafuda/index.html')</pre>
+        <p class="noindent">returns a promise that will yield the response from the HTTP request when it is available.</p>
+        </div>
+        <p class="noindent">The <code>Promise</code> constructor has a single argument, a function that has two arguments: handlers for success and failure outcomes. This function is called the “executor function.”<span epub:type="pagebreak" id="page_189"></span></p>
+        <p class="codelink"><a id="rch09pr04" href="ch09_images.xhtml#ch09pr04">Click here to view code image</a></p>
+        <pre class="pre">const myPromise = new Promise((resolve, reject) =&gt; {
+          // <span class="cite">Body of the executor function</span>
+        })</pre>
+        <p class="noindent">In the body of the executor function, you start the task that yields the desired result. Once the result is available, you pass it to the <code>resolve</code> handler. Or, if you know that there won’t be a result, you invoke the <code>reject</code> handler with the reason for failure. When work is completed asynchronously, these handlers will be invoked in some callback.</p>
+        <p class="noindent">Here is an outline of the process:</p>
+        <p class="codelink"><a id="rch09pr05" href="ch09_images.xhtml#ch09pr05">Click here to view code image</a></p>
+        <pre class="pre">const myPromise = new Promise((resolve, reject) =&gt; {
+          const callback = (args) =&gt; {
+            . . .
+            if (<span class="var">success</span>) resolve(<span class="var">result</span>) else reject(<span class="var">reason</span>)
+          }
+          invokeTask(callback)
+        })</pre>
+        <p class="noindent">Let us put this to work in the simplest case: delivering a result after a delay. This function yields a promise to do that:</p>
+        <p class="codelink"><a id="rch09pr06" href="ch09_images.xhtml#ch09pr06">Click here to view code image</a></p>
+        <pre class="pre">const produceAfterDelay = (result, delay) =&gt; {
+          return new Promise((resolve, reject) =&gt; {
+            const callback = () =&gt; resolve(result)
+            setTimeout(callback, delay)
+          })
+        }</pre>
+        <p class="noindent">In the executor function that is passed to the constructor, we call <code>setTimeout</code> with a callback and the given delay. The callback will be invoked when the delay has passed. In the callback, we pass the result on to the <code>resolve</code> handler. We don’t need to worry about errors, and the <code>reject</code> handler is unused.</p>
+        <p class="noindent">Here is a more complex function that yields a promise whose result is an image:</p>
+        <p class="codelink"><a id="rch09pr07" href="ch09_images.xhtml#ch09pr07">Click here to view code image</a></p>
+        <pre class="pre">const loadImage = url =&gt; {
+          return new Promise((resolve, reject) =&gt; {
+            const request = new XMLHttpRequest()
+            const callback = () =&gt; {
+              if (request.status == 200) {
+                const blob = new Blob([request.response], { type: 'image/png' })
+                const img = document.createElement('img')
+                img.src = URL.createObjectURL(blob)
+                <strong>resolve</strong>(img)
+              } else {
+                <strong>reject</strong>(Error(`${request.status}: ${request.statusText}`))
+              }
+            }
+        <span epub:type="pagebreak" id="page_190"></span>      request.open('GET', url)
+              request.responseType = 'blob'
+              request.addEventListener('load', callback)
+              request.addEventListener('error', event =&gt; <strong>reject</strong>(Error('Network error')));
+              request.send()
+            })
+           }</pre>
+        <p class="noindent">The executor function configures an <code>XMLHttpRequest</code> object and sends it. Upon receipt of the response, a callback produces an image and invokes the <code>resolve</code> handler to pass it on. If an error occurs, it is passed to the <code>reject</code> handler.</p>
+        <p class="noindent">Let us look at the control flow of a promise in slow motion.</p>
+        <ol class="order">
+        <li><p class="list">The <code>Promise</code> constructor is called.</p></li>
+        <li><p class="list">The executor function is called.</p></li>
+        <li><p class="list">The executor function initiates an asynchronous task with one or more callbacks.</p></li>
+        <li><p class="list">The executor function returns.</p></li>
+        <li><p class="list">The constructor returns. The promise is now in the <em>pending</em> state.</p></li>
+        <li><p class="list">The code invoking the constructor runs to completion.</p></li>
+        <li><p class="list">The asynchronous task finishes.</p></li>
+        <li><p class="list">A task callback is invoked.</p></li>
+        <li><p class="list">That callback calls the <code>resolve</code> or <code>reject</code> handler, and the promise transitions to the <em>fulfilled</em> or <em>rejected</em> state. In either case, the promise is now <em>settled</em>.</p></li>
+        </ol>
+        <div class="note">
+        <p class="note-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">There is one variation of the last step in the control flow. You can call <code>resolve</code> with another promise. Then the current promise is resolved but not fulfilled. It stays pending until the subsequent promise is settled. For this reason, the handler function is called <code>resolve</code> and not <code>fulfill</code>.</p>
+        </div>
+        <p class="noindent">Be sure to always call <code>resolve</code> or <code>reject</code> in your task callbacks, or the promise never exits the pending state.</p>
+        <p class="noindent">That means that you have to pay attention to exceptions in task callbacks. If a task callback terminates with an exception instead of calling <code>resolve</code> or <code>reject</code>, then the promise cannot settle. In the <code>loadImage</code> example, I carefully vetted the code to ensure that no exception was going to be thrown. In general, it is a good idea to use a <code>try</code>/<code>catch</code> statement in the callback and pass any exceptions to the <code>reject</code> handler.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_191"></span>However, if an exception is thrown in the executor function, you don’t need to catch it. The constructor simply yields a rejected promise.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch09lev1sec3">9.3 Immediately Settled Promises</h3>
+        <p class="noindent">The call <code>Promise.resolve(value)</code> makes a promise that is fulfilled immediately with the given value. This is useful in methods that returns promises, and where the answer is available right away in some cases:</p>
+        <p class="codelink"><a id="rch09pr08" href="ch09_images.xhtml#ch09pr08">Click here to view code image</a></p>
+        <pre class="pre">const loadImage = url =&gt; {
+          if (url === undefined) return Promise.resolve(brokenImage)
+          . . .
+        }</pre>
+        <p class="noindent">If you have a value that might be a promise or a plain value, the result of <code>Promise.resolve(value)</code> definitely turns it into a promise. If the value is already a promise, it is simply returned.</p>
+        <div class="note">
+        <p class="note-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">For compatibility with libraries that predate standard ECMAScript promises, the <code>Promise.resolve</code> method provides special treatment for “thenable” objects—that is, objects with a <code>then</code> method. The <code>then</code> method is invoked with a resolve handler and a reject handler, and returns a promise that is settled when either of the two handlers is called—see <a href="#ch09ex06">Exercise 6</a>.</p>
+        </div>
+        <p class="noindent">The call <code>Promise.reject(error)</code> yields a promise that is immediately rejected with the given error.</p>
+        <p class="noindent">Use it when a promise-producing function fails:</p>
+        <p class="codelink"><a id="rch09pr09" href="ch09_images.xhtml#ch09pr09">Click here to view code image</a></p>
+        <pre class="pre">const loadImage = url =&gt; {
+          if (url === undefined) {
+            return Promise.reject(Error('No URL'))
+          } else {
+            return new Promise(. . .)
+          }
+        }</pre>
+        </section>
+        <section>
+        <h3 class="h3" id="ch09lev1sec4">9.4 Obtaining Promise Results</h3>
+        <p class="noindent">Now that you know how to construct a promise, you will want to obtain its result. You do not wait for the promise to settle. Instead, you provide actions that process the result or error once the promise has settled. Those <span epub:type="pagebreak" id="page_192"></span>actions will execute at some point <em>after</em> the end of the function that has scheduled them.</p>
+        <p class="noindent">Use the <code>then</code> method to specify an action that should be carried out once the promise is resolved. The action is a function that consumes the result.</p>
+        <p class="codelink"><a id="rch09pr10" href="ch09_images.xhtml#ch09pr10">Click here to view code image</a></p>
+        <pre class="pre">const promise1 = produceAfterDelay(42, 1000)
+        promise1.then(console.log) // <span class="cite">Log the value when ready</span>
+        
+        const promise2 = loadImage('hanafuda/1-1.png')
+        promise2.then(img =&gt; imgdiv.appendChild(img)) // <span class="cite">Append the image when ready</span></pre>
+        <div class="note">
+        <p class="note-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">The <code>then</code> method is the only way to get a result out of a promise.</p>
+        </div>
+        <p class="noindent">You will see in <a href="ch09.xhtml#ch09lev1sec6">Section 9.6</a>, “<a href="ch09.xhtml#ch09lev1sec6">Rejection Handling</a>” (<a href="ch09.xhtml#page_194">page 194</a>), how to deal with rejected promises.</p>
+        <div class="caution">
+        <p class="caution-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/caution.jpg" alt="Images" width="36" height="36"></span> Caution</p>
+        <p class="noindent">When you experiment with the <code>loadImage</code> or <code>fetch</code> function with different URLs, you will likely run into “cross-origin” errors. The JavaScript engine inside a browser will not allow JavaScript code to see results of web requests from third-party hosts unless those hosts agree that the access is safe and set a response header. Unfortunately, few sites have gone through the trouble. You can fetch the URLs at <code><a href="https://horstmann.com/javascript-impatient">https://horstmann.com/javascript-impatient</a></code> or (as I write this) <code><a href="https://developer.mozilla.org">https://developer.mozilla.org</a></code> and <code><a href="https://aws.random.cat/meow">https://aws.random.cat/meow</a></code>. If you want to experiment with other sites, you can use a CORS proxy or a browser plugin to overcome the browser check.</p>
+        </div>
+        </section>
+        <section>
+        <h3 class="h3" id="ch09lev1sec5">9.5 Promise Chaining</h3>
+        <p class="noindent">In the preceding section, you saw how to obtain the result of a promise. Now we tackle a more interesting case, where the promise result is passed to another asynchronous task.</p>
+        <p class="noindent">If the action that you pass to <code>then</code> yields another promise, the result is that other promise. To process its result, call the <code>then</code> method once again.</p>
+        <p class="noindent">Here is an example. We load an image, and then another:<span epub:type="pagebreak" id="page_193"></span></p>
+        <p class="codelink"><a id="rch09pr11" href="ch09_images.xhtml#ch09pr11">Click here to view code image</a></p>
+        <pre class="pre">const promise1 = loadImage('hanafuda/1-1.png')
+        const promise2 = promise1.then(img =&gt; {
+          imgdiv.appendChild(img)
+          return loadImage('hanafuda/1-2.png') // <span class="cite">Another promise</span>
+        })
+        promise2.then(img =&gt; {
+          imgdiv.appendChild(img)
+        })</pre>
+        <p class="noindent">There is no need to save each promise in a separate variable. Normally, one processes a chain of promises as a “pipeline.”</p>
+        <p class="codelink"><a id="rch09pr12" href="ch09_images.xhtml#ch09pr12">Click here to view code image</a></p>
+        <pre class="pre">loadImage('hanafuda/1-1.png')
+          .then(img =&gt; {
+            imgdiv.appendChild(img)
+            return loadImage('hanafuda/1-2.png')
+          })
+          .then(img =&gt; imgdiv.appendChild(img))</pre>
+        <div class="note">
+        <p class="note-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">With the Fetch API, you need to chain promises to read the contents of a web page:</p>
+        <p class="codelink"><a id="rch09pr13" href="ch09_images.xhtml#ch09pr13">Click here to view code image</a></p>
+        <pre class="pre">fetch('https://developer.mozilla.org')
+          .then(response =&gt; response.text())
+          .then(console.log)</pre>
+        <p class="noindent">The <code>fetch</code> function returns a promise yielding the response, and the <code>text</code> method yields another promise for the text content of the page.</p>
+        </div>
+        <p class="noindent">You can intermingle synchronous and asynchronous tasks:</p>
+        <p class="codelink"><a id="rch09pr14" href="ch09_images.xhtml#ch09pr14">Click here to view code image</a></p>
+        <pre class="pre">loadImage('hanafuda/1-1.png')
+          .then(img =&gt; imgdiv.appendChild(img)) // <span class="cite">Synchronous</span>
+          .then(() =&gt; loadImage('hanafuda/1-2.png')) // <span class="cite">Asynchronous</span>
+          .then(img =&gt; imgdiv.appendChild(img)) // <span class="cite">Synchronous</span></pre>
+        <p class="noindent">Technically, if a <code>then</code> action yields a value that isn’t a promise, the <code>then</code> method returns an immediately fulfilled promise. This allows further chaining with another <code>then</code> method.</p>
+        <div class="tip">
+        <p class="tip-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/tip.jpg" alt="Images" width="36" height="33"></span> Tip</p>
+        <p class="noindent">You can make promise pipelines more symmetric by starting out with an immediately fulfilled promise:</p>
+        <p class="codelink"><a id="rch09pr15" href="ch09_images.xhtml#ch09pr15">Click here to view code image</a></p>
+        <pre class="pre">Promise.resolve()
+          .then(() =&gt; loadImage('hanafuda/1-1.png'))
+          .then(img =&gt; imgdiv.appendChild(img))
+          .then(() =&gt; loadImage('hanafuda/1-2.png'))
+          .then(img =&gt; imgdiv.appendChild(img))</pre></div>
+        <p class="noindent"><span epub:type="pagebreak" id="page_194"></span>The preceding examples showed how to compose a fixed number of tasks. You can build an arbitrarily long pipeline of tasks with a loop:</p>
+        <p class="codelink"><a id="rch09pr16" href="ch09_images.xhtml#ch09pr16">Click here to view code image</a></p>
+        <pre class="pre">let p = Promise.resolve()
+        for (let i = 1; i &lt;= n; i++) {
+          p = p.then(() =&gt; loadImage(`hanafuda/1-${i}.png`))
+            .then(img =&gt; imgdiv.appendChild(img))
+        }</pre>
+        <div class="caution">
+        <p class="caution-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/caution.jpg" alt="Images" width="36" height="36"></span> Caution</p>
+        <p class="noindent">If the argument of the <code>then</code> method is not a function, the argument is discarded! The following is wrong:</p>
+        <p class="codelink"><a id="rch09pr17" href="ch09_images.xhtml#ch09pr17">Click here to view code image</a></p>
+        <pre class="pre">loadImage('hanafuda/1-1.png')
+          .then(img =&gt; imgdiv.appendChild(img))
+          .then(loadImage('hanafuda/1-2.png'))
+            // <span class="cite">Error—argument of <code>then</code> isn’t a function</span>
+          .then(img =&gt; imgdiv.appendChild(img))</pre>
+        <p class="noindent">Here, <code>then</code> is called with the return value of <code>loadImage</code>—that is, a <code>Promise</code>. If you call <code>p.then(arg)</code> with an argument that is not a function, there is no error message. The argument is discarded, and the <code>then</code> method returns a promise with the same result as <code>p</code>. Also, note that the second call to <code>loadImage</code> happens right after the first, without waiting for the first promise to settle.</p>
+        </div>
+        </section>
+        <section>
+        <h3 class="h3" id="ch09lev1sec6">9.6 Rejection Handling</h3>
+        <p class="noindent">In the preceding section, you saw how to carry out multiple asynchronous tasks in sequence. We focused on the “happy day” scenario when all of the tasks succeeded. Handling error paths can greatly complicate the program logic. Promises make it fairly easy to propagate errors through a pipeline of tasks.</p>
+        <p class="noindent">You can supply a rejection handler when calling the <code>then</code> method:</p>
+        <p class="codelink"><a id="rch09pr18" href="ch09_images.xhtml#ch09pr18">Click here to view code image</a></p>
+        <pre class="pre">loadImage(url)
+          .then(
+            img =&gt; { // <span class="cite">Promise has settled</span>
+              imgdiv.appendChild(img)
+            },
+            reason =&gt; { // <span class="cite">Promise was rejected</span>
+              console.log({reason})
+              imgdiv.appendChild(brokenImage)
+            })</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_195"></span>However, it is usually better to use the <code>catch</code> method:</p>
+        <p class="codelink"><a id="rch09pr19" href="ch09_images.xhtml#ch09pr19">Click here to view code image</a></p>
+        <pre class="pre">loadImage(url)
+          .then(
+            img =&gt; { // <span class="cite">Promise has settled</span>
+              imgdiv.appendChild(img)
+            })
+          .catch(
+            reason =&gt; { // <span class="cite">A prior promise was rejected</span>
+              console.log({reason})
+              imgdiv.appendChild(brokenImage)
+            })</pre>
+        <p class="noindent">That way, errors in the resolve handler are also caught.</p>
+        <p class="noindent">The <code>catch</code> method yields a new promise based on the returned value, returned promise, or thrown exception of its handler argument.</p>
+        <p class="noindent">If the handler returns without throwing an exception, then the resulting promise is resolved, and you can keep the pipeline going.</p>
+        <p class="noindent">Often, a pipeline has a single rejection handler that is invoked when any of the tasks fails:</p>
+        <p class="codelink"><a id="rch09pr20" href="ch09_images.xhtml#ch09pr20">Click here to view code image</a></p>
+        <pre class="pre">Promise.resolve()
+          .then(() =&gt; loadImage('hanafuda/1-1.png'))
+          .then(img =&gt; imgdiv.appendChild(img))
+          .then(() =&gt; loadImage('hanafuda/1-2.png'))
+          .then(img =&gt; imgdiv.appendChild(img))
+          .catch(reason =&gt; console.log({reason}))</pre>
+        <p class="noindent">If a <code>then</code> action throws an exception, the <code>then</code> method yields a rejected promise. Chaining a rejected promise with another <code>then</code> simply propagates that rejected promise. Therefore, the <code>catch</code> handler at the end will handle a rejection at any stage of the pipeline.</p>
+        <p class="noindent">The <code>finally</code> method invokes a handler whether or not a promise has settled. The handler has no arguments since it is intended for cleanup, not for analyzing the promise result. The <code>finally</code> method returns a promise with the same outcome as the one on which it was invoked, so that it can be included in a pipeline:</p>
+        <p class="codelink"><a id="rch09pr21" href="ch09_images.xhtml#ch09pr21">Click here to view code image</a></p>
+        <pre class="pre">Promise.resolve()
+          .then(() =&gt; loadImage('hanafuda/1-1.png'))
+          .then(img =&gt; imgdiv.appendChild(img))
+          .finally(() =&gt; { doCleanup(. . .) })
+          .catch(reason =&gt; console.log({reason}))</pre>
+        </section>
+        <section>
+        <h3 class="h3" id="ch09lev1sec7"><span epub:type="pagebreak" id="page_196"></span>9.7 Executing Multiple Promises</h3>
+        <p class="noindent">When you have multiple promises and you want them all resolved, you can place them into an array or any iterable, and call <code>Promise.all(iterable)</code>. You then obtain a promise that is resolved when all promises in the iterable are resolved. The value of the combined promise is an iterable of all promise results, in the same order as the promises themselves.</p>
+        <p class="noindent">This gives us an easy way to load a sequence of images and append them in order:</p>
+        <p class="codelink"><a id="rch09pr22" href="ch09_images.xhtml#ch09pr22">Click here to view code image</a></p>
+        <pre class="pre">const promises = [
+          loadImage('hanafuda/1-1.png'),
+          loadImage('hanafuda/1-2.png'),
+          loadImage('hanafuda/1-3.png'),
+          loadImage('hanafuda/1-4.png')]
+        Promise.all(promises)
+          .then(images =&gt; { for (const img of images) imgdiv.appendChild(img) })</pre>
+        <p class="noindent">The <code>Promise.all</code> does not actually run tasks in parallel. All tasks are executed sequentially in a single thread. However, the order in which they are scheduled is not predictable. For example, in the image loading example, you don’t know which image data arrives first.</p>
+        <p class="noindent">As already mentioned, <code>Promise.all</code> returns a promise for an iterable. That iterable contains the results of the individual promises in the correct order, regardless of the order in which they were obtained.</p>
+        <p class="noindent">In the preceding sample code, the <code>then</code> method is invoked when all images have been loaded, and they are appended from the <code>images</code> iterable in the correct order.</p>
+        <p class="noindent">If the iterable that you pass to <code>Promise.all</code> contains non-promises, they are simply included in the result iterable.</p>
+        <p class="noindent">If any of the promises is rejected, then <code>Promise.all</code> yields a rejected promise whose error is that of the first rejected promise.</p>
+        <p class="noindent">If you need more fine-grained control over rejections, use the <code>Promise.allSettled</code> method instead. It yields a promise for an iterable whose elements are objects of the form</p>
+        <p class="codelink"><a id="rch09pr23" href="ch09_images.xhtml#ch09pr23">Click here to view code image</a></p>
+        <pre class="pre">{ status: 'fulfilled', value: <span class="var">result</span> }</pre>
+        <p class="noindent">or</p>
+        <p class="codelink"><a id="rch09pr24" href="ch09_images.xhtml#ch09pr24">Click here to view code image</a></p>
+        <pre class="pre">{ status: 'rejected', reason: <span class="var">exception</span> }</pre>
+        <p class="noindent"><a href="#ch09ex08">Exercise 8</a> shows how to process the results.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch09lev1sec8"><span epub:type="pagebreak" id="page_197"></span>9.8 Racing Multiple Promises</h3>
+        <p class="noindent">Sometimes, you want to carry out tasks in parallel, but you want to stop as soon as the first one has completed. A typical example is a search where you are satisfied with the first result. The <code>Promise.race(iterable)</code> runs the promises in the iterable until one of them settles. That promise determines the outcome of the race.</p>
+        <div class="caution">
+        <p class="caution-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/caution.jpg" alt="Images" width="36" height="36"></span> Caution</p>
+        <p class="noindent">If the iterable has non-promises, then one of them will be the result of the race. If the iterable is empty, then <code>Promise.race(iterable)</code> never settles.</p>
+        </div>
+        <p class="noindent">It is possible that a rejected promise wins the race. In that case, all other promises are abandoned, even though one of them might produce a result. A more useful method, <code>Promise.any</code>, is currently a stage 3 candidate.</p>
+        <p class="noindent">The <code>Promise.any</code> method continues until one of the tasks has <em>resolved</em>. In the unhappy case that all promises are rejected, the resulting promise is rejected with an <code>AggregateError</code> that collects all reasons for rejection.</p>
+        <p class="codelink"><a id="rch09pr25" href="ch09_images.xhtml#ch09pr25">Click here to view code image</a></p>
+        <pre class="pre">Promise.any(promises)
+          .then(result =&gt; . . .) // <span class="cite">Process the result of the first settled promise</span>
+          .catch(error =&gt; . . .) // <span class="cite">None of the promises settled</span></pre>
+        </section>
+        <section>
+        <h3 class="h3" id="ch09lev1sec9">9.9 Async Functions</h3>
+        <p class="noindent">You have just seen how to build pipelines of promises with the <code>then</code> and <code>catch</code> methods, and how to execute a sequence of promises concurrently with <code>Promise.all</code> and <code>Promise.any</code>. However, this programming style is not very convenient. Instead of using familiar statement sequences and control flow, you need to set up a pipeline with method calls.</p>
+        <p class="noindent">The <code>await</code>/<code>async</code> syntax makes working with promises much more natural.</p>
+        <p class="noindent">The expression</p>
+        <pre class="pre">let value = await promise</pre>
+        <p class="noindent">waits for the promise to settle and yields its value.</p>
+        <p class="noindent">But wait. . .didn’t we learn at the beginning of this chapter that it is a terrible idea to keep waiting in a JavaScript function? Indeed it is, and you cannot use <code>await</code> in a normal function. The <code>await</code> operator can only occur in a function that is tagged with the <code>async</code> keyword:<span epub:type="pagebreak" id="page_198"></span></p>
+        <p class="codelink"><a id="rch09pr26" href="ch09_images.xhtml#ch09pr26">Click here to view code image</a></p>
+        <pre class="pre">const putImage = <strong>async</strong> (url, element) =&gt; {
+          const img = await loadImage(url)
+          element.appendChild(img)
+        }</pre>
+        <p class="noindent">The compiler transforms the code of an <code>async</code> function so that any steps that occur after an <code>await</code> operator are executed when the promise resolves. For example, the <code>putImage</code> function is equivalent to:</p>
+        <p class="codelink"><a id="rch09pr27" href="ch09_images.xhtml#ch09pr27">Click here to view code image</a></p>
+        <pre class="pre">const putImage = (url, element) =&gt; {
+          loadImage(url)
+            .then(img =&gt; element.appendChild(img))
+        }</pre>
+        <p class="noindent">Multiple <code>await</code> are OK:</p>
+        <p class="codelink"><a id="rch09pr28" href="ch09_images.xhtml#ch09pr28">Click here to view code image</a></p>
+        <pre class="pre">const putTwoImages = async (url1, url2, element) =&gt; {
+          const img1 = await loadImage(url1)
+          element.appendChild(img1)
+          const img2 = await loadImage(url2)
+          element.appendChild(img2)
+        }</pre>
+        <p class="noindent">Loops are OK too:</p>
+        <p class="codelink"><a id="rch09pr29" href="ch09_images.xhtml#ch09pr29">Click here to view code image</a></p>
+        <pre class="pre">const putImages = async (urls, element) =&gt; {
+          for (url of urls) {
+            const img = await loadImage(url)
+            element.appendChild(img)
+          }
+        }</pre>
+        <p class="noindent">As you can see from these examples, the rewriting that the compiler does behind the scenes is not trivial.</p>
+        <div class="caution">
+        <p class="caution-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/caution.jpg" alt="Images" width="36" height="36"></span> Caution</p>
+        <p class="noindent">If you forget the <code>await</code> keyword when calling an <code>async</code> function, the function is called and returns a promise, but the promise just sits there and does nothing. Consider this scenario, adapted from one of many confused blogs:</p>
+        <p class="codelink"><a id="rch09pr30" href="ch09_images.xhtml#ch09pr30">Click here to view code image</a></p>
+        <pre class="pre">const putImages = async (urls, element) =&gt; {
+          for (url of urls)
+            putImage(url, element) // <span class="cite">Error—no <code>await</code> for async <code>putImage</code></span>
+        }</pre>
+        <p class="noindent">This function produces and forgets a number of <code>Promise</code> objects, then returns a <code>Promise.resolve(undefined)</code>. If all goes well, the images will be appended in some order. But if an exception occurs, nobody will catch it.</p>
+        </div>
+        <p class="noindent"><span epub:type="pagebreak" id="page_199"></span>You can apply the <code>async</code> keyword to the following:</p>
+        <ul class="bullet">
+        <li><p class="list-item">Arrow functions:</p>
+        <p class="codelink"><a id="rch09pr31" href="ch09_images.xhtml#ch09pr31">Click here to view code image</a></p>
+        <pre class="pre">async url =&gt; { . . . }
+        async (url, params) =&gt; { . . . }</pre></li>
+        <li><p class="list">Methods:</p>
+        <p class="codelink"><a id="rch09pr32" href="ch09_images.xhtml#ch09pr32">Click here to view code image</a></p>
+        <pre class="pre">class ImageLoader {
+          async load(url) { . . . }
+        }</pre></li>
+        <li><p class="list">Named and anonymous functions:</p>
+        <p class="codelink"><a id="rch09pr33" href="ch09_images.xhtml#ch09pr33">Click here to view code image</a></p>
+        <pre class="pre">async function loadImage(url) { . . . }
+        async function(url) { . . . }</pre></li>
+        <li><p class="list">Object literal methods:</p>
+        <p class="codelink"><a id="rch09pr34" href="ch09_images.xhtml#ch09pr34">Click here to view code image</a></p>
+        <pre class="pre">obj = {
+          async loadImage(url) { . . . },
+          . . .
+        }
+        </pre></li>
+        </ul>
+        <div class="note">
+        <p class="note-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">In all cases, the resulting function is an <code>AsyncFunction</code> instance, not a <code>Function</code>, even though <code>typeof</code> still reports <code>'function'</code>.</p>
+        </div>
+        </section>
+        <section>
+        <h3 class="h3" id="ch09lev1sec10">9.10 Async Return Values</h3>
+        <p class="noindent">An <code>async</code> function looks as if it returned a value, but it always returns a promise. Here is an example. The URL <code><a href="https://aws.random.cat/meow">https://aws.random.cat/meow</a></code> serves up locations of random cat pictures, returning a JSON object such as <code>{ file: 'https://purr.objects-us-east-1.dream.io/i/mDh7a.jpg' }</code>.</p>
+        <p class="noindent">Using the Fetch API, we can get a promise for the content like this:</p>
+        <p class="codelink"><a id="rch09pr35" href="ch09_images.xhtml#ch09pr35">Click here to view code image</a></p>
+        <pre class="pre">const result = await fetch('https://aws.random.cat/meow')
+        const imageJSON = await result.json()</pre>
+        <p class="noindent">The second <code>await</code> is necessary because in the Fetch API, JSON processing is asynchronous—the call <code>result.json()</code> yields another promise.</p>
+        <p class="noindent">Now we are ready to write a function that returns the URL of the cat image:</p>
+        <p class="codelink"><a id="rch09pr36" href="ch09_images.xhtml#ch09pr36">Click here to view code image</a></p>
+        <pre class="pre">const getCatImageURL = async () =&gt; {
+          const result = await fetch('https://aws.random.cat/meow')
+          const imageJSON = await result.json()
+          return imageJSON.file
+        }</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_200"></span>Of course, the function must be tagged as <code>async</code> because it uses the <code>await</code> operator.</p>
+        <p class="noindent">The function appears to return a string. The point of the <code>await</code> operator is to let you work with values, not promises. But that illusion ends when you leave an <code>async</code> function. The value that appears in a <code>return</code> statement always becomes a promise.</p>
+        <p class="noindent">What can you do with an <code>async</code> function? Since it returns a promise, you can harvest the result by calling <code>then</code>:</p>
+        <p class="codelink"><a id="rch09pr37" href="ch09_images.xhtml#ch09pr37">Click here to view code image</a></p>
+        <pre class="pre">getCatImageURL()
+          .then(url =&gt; loadImage(url))
+          .then(img =&gt; imgdiv.appendChild(img))</pre>
+        <p class="noindent">Or you can get the result with the <code>await</code> operator:</p>
+        <p class="codelink"><a id="rch09pr38" href="ch09_images.xhtml#ch09pr38">Click here to view code image</a></p>
+        <pre class="pre">const url = await getCatImageURL()
+        const img = await loadImage(url)
+        imgdiv.appendChild(img)</pre>
+        <p class="noindent">The latter looks nicer, but it has to happen in another <code>async</code> function. As you can see, once you are in the <code>async</code> world, it is hard to leave.</p>
+        <p class="noindent">Consider the last line in this <code>async</code> function:</p>
+        <p class="codelink"><a id="rch09pr39" href="ch09_images.xhtml#ch09pr39">Click here to view code image</a></p>
+        <pre class="pre">const loadCatImage = async () =&gt; {
+          const result = await fetch('https://aws.random.cat/meow')
+          const imageJSON = await result.json()
+          <strong>return await</strong> loadImage(imageJSON.file)
+        }</pre>
+        <p class="noindent">You can omit the last <code>await</code> operator:</p>
+        <p class="codelink"><a id="rch09pr40" href="ch09_images.xhtml#ch09pr40">Click here to view code image</a></p>
+        <pre class="pre">const loadCatImage = async () =&gt; {
+          const result = await fetch('https://aws.random.cat/meow')
+          const imageJSON = await result.json()
+          <strong>return</strong> loadImage(imageJSON.file)
+        }</pre>
+        <p class="noindent">Either way, this method returns a promise for the image that is asynchronously produced by the call to <code>loadImage</code>.</p>
+        <p class="noindent">I find the first version easier to understand since the <code>async</code>/<code>await</code> syntax consistently hides all promises.</p>
+        <div class="caution">
+        <p class="caution-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/caution.jpg" alt="Images" width="36" height="36"></span> Caution</p>
+        <p class="noindent">Inside a <code>try</code>/<code>catch</code> statement, there is a subtle difference between <code>return await promise</code> and <code>return promise</code>—see <a href="#ch09ex11">Exercise 11</a>. Here, you do not want to drop the <code>await</code> operator.</p>
+        </div>
+        <p class="noindent"><span epub:type="pagebreak" id="page_201"></span>If an <code>async</code> function returns a value before ever having called <code>await</code>, the value is wrapped into a resolved promise:</p>
+        <p class="codelink"><a id="rch09pr41" href="ch09_images.xhtml#ch09pr41">Click here to view code image</a></p>
+        <pre class="pre">const getJSONProperty = async (url, key) =&gt; {
+          if (url === undefined) return null
+            // <span class="cite">Actually returns <code>Promise.resolve(null)</code></span>
+          const result = await fetch(url)
+          const json = await result.json()
+          return json[key]
+        }</pre>
+        <div class="note">
+        <p class="note-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">The <code>async</code> functions of this section return a single value in the future. In <a href="ch12.xhtml#ch12">Chapter 12</a>, you will see how an <code>async</code> iterator produces a sequence of values in the future. Here is an example that yields a range of integers, with a given delay between them.</p>
+        <p class="codelink"><a id="rch09pr42" href="ch09_images.xhtml#ch09pr42">Click here to view code image</a></p>
+        <pre class="pre">async function* range(start, end, delay) {
+          for (let current = start; current &lt; end; current++) {
+            yield await produceAfterDelay(current, delay)
+          }
+        }</pre>
+        <p class="noindent">Don’t worry about the syntax of this “async generator function.” You are unlikely to implement one, but you might use one that is provided by a library. You can harvest the results with a <code>for await of</code> loop:</p>
+        <p class="codelink"><a id="rch09pr43" href="ch09_images.xhtml#ch09pr43">Click here to view code image</a></p>
+        <pre class="pre">for await (const value of range(0, 10, 1000)) {
+          console.log(value)
+        }</pre>
+        <p class="noindent">This loop must be inside an <code>async</code> function since it awaits all values.</p>
+        </div>
+        </section>
+        <section>
+        <h3 class="h3" id="ch09lev1sec11">9.11 Concurrent Await</h3>
+        <p class="noindent">Successive calls to <code>await</code> are done one after another:</p>
+        <p class="codelink"><a id="rch09pr44" href="ch09_images.xhtml#ch09pr44">Click here to view code image</a></p>
+        <pre class="pre">const img1 = await loadImage(url)
+        const img2 = await loadCatImage() // <span class="cite">Only starts after the first image was loaded</span></pre>
+        <p class="noindent">It would be more efficient to load the images concurrently. Then you need to use <code>Promise.all</code>:</p>
+        <p class="codelink"><a id="rch09pr45" href="ch09_images.xhtml#ch09pr45">Click here to view code image</a></p>
+        <pre class="pre">const [img1, img2] = await Promise.all([loadImage(url), loadCatImage()])</pre>
+        <p class="noindent">To make sense of this expression, it is not sufficient to understand the <code>async</code>/<code>await</code> syntax. You really need to know about promises.</p>
+        <p class="noindent">The argument of <code>Promise.all</code> is an iterable of promises. Here, the <code>loadImage</code> function is a regular function that returns a promise, and <code>loadCatImage</code> is an <code>async</code> function that implicitly returns a promise.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_202"></span>The <code>Promise.all</code> method returns a promise, so we can call <code>await</code> on it. The result of the promise is an array that we destructure.</p>
+        <p class="noindent">If you don’t understand what goes on under the hood, it is easy to make mistakes. Consider this statement:</p>
+        <p class="codelink"><a id="rch09pr46" href="ch09_images.xhtml#ch09pr46">Click here to view code image</a></p>
+        <pre class="pre">const [img1, img2] = Promise.all([await loadImage(url), await loadCatImage()])
+          // <span class="cite">Error—still sequential</span></pre>
+        <p class="noindent">The statement compiles and runs. But it does not load the images concurrently. The call <code>await loadImage(url)</code> must complete before the call <code>await loadCatImage()</code> is initiated.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch09lev1sec12">9.12 Exceptions in Async Functions</h3>
+        <p class="noindent">Throwing an exception in an <code>async</code> function yields a rejected promise.</p>
+        <p class="codelink"><a id="rch09pr47" href="ch09_images.xhtml#ch09pr47">Click here to view code image</a></p>
+        <pre class="pre">const getAnimalImageURL = async type =&gt; {
+          if (type === 'cat') {
+            return getJSONProperty('https://aws.random.cat/meow', 'file')
+          } else if (type === 'dog') {
+            return getJSONProperty('https://dog.ceo/api/breeds/image/random', 'message')
+          } else {
+            throw Error('bad type') // <span class="cite">Async function returns rejected promise</span>
+          }
+        }</pre>
+        <p class="noindent">Conversely, when the <code>await</code> operator receives a rejected promise, it throws an exception. The following function catches the exception from the <code>await</code> operator:</p>
+        <p class="codelink"><a id="rch09pr48" href="ch09_images.xhtml#ch09pr48">Click here to view code image</a></p>
+        <pre class="pre">const getAnimalImage = async type =&gt; {
+          try {
+            const url = await getAnimalImageURL(type)
+            return loadImage(url)
+          } catch {
+            return brokenImage
+          }
+        }</pre>
+        <p class="noindent">You do not have to surround every <code>await</code> with a <code>try</code>/<code>catch</code> statement, but you need some strategy for error handling with <code>async</code> functions. Perhaps your top-level <code>async</code> function catches all asynchronous exceptions, or you document the fact that its callers must call <code>catch</code> on the returned promise.</p>
+        <p class="noindent">When a promise is rejected at the top level in Node.js, a stern warning occurs, stating that future versions of Node.js may instead terminate the process—see <a href="#ch09ex12">Exercise 12</a>.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch09lev1sec13"><span epub:type="pagebreak" id="page_203"></span>Exercises</h3>
+        <ol class="ol-exe">
+        <li><p class="list" id="ch09ex01">The sample program in <a href="ch09.xhtml#ch09lev1sec1">Section 9.1</a>, “<a href="ch09.xhtml#ch09lev1sec1">Concurrent Tasks in JavaScript</a>” (<a href="ch09.xhtml#page_185">page 185</a>), may not load the images in the correct order. How can you modify it without using futures so that the images are always appended in the correct order, no matter when they arrive?</p></li>
+        <li><p class="list" id="ch09ex02">Implement a function <code>invokeAfterDelay</code> that yields a promise, invoking a given function after a given delay. Demonstrate by yielding a promise for a random number between 0 and 1. Print the result on the console when it is available.</p></li>
+        <li><p class="list" id="ch09ex03">Invoke the <code>produceRandomAfterDelay</code> function from the preceding exercise twice and print the sum once the summands are available.</p></li>
+        <li><p class="list" id="ch09ex04">Write a loop that invokes the <code>produceRandomAfterDelay</code> function from the preceding exercises <code>n</code> times and prints the sum once the summands are available.</p></li>
+        <li><p class="list" id="ch09ex05">Provide a function <code>addImage(url, element)</code> that is similar to that in <a href="ch09.xhtml#ch09lev1sec1">Section 9.1</a>, “<a href="ch09.xhtml#ch09lev1sec1">Concurrent Tasks in JavaScript</a>” (<a href="ch09.xhtml#page_185">page 185</a>). Return a promise so that one can chain the calls:</p>
+        <p class="codelink"><a id="rch09pr49" href="ch09_images.xhtml#ch09pr49">Click here to view code image</a></p>
+        <pre class="pre">addImage('hanafuda/1-1.png')
+          .then(() =&gt; addImage('hanafuda/1-2.png', imgdiv))
+          .then(() =&gt; addImage('hanafuda/1-3.png', imgdiv))
+          .then(() =&gt; addImage('hanafuda/1-4.png', imgdiv))</pre>
+        <p class="noindent">Then use the tip in <a href="ch09.xhtml#ch09lev1sec5">Section 9.5</a>, “<a href="ch09.xhtml#ch09lev1sec5">Promise Chaining</a>” (<a href="ch09.xhtml#page_192">page 192</a>), to make the chaining more symmetrical.</p></li>
+        <li><p class="list" id="ch09ex06">Demonstrate that the <code>Promise.resolve</code> method turns any object with a <code>then</code> method into a <code>Promise</code>. Supply an object whose <code>then</code> method randomly calls the resolve or reject handler.</p></li>
+        <li><p class="list" id="ch09ex07">Often, a client-side application needs to defer work until after the browser has finished loading the DOM. You can place such work into a listener for the <code>DOMContentLoaded</code> event. But if <code>document.readyState != 'loading'</code>, the loading has already happened, and the event won’t fire again. Capture both cases with a function yielding a promise, so that one can call</p>
+        <pre class="pre">whenDOMContentLoaded().then(. . .)</pre></li>
+        <li><p class="list" id="ch09ex08">Make an array of image URLs, some good, and some failing because of CORS (see the note at the end of <a href="ch09.xhtml#ch09lev1sec2">Section 9.2</a>, “<a href="ch09.xhtml#ch09lev1sec2">Making Promises</a>,” <a href="ch09.xhtml#page_188">page 188</a>). Turn each into a promise:</p>
+        <pre class="pre">const urls = [. . .]
+        const promises = urls.map(loadImage)</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_204"></span>Call <code>allSettled</code> on the array of promises. When that promise resolves, traverse the array, append the loaded images into a DOM element, and log those that failed:</p>
+        <p class="codelink"><a id="rch09pr50" href="ch09_images.xhtml#ch09pr50">Click here to view code image</a></p>
+        <pre class="pre">Promise.allSettled(promises)
+          .then(results =&gt; {
+            for (result of results)
+              if (result.status === 'fulfilled') . . . else . . .
+          })</pre></li>
+        <li><p class="list" id="ch09ex09">Repeat the preceding exercise, but use <code>await</code> instead of <code>then</code>.</p></li>
+        <li><p class="list" id="ch09ex10">Implement a function <code>sleep</code> that yields a promise so that one can call</p>
+        <pre class="pre">await sleep(1000)</pre></li>
+        <li><p class="list" id="ch09ex11">Describe the difference between</p>
+        <p class="codelink"><a id="rch09pr51" href="ch09_images.xhtml#ch09pr51">Click here to view code image</a></p>
+        <pre class="pre">const loadCatImage = async () =&gt; {
+          try {
+            const result = await fetch('https://aws.random.cat/meow')
+            const imageJSON = await result.json()
+            return loadImage(imageJSON.file)
+          } catch {
+            return brokenImage
+          }
+        }</pre>
+        <p class="noindent">and</p>
+        <p class="codelink"><a id="rch09pr52" href="ch09_images.xhtml#ch09pr52">Click here to view code image</a></p>
+        <pre class="pre">const loadCatImage = async () =&gt; {
+          try {
+            const result = await fetch('https://aws.random.cat/meow')
+            const imageJSON = await result.json()
+            return <strong>await</strong> loadImage(imageJSON.file)
+          } catch {
+            return brokenImage
+          }
+        }</pre>
+        <p class="noindent">Hint: What happens if the future returned by <code>loadImage</code> is rejected?</p></li>
+        <li><p class="list" id="ch09ex12">Experiment with calling an <code>async</code> function that throws an exception in Node.js. Given</p>
+        <p class="codelink"><a id="rch09pr53" href="ch09_images.xhtml#ch09pr53">Click here to view code image</a></p>
+        <pre class="pre">const rejectAfterDelay = (result, delay) =&gt; {
+          return new Promise((resolve, reject) =&gt; {
+            const callback = () =&gt; reject(result)
+            setTimeout(callback, delay)
+          })
+        }</pre>
+        <p class="noindent">try<span epub:type="pagebreak" id="page_205"></span></p>
+        <p class="codelink"><a id="rch09pr54" href="ch09_images.xhtml#ch09pr54">Click here to view code image</a></p>
+        <pre class="pre">const errorAfterDelay = async (message, delay) =&gt;
+          await rejectAfterDelay(new Error(message), delay)</pre>
+        <p class="noindent">Now invoke the <code>errorAfterDelay</code> function. What happens? How can you avoid this situation?</p></li>
+        <li><p class="list" id="ch09ex13">Explain how the error message from the preceding exercise can be useful for locating a forgotten <code>await</code> operator, such as</p>
+        <p class="codelink"><a id="rch09pr55" href="ch09_images.xhtml#ch09pr55">Click here to view code image</a></p>
+        <pre class="pre">const errorAfterDelay = async (message, delay) =&gt; {
+          try {
+            return rejectAfterDelay(new Error(message), 1000)
+          } catch(e) { console.error(e) }
+        }</pre></li>
+        <li><p class="list" id="ch09ex14">Write complete programs that demonstrate the <code>Promise.all</code> and <code>Promise.race</code> functions of <a href="ch09.xhtml#ch09lev1sec7">Section 9.7</a>, “<a href="ch09.xhtml#ch09lev1sec7">Executing Multiple Promises</a>” (<a href="ch09.xhtml#page_196">page 196</a>).</p></li>
+        <li><p class="list" id="ch09ex15">Write a function <code>produceAfterRandomDelay</code> that produces a value after a random delay between 0 and a given maximum milliseconds. Then produce an array of futures where the function is applied to 1, 2, . . . , 10, and pass it to <code>Promise.all</code>. In which order will the results be collected?</p></li>
+        <li><p class="list" id="ch09ex16">Use the Fetch API to load a (CORS-friendly) image. Fetch the URL, then call <code>blob()</code> on the response to get a promise for the BLOB. Turn it into an image as in the <code>loadImage</code> function. Provide two implementations, one using <code>then</code> and one using <code>await</code>.</p></li>
+        <li><p class="list" id="ch09ex17">Use the Fetch API to obtain the HTML of a (CORS-friendly) web page. Search all image URLs and load each image.</p></li>
+        <li><p class="list" id="ch09ex18">When work is scheduled for the future, it may happen that due to changing circumstances the work is no longer needed and it should be canceled. Design a scheme for cancellation. Consider a multistep process, such as in the preceding exercise. At each stage, you will want to be able to abort the process. There is no standard way yet of doing this in JavaScript, but typically, APIs provide “cancellation tokens.” A <code>fetchImages</code> function might receive an additional argument</p>
+        <p class="codelink"><a id="rch09pr56" href="ch09_images.xhtml#ch09pr56">Click here to view code image</a></p>
+        <pre class="pre">const token = new CancellationToken()
+        const images = fetchImages(url, token)</pre>
+        <p class="noindent">The caller can later decide to call</p>
+        <pre class="pre">token.cancel()</pre>
+        <p class="noindent">In the implementation of an cancelable <code>async</code> function, the call</p>
+        <p class="codelink"><a id="rch09pr57" href="ch09_images.xhtml#ch09pr57">Click here to view code image</a></p>
+        <pre class="pre">token.throwIfCancellationRequested()</pre>
+        <p class="noindent">throws an exception if cancellation was indeed requested. Implement this mechanism and demonstrate it with an example.<span epub:type="pagebreak" id="page_206"></span></p></li>
+        <li><p class="list" id="ch09ex19">Consider this code that carries out some asynchronous work such as fetching remote data, handles the data, and returns the promise for further processing:</p>
+        <p class="codelink"><a id="rch09pr58" href="ch09_images.xhtml#ch09pr58">Click here to view code image</a></p>
+        <pre class="pre">const doAsyncWorkAndThen = handler =&gt; {
+          const promise = asyncWork();
+          promise.then(result =&gt; handler(result));
+          return promise;
+        }</pre>
+        <p class="noindent">What happens if <code>handler</code> throws an exception? How should this code be reorganized?</p></li>
+        <li><p class="list" id="ch09ex20">What happens when you add <code>async</code> to a function that doesn’t return promises?</p></li>
+        <li><p class="list" id="ch09ex21">What happens if you apply the <code>await</code> operator to an expression that isn’t a promise? What happens if the expression throws an exception? Is there any reason why you would want to do this?<span epub:type="pagebreak" id="page_207"></span></p></li>
+        </ol>
+        </section>
+        </section>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780136502166/files/9780136502142.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

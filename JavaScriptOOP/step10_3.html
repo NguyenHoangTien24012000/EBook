@@ -1,0 +1,179 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="The module pattern"><div class="titlepage"><div><div><h1 class="title"><a id="ch10lvl1sec65"></a>The module pattern</h1></div></div></div><p>A module is a standalone software component implementing specific functionalities, and is easily reusable in different applications. It enables modular programming whose goal is to simplify the development, testing, and maintenance of large applications possibly involving many developers. Modules can also be packaged and deployed separately from each other, allowing changes on a particular module to be properly isolated from the rest of the code of an application. Splitting an application in multiple modules has many benefits: in addition to code reusability, it forces us to reason about the architecture of an application and to structure it so that it may result in becoming more understandable for people who aren't familiar with our application's code.</p><div class="section" title="Modules versus namespaces"><div class="titlepage"><div><div><h2 class="title"><a id="ch10lvl2sec84"></a>Modules versus namespaces</h2></div></div></div><p>In the previous section, we introduced namespaces as an approach to organize our code in nested areas. Now, we are talking about modules as another way to organize the code of an application. What are the differences between these two ways of organizing code?</p><p>Namespaces are hierarchical containers for variables and functions. Their main goal is to organize names in order to avoid conflicts and redefinitions.</p><p>Modules avoid name conflicts and redefinitions as well, but they are mainly focused on functionalities; in fact, they provide mechanisms to export functionalities, to allow reuse of code, and to manage dependencies on other modules.</p><p>In the rest of the chapter, we will see different approaches to implement modules in JavaScript.</p></div><div class="section" title="Using anonymous closures"><div class="titlepage"><div><div><h2 class="title"><a id="ch10lvl2sec85"></a>Using anonymous closures</h2></div></div></div><p>The classic pattern to implement a module in JavaScript relies on the nature of an IIFE and is usually known as the <span class="strong"><strong>module pattern</strong></span>. Since the closure of a function allows us to create a private context, we can implement functionalities inside the body of an IIFE and export only what we want to make publicly available. The following example defines a module that exports two geometry functions:</p><pre class="programlisting">var geoModule = (function() { 
+  var pi = 3.14; 
+ 
+  function circumference(radius) { 
+    return 2*pi*radius; 
+  } 
+ 
+  function circleArea(radius) { 
+    return pi*radius*radius; 
+  } 
+ 
+  return { 
+    calculateCircumference:  circumference, 
+    calculateCircleArea:   circleArea 
+  }; 
+})(); 
+</pre><p>We can see that the anonymous function is immediately executed and its result is assigned to a variable. The body of the function defines the <code class="literal">circumference()</code> and <code class="literal">circleArea()</code> functions and returns an object with two methods mapped to these functions. We say that the module <span class="strong"><strong>exports</strong></span> the members of the returned object. Note that the exported members may have different names from the one defined internally. Thanks to the closure, the code that will use this module will not have access to the private functions and variables, but will be able to use just the exported members.</p><p>We can use the members exported by the previous code using the object assigned to the <code class="literal">geoModule</code> variable, as shown in the following example:</p><pre class="programlisting">console.log(geoModule.calculateCircumference (5)); 
+//result: 31.400000000000002 
+ 
+console.log(geoModule.calculateCircleArea(5)); 
+//result: 78.5 
+</pre><p>Of course a module can export not only a standard function, but also constructor functions, literal objects, or any other item. The following example shows a module that exports a constructor function:</p><pre class="programlisting">var myModule = (function() { 
+  function Person(name, surname) { 
+    this.name = name; 
+    this.surname = surname; 
+  } 
+ 
+  return { 
+    Person:  Person 
+  }; 
+})(); 
+ 
+var johnSmith = new myModule.Person("John", "Smith"); 
+</pre></div><div class="section" title="Importing modules"><div class="titlepage"><div><div><h2 class="title"><a id="ch10lvl2sec86"></a>Importing modules</h2></div></div></div><p>A module can use the exported member of another module in order to implement its own functionalities. In this case, we say that the module <span class="strong"><strong>imports</strong></span> another module. This also means that the current module <span class="strong"><strong>depends</strong></span> on the other module.</p><p>We can import existing modules in our module by passing them as a parameter of the IIFE. The following example shows the previous module that imports the standard <code class="literal">Math</code> module:</p><pre class="programlisting">var geoModule = (function(mathModule) { 
+  var pi = mathModule.PI; 
+ 
+  function circumference(radius) { 
+    return 2*pi*radius; 
+  } 
+ 
+  function circleArea(radius) { 
+    return pi*mathModule.pow(radius, 2); 
+  } 
+ 
+  return { 
+    calculateCircumference:  circumference, 
+    calculateCircleArea:   circleArea 
+  }; 
+})(Math); 
+</pre><p>As we can see, the <code class="literal">Math</code> module is passed as a parameter of the IIFE and it is used inside its body. We will continue to call the module's members as before:</p><pre class="programlisting">console.log(geoModule.calculateCircumference(5)); 
+//result: 31.41592653589793 
+ 
+console.log(geoModule.calculateCircleArea(5)); 
+//result: 78.53981633974483 
+</pre><p>Although the <code class="literal">Math</code> object is globally available, it is a good practice to pass a module explicitly. This helps in understanding the existing dependencies between different modules and help us to possibly replace the module on which it depends with another one with the same interface. In other words, by explicitly importing a dependency we are able to decouple modules. Moreover, using a local variable or parameter to reference a global object is often a good idea because it shortens the lookup chain and could possibly improve performance.</p></div><div class="section" title="Augmenting modules"><div class="titlepage"><div><div><h2 class="title"><a id="ch10lvl2sec87"></a>Augmenting modules</h2></div></div></div><p>Usually, a module is contained in a single file. In general, it is a good practice since it allows&nbsp;us to easily identify the functionality implemented by an application. In some situations, however, we may need to extend the functionalities implemented in a module without modifying the module itself. For example, suppose we have a module that implements standard geometry functions. In a specific function, we need to add some new geometry functions that logically should belong to the geometry module, but they are specific for the current application and we do not want to add them directly to the geometry module's file. The idea is to create a new file that implements the new functions augmenting the existing geometry module. We can achieve this goal by augmenting the geometry module as shown by the following example:</p><pre class="programlisting">geoModule = (function(mathModule, me) { 
+  me.calculateSphereVolume = function(radius) { 
+    return 4*mathModule.PI*mathModule.pow(radius, 2); 
+  }; 
+ 
+  return me; 
+})(Math, geoModule); 
+</pre><p>In this example, we pass the geometry module <code class="literal">geoModule</code> as a parameter to the IIFE that defines the new module. The body of the function adds the <code class="literal">calculateSphereVolume()</code> method to the original module and returns it. We get exactly what we wanted—a new module that adds functions to an existing module without altering the original module definition.</p><p>We can call the new <code class="literal">calculateSphereVolume()</code> method as it were defined in the original module definition:</p><pre class="programlisting">console.log(geoModule.calculateCircumference (5)); 
+//result: 31.41592653589793 
+ 
+console.log(geoModule.calculateCircleArea(5)); 
+//result: 78.53981633974483 
+ 
+console.log(geoModule.calculateSphereVolume(5)); 
+//result: 314.1592653589793 
+</pre><p>If we identify the existing module as our application, this approach allows us to cleanly import a module without introducing any new global variables: the module augments the current application's environment.</p><div class="section" title="Loose augmentation"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl3sec0"></a>Loose augmentation</h3></div></div></div><p>The example of module augmentation we have seen earlier requires that our original module must be created before the module that augments it. We can drop this constraint and make sure that two or more modules can augment each other regardless of their loading order. This is usually called <span class="strong"><strong>loose augmentation</strong></span>. Let's take a look at the following code:</p><pre class="programlisting">geoModule = (function(mathModule, me) { 
+  me.calculateSphereVolume = function(radius) { 
+    return 4*mathModule.PI*mathModule.pow(radius, 2); 
+  }; 
+ 
+  return me; 
+})(Math, geoModule || {}); 
+</pre><p>It is almost identical to the previous example. The only difference is the expression <code class="literal">geoModule || {}</code> that initializes the <code class="literal">geoModule</code> variable with an empty object if it is undefined, that is, the module has still not been created.</p></div><div class="section" title="Overriding a module's methods"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl3sec1"></a>Overriding a module's methods</h3></div></div></div><p>In addition to augmenting a module, we may need to override an existing method. We can easily do it as follows:</p><pre class="programlisting">geoModule = (function(me) { 
+  var oldCalculateCircleArea = me.calculateCircleArea; 
+ 
+  me.calculateCircleArea = function(radius) { 
+    return oldCalculateCircleArea(radius).toFixed(2); 
+  }; 
+ 
+  return me; 
+})(geoModule); 
+</pre><p>Here, we define a version of the <code class="literal">calculateCircleArea()</code> function that always has two decimal positions. As we can see, we assigned the new definition to the <code class="literal">calculateCircleArea</code> member of the module. Notice how we made a copy of the original method, since it is needed inside the new definition.</p><p>Now, we can call the new definition of the <code class="literal">calculateCircleArea()</code> function like before, even if we get a different result:</p><pre class="programlisting">console.log(geoModule.calculateCircleArea(5)); 
+//result: 78.54 
+</pre></div><div class="section" title="Tight augmentation"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl3sec2"></a>Tight augmentation</h3></div></div></div><p>The loose augmentation is a very nice way to extend modules. However, not always can it be safely used. For example, we cannot use module members or override them if we are not sure that the original module has been loaded. In these cases, we need to use <span class="strong"><strong>tight augmentation</strong></span>, which requires modules to be loaded in a specified order. In this way, we are sure that a module member is available before using it.</p><p>Here is a simple example of a module that needs tight augmentation:</p><pre class="programlisting">geoModule = (function(me) { 
+ 
+  me.calculateCircleBiArea = function(radius) { 
+    return me.calculateCircleArea(radius)*2; 
+  }; 
+ 
+  return me; 
+})(geoModule); 
+</pre><p>In the example, the <code class="literal">calculateCircleBiArea()</code> function relies on the <code class="literal">calculateCircleArea()</code> function, so the module that defines <code class="literal">calculateCircleArea()</code> must be loaded before the current one. We can call these methods as follows:</p><pre class="programlisting">console.log(geoModule.calculateCircleArea(5)); 
+//result: 78.53981633974483 
+ 
+console.log(geoModule.calculateCircleBiArea(5)); 
+//result: 157.07963267948966 
+</pre></div><div class="section" title="Composing modules"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl3sec3"></a>Composing modules</h3></div></div></div><p>We can combine two or more modules together in order to create a new module that contains all their functionalities. This can be easily achieved by augmenting one module with the members of the other one, as shown here:</p><pre class="programlisting">var geoModule = (function(module1, module2) { 
+  var me =  module1; 
+ 
+  for (var memberName in module2) { 
+    if (module2.hasOwnProperty(memberName)) { 
+      me[memberName] = module2[memberName]; 
+    } 
+  } 
+ 
+  return me; 
+})(circleModule, polygonModule); 
+</pre><p>In this example, we create a geometry module by combining a module specialized in circle management and a module that can handle polygons. If a name clash occurs, the member in the second module overwrites the member of the first one. Of course, we can change the name clash strategy by changing the way we assign members to the new module.</p><p>ECMAScript 6 introduced the <code class="literal">Object.assign()</code> method so that we can combine modules by simply writing:</p><pre class="programlisting">var geoModule = (function(module1, module2) { 
+ 
+  return Object.assign(module1, module2); 
+ 
+})(circleModule, polygonModule); 
+</pre></div><div class="section" title="Submodules"><div class="titlepage"><div><div><h3 class="title"><a id="ch10lvl3sec4"></a>Submodules</h3></div></div></div><p>As for namespaces, we can create nested modules or <span class="strong"><strong>submodules</strong></span> by simply attaching a new module to a property of the main module. In the following example, we attached to <code class="literal">geoModule</code> a new module called <code class="literal">triangleModule</code>:</p><pre class="programlisting">geoModule.triangleModule = (function() { 
+ 
+  function perimeter(side1, side2, side3) { 
+    return side1+side2+side3; 
+  } 
+ 
+  function area(basis, height) { 
+    return basis*height/2; 
+  } 
+ 
+  return { 
+    calculateTrianglePerimeter:  perimeter, 
+    calculateTriangleArea:   area 
+  }; 
+ 
+})(); 
+</pre><p>We can use the submodule as shown below:</p><pre class="programlisting">geoModule.triangleModule.calculateTriangleArea(3,4);    //result:  6</pre></div></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

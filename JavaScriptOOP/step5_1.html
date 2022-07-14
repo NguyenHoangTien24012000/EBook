@@ -1,0 +1,186 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="chapter" title="Chapter&nbsp;5.&nbsp;Defining Contracts with Duck Typing"><div class="titlepage"><div><div><h1 class="title"><a id="ch05"></a>Chapter&nbsp;5.&nbsp;Defining Contracts with Duck Typing</h1></div></div></div><p>This chapter will illustrate an enhanced technique that allows us to define contracts between objects interacting each other. This technique, named <span class="strong"><strong>duck typing</strong></span>, allows for implementing something similar to interfaces supported by many classical Object-Oriented Programming languages. The topics covered by the chapter are:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc">Checking dynamic data types</li><li class="listitem" style="list-style-type: disc">Contracts between software components</li><li class="listitem" style="list-style-type: disc">Using duck typing</li><li class="listitem" style="list-style-type: disc">Emulating interfaces with duck typing</li></ul></div><div class="section" title="Managing dynamic typing"><div class="titlepage"><div><div><h1 class="title"><a id="ch05lvl1sec33"></a>Managing dynamic typing</h1></div></div></div><p>Data types are one of the basic features that ensure consistency throughout an application. Some operations can be made only on specific data types and checking if a value is of a valid data type is crucial to avoid runtime exceptions. Most compiled Object-Oriented Programming languages have a static type system that asks the developer to declare the allowed type of a variable and check the code before it runs. JavaScript is a dynamic language—it does not require you to declare a specific data type for a variable. Since the content of a variable can change during the execution, data type checking of its value is performed just when the value itself is used. Let's recall some basic notions with some examples.</p><div class="section" title="Dynamic data types"><div class="titlepage"><div><div><h2 class="title"><a id="ch05lvl2sec35"></a>Dynamic data types</h2></div></div></div><p>We know that a variable does not have an associated type declaration in JavaScript. It can contain any value and its type depends on its content. This does not mean that JavaScript does not support data types. It just means that a variable is not constrained to support a certain type of value.</p><p>Let's consider the following function definition:</p><pre class="programlisting">function square(n) { 
+  return n * n; 
+} 
+</pre><p>In the intention of the developer, it calculates the square of a number. In fact, if we pass a number to this function we will get the correct output value:</p><pre class="programlisting">console.log(square(3));        //result: 9 
+</pre><p>But, what happens if we pass a value other than a number, say a string? JavaScript is very tolerant and it tries to return a value by making some implicit type conversions. For example, if we pass a string representing a number we will get again the correct output value:</p><pre class="programlisting">console.log(square("3"));      //result: 9 
+</pre><p>But if we pass different string values or different data type values, we will get results that do not resemble square numbers, as maybe the developer wanted:</p><pre class="programlisting">console.log(square("three"));    //result: NaN 
+console.log(square(true));       //result: 1 
+console.log(square({a: 2}));     //result: NaN 
+</pre><p>If we want that a function accepts only a specific data type, we have to check it ourselves, as follows:</p><pre class="programlisting">function square(n) { 
+  var result; 
+ 
+  if (typeof n === "number") { 
+    result = n*n; 
+  } else { 
+    throw new Error("Wrong data type!") 
+  } 
+ 
+  return result; 
+} 
+</pre><p>This generates an exception when we try to execute it on a value that is not a number:</p><pre class="programlisting">console.log(square("three"));    //result: Error: Wrong data type! 
+</pre></div><div class="section" title="Data typing and objects"><div class="titlepage"><div><div><h2 class="title"><a id="ch05lvl2sec36"></a>Data typing and objects</h2></div></div></div><p>We can easily check primitive data types by using the <code class="literal">typeof</code> operator. But can we use it for objects? Let's consider a constructor that represents a software house:</p><pre class="programlisting">function SoftwareHouse() { 
+  this.employees = []; 
+ 
+} 
+ 
+SoftwareHouse.prototype.hire = function(dev) { 
+  this.employees.push(dev); 
+}; 
+</pre><p>As we know, we can also define it using the ECMAScript 6 <code class="literal">class</code> construct:</p><pre class="programlisting">class SoftwareHouse { 
+  constructor() { 
+    this.employees = []; 
+  } 
+ 
+  hire(dev) { 
+    this.employees.push(dev); 
+  } 
+} 
+</pre><p>Regardless of the syntax used, we defined a constructor of objects that has a list of employees and a method that hires developers.</p><p>The <code class="literal">hire()</code> method does no checking on the values passed. This seems unlikely, since the software house would hire just persons, not every type of object:</p><pre class="programlisting">var johnSmith = {name: "John", surname: "Smith"}; 
+var lassie = {name: "Lassie", breed: "Collie"}; 
+var table = {type: "round", legsNumber: 1}; 
+ 
+var swHouse = new SoftwareHouse(); 
+ 
+swHouse.hire(johnSmith); 
+swHouse.hire(lassie); 
+swHouse.hire(table); 
+ 
+console.log(swHouse.employees.length);    //result:  3 
+</pre><p>Even if we use the <code class="literal">typeof</code> operator, we will not be able to distinguish persons from other types of objects:</p><pre class="programlisting">console.log(typeof johnSmith);    //result:    object 
+console.log(typeof lassie);       //result:    object 
+console.log(typeof lassie);       //result:    object 
+</pre><p>Moreover, the <code class="literal">typeof</code> operator returns the "object" value also for <span class="emphasis"><em>null</em></span>:</p><pre class="programlisting">console.log(typeof null);    //result:    object 
+</pre><p>So, it is, therefore, completely useless for our purposes.</p></div><div class="section" title="From data type to instance type"><div class="titlepage"><div><div><h2 class="title"><a id="ch05lvl2sec37"></a>From data type to instance type</h2></div></div></div><p>To overcome the limitation of the <code class="literal">typeof</code> operator on object values, we can impose a constraint on the objects that can be passed to the <code class="literal">hire()</code> method by accepting only instances of the&nbsp;<code class="literal">Person()</code> constructor function. So, instead of checking data type, we will check instance type by using the <code class="literal">instanceof</code> operator:</p><pre class="programlisting">function Person(name, surname) { 
+  this.name = name; 
+  this.surname; 
+} 
+ 
+var johnSmith = new Person("John", "Smith"); 
+ 
+console.log(johnSmith instanceof Person);    //result:  true 
+</pre><p>Our definition of the software house will become as follows:</p><pre class="programlisting">class SoftwareHouse { 
+  constructor() { 
+    this.employees = []; 
+  } 
+ 
+  hire(dev) { 
+    if (dev instanceof Person) { 
+      this.employees.push(dev); 
+    } else { 
+      throw new Error("This software house hires only persons!"); 
+    } 
+  } 
+} 
+</pre><p>Now, the <code class="literal">hire()</code> method will accept only persons, throwing an exception if a different type of instance is passed as an argument:</p><pre class="programlisting">var johnSmith = new Person("John", "Smith"); 
+var lassie = {name: "Lassie", breed: "Collie"}; 
+var table = {type: "round", legsNumber: 1}; 
+ 
+var swHouse = new SoftwareHouse(); 
+ 
+swHouse.hire(johnSmith); 
+swHouse.hire(lassie);    //result:  Error 
+swHouse.hire(table);     //result:  Error 
+</pre></div><div class="section" title="Beyond the instance type"><div class="titlepage"><div><div><h2 class="title"><a id="ch05lvl2sec38"></a>Beyond the instance type</h2></div></div></div><p>The solution based on the use of <code class="literal">instanceof</code> operator might seem quite satisfactory at first sight. However, usually a software house is interested in hiring people who are able to write code, not just any person. From our example's perspective, the software house class might need some method of its employees in order to work properly. In the following code, we added the <code class="literal">createSoftware()</code> method that uses the <code class="literal">writeCode()</code> method of its employees to create a new software product:</p><pre class="programlisting">class SoftwareHouse { 
+  constructor() { 
+    this.employees = []; 
+  } 
+ 
+  hire(dev) { 
+    if (dev instanceof Person) { 
+      this.employees.push(dev); 
+    } else { 
+      throw new Error("This software house hires only persons!"); 
+    } 
+  } 
+ 
+<span class="strong"><strong>  createSoftware() {</strong></span>
+<span class="strong"><strong>    var newSoftware = [];</strong></span>
+<span class="strong"><strong>    var employee;</strong></span>
+<span class="strong"><strong>    var module;</strong></span>
+<span class="strong"><strong>    for(var i = 0; i &lt; this.employees.length; i++) {</strong></span>
+<span class="strong"><strong>      employee = this.employees[i];</strong></span>
+<span class="strong"><strong>      module =  employee.writeCode();</strong></span>
+<span class="strong"><strong>      newSoftware.push(module);</strong></span>
+<span class="strong"><strong>    }</strong></span>
+<span class="strong"><strong>    return newSoftware;</strong></span>
+<span class="strong"><strong>  }</strong></span> 
+} 
+</pre><p>Our <code class="literal">Person()</code> constructor does not define such a method. So if a person object is passed to the <code class="literal">hire()</code> method, it will be included in the <code class="literal">employees</code> array, but it will generate an exception when the <code class="literal">createSoftware()</code> method runs, since the person object does not have a <code class="literal">writeCode()</code> method.</p><p>How can we impose this new constraint on the <code class="literal">hire()</code> method? We might think of creating a more specialized constructor or class than the <code class="literal">Person()</code> constructor, for example <code class="literal">Developer</code>, having the required method. So, the <code class="literal">hire()</code> method might accept only instances of the <code class="literal">Developer()</code> constructor. But this might not be sufficient.</p><p>In fact we might fail to check whether people can be hired because of multiple inheritance. Let's consider the following definitions:</p><pre class="programlisting">function Developer(name, surname, knownLanguage) { 
+  Person.apply(this, arguments); 
+  this.knownLanguage =  knownLanguage; 
+} 
+ 
+ 
+Developer.prototype = Object.create(Person.prototype); 
+Developer.prototype.constructor = Developer; 
+ 
+ 
+function Student(name, surname, subjectOfStudy) { 
+  Person.apply(this, arguments); 
+  this.subjectOfStudy =  subjectOfStudy; 
+} 
+ 
+Student.prototype = Object.create(Person.prototype); 
+Student.prototype.constructor = Student; 
+ 
+function DevStudent(name, surname, knownLanguage, subjectOfStudy)  { 
+  Developer.call(this, name, surname, knownLanguage); 
+  Student.call(this, name, surname, subjectOfStudy); 
+} 
+ 
+DevStudent.prototype.writeCode = function() { 
+  console.log("writing code..."); 
+  return {module: "..."}; 
+}; 
+</pre><p>Here, we defined a <code class="literal">Developer() </code>constructor inheriting from <code class="literal">Person()</code>, a <code class="literal">Student()</code> constructor inheriting from <code class="literal">Person()</code>, and a <code class="literal">DevStudent()</code> constructor inheriting from <code class="literal">Developer()</code> and <code class="literal">Student()</code>. Only instances of <code class="literal">Developer()</code> will have the <code class="literal">writeCode()</code> method. But, since the&nbsp;<code class="literal">DevStudent()</code> constructor inherits from <code class="literal">Developer()</code>, its instances will have the <code class="literal">writeCode()</code> method as well.</p><p>So, we will expect that instances of both <code class="literal">Developer()</code> and <code class="literal">DevStudent()</code> constructors will be valid candidates to be hired by our software house. However, since the <code class="literal">hire()</code> method is based on the <code class="literal">instanceof</code> operator, it will fail to hire a <code class="literal">DevStudent()</code> instance.</p><p>In fact a <code class="literal">DevStudent()</code> instance is not an instance of <code class="literal">Developer()</code>:</p><pre class="programlisting">var johnSmith = new DevStudent("John", "Smith", "C#",  "JavaScript"); 
+ 
+console.log(johnSmith instanceof Student);    //result: false 
+console.log(johnSmith instanceof Developer);   //result: false 
+console.log(johnSmith instanceof Person);     //result: false 
+</pre><p>We might set the prototype of the <code class="literal">DevStudent()</code> constructor to an instance of <code class="literal">Developer()</code>, but this leads us to make a choice—an instance of <code class="literal">DevStudent()</code> will be also considered an instance of <code class="literal">Developer()</code> but not an instance of <code class="literal">Student()</code>. This might work in this specific case, but might break another case.</p></div></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

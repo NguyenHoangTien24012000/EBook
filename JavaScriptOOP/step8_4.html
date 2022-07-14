@@ -1,0 +1,118 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="Using proxies"><div class="titlepage"><div><div><h1 class="title"><a id="ch08lvl1sec56"></a>Using proxies</h1></div></div></div><p>An alternative approach to implements data binding may be based on a new feature introduced by ECMAScript 6-<span class="strong"><strong>proxies</strong></span>.</p><div class="section" title="The proxy class"><div class="titlepage"><div><div><h2 class="title"><a id="ch08lvl2sec62"></a>The proxy class</h2></div></div></div><p>The <span class="strong"><strong>proxy</strong></span> class allows us to create special objects that can change the default behavior when an object is accessed. When creating a proxy for an object, we can define a handler and configure <span class="strong"><strong>traps</strong></span> in order to intercept accesses to its property and possibly change the standard behavior.</p><p>Let's explain the basic behavior of proxies with an example. Suppose we want to track to the console every access to the properties of an object. We can define the following handler:</p><pre class="programlisting">var handler = { 
+        get (target, propertyName) { 
+          console.log("Getting property " + propertyName); 
+          return target[propertyName]; 
+        }, 
+        set(target, propertyName, value) { 
+          console.log("Assigning value " + value + " to property " +
+          propertyName); 
+          target[propertyName] = value; 
+        } 
+      }; 
+      </pre><p>This handler is an object with two methods, <code class="literal">get()</code> and <code class="literal">set()</code>, that intercept the getter and the setter of the target object. These methods are called traps and allow intercept accesses the target object. The getter writes on the console and returns the value of the target's property. The setter writes on the console and sets the passed value to the target's property. In this case, we want to keep the standard behavior of the target object, but in general, we can return or assign to the target's properties any value changing the default behavior.</p><p>Once we defined the handler, we can create a proxy for an object and assign the handler to it:</p><pre class="programlisting">var person = new Person("John", "Smith"); 
+      var proxiedPerson = new Proxy(person, handler); 
+      </pre><p>Now, each access to the <code class="literal">proxiedPerson</code> object will affect the <code class="literal">person</code> object and will log on the console:</p><pre class="programlisting">var name = proxiedPerson.name; 
+      //console: Getting property name 
+       
+      proxiedPerson.name = "Mario"; 
+      //console: Assigning value Mario to property name 
+       
+      console.log(person.name); 
+      //console: Mario 
+      </pre><p>Of course this is a simple example to introduce the basic concepts of proxies. We can use other traps in order to define advanced manipulations of the target object. For example, we can trap definitions of properties using the <code class="literal">defineProperty()</code>trap or deletion of properties using the trap <code class="literal">deleteProperty()</code> function and so on.</p></div><div class="section" title="Data binding with proxies"><div class="titlepage"><div><div><h2 class="title"><a id="ch08lvl2sec63"></a>Data binding with proxies</h2></div></div></div><p>We have seen how proxies can intercept accesses to the properties of an object in a transparent way. So, we will try to exploit it by&nbsp;implementing data binding.</p><p>Let's define a <code class="literal">Binder</code> class with a <code class="literal">bindTo()</code> method as in the following:</p><pre class="programlisting">class Binder { 
+        bindTo(dataSourceObj, dataSourceProperty, dataTargetObj,    dataTargetProperty) { 
+          var bindHandler = { 
+            set: function(target, property, newValue) { 
+              if (property == dataSourceProperty) { 
+                target[dataSourceProperty] = newValue; 
+       
+                dataTargetObj[dataTargetProperty] = newValue; 
+              } 
+            } 
+          }; 
+          return new Proxy(dataSourceObj, bindHandler); 
+        } 
+      } 
+      </pre><p>The <code class="literal">bindTo()</code> method defines a setter trap for the data source object so that each change to the specified property <code class="literal">dataSourceProperty</code> updates the associated property of the data target object. The <code class="literal">bindTo()</code> method returns the proxy created on the data source object, so we can use it as in the following example:</p><pre class="programlisting">var person = new Person("John", "Smith"); 
+      var txtName = document.getElementById("txtName"); 
+      var binder = new Binder(); 
+       
+      var proxiedPerson = binder.bindTo(person, "name", txtName,  "value"); 
+       
+      setTimeout(function() { 
+        proxiedPerson.name = "Mario"; 
+      }, 5000); 
+      </pre><p>We created a proxied version of the <code class="literal">person</code> object using the <code class="literal">bindTo()</code> method by specifying the binding between the <code class="literal">name</code> property and the <code class="literal">value</code> property of the associated textbox. So each change on the name property of the <code class="literal">proxiedPerson</code> object reflects on both the <code class="literal">name</code> property of the <code class="literal">person</code> object and on the <code class="literal">value</code> property of the textbox.</p><p>This example takes into account only the property <code class="literal">name</code>. If we want also to consider the <code class="literal">surname</code> property, we need to create a new proxy via the <code class="literal">bindTo()</code> method. Instead of creating a proxy for each property we want to bind, we can extend the <code class="literal">bindTo()</code> method to take a list of properties of the data source object to bind and a list of pairs composed by the data target object and data target property. The following example shows the <code class="literal">Binder</code> class changed to support multiple bindings:</p><pre class="programlisting">class Binder { 
+        bindTo(dataSourceObj, dataSourceProperties, dataTargetList) { 
+          var bindHandler = { 
+            set: function(target, property, newValue) { 
+              var i = dataSourceProperties.indexOf(property); 
+       
+              if (i &gt;= 0) { 
+                target[dataSourceProperties[i]] = newValue; 
+       
+                dataTargetList[i].obj[dataTargetList[i].prop] =
+                newValue; 
+              } 
+            } 
+          }; 
+          return new Proxy(dataSourceObj, bindHandler); 
+        } 
+      } 
+      </pre><p>In this class, the <code class="literal">dataTargetList</code> argument is an array of objects with two properties: the <code class="literal">obj</code> property stores the data target object and the <code class="literal">prop</code> property contains the data target property.</p><p>Now, we can use this class as in the following code:</p><pre class="programlisting">var person = new Person("John", "Smith"); 
+      var txtName = document.getElementById("txtName"); 
+      var txtSurname = document.getElementById("txtSurname"); 
+      var binder = new Binder(); 
+       
+      var proxiedPerson = binder.bindTo(person, 
+                         ["name", "surname"], 
+                         [   {obj: txtName, prop: "value"}, 
+                             {obj: txtSurname, prop: "value"} 
+                         ]); 
+      </pre><div class="note" title="Note" style=""><div class="inner"><h3 class="title"><a id="note16"></a>Note</h3><p>In addition to the proxy object, one of the JavaScript features that generated interest in recent times is <span class="strong"><strong>Object.observe()</strong></span>, also known as <span class="strong"><strong>O.o</strong></span>. This method was intended to create a native Observer on an object and it should have been included in version 7 of ECMAScript. Some browsers such as Chrome and Opera already support it. However, the proposal has been withdrawn by the end of 2015, as announced by Adam Klein in his post at <span><a class="ulink" href="https://esdiscuss.org/topic/an-update-on-object-observe">https://esdiscuss.org/topic/an-update-on-object-observe</a></span>.</p></div></div></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

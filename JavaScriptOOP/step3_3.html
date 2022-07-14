@@ -1,0 +1,121 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="Privacy levels using closure"><div class="titlepage"><div><div><h1 class="title"><a id="ch03lvl1sec21"></a>Privacy levels using closure</h1></div></div></div><p>A simple way to fix the inconsistencies of the convention-based approach is not using properties for internal members but declaring variables inside the constructor, as shown in the following example:</p><pre class="programlisting">function TheatreSeats() { 
+        var seats = []; 
+       
+        this.placePerson = function(person) { 
+          seats.push(person); 
+        }; 
+      } 
+      </pre><p>Using this approach, we can continue to use the constructor as usual preventing the access to the actual internal container-the <code class="literal">seats</code> variable. We are exploiting the internal environment of the <code class="literal">TheatreSeats()</code> function to hide the implementation details and lay the foundations for building the private and public parts of JavaScript objects.</p><div class="section" title="Scope and closure"><div class="titlepage"><div><div><h2 class="title"><a id="ch03lvl2sec14"></a>Scope and closure</h2></div></div></div><p>Before going further, it is useful to make clear some concepts that are used very often in JavaScript programming and on which we will build our approach to implement the information hiding principle. Let's start with the following example:</p><pre class="programlisting">var greeting = "Good morning"; 
+       
+      function greets(person) { 
+       
+        var fullName = person.name + " " + person.surname; 
+       
+        function displayGreeting() { 
+          console.log(greeting + " " + fullName); 
+        } 
+       
+        displayGreeting(); 
+      } 
+       
+      greets({name: "John", surname: "Smith"}); 
+      </pre><p>We defined the <code class="literal">greets()</code> function that takes a person object as argument and displays a string resulting from the concatenation of the greeting with the full name of the person. The actual function displaying the greeting is the <code class="literal">displayGreeting()</code> function defined inside the body of <code class="literal">greets()</code> function.</p><p>We already know that a variable or argument has a visibility scope that is a context inside which it is accessible. Each function creates its own scope, variables, parameters, or functions defined inside the body of a function are not accessible by code outside its body. The code of a function can access variables defined in the function's scope, but it can also access variables defined in the outer scope, that is, the external context that contains the function.</p><p>This led us to think of scopes as nested containers where the inner container can access the outer container, but not vice versa. This is usually known as the&nbsp;<span class="strong"><strong>scope chain</strong></span>. The following picture shows how we can graphically represent the scope chain of our example:</p><div class="mediaobject"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781785889103/files/graphics/image_03_001.jpg" alt="Scope and closure" width="714" height="569"></div><p>As a general rule, when a statement refers to a variable, it is searched in the current scope, if it is not found, it is searched in the outer scope and so on until it is found or the global scope is reached. So, in our example, the reference to the <code class="literal">greeting</code> variable inside the <code class="literal">displayGreeting()</code> function is first searched inside the function scope itself. Since it is not defined here, it is searched in the outer scope, that is, the scope of <code class="literal">greets()</code> function. Again, since the <code class="literal">greeting</code> variable is not defined here, it is searched and found in the outer scope that is the global scope.</p><p>The interesting side of this mechanism is that, in JavaScript, it is possible to access the outer scope even when the function that created it has terminated. To better explain, rewrite the previous code as follows:</p><pre class="programlisting">var greeting = "Good morning"; 
+      var displayGreeting; 
+       
+      function greets(person) { 
+       
+        var fullName = person.name + " " + person.surname; 
+       
+       
+        return function () { 
+          console.log(greeting + " " + fullName); 
+        } 
+      } 
+       
+      displayGreeting = greets({name: "John", surname: "Smith"}); 
+       
+      displayGreeting(); 
+      </pre><p>In this case, the <code class="literal">greets()</code> function does not shows the greeting string, but it returns a function that is able to show the string. We assigned the result of the <code class="literal">greets()</code> function to the variable <code class="literal">displayGreeting</code> and called the function it contains. We will get again the greeting string as before. Even if the execution context of the <code class="literal">greets()</code> function does not exist anymore, the resulting function can still access its scope, in particular the <code class="literal">fullName</code> variable.</p><p>The basic principle strengthening this mechanism establishes that each variable that was accessible when a function was defined is <span class="emphasis"><em>enclosed</em></span> in the accessible scope of the function. This mechanism is called <span class="strong"><strong>closure</strong></span>.</p><p>The closure is a powerful tool and can be creatively used to define patterns of advanced programming, as we will see throughout the book. We will use it in this chapter to implement information hiding. Let's recall the previous example of our constructor definition:</p><pre class="programlisting">function TheatreSeats() { 
+        var seats = []; 
+       
+        this.placePerson = function(person) { 
+          seats.push(person); 
+        }; 
+      } 
+      </pre><p>When this constructor is invoked to create an object, the constructor's instance and its internal environment are created. The constructor's environment holds the parameters, the local variables, and functions created inside the constructor. These functions will retain a reference to the environment in which they were created so that they will always have access to the environment, even after the constructor execution terminates. This combination of function and environment, that is the closure, represents thus a data storage that is independent of the instance and related to it only because the two are created at the same time.</p></div><div class="section" title="Privacy levels"><div class="titlepage"><div><div><h2 class="title"><a id="ch03lvl2sec15"></a>Privacy levels</h2></div></div></div><p>Therefore, exploiting the closure of a constructor we can implement the information hiding principle for JavaScript objects. As we can see, however, the new definition of the&nbsp;<code class="literal">TheatreSeats()</code> constructor is slightly different from the original one. While in the original definition we attached the <code class="literal">placePerson()</code> method to the prototype of the constructor, now we cannot follow this approach. In fact, the prototype's methods cannot access the constructor's closure, so the following code cannot work:</p><pre class="programlisting">function TheatreSeats() { 
+        var seats = []; 
+      } 
+       
+      TheatreSeats.prototype.placePerson = function(person) { 
+        seats.push(person); 
+      }; 
+       
+      var theatreSeats = new TheatreSeats(); 
+       
+      theatreSeats.placePerson({name: "John", surname: "Smith"});   //exception</pre><p>The last statement in the previous example raises an exception because the <code class="literal">placePerson()</code> method tries to access a <code class="literal">seats</code> variable that is not defined in its execution context. So, in order to use the constructor's closure to hide the internal details, we need to implement a method inside the constructor itself.</p><p>This led us to apply a sort of classification of an object's members in order to determine how to implement the information hiding principle:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc">Members that cannot be publicly accessed (<span class="strong"><strong>private members</strong></span>)</li><li class="listitem" style="list-style-type: disc">Members that do not use private members and that can be publicly accessed (<span class="strong"><strong>public members</strong></span>)</li><li class="listitem" style="list-style-type: disc">Members that use private members and that can be publicly accessed (<span class="strong"><strong>privileged members</strong></span>)</li></ul></div><div class="note" title="Note" style=""><div class="inner"><h3 class="title"><a id="note6"></a>Note</h3><p>The privacy levels terminology has been defined by Douglas Cockford in his article at <span><a class="ulink" href="http://www.crockford.com/javascript/private.html">http://www.crockford.com/javascript/private.html</a></span>.</p></div></div><p>This classification defines three <span class="strong"><strong>privacy levels</strong></span>, and it requires us to use different approaches to implement them in a JavaScript object:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc">A private member must be implemented as a local variable or function of the constructor</li><li class="listitem" style="list-style-type: disc">A public member must be implemented as a member of <code class="literal">this</code> keyword, if it is a property, or as a member of the constructor's prototype, if it is a method</li><li class="listitem" style="list-style-type: disc">A privileged member must be implemented as a member of <code class="literal">this</code> keyword inside the constructor</li></ul></div><p>The following code shows a version of the <code class="literal">TheatreSeats()</code> constructor that implements the three privacy levels:</p><pre class="programlisting">function TheatreSeats() { 
+        var seats = []; 
+       
+        this.placePerson = function(person) { 
+          seats.push(person); 
+        }; 
+        this.countOccupiedSeats = function() { 
+          return seats.length; 
+        }; 
+       
+        this.maxSize = 10; 
+      } 
+       
+      TheatreSeats.prototype.isSoldOut = function() { 
+        return this.countOccupiedSeats () &gt;= this.maxSize; 
+      }; 
+       
+      TheatreSeats.prototype.countFreeSeats = function() { 
+        return this.maxSize - this.countOccupiedSeats(); 
+      }; 
+      </pre><p>As we know, the <code class="literal">seats</code> variable is a private member, and it is not accessible from outside the constructor's closure. The <code class="literal">placePerson()</code> and <code class="literal">countOccupiedSeats()</code> methods are privileged members, since they can access the private variable <code class="literal">seats</code>. The <code class="literal">maxSize</code> property and the <code class="literal">isSoldOut()</code> and <code class="literal">countFreeSeats()</code> methods are public members since they do not directly access private members. However, they access the <code class="literal">seats</code> variable indirectly through the privileged methods.</p></div><div class="section" title="Benefits and drawbacks"><div class="titlepage"><div><div><h2 class="title"><a id="ch03lvl2sec16"></a>Benefits and drawbacks</h2></div></div></div><p>Compared to the convention-based approach, the use of closure to define the three levels of privacy is much more effective. It actually grants private data protection and exposes just what the developers needs to access to use the object. However, this solution suffers from some flaws.</p><p>The first point is purely formal. Both privileged methods and private functions break the separation of concerns between the constructor and the instance prototype of an object. In fact, the constructor should be responsible for data initialization of an object instance. The prototype should be responsible for general methods definitions and shared functionalities. By defining methods inside the constructor, we are giving it a responsibility for which it has not been designed.</p><p>Another drawback regards memory consumption. By attaching a method to the prototype of a constructor, we share the functionality among all instances created by the constructor. The prototype mechanism grants us just one copy of the method definition that exists in the application. Instead, each privileged method definition is replicated for each object instance, unnecessarily increasing memory consumption.</p><p>In order to mitigate memory consumption, we can choose to define a minimum set of privileged methods and to delegate to public methods those functionalities resulting from the composition of privileged methods. We used this approach for the <code class="literal">isSoldOut()</code> and <code class="literal">countFreeSeats()</code> methods definition. Although this expedient allows us to reduce memory consumption, we will have some loss in performance due to indirect access to the constructor's closure as a counterpart.</p></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

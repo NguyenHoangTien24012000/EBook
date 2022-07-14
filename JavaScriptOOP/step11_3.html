@@ -1,0 +1,212 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="The Open/Closed Principle"><div class="titlepage"><div><div><h1 class="title"><a id="ch11lvl1sec71"></a>The Open/Closed Principle</h1></div></div></div><p>The second SOLID principle concerns the extensibility of components and is called the <span class="strong"><strong>Open/Closed Principle</strong></span>. Its focus is on avoiding changes when we need to extend a component's feature. The principle states:</p><div class="blockquote"><blockquote class="blockquote"><p><span class="emphasis"><em>Software entities like classes, modules and functions should be open for extension but closed for modifications.</em></span></p></blockquote></div><p>In the design of the components of our application, we have to take into account these two aspects:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>Open for extension</strong></span>: The components should be adjustable to the changing needs of the application</li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>Closed for modifications</strong></span>: The required changes should not involve the original component itself</li></ul></div><p>If we apply this principle, we can get more easily adaptable and maintainable applications.</p><p>To illustrate how to apply this principle, let's take the example of order management in the previous section with some small modifications:</p><pre class="programlisting">function Order(customerId) { 
+        this.customerId =  customerId; 
+        this.dateTime = new Date(); 
+      <span class="strong"><strong>  this.totalAmount = 0;</strong></span> 
+        this.items = []; 
+      } 
+       
+      var OrderManager = (function () { 
+       
+        function OrderManager() {} 
+       
+        OrderManager.prototype.createOrder = function (customerId) { 
+          this.order = new Order(customerId); 
+        }; 
+       
+        OrderManager.prototype.addItem = function (item) { 
+          this.order.items.push(item); 
+      <span class="strong"><strong>    this.order.totalAmount = this.order.totalAmount + item.price;</strong></span> 
+        }; 
+       
+        OrderManager.prototype.sendOrder = function () { 
+          if (this.isValid(this.order)) { 
+      <span class="strong"><strong>      this.applyDiscount(this.order);</strong></span> 
+            var orderSender = new OrderSender(); 
+            orderSender.send(order); 
+          } 
+          else { 
+            handleError({ message: "Not valid order!" }); 
+          } 
+        }; 
+       
+        OrderManager.prototype.isValid = function (order) { 
+          return order.items.length &gt; 0; 
+        }; 
+       
+      <span class="strong"><strong>  OrderManager.prototype.applyDiscount = function (order) {</strong></span>
+      <span class="strong"><strong>    var itemsCount = order.items.length;</strong></span>
+      <span class="strong"><strong>    var discountPercentage;</strong></span>
+      <span class="strong"><strong>    if (itemsCount &lt; 10) {</strong></span>
+      <span class="strong"><strong>      discountPercentage = 0;</strong></span>
+      <span class="strong"><strong>    } else {</strong></span>
+      <span class="strong"><strong>      if (itemsCount &lt; 20) {</strong></span>
+      <span class="strong"><strong>        discountPercentage = 10;</strong></span>
+      <span class="strong"><strong>      } else {</strong></span>
+      <span class="strong"><strong>        if (itemsCount &lt; 30) {</strong></span>
+      <span class="strong"><strong>          discountPercentage = 30;</strong></span>
+      <span class="strong"><strong>        } else {</strong></span>
+      <span class="strong"><strong>          discountPercentage = 50;</strong></span>
+      <span class="strong"><strong>        }</strong></span>
+      <span class="strong"><strong>      }</strong></span>
+      <span class="strong"><strong>   }</strong></span>
+      <span class="strong"><strong>   order.totalAmount = order.totalAmount - order.totalAmount *      discountPercentage / 100;</strong></span>
+      <span class="strong"><strong>  };</strong></span> 
+       
+        return OrderManager; 
+      }()); 
+      </pre><p>We highlighted the new code with respect to the previous section. In summary, we added a total amount for the order and the possibility to apply a discount based on the count of items in the order. The <code class="literal">applyDiscount()</code> method examines the number of items in the order and applies a discount percentage accordingly to some quantity ranges: 0 to 9 items, 10 to 19 items, 20 to 29 items, and over 30 items.</p><p>Suppose we want to introduce a new discount level, for example, from 30 to 50 items. To do this, we need to change the <code class="literal">OrderManager</code> constructor breaking the Open/Closed Principle. How can we rewrite the constructor function so that the principle is respected?</p><p>Let's consider the following code:</p><pre class="programlisting">function Order(customerId) { 
+        this.customerId =  customerId; 
+        this.dateTime = new Date(); 
+        this.totalAmount = 0; 
+        this.items = []; 
+      } 
+       
+       
+      var OrderManager = (function () { 
+      <span class="strong"><strong>  var discounters = [];</strong></span> 
+       
+        function OrderManager() {} 
+       
+        OrderManager.prototype.createOrder = function (customerId) { 
+          this.order = new Order(customerId); 
+        }; 
+       
+        OrderManager.prototype.addItem = function (item) { 
+          this.order.items.push(item); 
+          this.order.totalAmount = this.order.totalAmount +      item.price; 
+        }; 
+       
+        OrderManager.prototype.sendOrder = function () { 
+          if (this.isValid(this.order)) { 
+            this.applyDiscount(this.order); 
+            var orderSender = new OrderSender(); 
+            orderSender.send(order); 
+          } 
+          else { 
+            handleError({ message: "Not valid order!" }); 
+          } 
+        }; 
+       
+        OrderManager.prototype.isValid = function (order) { 
+          return order.items.length &gt; 0; 
+        }; 
+       
+      <span class="strong"><strong>  OrderManager.prototype.registerDiscounter =    function(discounter) {</strong></span>
+      <span class="strong"><strong>    discounters.push(discounter);</strong></span>
+      <span class="strong"><strong>  };</strong></span>
+      <span class="strong"><strong>  OrderManager.prototype.applyDiscount = function (order) {</strong></span>
+      <span class="strong"><strong>    var i;</strong></span>
+      <span class="strong"><strong>    for (i=0; i &lt; discounters.length; i++) {</strong></span>
+      <span class="strong"><strong>      if (discounters[i].isApplicable(order)) {</strong></span>
+      <span class="strong"><strong>        discounters[i].apply(order);</strong></span>
+      <span class="strong"><strong>        break</strong></span>
+      <span class="strong"><strong>      }</strong></span>
+      <span class="strong"><strong>    }</strong></span>
+      <span class="strong"><strong>  };</strong></span> 
+       
+        return OrderManager; 
+      }()); 
+      </pre><p>We've highlighted the changed code. Note the private <code class="literal">discounters</code> array definition that is populated by the <code class="literal">registerDiscounter()</code> method. This array is intended to contain one or more <code class="literal">discounter</code> objects that are responsible for applying a discount. We then redefined the <code class="literal">applyDiscount()</code> method, which no longer calculates the discount to be applied but delegates this task to the discounter. As we can see in the implementation of the&nbsp;<code class="literal">applyDiscount()</code> method, a <code class="literal">discounter</code> has a <code class="literal">isApplicable()</code> method, which checks whether the discount is applicable and an <code class="literal">apply()</code> method which applies the discount.</p><p>The following code shows how to implement the discount ranges seen before using the discounters:</p><pre class="programlisting">var bronzeDiscounter = { 
+        isApplicable: function(order) { 
+          var itemsCount = order.items.length; 
+       
+          return (itemsCount &gt;= 10 &amp;&amp; itemsCount &lt; 20) 
+        }, 
+        apply: function(order) { 
+          order.totalAmount = order.totalAmount - order.totalAmount * 10      / 100; 
+        } 
+      }; 
+       
+      var silverDiscounter = { 
+        isApplicable: function(order) { 
+          var itemsCount = order.items.length; 
+       
+          return (itemsCount &gt;= 20 &amp;&amp; itemsCount &lt; 30) 
+        }, 
+        apply: function(order) { 
+          order.totalAmount = order.totalAmount - order.totalAmount * 30      / 100; 
+        } 
+      }; 
+       
+      var goldDiscounter = { 
+        isApplicable: function(order) { 
+          var itemsCount = order.items.length; 
+       
+          return (itemsCount &gt;= 30) 
+        }, 
+        apply: function(order) { 
+          order.totalAmount = order.totalAmount - order.totalAmount * 50      / 100; 
+        } 
+      }; 
+      </pre><p>Using this approach, we comply with the Open/Closed Principle since we can extend the functionality of the <code class="literal">OrderManager</code> constructor without changing it. In fact, to add a new discount range, it is sufficient to create a new discounter, register it through the <code class="literal">registerDiscounter()</code> method, and adjust if necessary other discounters, as in the following example:</p><pre class="programlisting">var goldDiscounter = { 
+        isApplicable: function(order) { 
+          var itemsCount = order.items.length; 
+       
+          return (itemsCount &gt;= 30 &amp;&amp; itemsCount &lt; 50) 
+        }, 
+        apply: function(order) { 
+          order.totalAmount = order.totalAmount - order.totalAmount * 40      / 100; 
+        } 
+      }; 
+       
+      var platinumDiscounter = { 
+        isApplicable: function(order) { 
+          var itemsCount = order.items.length; 
+       
+          return (itemsCount &gt;= 50) 
+        }, 
+        apply: function(order) { 
+          order.totalAmount = order.totalAmount - order.totalAmount * 50      / 100; 
+        } 
+      }; 
+       
+       
+      orderManager.registerDiscounter(goldDiscounter); 
+      orderManager.registerDiscounter(platinumDiscounter); 
+      </pre><p>As we can see, it will not be necessary to modify the <code class="literal">OrderManager</code> constructor.</p></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

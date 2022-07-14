@@ -1,0 +1,813 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 class="h2" id="ch02"><a id="page_37"></a><strong>Chapter 2<br>Data Transport Problems and Solutions</strong></h2>
+        <div class="sidebar">
+        <p class="sb-noindent"><strong>Learning Objectives</strong></p>
+        <p class="sb-noindent">After reading this chapter, you should be able to:</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Understand the concept of marshaling data, different marshaling options, and the tradeoffs between them</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Understand the concepts of dictionaries, grammars, and metadata within the context of data marshaling</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Understand the concepts of fixed length fields, type length values, and shared data dictionaries</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Understand the difference between error detection and error correction</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Understand the fundamental concepts of checking for errors in data transmission</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Understand the relationship between addressing and multiplexing</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Understand the basic theory behind multicast and anycast</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Understand flow control mechanisms, including windowed flow control</p>
+        </div>
+        <p class="noindent"><em>When transport protocols dream, do they dream of applications?</em> They probably should, as the primary purpose of a network is to support applications—and the primary resource that applications need from a network is data moved from one process (or processor) to another. But how can data be transmitted over a wire, or through the air, or over an optical cable?</p>
+        <p class="indent"><a id="page_38"></a>Perhaps it is best to begin with a more familiar example: human language. The authors of this book wrote it using formatting, language, and vocabulary enabling you to read and understand the information presented. What problems does a language need to overcome to make the communication, this writing and reading, possible?</p>
+        <p class="indent"><strong>Thoughts must be captured in a form that allows them to be retrieved by a receiver.</strong> In human languages, information is packaged into words, sentences, paragraphs, chapters, and books. Each level of this division implies some unit of information, and some organizational system. For instance, sounds or ideas are encapsulated into letters or symbols; sounds or ideas are then combined into words; words are combined into sentences, etc. Sentences follow a particular grammatical form so you can decode the meaning from the symbols. This encoding of thoughts and information into symbols formatted which allows a reader (receiver) to retrieve the original meaning will be called marshaling the data in this book.</p>
+        <p class="indent">One aspect of marshaling is <em>definitional</em>—the process of associating one set of symbols to a particular meaning. Metadata, or data about the data, allows you to understand how to interpret information in a flow or stream.</p>
+        <p class="indent"><strong>There must be some way of managing errors in transmission or reception.</strong> Sup-pose you have a pet dog who likes to chase after a particular ball. The ball drops out of a basket one day, and bounces into the street. The dog chases and appears to be heading directly into the path of an oncoming car. What do you do? Perhaps you shout “Stop!”— and then maybe “No!”—and perhaps “Stay!” Using several commands that should result in the same action—the dog stopping before he runs into the street—is making certain the dog has correctly received, and understood, the message. Shouting multiple messages will, you hope, ensure there is no misunderstanding in what you are telling the dog to do.</p>
+        <p class="indent">This is, in fact, a form of error correction. There are many kinds of error correction built into human language. For instance, yu cn prbbly stll rd ths sntnce. Human languages overspecify the information they contain, so a few missed letters do not cause the entire message to be lost. This overspecification can be considered a form of forward error correction. This is not the only form of error correction human languages contain, however. They also contain questions, which can be asked to verify, validate, or gain missing bits or context of information previously “transmitted” through the language.</p>
+        <p class="indent"><strong>There must be some way to talk to one person, or a small group of people, using a single medium—air—within a larger crowd.</strong> It is not uncommon to need to talk to one person out of a room full of people. Human language has built in ways of dealing with this problem in many situations, such as calling someone’s name, or speaking loudly enough to be heard by the person you are directly facing (the implementation of language can be <em>directional</em>, in other words). The ability to speak to one person among many, or a specific subset of people, is multiplexing.</p>
+        <p class="indent"><strong>Finally, there must be some way to control the flow of a conversation.</strong> With a book, this is a simple matter; the writer produces text in parts, which are then collected into a format the reader can read, and reread, at a completely different pace. <a id="page_39"></a>Not many people think of a book as a form of flow control, but putting thoughts into written form is an effective way to disconnect the speed of the sender (the speed of writing) from the speed of the receiver (the speed of reading). Spoken language has other forms of flow control, such as “um,” and the glazed-over look in a listener’s eyes when she has lost the line of reasoning a speaker is following, or even physical gestures indicating the speaker should slow down.</p>
+        <p class="indent">To summarize, successful communication systems need to solve four problems:</p>
+        <p class="bullt">• Marshaling the data; converting ideas into symbols and a grammar the receiver will understand</p>
+        <p class="bull">• Managing errors, so the ideas are correctly transmitted from the sender to the receiver</p>
+        <p class="bull">• Multiplexing, or allowing a common media or infrastructure to be used for conversations between many different pairs of senders and receivers</p>
+        <p class="bullb">• Flow control, or the ability to make certain the receiver is actually receiving and processing the information before the sender transmits more</p>
+        <p class="indent">The following sections examine each of these problems as well as some of the solutions available in each problem space.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch02lev1">Digital Grammars and Marshaling</h3>
+        <p class="noindent">Consider the process you are using to read this book. You examine a set of marks created to contrast with a physical carrier, ink on paper. These marks represent certain symbols (or, if you are hearing this book, certain sounds on a white noise background), which you then interpret as letters. These letters, in turn, you can put together using rules of spacing and layout to form words. Words, through punctuation and spacing, you can form into sentences.</p>
+        </div>
+        <p class="indent">At each stage in the process there are several kinds of things interacting:</p>
+        <p class="bullt">• A physical carrier onto which the signal can be imposed. This work of representing information against a carrier is grounded in the work of Claude Shannon, and is outside the scope of this book; further reading is suggested in the following section for those who are interested.</p>
+        <p class="bull">• A symbolic representation of units of information used to translate the physical symbols into the first layer of logical content. When you are interpreting symbols, two things are required: a dictionary, which describes the range of possible logical symbols that can correspond to a certain physical state, and a grammar, which describes how to determine which logical symbol relates to this instance of physical state. These two things, combined, can be described as a protocol.</p>
+        <p class="bullb"><a id="page_40"></a>• A way to convert the symbols into words and then the words into sentences. Again, this will consist of two components, a dictionary and a grammar. Again, these can be described as protocols.</p>
+        <p class="indent">As you move “up the stack,” from the physical to the letters to the words to the sentences, etc., the dictionary will become less important, and the grammar, which allows you to convert the context into meaning, more important—but these two things exist at every layer of the reading and/or listening process. The dictionary and grammar are considered two different forms of metadata you can use to turn physical representations into sentences, thoughts, lines of argument, etc.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch02lev2"><strong>Digital Grammars and Dictionaries</strong></h4>
+        <p class="noindent">There really is not much difference between a human language, such as the one you are reading right now, and a digital language. A digital language is not called a <em>language</em>, however; it is called a protocol. More formally:</p>
+        </div>
+        <p class="blockquote"><strong>A protocol is a dictionary and a grammar (metadata) used to translate one kind of information into another.</strong></p>
+        <p class="indent">Protocols do not work in just one direction, of course; they can be used to encode as well as decode information. Languages are probably the most common form of protocol you encounter on a daily basis, but there are many others, such as traffic signs; the user interfaces on your toaster, computer, and mobile devices; and every human language.</p>
+        <p class="indent">Given you are developing a protocol, which primarily means developing a dictionary and a grammar, there are two kinds of optimization you can work toward:</p>
+        <p class="bullt">• <strong>Resource Efficiency.</strong> How many resources are used in encoding any particular bit of information? The more metadata included inline, with the data itself, the more efficient the encoding will be—but the more implementations will rely on dictionaries to decode the information. Protocols that use very small signals to encode a lot of information are generally considered compact.</p>
+        <p class="bullb">• <strong>Flexibility.</strong> In the real world, things change. Protocols must somehow be designed to deal with change, hopefully in a way not requiring a “flag day” to upgrade the protocol.</p>
+        <p class="indent">The metadata tradeoff is one of many you will find in network engineering; either include more metadata, allowing the protocol to better handle future requirements, or include less metadata, making the protocol more efficient and compact. A good rule of thumb, one you will see repeated many times throughout this book, is: <em>if you have not found the tradeoff, you have not looked hard enough</em>.</p>
+        <div class="sidebar1">
+        <p class="title1"><a id="page_41"></a><strong>What Is a Flag Day?</strong></p>
+        <p class="noindent">If you need to switch from one version of a protocol that is installed and running on many computers to a newer version of the same protocol, or perhaps even a different protocol, you have three choices.</p>
+        <p class="indent"><em>First</em>, you can design the protocol (or protocols) so the old and new versions can overlap, or run on the same network at the same time. This is sometimes called the ships in the night solution; the old and new protocols (or versions of the same protocol) do not interact at all.</p>
+        <p class="indent"><em>Second</em>, you can pick a day (and potentially a time, down to the millisecond in some cases) to switch from the old protocol to the new. This is called a flag day. How did this term become attached to this kind of protocol changeover event? In 1966, every system running the Multics operating system needed to be switched from one definition of characters to another, specifically to replace ASCII 1965 with ASCII 1967. A holiday was chosen for the change, which would give all the Multics system administrators a full day to replace their software and have the systems operating for the first business day after the change. The day chosen was <em>Flag Day</em> in the United States, June 14, 1966. Hence the term <em>flag day</em> become forever associated with a change requiring every host in the system to be rebooted at (roughly) the same time to ensure proper operation.<sup><a id="ch02fn1"></a><a href="ch02.xhtml#ch02fn-1">1</a></sup></p>
+        <p class="indent">The most famous flag day is the transition from the Network Control Program (NCP) transport protocol to the Transmission Control Protocol (TCP) on the <em>entire Internet</em> (as it existed then) in 1983. The process of moving from one to the other required an Internet Engineering Task Force (IETF) Request for Comment (RFC) to describe and coordinate the process—RFC801.<sup><a id="ch02fn2"></a><a href="ch02.xhtml#ch02fn-2">2</a></sup></p>
+        <p class="indent"><em>Third</em>, you can design the protocol so a single version can contain multiple versions of the same information, with each version being formatted differently. Senders can send in either format, and receivers should be able to interpret the data in either format. When all the systems have been upgraded to the newer version of the software, the older encoding can be replaced. This mechanism relies heavily on a principle laid out in RFC760:</p>
+        <p class="blockquote">In general, an implementation must be conservative in its sending behavior, and liberal in its receiving behavior. That is, it must be careful to send well-formed datagrams, but must accept any datagram that it can interpret (e.g., not object to technical errors where the meaning is still clear).<sup><a id="ch02fn3"></a><a href="ch02.xhtml#ch02fn-3">3</a></sup></p>
+        </div>
+        <p class="indent"><a id="page_42"></a>A dictionary in a protocol is a table of digital patterns to symbols and operations. Perhaps the most commonly used digital dictionaries are character codes. <a href="ch02.xhtml#ch02tab01">Table 2-1</a> replicates part of the Unicode character code dictionary.</p>
+        <div class="tab-heading">
+        <p class="tab-caption"><a id="ch02tab01"></a><strong>Table 2-1</strong> <em>A Partial Unicode Dictionary or Table</em></p>
+        <table class="tablewidth">
+        <tbody>
+        <tr>
+        <td class="bg1"><p class="thead"><strong>Code</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>Glyph</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>Decimal</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>Description</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>#</strong></p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">U+0030</p></td>
+        <td class="tbody_first"><p class="noindent">0</p></td>
+        <td class="tbody_first"><p class="noindent">&amp;#048;</p></td>
+        <td class="tbody_first"><p class="noindent">Digit Zero</p></td>
+        <td class="tbody_first"><p class="noindent">0017</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">U+0031</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">&amp;#049;</p></td>
+        <td class="tbody_first"><p class="noindent">Digit One</p></td>
+        <td class="tbody_first"><p class="noindent">0018</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">U+0032</p></td>
+        <td class="tbody_first"><p class="noindent">2</p></td>
+        <td class="tbody_first"><p class="noindent">&amp;#050;</p></td>
+        <td class="tbody_first"><p class="noindent">Digit Two</p></td>
+        <td class="tbody_first"><p class="noindent">0019</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">U+0033</p></td>
+        <td class="tbody_first"><p class="noindent">3</p></td>
+        <td class="tbody_first"><p class="noindent">&amp;#051;</p></td>
+        <td class="tbody_first"><p class="noindent">Digit Three</p></td>
+        <td class="tbody_first"><p class="noindent">0020</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">U+0034</p></td>
+        <td class="tbody_first"><p class="noindent">4</p></td>
+        <td class="tbody_first"><p class="noindent">&amp;#052;</p></td>
+        <td class="tbody_first"><p class="noindent">Digit Four</p></td>
+        <td class="tbody_first"><p class="noindent">0021</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">U+0035</p></td>
+        <td class="tbody_first"><p class="noindent">5</p></td>
+        <td class="tbody_first"><p class="noindent">&amp;#053;</p></td>
+        <td class="tbody_first"><p class="noindent">Digit Five</p></td>
+        <td class="tbody_first"><p class="noindent">0022</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">U+0036</p></td>
+        <td class="tbody_first"><p class="noindent">6</p></td>
+        <td class="tbody_first"><p class="noindent">&amp;#054;</p></td>
+        <td class="tbody_first"><p class="noindent">Digit Six</p></td>
+        <td class="tbody_first"><p class="noindent">0023</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">U+0037</p></td>
+        <td class="tbody_first"><p class="noindent">7</p></td>
+        <td class="tbody_first"><p class="noindent">&amp;#055;</p></td>
+        <td class="tbody_first"><p class="noindent">Digit Seven</p></td>
+        <td class="tbody_first"><p class="noindent">0024</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">U+0038</p></td>
+        <td class="tbody_first"><p class="noindent">8</p></td>
+        <td class="tbody_first"><p class="noindent">&amp;#056;</p></td>
+        <td class="tbody_first"><p class="noindent">Digit Eight</p></td>
+        <td class="tbody_first"><p class="noindent">0025</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">U+0039</p></td>
+        <td class="tbody_first"><p class="noindent">9</p></td>
+        <td class="tbody_first"><p class="noindent">&amp;#057;</p></td>
+        <td class="tbody_first"><p class="noindent">Digit Nine</p></td>
+        <td class="tbody_first"><p class="noindent">0026</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">U+003A</p></td>
+        <td class="tbody_first"><p class="noindent">:</p></td>
+        <td class="tbody_first"><p class="noindent">&amp;#058;</p></td>
+        <td class="tbody_first"><p class="noindent">Colon</p></td>
+        <td class="tbody_first"><p class="noindent">0027</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">U+003B</p></td>
+        <td class="tbody_first"><p class="noindent">;</p></td>
+        <td class="tbody_first"><p class="noindent">&amp;#059;</p></td>
+        <td class="tbody_first"><p class="noindent">Semicolon</p></td>
+        <td class="tbody_first"><p class="noindent">0028</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">U+003C</p></td>
+        <td class="tbody_first"><p class="noindent">&lt;</p></td>
+        <td class="tbody_first"><p class="noindent">&amp;#060;</p></td>
+        <td class="tbody_first"><p class="noindent">Less-than sign</p></td>
+        <td class="tbody_first"><p class="noindent">0029</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div>
+        <p class="indent">Using <a href="ch02.xhtml#ch02tab01">Table 2-1</a>, if a computer is “reading” an array representing a series of letters, it will print out (or treat in processing) the number <em>6</em> if the number in the array is 0023, the number <em>7</em> if the number in the array is 0024, etc. This table, or dictionary, relates specific numbers to specific symbols in an alphabet, just like a dictionary relates a word to a range of meanings.</p>
+        <p class="indent">How can the computer determine the difference between the price of a banana and the letters in the word <em>banana</em>? Through the context of the information. For instance, perhaps the array in question is stored as a string, or a series of letters; the array being stored as a string variable type provides the metadata, or the context, which indicates the values in these particular memory locations should be treated as letters rather than the numeric values contained in the array. This metadata, acted on by the computer, provides the grammar of the protocol.</p>
+        <p class="indent">In protocols, dictionaries are often expressed in terms of what any particular field in a packet contains, and grammars are often expressed in terms of how the packet is built, or what fields are contained at what locations in a packet.</p>
+        <p class="indent">There are several ways to build dictionaries and basic (first-level) grammars; several of these will be considered in the following sections.</p>
+        <a id="page_43"></a>
+        <div class="heading">
+        <h4 class="h4" id="ch02lev3"><strong>Fixed Length Fields</strong></h4>
+        <p class="noindent">Fixed length fields are the simplest of the dictionary mechanisms to explain. The protocol defines a set of fields, what kind of data each field contains, and how large each field is. This information is “baked into” the protocol definition, so every implementation is built to these same specifications, and hence can interoperate with one another. <a href="ch02.xhtml#ch02fig01">Figure 2-1</a> illustrates a fixed length field encoding used in the Open Shortest Path First (OSPF) protocol taken from RFC2328.<sup><a id="ch02fn4"></a><a href="ch02.xhtml#ch02fn-4">4</a></sup></p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/02fig01.jpg" aria-describedby="Al02fig01" alt="Figure shows OSPF fixed length field definition in the Protocol Specification." width="575" height="252"><aside class="hidden" id="Al02fig01">
+        <p>The top portion has 0 to 9 mentioned to the left with the 0 marked as 0. 0 to 9 is mentioned again with 0 mentioned as 1. 0 to 9 follows with 0 mentioned as 2. The arrangement continues with 0 and 1 following with 0 mentioned as 3. The portion below has Version # to the left, 5 at the center and Packet length to the right. The portion below has Router ID enclosed. Area ID lies in the portion below. Two sections, Checksum and AuType follow and are assigned to the left and right. Authentication lies below, followed by another Authentication section at the bottom.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch02fig01"></a><strong>Figure 2-1</strong> <em>OSPF Fixed Length Field Definition in the Protocol Specification</em></p>
+        </div>
+        <p class="indent">The row of numbers across the top of <a href="ch02.xhtml#ch02fig01">Figure 2-1</a> indicates the individual bits in the packet format; each row contains 32 bits of information. The first 8 bits indicate the version number, the second 8 bits always have the number 5, the following 16 bits contain the total packet length, etc. Each of these fields is further defined in the protocol specification with the kind of information carried in the field and how it is encoded. For instance:</p>
+        <p class="bullt">• The version number field is encoded as an unsigned integer. This is metadata indicating the dictionary and grammar used for this packet. If the packet format needs to be changed, the version number can be increased, allowing transmitters and receivers to use the correct dictionary and grammar when encoding and decoding the information in the packet.</p>
+        <p class="bull">• The number 5 indicates the kind of packet within the protocol; this is part of a dictionary defined elsewhere in the standards document, so it is simply inserted as a fixed value in this illustration. This particular packet is a <em>Link State Acknowledgment Packet</em>.</p>
+        <p class="bullb"><a id="page_44"></a>• The packet length is encoded as an unsigned integer indicating the number of octets (or sets of 8 bits) contained in the complete packet. This allows the packet size to vary in length depending on how much information needs to be carried.</p>
+        <p class="indent">The fixed length field format has several advantages. Primarily, the location of any piece of information within the packet will be the same from packet to packet, which means it is easy to optimize the code designed to encode and decode the information around the packet format. For instance, a common way of processing a fixed length packet format is to create an in-memory data structure matching the packet format precisely; when the packet is read off the wire, it is simply copied into this data structure. The fields within the packet can then be read directly.</p>
+        <p class="indent">Fixed length formats tend to be somewhat compact. The metadata needed to encode and decode the data is carried “outside the protocol,” in the form of a protocol specification. The packets themselves contain only the value, and never any information about the values. On the other hand, fixed length formats can waste a lot of space by buffering the fields so they are always the same length. For instance, the decimal number <em>1</em> can be represented with a single binary digit (a single bit), while the decimal number <em>4</em> requires 3 binary digits (three bits); if a fixed length field must be able to represent any number between 0 and 4, it will need to be at least 3 bits long, even though two of those bits will sometimes be “wasted” in representing smaller decimal numbers.</p>
+        <p class="indent">Fixed length formats also often waste space by aligning the field sizes on common processor memory boundaries to improve the speed of processing. A field required to take values between 0 and 3, even though it only needs two bits to represent the full set of values, may be encoded as an 8-bit field (a full octet) in order to ensure the field following is always aligned on an octet boundary for faster in-memory processing.</p>
+        <p class="indent">Flexibility is where fixed length encoding often runs into problems. If some field is defined as an 8-bit value (a single octet) in the original specification, there is no obvious way to modify the length of the field to support new requirements. The primary way this problem is solved in fixed length encoding schemes is through the version number. If the length of a field must be changed, the version number is modified in packet formats supporting the new field length. This allows implementations to use the old format until all the devices in the network are upgraded to support the new format; once they are all upgraded, the entire system can be switched to the new format, whether larger or smaller.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch02lev4"><strong>Type Length Value</strong></h4>
+        <p class="noindent">The Type Length Value (TLV) format is another widely used solution to the problem of marshaling data. <a href="ch02.xhtml#ch02fig02">Figure 2-2</a> shows an example from the Intermediate System to Intermediate System (IS-IS) routing protocol.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/02fig02.jpg" aria-describedby="Al02fig02" alt="Figure shows an example of a TLV Format from IS-IS." width="701" height="229"><aside class="hidden" id="Al02fig02">
+        <p>Figure shows a section labeled packet at the top which is represented by dotted lines. A rectangular block labeled packet header is at the left. To the right, a long rectangular block has 135, metric, u/d, sp, prefix length, and prefix. A box labeled sub TLVs is to the right. A rectangular block below has 236, metric, u/d, ext, sp, ignore, prefix length, and prefix. A box labeled sub TLVs is to the right. A set of dotted lines labeled header cover the packet header box above. To the right, rectangular boxes are covered with dotted lines labeled TLVs.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch02fig02"></a><strong>Figure 2-2</strong> <em>An Example of a TLV Format from IS-IS</em></p>
+        </div>
+        <p class="indent"><a id="page_45"></a>In <a href="ch02.xhtml#ch02fig02">Figure 2-2</a>, a packet consists of a header, which is normally fixed length, and then a set of TLVs. Each TLV is formatted based on its type code. In this case, there are two TLV types shown (there are many other types in IS-IS; two are used for illustration here). The first type is a 135, which carries Internet Protocol version 4 (IPv4) information. This type has several fields, some of which are fixed length—such as the metric. Others, however, such as the prefix, are variable length; the length of the field depends on the value placed in some other field within the TLV. In this case, the <em>prefix length</em> field determines the length of the prefix field. There are also subTLVs, which are similarly formatted, and carry information associated with this IPv4 information. The type 236 is similar to the 135, but it carries IPv6, rather than IPv4, information.</p>
+        <p class="indent">Essentially, the TLV can be considered a complete set of self-contained information carried within a larger packet. The TLV consists of three parts:</p>
+        <p class="bullt">• The type code, which describes the format of the data</p>
+        <p class="bull">• The length, which describes the total length of the data</p>
+        <p class="bullb">• The value, or the data itself</p>
+        <p class="indent">TLV-based formats are less compact than fixed length formats because they carry more metadata within the packet itself. The type and length information carried in the data provides the information about where to look in the dictionary for information about the formatting, as well as information about the grammar to use (how each field is formatted, etc.). TLV formats trade off the ability to change the formatting of the information being carried by the protocol without requiring every device to upgrade, or allowing some implementations to choose not to support every possible TLV, against the additional metadata carried across the wire.</p>
+        <p class="indent"><a id="page_46"></a>TLVs are generally considered a very flexible way of marshaling data in protocols; you will find this concept to be almost ubiquitous.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch02lev5"><strong>Shared Object Dictionaries</strong></h4>
+        <p class="noindent">One of the major problems with fixed length fields is the <em>fixedness</em> of the field definitions; if you want to modify a fixed length field protocol, you need to bump the version number and modify the packet, or you must create a new packet type with different encodings for the fields. TLV formatting solves this by including metadata inline, with the data being transmitted, at the cost of carrying more information and reducing compactness. Shared compiled dictionaries attempt to solve this problem by placing the dictionary in a sharable file (or library) rather than in a specification. <a href="ch02.xhtml#ch02fig03">Figure 2-3</a> illustrates the process.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/02fig03.jpg" aria-describedby="Al02fig03" alt="Figure represents shared compiled dictionaries." width="702" height="195"><aside class="hidden" id="Al02fig03">
+        <p>Data encoded in format is mentioned to the left with a dotted arrow from raw data (4) pointing to it. A rectangular box to the right is divided into nine sections labeled data 1, type, length, data 2, type, length, data 3, type, and length. Two dotted arrows from it lead to a cloud. An arrow leads to the right, with copy object written above. Library to receiver is mentioned below. The arrow points to a cloud, with two lines leading to a rectangular box with contents labeled data 1, type, length, data 2, type, length, data 3, type, and length. Data decoded using format is mentioned to the right. Raw data is mentioned above, with a dotted arrow pointing below. A dotted arrow below connects the left and right portion and is labeled transfer encoded data to receiver.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch02fig03"></a><strong>Figure 2-3</strong> <em>Shared Compiled Dictionaries</em></p>
+        </div>
+        <p class="indent">In <a href="ch02.xhtml#ch02fig03">Figure 2-3</a>, the process begins with a developer building a data structure to marshal some particular set of data to be transferred across the network. Once the data structure has been built, it is compiled into a function, or perhaps copied into a library of functions (1), and copied over to the receiver (2). The receiver then uses this library to write an application to process this data (3). On the transmitter side, the raw data is encoded into the format (4), and then carried by a protocol across the network to the receiver (5). The receiver uses its shared copy of the data format (6) to decode the data, and pass the decoded information to the receiving application (7).</p>
+        <p class="indent">This kind of system combines the flexibility of the TLV-based model with the compactness of a fixed field protocol. While the fields are fixed length, the field definitions are given in a way that allows for fast, flexible updates when the marshaling format needs to be changed. So long as the shared library is decoupled from the application using the data, the dictionary and grammar can be changed by distributing a new version of the original data structure.</p>
+        <p class="indent"><a id="page_47"></a>Would a flag day be required if a new version of the data structure is distributed? Not necessarily. If a version number is included in the data structure, so the receiver could match the received data with the correct data structure, then multiple versions of the data structure could exist in the system at one time. Once no sender is found using an older data format, the older structure can be safely discarded throughout the entire system.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">gRPC is an example of a compiled shared library marshaling system; see the “Further Reading” section for resources.</p>
+        </div>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">While the fixed format and TLV systems count on the developers reading the specifications, and writing code as a form of sharing the grammar and dictionary, shared data structure systems, as described in this section, count on the shared dictionary being distributed in some other way. There are many different ways this could be done; for instance, a new version of software can be distributed to all the senders and receivers, or some form of distributed database can be used to ensure all the senders and receivers receive the updated data dictionaries, or some part of an application that specifically manages marshaling data can be distributed and paired with an application that generates and consumes the data. Some systems of this kind transfer the shared dictionary as part of their initial session setup. All of these are possible, and outside the scope of this present text.</p>
+        </div>
+        <div class="heading">
+        <h3 class="h3" id="ch02lev6">Errors</h3>
+        <p class="noindent">No data transmission medium can be assumed to be perfect. If the transmission medium is shared, like Radio Frequency (RF), there is the possibility of interference, or even datagram collisions. This is where more than one sender attempts to transmit information simultaneously. The result is a garbled message that cannot be understood by the intended receiver. Even a dedicated medium, such as a point-to-point undersea optical (lightwave) fiber cable, can experience errors due to cable degradation or point events—even seemingly insane events, such as solar flares causing radiation, which in turn interferes with data transmission through a copper cable.</p>
+        </div>
+        <p class="indent"><a id="page_48"></a>There are two key questions a network transport must answer in the area of errors:</p>
+        <p class="bullt">• How can errors in the transmission of data be detected?</p>
+        <p class="bullb">• What should the network do about errors in data transmission?</p>
+        <p class="indent">The following sections consider some of the possible answers to these questions.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch02lev7"><strong>Error Detection</strong></h4>
+        <p class="noindent">The first step in dealing with errors, whether they are because of a transmission media failure, memory corruption in a switching device along the path, or any other reason, is to <em>detect</em> the error. The problem is, of course, when a receiver examines the data it receives, there is nothing to compare the data to in order to detect the error.</p>
+        </div>
+        <p class="indent">Parity checks are the simplest detection mechanisms. Two complementary parity checking algorithms exist. With even parity checking, one additional bit is added to each block of data. If the sum of bits in the block of data is even—that is, if there are an even number of 1 bits in the data block—the additional bit is set to 0. This preserves the even parity state of the block. If the sum of bits is odd, the additional bit is set to 1, which sets the entire block to an even parity state. Odd parity uses the same additional bit strategy, but it requires the block to have odd parity (an odd number of 1 bits).</p>
+        <p class="indent">As an example, calculate even and odd parity for these four octets of data:</p>
+        <p class="codelink"><a href="ch02_images.xhtml#p02pro01a" id="p02pro01">Click here to view code image</a></p>
+        <p class="pre">00110011 00111000 00110101 00110001</p>
+        <p class="indent">Simply counting the digits reveals there are 14 <em>1s</em> and 18 <em>0s</em> in this data. To provide for error detection using a parity check, you add one bit to the data, either making the total number of <em>1s</em> in the newly enlarged set of bits even for even parity, or odd for odd parity. For instance, if you want to add an even parity bit in this case, the additional bit should be set to 0. This is because the number of <em>1s</em> is already an even number. Setting the additional parity bit to 0 will not add another <em>1</em>, and hence will not change whether the total number of <em>1s</em> is even or odd. For even parity, then, the final set of bits is</p>
+        <p class="codelink"><a href="ch02_images.xhtml#p02pro02a" id="p02pro02">Click here to view code image</a></p>
+        <p class="pre">00110011 00111000 00110101 00110001 0</p>
+        <p class="indent">On the other hand, if you wanted to add a single bit of <em>odd</em> parity to this set of bits, you would need to make the additional parity bit a <em>1</em>, so there are now 15 <em>1s</em> rather than 14. For odd parity, the final set of bits is</p>
+        <p class="codelink"><a href="ch02_images.xhtml#p02pro03a" id="p02pro03">Click here to view code image</a></p>
+        <p class="pre">00110011 00111000 00110101 00110001 1</p>
+        <p class="indent"><a id="page_49"></a>To check whether or not the data has been corrupted or changed in transit, the receiver can simply note whether even or odd parity is in use, add the number of <em>1s</em>, and discard the parity bit. If the number of <em>1s</em> does not match the kind of parity in use (even of odd), the data has been corrupted; otherwise, the data appears to be the same as what was originally transmitted.</p>
+        <p class="indent">This new bit is, of course, transmitted along with the original bits. What happens if the parity bit itself is somehow corrupted? This is actually okay; assume even parity checking is in place, and a transmitter sends</p>
+        <p class="codelink"><a href="ch02_images.xhtml#p02pro04a" id="p02pro04">Click here to view code image</a></p>
+        <p class="pre">00110011 00111000 00110101 00110001 <span class="EmpStrong">0</span></p>
+        <p class="indent">The receiver, however, receives</p>
+        <p class="codelink"><a href="ch02_images.xhtml#p02pro05a" id="p02pro05">Click here to view code image</a></p>
+        <p class="pre">00110011 00111000 00110101 00110001 <span class="EmpStrong">1</span></p>
+        <p class="indent">The parity bit itself has been flipped from a 0 to a 1. The receiver will count the <em>1s</em>, determining there are 15; since even parity checking is in use, the received data will be flagged as having an error <em>even though it does not</em>. The parity check is potentially too sensitive to failures, but it is better to err on the side of caution in the case of error detection.</p>
+        <p class="indent">There is one problem with the parity check: it can detect only a single bit flip in the transmitted signal. For instance, if even parity is in use, and the transmitter sends</p>
+        <p class="codelink"><a href="ch02_images.xhtml#p02pro06a" id="p02pro06">Click here to view code image</a></p>
+        <p class="pre">00110011 00111000 00110101 00110001 0</p>
+        <p class="indent">The receiver, however, receives</p>
+        <p class="codelink"><a href="ch02_images.xhtml#p02pro07a" id="p02pro07">Click here to view code image</a></p>
+        <p class="pre">0011001<span class="EmpStrong">0</span> 00111000 00110101 0011000<span class="EmpStrong">0</span> 0</p>
+        <p class="indent">The receiver will count the number of <em>1s</em> and find it is 12; since the system is using even parity, the receiver will assume the data is correct and process it normally. However, the two bits marked out in bold have <em>both</em> been corrupted. If an even number of bits, in any combination, is modified, the parity check cannot detect the change; only when the change involves an odd number of bits can the parity check detect the modification of the data.</p>
+        <p class="indent">The Cyclic Redundancy Check (CRC) can detect a wider range of modifications in transmitted data by using division (rather than addition) in cycles across the entire data set, one small piece at a time. Working through an example is the best way to understand how a CRC is calculated. A CRC calculation begins with a polynomial, as shown in <a href="ch02.xhtml#ch02fig04">Figure 2-4</a>.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/02fig04.jpg" aria-describedby="Al02fig04" alt="Figure represents a polynomial used to calculate a CRC." width="576" height="516"><aside class="hidden" id="Al02fig04">
+        <p>Base polynomial of three terms is mentioned at the top with x superscript 3 plus x superscript 2 plus 1 underneath. Three arrows point downward to reach 1x superscript 3, 1x superscript 2, and 1. The middle portion has 1 x superscript 3 plus 1 x superscript 2 plus 0 x plus 1. Four arrows point downward to 1101 with binary calculator mentioned below.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch02fig04"></a><strong>Figure 2-4</strong> <em>A Polynomial Used to Calculate a CRC</em></p>
+        </div>
+        <p class="indent">In <a href="ch02.xhtml#ch02fig04">Figure 2-4</a>, a three-term polynomial, x<sup>3</sup> + x<sup>2</sup> + 1, is expanded to include all the terms—including terms preceded by 0 (and hence do not impact the result of <a id="page_50"></a>the calculation regardless of the value of x). The four coefficients are then used as a <em>binary calculator</em>, which will be used to calculate the CRC.</p>
+        <p class="indent">To perform the CRC, begin with the original binary data set, and add three extra bits (because the original polynomial, without the coefficients, has three terms; hence this is called a three-bit CRC check), as shown here:</p>
+        <p class="codelink"><a href="ch02_images.xhtml#p02pro08a" id="p02pro08">Click here to view code image</a></p>
+        <p class="pre">10110011 00111001 (original data)<br>
+        10110011 00111001 000 (with the added CRC bits)</p>
+        <p class="indent">These three bits are required to ensure all the bits in the original data are included in the CRC; as the CRC moves from left to right across the original data, the last bits in the original data will be included only if these padding bits are included. Now begin at the left four bits (because the four coefficients are represented as four bits). Use the Exclusive OR (XOR) operation to compare the far-left bits against the CRC bits, and save the result, as shown here:</p>
+        <p class="codelink"><a href="ch02_images.xhtml#p02pro09a" id="p02pro09">Click here to view code image</a></p>
+        <p class="pre">10110011 00111001 000 (padded data)<br>
+        1101 (CRC check bits)<br>
+        ----<br>
+        01100011 00111001 000 (result of the XOR)</p>
+        <div class="note">
+        <p class="title"><a id="page_51"></a><strong>Note</strong></p>
+        <p class="notepara">XOR’ing two binary digits results in a 0 if the two digits match, and a 1 if they do not.</p>
+        </div>
+        <p class="indent">The check bits, called a <em>divisor</em>, are moved one bit to the right (some steps can be skipped here) and the operation is repeated until the end of the number is reached:</p>
+        <p class="codelink"><a href="ch02_images.xhtml#p02pro10a" id="p02pro10">Click here to view code image</a></p>
+        <p class="pre">10110011 00111001 000<br>
+        1101<br><br>
+        01100011 00111001 000<br>
+        &nbsp;1101<br><br>
+        00001011 00111001 000<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;1101<br><br>
+        00000110 00111001 000<br>
+        &nbsp;&nbsp;&nbsp;&nbsp; 110 1<br><br>
+        00000000 10111001 000<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1101<br><br>
+        00000000 01101001 000<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1101<br><br>
+        00000000 00000001 000<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1 101<br><br>
+        00000000 00000000 101</p>
+        <p class="indent">The CRC is in the final three bits that were originally added on as padding; this is the “remainder” of the division process of moving across the original data plus the original padding. It is simple for the receiver to determine whether the data has been changed by leaving the CRC bits in place (101 in this case), and using the original divisor across the data, as shown here:<a id="page_52"></a></p>
+        <p class="codelink"><a href="ch02_images.xhtml#p02pro11a" id="p02pro11">Click here to view code image</a></p>
+        <p class="pre">10110011 00111001 101<br>
+        1101<br>
+        <br>
+        01100011 00111001 101<br>
+        &nbsp;1101<br>
+        <br>
+        00001011 00111001 101<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;1101<br>
+        <br>
+        00000110 00111001 101<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;110 1<br>
+        <br>
+        00000000 10111001 101<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1101<br>
+        <br>
+        00000000 01101001 101<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1101<br>
+        <br>
+        00000000 00000001 101<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1 101<br>
+        <br>
+        00000000 00000000 000<br></p>
+        <p class="indent">If the data has not been changed, the result of this operation should always result in 0. If a bit has been changed, the result will not be 0, as shown here:</p>
+        <p class="codelink"><a href="ch02_images.xhtml#p02pro12a" id="p02pro12">Click here to view code image</a></p>
+        <p class="pre">10110011 0011100<span class="EmpStrong">0</span> 000<br>
+        1101<br>
+        <br>
+        01100011 0011100<span class="EmpStrong">0</span> 000<br>
+        &nbsp;1101<br>
+        <br>
+        00001011 0011100<span class="EmpStrong">0</span> 000<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;1101<br>
+        <br>
+        00000110 0011100<span class="EmpStrong">0</span> 000<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;110 1<br>
+        <br>
+        00000000 1011100<span class="EmpStrong">0</span> 000<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1101<br>
+        <br>
+        00000000 0110100<span class="EmpStrong">0</span> 000<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1101<br>
+        <br>
+        00000000 0000000<span class="EmpStrong">0</span> 000<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1 101<br>
+        <br>
+        00000000 0000000<span class="EmpStrong">1</span> 000</p>
+        <p class="indent"><a id="page_53"></a>The CRC might seem like a complex operation, but it plays to a computer’s strong points—finite length binary operations. If the length of the CRC is set the same as a standard small register in common processors, say eight bits, calculating the CRC is a fairly straightforward and quick process. CRC checks have the advantage of being resistant to multibit changes, unlike the parity check described previously.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch02lev8"><strong>Error Correction</strong></h4>
+        <p class="noindent">Detecting an error is only half of the problem, however. Once the error is detected, what should the transport system do? There are essentially three options.</p>
+        </div>
+        <p class="indent">The transport system can simply throw the data away. In this case, the transport is effectively transferring the responsibility of what to do about the error up to higher-level protocols or perhaps the application itself. As some applications may need a complete data set with no errors (think a file transfer system, or a financial transaction), they will likely have some way to discover any missing data and retransmit it. Applications that do not care about small amounts of missing data (think a voice stream) can simply ignore the missing data, reconstructing the information at the receiver as well as possible given the missing information.</p>
+        <p class="indent">The transport system can signal the transmitter that there is an error, and let the transmitter decide what to do with this information (generally the data in error will be retransmitted).</p>
+        <p class="indent">The transport system can go beyond throwing data away by including enough information in the original transmission and determine where the error is and attempt to correct it. This is called <em>Forward Error Correction</em> (FEC). Hamming codes, one of the first FEC mechanisms developed, is also one of the simplest to explain. The Hamming code is best explained by example; <a href="ch02.xhtml#ch02tab02">Table 2-2</a> will be used to illustrate.</p>
+        <div class="tab-heading">
+        <p class="tab-caption"><a id="ch02tab02"></a><strong>Table 2-2</strong> <em>An Illustration of the Hamming Code</em></p>
+        <table class="tablewidth">
+        <tbody>
+        <tr>
+        <td class="bg1" rowspan="4">&nbsp;</td>
+        <td class="bg1"><p class="thead"><strong>1</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>2</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>3</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>4</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>5</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>6</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>7</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>8</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>9</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>10</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>11</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>12</strong></p></td>
+        </tr>
+        <tr>
+        <td class="bg1"><p class="thead"><strong>0001</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>0010</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>0011</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>0100</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>0101</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>0110</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>0111</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>1000</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>1001</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>1010</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>1011</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>1100</strong></p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">P1</p></td>
+        <td class="tbody_first"><p class="noindent">P2</p></td>
+        <td class="tbody_first"><p class="noindent">D1</p></td>
+        <td class="tbody_first"><p class="noindent">P4</p></td>
+        <td class="tbody_first"><p class="noindent">D2</p></td>
+        <td class="tbody_first"><p class="noindent">D3</p></td>
+        <td class="tbody_first"><p class="noindent">D4</p></td>
+        <td class="tbody_first"><p class="noindent">P8</p></td>
+        <td class="tbody_first"><p class="noindent">D5</p></td>
+        <td class="tbody_first"><p class="noindent">D6</p></td>
+        <td class="tbody_first"><p class="noindent">D7</p></td>
+        <td class="tbody_first"><p class="noindent">D8</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">0</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">0</p></td>
+        <td class="tbody_first"><p class="noindent">0</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent"><strong>P1</strong></p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent"><strong>P2</strong></p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">0</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent"><strong>P4</strong></p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">1</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent"><strong>P8</strong></p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">&nbsp;</p></td>
+        <td class="tbody_first"><p class="noindent">0</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        <td class="tbody_first"><p class="noindent">X</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div>
+        <p class="indent"><a id="page_54"></a>In <a href="ch02.xhtml#ch02tab02">Table 2-2</a>:</p>
+        <p class="bullt">• Each bit in the 12-bit space that is a power of two (1, 2, 4, 6, 8, etc.) and the first bit are set aside as parity bits.</p>
+        <p class="bull">• The 8-bit number to be protected with FEC, 10110011, has been distributed across the remaining bits in the 12-bit space.</p>
+        <p class="bull">• Each parity bit is set to 0, and then parity is calculated for each parity bit by adding the number of <em>1s</em> in positions where the binary bit number has the same bit set as the parity bit. Specifically:</p>
+        <p class="bull1"><span class="pd_ash">•</span> P1 has the far-right bit set in its bit number; the other bits in the number space that also have the far right bit set are included in the parity calculation (see the second row in the table to find all the bit positions in the number with the far-right bit set). These are indicated in the table with an <em>X</em> in the P1 row. The total number of <em>1s</em> is an odd number, 3, so the P1 bit is set to <em>1</em> (this example is using even parity).</p>
+        <p class="bull1"><span class="pd_ash">•</span> P2 has the second bit from the right set; the other bits in the number space that have the second from the right bit set are included in the parity calculation, as indicated with an <em>X</em> in the P2 row of the table. The total number of <em>1s</em> is an even number, 4, so the P2 bit is set to 0.</p>
+        <p class="bull1"><span class="pd_ash">•</span> P4 has the third bit from the right set, so the other bits that have the third from the right bit set in their position numbers, as indicated with an <em>X</em> in the P3 row. There are an odd number of <em>1s</em> in the marked columns, so the P4 parity bit is set to 1.</p>
+        <p class="indentt">To determine if any information has changed, the receiver can check the parity bits in the same way the sender has calculated them; the total number of <em>1s</em> in any set should be an even number, including the parity bit. If one of the data bits has been flipped, the receiver should never find a single parity error, because each of the bit positions in the data is covered by multiple parity bits. To discover which data bit is incorrect, the receiver adds the positions of the parity bits that are in error; the result is the bit position that has been flipped. For instance, if the bit in position 9, which is the fifth data bit, is flipped, then parity bits P1 and P8 would be both in error. In this case, 8 + 1 = 9, so the bit in position 9 is in error and flipping it would correct the data. If a <em>single</em> parity bit is in error—for example, P1 <em>or</em> P8—then it is that parity bit which has been flipped, and the data itself is correct.</p>
+        <p class="indent">While the Hamming code is ingenious, there are many bit flip patterns it cannot detect. A more modern code, such as <em>Reed-Solomon</em>, can detect and correct a wider range of error conditions while adding less additional information to the data stream.</p>
+        <a id="page_55"></a>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">There are a large number of different kinds of CRC and error correction codes used throughout the communications world. CRC checks are classified by the number of bits used in the check (the number of bits of padding, or rather the length of the polynomial), and, in some cases, the specific application. For instance, the Universal Serial Bus uses a 5-bit CRC (CRC-5-USB); the Global System for Mobile Communications (GSM), a widely used cellular telephone standard, uses CRC-3-GSM; Code Division Multi-Access (CDMA), another widely used cellular telephone standard, uses CRC-6-CDMA2000A, CRC-6-CDMA2000B, and CRC-30; and some car area networks (CANs), used to tie together various components in a vehicle, use CRC-17-CAN and CRC-21-CAN. Some of these various CRC functions are not a single function, but rather a class, or family, of functions, with many different codes and options within them.</p>
+        </div>
+        <div class="heading">
+        <h3 class="h3" id="ch02lev9">Multiplexing</h3>
+        <p class="noindent">You walk into a room and shout, “Joe!” Your friend, Joe, turns around and begins a conversation on politics and religion (the two forbidden topics, of course, in any polite conversation). This ability to use a single medium (the air through which your voice travels) to address one person, even though many other people are using the same medium for other conversations at the same time, is what is called, in network engineering, multiplexing. More formally:</p>
+        </div>
+        <p class="blockquote"><strong>Multiplexing is used to allow multiple entities attached to the network to communicate over a shared network.</strong></p>
+        <p class="indent">Why is the word <em>entities</em> used here instead of hosts? Returning to the “conversation with Joe” example, imagine the one way you can communicate with Joe is through his teenaged child, who only texts (never talks). In fact, Joe is part of a family of several hundred to several thousand people, and all the communications for this entire family must come through this one teenager, and each person in the family has multiple conversations running concurrently, sometimes on different topics with the same person. The poor teenager must text very quickly, and keep a lot of information in her head, like “Joe is having four conversations with Mary,” and must keep the information in each conversation completely separate from the other. This is closer to how network multiplexing really works; consider:</p>
+        <p class="bullt"><a id="page_56"></a>• There could be millions (or billions) of hosts connected to a single network, all sharing the same physical network to communicate with one another.</p>
+        <p class="bull">• Each of these hosts actually contains many applications, possibly several hundred, each of which can communicate with any of the hundreds of applications on any other host connected to the network.</p>
+        <p class="bullb">• Each of these applications may, in fact, have several conversations to any other application running on any other host in the network.</p>
+        <p class="indent">If this is starting to sound complicated, that is because it is. The question this section needs to answer, then, is this:</p>
+        <p class="blockquote"><strong>How do hosts multiplex effectively over a computer network?</strong></p>
+        <p class="indent">The following sections consider the most commonly used solutions in this space, as well as some interesting problems tied up in this basic problem, such as multicast and anycast.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch02lev10"><strong>Addressing Devices and Applications</strong></h4>
+        <p class="noindent">Computer networks use a series of hierarchically arranged addresses to solve these problems; <a href="ch02.xhtml#ch02fig05">Figure 2-5</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/02fig05.jpg" aria-describedby="Al02fig05" alt="Figure represents the process of addressing multiple levels of entities in a network." width="701" height="155"><aside class="hidden" id="Al02fig05">
+        <p>Two computers are to the left and right, connected to a router with interfaces in between. Two clouds intersect the computers to the left and right. The left cloud has conversation 2, conversation 1, process 2, and process 1. The right cloud has conversation 2, conversation 1, process 2, and process 1. Dotted arrows pass to both sides, connecting both clouds and host mentioned on both sides.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch02fig05"></a><strong>Figure 2-5</strong> <em>Addressing Multiple Levels of Entities in a Network</em></p>
+        </div>
+        <p class="indent">In <a href="ch02.xhtml#ch02fig05">Figure 2-5</a>, there are four levels of addressing shown:</p>
+        <p class="bullt">• At the physical link level, there are interface addresses that allow two devices to address a particular device individually.</p>
+        <p class="bull">• At the host level, there are host addresses that allow two hosts to address a particular host directly.</p>
+        <p class="bull">• At the process level, there are <em>port numbers</em> that, combined with the host address, allow two processes to address a particular process on a particular device.</p>
+        <p class="bullb"><a id="page_57"></a>• At the conversation level, the set of source port, destination port, source address, and destination address can be combined to uniquely identify a particular conversation, or flow.</p>
+        <p class="indent">This diagram and explanation appear very clean. In real life, things are much messier. In the most widely deployed addressing scheme, the Internet Protocol (IP), there are no <em>host-level addresses</em>. Instead, there are logical and physical addresses on a per interface basis.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">IP and IP addressing will be considered in more detail in <a href="ch05.xhtml#ch05">Chapter 5</a>, “<a href="ch05.xhtml#ch05">Higher Layer Data Transports</a>.”</p>
+        </div>
+        <p class="indent">Multiplexing and multiplexing identifiers (addresses) are stacked hierarchically on top of one another in a network.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">Mechanisms that associate one kind of address with another between some layers will be considered more fully in <a href="ch06.xhtml#ch06">Chapter 6</a>, “<a href="ch06.xhtml#ch06">Interlayer Discovery</a>.”</p>
+        </div>
+        <p class="indent">There are some situations, however, in which you want to send traffic to more than one host at a time; for these situations, there are multicast and anycast. These two special kinds of addressing will be considered in the following sections.</p>
+        <div class="sidebar1">
+        <p class="title1"><strong>On Physical Links, Broadcasts, and Failure Domains</strong></p>
+        <p class="noindent">The clear-cut model illustrated in <a href="ch02.xhtml#ch02fig05">Figure 2-5</a> is made more complex when you consider the concept of broadcast domains and physical connectivity. Some media types (notably Ethernet, which is covered in more detail in <a href="ch04.xhtml#ch04">Chapter 4</a>, “<a href="ch04.xhtml#ch04">Lower Layer Transports</a>”) are designed so every device connected to the same physical link receives every packet transmitted onto the physical media—hosts just ignore packets not addressed to one of the addresses associated with the physical interface connected to the physical wire. In modern networks, however, physical Ethernet wiring rarely allows every device to receive every other device’s packets; instead, there is a switch in the middle of the network that blocks packets not destined to a particular device from being transmitted on the physical wire connected to that host.</p>
+        <p class="indent"><a id="page_58"></a>In these protocols, however, there are explicit addresses set aside for packets that <em>should be</em> transmitted to every host that would normally receive every packet if the switch was not there, or that every host should receive and process (normally, this is some form of the all 1s or all 0s version of the address). These are called broadcasts. Any device that will receive, and process, a broadcast sent by a device is said to be part of the device’s broadcast domain. The concept of a broadcast domain has traditionally been closely associated with a failure domain, because network failures impacting one device on a broadcast domain often impact every device on the broadcast domain (see <a href="ch23.xhtml#ch23">Chapter 23</a>, “<a href="ch23.xhtml#ch23">Redundant and Resilient</a>,” for more information on failure domains).</p>
+        <p class="indent">Do not be surprised if you find all of this rather confusing, because it is, in fact, rather confusing. The basic concepts of broadcasts and broadcast domains still exist, and are still important in understanding the operation of a network, but the meaning of the term can change, or even not apply, in some situations. Be careful when considering any situation to make certain you really understand how and where such broadcast domains really are, and how specific technologies impact the relationship between physical connectivity, addressing, and broadcast domains.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch02lev11"><strong>Multicast</strong></h4>
+        </div>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">This short explanation cannot really do justice to the entire scope of solutions available to build multicast trees; see the “Further Reading” section at the end of the chapter for more material to consider in this area.</p>
+        </div>
+        <p class="indent">If you have a network like the one shown in <a href="ch02.xhtml#ch02fig06">Figure 2-6</a>, and you need A to distribute the same content to G, H, M, and N, how would you go about doing this?</p>
+        <p class="indent">You could either generate four copies of the traffic, sending one stream to each of the receivers using normal <em>(unicast)</em> forwarding, or you could somehow send the traffic to a single address that the network knows to replicate so all four hosts receive a copy. This latter option is called multicast, which means using a single address to transmit traffic to multiple receivers. The key problem to solve in multicast is to forward and replicate traffic as it passes through the network so each receiver who is interested in the stream will receive a copy. <a id="page_59"></a></p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">The set of devices interested in receiving a stream of packets from a multicast source is called a multicast group. This can be a bit confusing because the address used to describe the multicast stream is also called a multicast group in some situations. The two uses are <em>practically</em> interchangeable in that the set of devices interested in receiving a particular set of multicast packets will join the multicast group, which, in effect, means listening to a particular multicast address.</p>
+        </div>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">In cases where the multicast traffic is bidirectional, this problem is much more difficult to solve. For instance, assume there is a requirement to build a multicast group with every host in the network shown in <a href="ch02.xhtml#ch02fig06">Figure 2-6</a> except N, and further that any multicast transmitted to the multicast group’s address be delivered to every host within the multicast group.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/02fig06.jpg" aria-describedby="Al02fig06" alt="Figure shows an example of Multicast." width="571" height="404"><aside class="hidden" id="Al02fig06">
+        <p>A computer, labeled A has an arrow pointing to a router labeled B. Two lines pass upward and downward to meet routers, C and D. C connects to two computers, G and H. D connects to two computers, M and N.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch02fig06"></a><strong>Figure 2-6</strong> <em>A Multicast Example</em></p>
+        </div>
+        <p class="indent">The key problem for multicast to solve can be broken into two problems:</p>
+        <p class="bullt">• How do you discover which devices would like to receive a copy of traffic transmitted to the multicast group?</p>
+        <p class="bullb"><a id="page_60"></a>• How do you determine which devices in the network should replicate the traffic, and on which interfaces they should send copies?</p>
+        <p class="indent">One possible solution is to use local requests to build a tree through which the multicast traffic should be forwarded through the network. An example of such a system is <em>Sparse Mode</em> in Protocol Independent Multicast (PIM). In this this process, each device sends a <em>join</em> message for the multicast streams it is interested in; these joins are passed upstream in the network until the sender (the host sending packets through the multicast stream) is reached. <a href="ch02.xhtml#ch02fig07">Figure 2-7</a> is used to illustrate this process.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/02fig07.jpg" aria-describedby="Al02fig07" alt="Figure demonstrates the sparse mode multicast process." width="571" height="407"><aside class="hidden" id="Al02fig07">
+        <p>A computer labeled A points to a router labeled B. Two lines move upward and downward to routers, C and D. C points to two computers, G and H. D points to two computers, M and N. An arrow reads from A to B, labeled 1. An arrow leading from N to D is labeled 2 followed by an arrow between D and B, labeled 3.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch02fig07"></a><strong>Figure 2-7</strong> <em>Sparse mode multicast</em></p>
+        </div>
+        <p class="indentb">In <a href="ch02.xhtml#ch02fig07">Figure 2-7</a>:</p>
+        <p class="indenthangingN">1. A is sending some traffic to a multicast group (address); call it <em>Z</em>.</p>
+        <p class="indenthangingN">2. N would like to receive a copy of Z, so it sends a request (a join) to its upstream router, D, for a copy of this traffic.</p>
+        <p class="indenthangingN">3. D does not have a source for this traffic, so it sends a request to the routers it is connected to for a copy of this traffic; in this case, the only router D sends the request to is B.</p>
+        <p class="indentt"><a id="page_61"></a>At each hop, the router receiving the request will place the interface on which it received the request into its <em>Outbound Interface List (OIL)</em>, and begin forwarding traffic received in the given multicast group received on any other interface. In this way, a path from the receiver to the originator of the traffic can be built; this is called a <em>reverse path tree</em>.</p>
+        <p class="indent">A second option for discovering which hosts are interested in receiving traffic for a specific multicast group is through some sort of registration server. Each host that would like to receive a copy of the stream can register its desire with a server. There are several ways the host can discover the presence of the server, including</p>
+        <p class="bullt">• Treating the multicast group address like a domain name, and looking up the address of the registration server by querying for the multicast group address</p>
+        <p class="bull">• Building and maintaining a list, or mapping, of groups to servers mapping in a local table</p>
+        <p class="bullb">• Using some form of hash algorithm to compute the registration server from the multicast group address</p>
+        <p class="indent">The registrations can either be tracked by devices on the path to the server, or, once the set of receivers and transmitters is known, the server can signal the appropriate devices along the path which ports should be configured for replicating and forwarding packets.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch02lev12"><strong>Anycast</strong></h4>
+        <p class="noindent">Another problem multiplexing solutions face is being able to address a specific instance of a service residing in implemented on multiple hosts using a single address. <a href="ch02.xhtml#ch02fig08">Figure 2-8</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/02fig08.jpg" aria-describedby="Al02fig08" alt="Figure shows an example of Anycast." width="701" height="428"><aside class="hidden" id="Al02fig08">
+        <p>A computer labeled A leads to a router labeled C. A computer labeled B leads to a router labeled D. The router C is connected to a router labeled E. A router, D is connected to a router labeled G. A router labeled F is between E and G. A line leads from E to a router labeled H. Another line from G leads to a router labeled K. A line leads from H to reach a network labeled M that has a cloud, S1 on top. A line leads from K to reach a network labeled N that has a cloud, S2 on top.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch02fig08"></a><strong>Figure 2-8</strong> <em>An Anycast Example</em></p>
+        </div>
+        <p class="indent">In <a href="ch02.xhtml#ch02fig08">Figure 2-8</a>, some service, <em>S</em>, needs to be designed to increase its performance. To accomplish this goal, a second copy of the service has been created, with the two copies being named S1 and S2. These two copies of the service are running on two servers, M and N. The problem anycast seeks to solve is this:</p>
+        <p class="blockquote"><strong>How can clients be directed to the most optimal instance of a service?</strong></p>
+        <p class="indent">One way of solving this problem is to direct all the clients to a single device and have a <em>load balancer</em> split the traffic to the servers based on the topological location of the client, the load of each server, and other factors. This solution is not always ideal, however. For instance, what if the load balancer cannot handle all the connection requests generated by the clients who want to reach various copies of the <a id="page_62"></a>service? What sorts of complexities are going to be added to the network to allow the load balancer to track the health of the various copies of the service?</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">Load balancing is considered in <a href="ch07.xhtml#ch07">Chapter 7</a>, “<a href="ch07.xhtml#ch07">Packet Switching</a>.”</p>
+        </div>
+        <p class="indent">Anycast solves this problem by assigning <em>the same address</em> to each copy of the service. In the network illustrated in <a href="ch02.xhtml#ch02fig08">Figure 2-8</a>, then, M and N would use the same address to provide reachability to S1 and S2. M and N would have different addresses assigned and advertised to provide reachability to other services, and to the devices themselves, as well.</p>
+        <p class="indent">H and K, the first hop routers beyond M and N, would advertise this same address into the network. When C and D receive two routes to the same destination, they will choose the closest route in terms of metrics. In this case, if every link in the same network is configured with the same metric, then C would direct traffic sourced from A, and destined to the service’s address, toward M. D, on the other hand, will direct traffic sourced from B, and destined to the service’s address, toward N. What happens if two instances of the service are about the same distance apart? The router will choose one of the two paths using a local hash algorithm.</p>
+        <a id="page_63"></a>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">See <a href="ch07.xhtml#ch07">Chapter 7</a> for more information about equal cost multipath switching, and how using a hash ensures the same path is used for each packet in a flow. Routing is generally stable enough, even in the Internet, to use anycast solutions with stateful protocols.<sup><a id="ch02fn5"></a><a href="ch02.xhtml#ch02fn-5">5</a></sup></p>
+        </div>
+        <p class="indent">Anycast is often used for large-scale services that must scale by provisioning a lot of servers to support the single service. Examples include the following:</p>
+        <p class="bullt">• Most large-scale Domain Name Service (DNS) system servers are actually a set of servers accessible through an anycast address.</p>
+        <p class="bull">• Many large-scale web-based services, particularly social media and search, where a single service is implemented on a large number of edge devices.</p>
+        <p class="bullb">• Content caching services often use anycast in distributing and serving information.</p>
+        <p class="indent">Designed correctly, anycast can provide effective load balancing as well as optimal performance for services.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch02lev13">Flow Control</h3>
+        <p class="noindent">Do you remember your great aunt (or was it your second cousin once removed?) who talked so fast that you could not understand a word she was saying? Some computer programs talk too fast, too. <a href="ch02.xhtml#ch02fig09">Figure 2-9</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/02fig09.jpg" aria-describedby="Al02fig09" alt="Figure represents an example of a buffer overflow." width="700" height="465"><aside class="hidden" id="Al02fig09">
+        <p>T1 is mentioned at the top left with three dots followed by four rectangles adjacent to it, labeled send rate. Queue is mentioned at the center, consisting five rectangles arranged horizontally. It has the bottom two rectangles grayed out. Process rate is at the right with three rectangles followed by three dots. T2, T3, and T4 are below with almost the same arrangement. Queue in T2 has the bottom three rectangles grayed out. Queue in T3 has the bottom four rectangles grayed out. Queue in T4 has all rectangles grayed out.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch02fig09"></a><strong>Figure 2-9</strong> <em>Buffer Overflow Example</em></p>
+        </div>
+        <p class="indent">In <a href="ch02.xhtml#ch02fig09">Figure 2-9</a>:</p>
+        <p class="bullt">• At <em>Time</em> 1 (T1), the sender is transmitting about four packets for every three the receiver can process. The receiver has a five-packet buffer to store unprocessed information; there are two packets in this buffer.</p>
+        <p class="bull">• At T2, the sender has transmitted four packets, and the receiver has processed three; the buffer at the receiver is now holding three packets.</p>
+        <p class="bull">• At T3, the sender has transmitted four packets, and the receiver has processed three; the buffer at the receiver is now holding four packets.</p>
+        <p class="bullb">• At T4, the sender has transmitted four packets, and the receiver has processed three; the buffer at the receiver is now holding five packets.</p>
+        <p class="indent"><a id="page_64"></a>The next packet transmitted will be dropped by the receiver because there is no space in the buffer to store it while the receiver is processing packets so they can be removed. What is needed is some sort of feedback loop to tell the transmitter to slow down the rate at which it is sending packets, as illustrated in <a href="ch02.xhtml#ch02fig10">Figure 2-10</a>.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/02fig10.jpg" aria-describedby="Al02fig10" alt="Figure shows a feedback loop to Control Packet Flow." width="700" height="118"><aside class="hidden" id="Al02fig10">
+        <p>Three dots are to the left with a circle labeled FC to the right. Four rectangular blocks are to the right. Five vertically arranged rectangular blocks has the bottom two rectangles grayed out. A dotted arrow leads from the vertical rectangle, reaching FC to the left. Three rectangles are to the right, with three dots adjacent to it.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch02fig10"></a><strong>Figure 2-10</strong> <em>A Feedback Loop to Control Packet Flow</em></p>
+        </div>
+        <p class="indent">This kind of feedback loop requires either implicit signaling or explicit signaling between the receiver and the transmitter. Implicit signaling is more widely deployed. In implicit signaling, the transmitter assumes the packet has not been received based on some observation about the traffic stream. For instance, the receiver may acknowledge the receipt of some later packet, or the receiver may simply not acknowledge receiving a particular packet, or the receiver may not send anything for a long period of time (in network terms). In explicit signaling, the receiver somehow directly informs the sender that a specific packet has not been received.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch02lev14"><a id="page_65"></a><strong>Windowing</strong></h4>
+        <p class="noindent">Windowing, combined with implicit signaling, is by far the most widely deployed flow control mechanism in real networks. Windowing essentially consists of the following:</p>
+        </div>
+        <p class="indenthangingN">1. A transmitter sends some amount of information to the receiver.</p>
+        <p class="indenthangingN">2. The transmitter waits before deciding if the information has been correctly received or not.</p>
+        <p class="indenthangingN">3. If the receiver acknowledges receipt within a specific amount of time, the transmitter sends new information.</p>
+        <p class="indenthangingN">4. If the receiver does not acknowledge receipt within a specific amount of time, the transmitter resends the information.</p>
+        <p class="indentt">Implicit signaling is normally used with windowing protocols by simply not acknowledging the receipt of a particular packet. Explicit signaling is <em>sometimes</em> used when the receiver knows it has dropped a packet, when received data contains errors, data is received out of order, or data is otherwise corrupted in some way. <a href="ch02.xhtml#ch02fig11">Figure 2-11</a> illustrates the simplest windowing scheme, a single packet window.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/02fig11.jpg" aria-describedby="Al02fig11" alt="Figure represents a single packet window." width="474" height="327"><aside class="hidden" id="Al02fig11">
+        <p>T1 is at the top with three dots and three rectangles adjacent to it. An arrow leads from the third rectangle, labeled send. T2 is below with three dots and three rectangles adjacent to it with the third rectangle grayed out. An arrow leads from the second rectangle and is labeled send. A rectangular box is at the right with an arrow moving upward on the left and is labeled ack. T3 is below with three dots and three rectangles adjacent to it with two rectangles to the right grayed out. An arrow leads from the first rectangle, labeled send. Two rectangles are to the right with an arrow leading upward from the second rectangle to the left, labeled ack. T4 is at the bottom with three dots and three grayed out rectangles to the right. Three rectangles are to the right with an arrow leading from the third rectangle, labeled ack. The portion to the left is labeled "A(sender)." The portion to the right is labeled "B(receiver)."</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch02fig11"></a><strong>Figure 2-11</strong> <em>A Single Packet Window</em></p>
+        </div>
+        <p class="indent">In a single packet window (also sometimes called a ping pong), the transmitter sends a packet only when the receiver has acknowledged (shown as an ack in the illustration) the receipt of the last packet transmitted. If the packet is not received, the receiver will not acknowledge it. On sending a packet, the sender sets a timer, <a id="page_66"></a>normally called the retransmit timer; once this timer wakes up (or expires), the sender will assume the receiver has not received the packet, and resend it.</p>
+        <p class="indent"><em>How long should the sender wait?</em> There are a number of possible answers to this question, but essentially the sender can either wait a fixed amount of time, or it can set a timer based on information inferred from previous transmissions and network conditions. A simple (and naïve) scheme would be to</p>
+        <p class="bullt">• Measure the length of time between sending a packet and receiving an acknowledgment, called the Round Trip Time (RTT, though normally written in the lowercase, so rtt).</p>
+        <p class="bullb">• Set the retransmit timer to this number plus some small amount of buffer time to account for any variability in the rtt over multiple transmissions.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">More information about various ways to calculate the retransmit timer are considered in <a href="ch05.xhtml#ch05">Chapter 5</a>.</p>
+        </div>
+        <p class="indentb">It is also possible for the receiver to receive two copies of the same information:</p>
+        <p class="indenthangingN">1. A transmits a packet and sets its retransmit timer.</p>
+        <p class="indenthangingN">2. B receives the packet, but</p>
+        <p class="indenthangingNA">a. Is not able to acknowledge receipt because it is out of memory or is experiencing high processor utilization or some other condition.</p>
+        <p class="indenthangingNA">b. Sends an acknowledgment, but the acknowledgment is dropped by a network device.</p>
+        <p class="indenthangingN">3. The retransmit timer at A times out, so the sender transmits another copy of the packet.</p>
+        <p class="indenthangingN">4. B receives this second copy of the same information.</p>
+        <p class="indentt"><em>How can the receiver detect duplicated data?</em> It does seem possible for the receiver to compare the packets received to see if there is duplicate information, but this will not always work—perhaps the sender <em>intended</em> to send the same information twice. The usual method of detecting duplicate information is by including some sort of sequence number in transmitted packets. Each packet is given a unique <a id="page_67"></a>sequence number while being built by the sender; if the receiver receives two packets with the same sequence number, it assumes the data is duplicated and discards the copies.</p>
+        <p class="indent">A window size of 1, or a ping pong, requires one round trip between the sender and the receiver for each set of data transmitted. This would generally result in a very slow transmission rate. If you think of the network as the end-to-end railroad track, and each packet as a single train car, the most efficient use of the track, and the fastest transmission speed, is going to be when the track is always full. This is not physically possible, however, in the case of a network because the network is used by many sets of senders and receivers, and there are always network conditions that will prevent the network utilization from reaching 100%. There is some balance between the increased efficiency and speed of sending more than one packet at a time, and the multiplexing and “safety” of sending fewer packets at a time (such as one). If a correct balance point can be calculated in some way, a fixed window flow control scheme may work well. <a href="ch02.xhtml#ch02fig12">Figure 2-12</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/02fig12.jpg" aria-describedby="Al02fig12" alt="Figure represents an example of fixed window flow control." width="699" height="732"><aside class="hidden" id="Al02fig12">
+        <p>There are two columns at the top, labeled A (sender) and B (receiver). A set of rows below has T1 mentioned to the left. T1 in the first row has the first packet pointing an arrow to the right, labeled send. T1 in the second row has the second packet pointing to the right, labeled send. T1 in the third row has the third packet pointing to the right, labeled send with ack sent from the first packet to the left. T1 in the fourth row has the fourth packet pointing to the right, labeled send with ack sent from the first packet to the left. T1 in the fifth row has the fifth packet pointing to the right, labeled send with ack sent from the first packet to the left. T1 in the sixth row has the sixth packet pointing to the right, labeled send with ack sent from the first packet to the left. T1 in the seventh row has the seventh packet pointing to the right, labeled send with ack sent from the first packet to the left. T1 in the eighth row is blank with ack sent from the first packet to the left.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch02fig12"></a><strong>Figure 2-12</strong> <em>An Example of Fixed Window Flow Control</em></p>
+        </div>
+        <p class="indent">In <a href="ch02.xhtml#ch02fig12">Figure 2-12</a>, assuming a three-packet fixed window:</p>
+        <p class="bullt">• At T1, T2, and T3, A transmits packets; A does not need to wait for B to acknowledge anything to send these three packets, as the window size is fixed at 3.</p>
+        <p class="bull">• At T4, B acknowledges these three packets, which allows A to transmit another packet.</p>
+        <p class="bull">• At T5, B acknowledges this new packet, even though is it only one packet. B does not need to wait until A has transmitted three more packets to acknowledge a single packet. This acknowledgment allows A to have enough <em>budget</em> to send three more packets.</p>
+        <p class="bull">• At T5, T6, and T7, A sends three more packets, filling its window. It must now wait until B acknowledges these three packets to send more information.</p>
+        <p class="bullb">• At T8, B acknowledges the receipt of these three packets.</p>
+        <p class="indent">In windowing schemes where the window size is more than one, there are four kinds of acknowledgments a receiver can send to the transmitter:</p>
+        <p class="bullt">• <strong>Positive acknowledgment:</strong> The receiver acknowledges the receipt of each packet individually. For instance, if sequence numbers 1, 3, 4, and 5 have been received, the receiver will acknowledge receiving those specific packets. The transmitter can infer which packets the receiver has not received by noting which sequence numbers have not been acknowledged.</p>
+        <p class="bull"><a id="page_68"></a>• <strong>Negative acknowledgment:</strong> The receiver sends a negative acknowledgment for packets it infers are missing, or were corrupted when received. For instance, if sequence numbers 1, 3, 4, and 5 have been received, the receiver may infer that sequence number 2 is missing and send a negative acknowledgment for this packet.</p>
+        <p class="bull">• <strong>Selective acknowledgment:</strong> This essentially combines positive and negative acknowledgment, as above; the receiver sends both positive and negative acknowledgments for each sequence of received information.</p>
+        <p class="bullb"><a id="page_69"></a>• <strong>Cumulative acknowledgment:</strong> Acknowledgment of the receipt of a sequence number implies receipt of all information with lower sequence numbers. For instance, if sequence number 10 is acknowledged, the information contained in sequence numbers 1–9 is implied, as well as the information contained in sequence number 10.</p>
+        <p class="indent">A third windowing mechanism is called sliding window flow control. This mechanism is very similar to a fixed window flow control mechanism, <em>except the size of the window is not fixed</em>. In sliding window flow control, the transmitter can dynamically modify the size of the window as network conditions change. The receiver does not know what size the window is, only that the sender transmits packets, and, from time to time, the receiver acknowledges some or all of them using one of the acknowledgment mechanisms described in the preceding list.</p>
+        <p class="indent">Sliding window mechanisms add one more interesting question to the questions already considered in other windowing mechanisms: What size should the window be? A naïve solution might just calculate the rtt and set the window size to some multiple of the rtt. More complex solutions have been proposed; some of these will be considered in <a href="ch05.xhtml#ch05">Chapter 5</a>, in the discussion of the Transmission Control Protocol (TCP).</p>
+        <div class="heading">
+        <h4 class="h4" id="ch02lev15"><strong>Negotiated Bit Rates</strong></h4>
+        <p class="noindent">Another solution, more often used in circuit switched rather than packet switched networks, is for the sender, receiver, and network to negotiate a bit rate for any particular flow. A wide array of possible bit rates have been designed for a number of different networking technologies; perhaps the “most complete set” is for <em>Asynchronous Transfer Mode</em> (ATM)—look for ATM networks in your nearest networking history museum, because ATM is rarely deployed in production networks any longer. The ATM bit rates are:</p>
+        </div>
+        <p class="bullt">• <strong>Constant Bit Rate (CBR):</strong> The sender will be transmitting packets (or information) at a constant rate; hence, the network can plan around this constant bandwidth load, and the receiver can plan around this constant bit rate. This bit rate is normally used for applications requiring time synchronization between the sender and receiver.</p>
+        <p class="bull">• <strong>Variable Bit Rate (VBR):</strong> The sender will be transmitting traffic at a variable rate. This rate is normally negotiated with several other pieces of information about the flow that help the network and the receiver plan resources, including:</p>
+        <p class="bull1"><span class="pd_ash">•</span> The peak rate, or the maximum packets per second the sender plans to transmit</p>
+        <p class="bull1"><a id="page_70"></a><span class="pd_ash">•</span> The sustained rate, or the rate at which the sender plans to transmit normally</p>
+        <p class="bull1"><span class="pd_ash">•</span> The maximum burst size, or the largest number of packets the sender intends to transmit over a very short period of time</p>
+        <p class="bullb">• <strong>Available Bit Rate (ABR):</strong> The sender intends to rely on the capability of the network to deliver traffic on a best-effort basis, using some other form of flow control, such as a sliding window technique, to prevent buffer overflows and adjust transmitted traffic to the available bandwidth.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch02lev16">Final Thoughts on Transport</h3>
+        <p class="noindent">This chapter begins with the fundamentals of understanding the entire scope of the network engineering problem space: transporting data across the network. Four specific problems were uncovered by considering the <em>human language</em> space, and several solutions were presented at a high level:</p>
+        </div>
+        <p class="bullt">• To marshal the data, fixed length and TLV-based systems were considered, as well as the concepts of <em>metadata, dictionaries</em>, and <em>grammars</em>.</p>
+        <p class="bull">• To manage errors, two methods were considered to detect errors, parity checks and the CRC; and one method was considered for error correction, the Hamming Code.</p>
+        <p class="bull">• To allow multiple senders and receivers to use the same physical media, several concepts in multiplexing were considered, including multicast and anycast.</p>
+        <p class="bullb">• To prevent buffer overflows, several kinds of windowing were explored, and negotiated bit rates defined.</p>
+        <p class="indent">Like many other areas you will encounter in this book, the world of transport can become an entire specialty. Understanding the basics, however, is important for every network engineer. The next chapter will consider some models that will help you to put data transport, which is generally associated with forwarding, or the data plane, into a larger context. <a href="ch04.xhtml#ch04">Chapters 4</a> and <a href="ch05.xhtml#ch05">5</a> will consider several different examples of transport protocols, pulling the concepts in this chapter and the next into real-life examples.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch02lev17"><a id="page_71"></a>Further Reading</h3>
+        <p class="noindent">Some of these further reading resources are provided to help in answering the study questions for this chapter.</p>
+        </div>
+        <p class="ref">Conran, Matt. “Know Anycast? Think Before You Talk.” Blog. <em>CacheFly</em>, February 22, 2017. <a href="https://insights.cachefly.com/anycast-think-before-you-talk-part-i">https://insights.cachefly.com/anycast-think-before-you-talk-part-i</a>.</p>
+        <p class="ref">———. “Anycast—Think Before You Talk.” Blog. <em>CacheFly</em>, February 22, 2017. <a href="https://insights.cachefly.com/anycast-think-before-you-talk-part-ii">https://insights.cachefly.com/anycast-think-before-you-talk-part-ii</a>.</p>
+        <p class="ref">“Flag Day.” Accessed June 6, 2017. <a href="http://www.catb.org/jargon/html/F/flag-day.html">http://www.catb.org/jargon/html/F/flag-day.html</a>.</p>
+        <p class="ref">Gleick, James. <em>The Information: A History, A Theory, A Flood</em>. New York: Vintage, 2012.</p>
+        <p class="ref">“Grpc /.” Accessed June 7, 2017. <a href="http://www.grpc.io/docs/tutorials/basic/c.html">http://www.grpc.io/docs/tutorials/basic/c.html</a>.</p>
+        <p class="ref"><em>Internet Protocol</em>. Request for Comments 791. RFC Editor, 1981. doi:10.17487/RFC0791.</p>
+        <p class="ref">Koopman, P. “32-Bit Cyclic Redundancy Codes for Internet Applications.” In <em>Proceedings International Conference on Dependable Systems and Networks</em>, 459–68, 2002. doi:10.1109/DSN.2002.1028931.</p>
+        <p class="ref">Koopman, P., and T. Chakravarty. “Cyclic Redundancy Code (CRC) Polynomial Selection for Embedded Networks.” In <em>International Conference on Dependable Systems and Networks, 2004</em>, 145–54, 2004. doi:10.1109/DSN.2004.1311885.</p>
+        <p class="ref">Loveless, Josh, Ray Blair, and Arvind Durai. <em>IP Multicast, Volume I: Cisco IP Multicast Networking</em>. 1st edition. Indianapolis, IN: Cisco Press, 2016.</p>
+        <p class="ref">———. <em>IP Multicast, Volume II: Advanced Multicast Concepts and Large-Scale Multicast Design</em>. 1st edition. Indianapolis, IN: Cisco Press, 2017.</p>
+        <p class="ref">McPherson, Danny R., David Oran, Dave Thaler, and Eric Osterweil. <em>Architectural Considerations of IP Anycast</em>. Request for Comments 7094. RFC Editor, 2014. doi:10.17487/RFC7094.</p>
+        <p class="ref">Moon, Todd K. <em>Error Correction Coding: Mathematical Methods and Algorithms</em>. 1st edition. Hoboken, NJ: Wiley-Interscience, 2005.</p>
+        <p class="ref">Morelos-Zaragoza, Robert H. <em>The Art of Error Correcting Coding</em>. 2nd edition. Chichester; Hoboken, NJ: Wiley, 2006.</p>
+        <p class="ref">Moy, John. “OSPF Specification.” Request for Comment. RFC Editor, October 1989. doi:10.17487/RFC1131.</p>
+        <p class="ref"><a id="page_72"></a>———. “OSPF Version 2.” Request for Comment. RFC Editor, April 1998. doi:10.17487/RFC2328.</p>
+        <p class="ref">Palsson, Bret, Prashanth Kumar, Samir Jafferali, and Zaid Ali Kahn. “TCP over IP Anycast—Pipe Dream or Reality?” Blog. <em>LinkedIn Engineering Blog</em>, September 2015. <a href="https://engineering.linkedin.com/network-performance/tcp-over-ip-anycast-pipe-dream-or-reality">https://engineering.linkedin.com/network-performance/tcp-over-ip-anycast-pipe-dream-or-reality</a>.</p>
+        <p class="ref">Postel, J. <em>NCP/TCP Transition Plan</em>. Request for Comments 801. RFC Editor, 1981. doi:10.17487/RFC0801.</p>
+        <p class="ref">Shannon, Claude E., and Warren Weaver. <em>The Mathematical Theory of Communication</em>. 4th edition. Champaign, IL: University of Illinois Press, 1949.</p>
+        <p class="ref">Soni, Jimmy, and Rob Goodman. <em>A Mind at Play: How Claude Shannon Invented the Information Age</em>. New York: Simon &amp; Schuster, 2017.</p>
+        <p class="ref">Stone, James V. <em>Information Theory: A Tutorial Introduction</em>. 1st edition. England: Sebtel Press, 2015.</p>
+        <p class="ref">“Understanding the CBR Service Category for ATM VCs.” <em>Cisco</em>. Accessed June 10, 2017. <a href="http://www.cisco.com/c/en/us/support/docs/asynchronous-transfer-mode-atm/atm-traffic-management/10422-cbr.html">http://www.cisco.com/c/en/us/support/docs/asynchronous-transfer-mode-atm/atm-traffic-management/10422-cbr.html</a>.</p>
+        <p class="ref">Warren, Henry S. <em>Hacker’s Delight</em>. 2nd edition. Upper Saddle River, NJ: Addison-Wesley Professional, 2012.</p>
+        <p class="ref">Williamson, Beau. <em>Developing IP Multicast Networks, Volume I</em>. Indianapolis, IN: Cisco Press, 1999.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch02lev18">Review Questions</h3>
+        <p class="indenthangingN">1. While TLVs almost always require more space to carry a piece of information than a fixed length field, there are some cases where the fixed length field will be less efficient. Carrying IPv6 addresses is one specific instance of a TLV being more efficient than a fixed length field. Describe why this is. Comparing the way routing protocols carry IPv4 and IPv6 addresses is a good place to start in understanding the answer. In particular, examine the way IPv4 addresses are carried in OSPF version 2, and compare this with the way these same addresses are carried in BGP.</p>
+        </div>
+        <p class="indenthangingN">2. Consider the following data types and determine whether you would use a fixed length field or a TLV to carry each one, and why.</p>
+        <p class="indenthangingNA">a. The time and date</p>
+        <p class="indenthangingNA">b. A person’s full name</p>
+        <p class="indenthangingNA"><a id="page_73"></a>c. A temperature reading</p>
+        <p class="indenthangingNA">d. The square footage of a building</p>
+        <p class="indenthangingNA">e. A series of audio or video clips</p>
+        <p class="indenthangingNA">f. A book broken down into sections such as paragraphs and chapters</p>
+        <p class="indenthangingNA">g. The city and state in an address</p>
+        <p class="indenthangingNA">h. The house number or postal code in an address</p>
+        <p class="indenthangingN">3. What is the relationship between the bit error rate (BER) and the amount of information required to detect and/or repair errors in a data transmission stream? Can you explain why this might be?</p>
+        <p class="indenthangingN">4. Under some conditions, it makes more sense to send enough information to correct data on receipt (such as using a Hamming code). In others, it makes more sense to discover the error and throw the data away. These conditions would not be just the link type, however, or just the application; they would be a combination of the two. What link characteristics, combined with what kinds of application characteristics, would suggest the use of FEC? Which ones would suggest the use of error detection combined with retransmitting the data? It might be best to think of specific applications and specific link types first, and then generalize from there.</p>
+        <p class="indenthangingN">5. How many bit flip changes can a parity check detect?</p>
+        <p class="indenthangingN">6. Implicit and explicit signaling have different characteristics, or rather different tradeoffs. Describe at least one positive and one negative aspect of each form of signaling for error detection and/or correction.</p>
+        <p class="indenthangingN">7. In a large-scale deployment of anycast, it is possible for packets from a single stream to be delivered to multiple receivers. There are two broad solutions to this problem; the first is for receivers to force the sender to reset their state if a packet appears to be misdelivered in this way. Another is to constrict the interface between the sender and receiver in a way that allows state to be contained to a single transaction. One form of this latter solution is called atomic transactions, and is often implemented in RESTful interfaces. Consider these two possible solutions, and describe the kinds of applications, giving specific examples of applications, that might be better suited for each of these two solutions.</p>
+        <p class="indenthangingN">8. Would you always consider the dictionary and the grammar forms of meta-data? Why or why not?</p>
+        <p class="indenthangingN"><a id="page_74"></a>9. Find three other kinds of metadata that do not involve the way the data is formatted, but rather describe the data in a way that might be useful to an attacker trying to understand a specific process, such as transferring funds between two accounts. Is there a specific limit to what might be considered metadata, or is it more accurate to say “metadata is in the eye of the beholder”?</p>
+        <p class="indenthangingN1">10. Consider the negotiated bit rates explained toward the end of the chapter. Is it possible to truly provide a constant bit rate in a packet switched network? Does your answer depend on the network conditions? If so, what conditions would impact the answer to the question?</p>
+        <p class="footnotet"><a id="ch02fn-1"></a><a href="ch02.xhtml#ch02fn1">1</a>. “Flag Day.”</p>
+        <p class="footnote"><a id="ch02fn-2"></a><a href="ch02.xhtml#ch02fn2">2</a>. Postel, <em>NCP/TCP Transition Plan</em>.</p>
+        <p class="footnote"><a id="ch02fn-3"></a><a href="ch02.xhtml#ch02fn3">3</a>. <em>Internet Protocol</em> This quote, or something similar, is attributed to Jon Postel.</p>
+        <p class="footnote"><a id="ch02fn-4"></a><a href="ch02.xhtml#ch02fn4">4</a>. Moy, <em>OSPF Version 2</em>, 201.</p>
+        <p class="footnote"><a id="ch02fn-5"></a><a href="ch02.xhtml#ch02fn5">5</a>. Palsson et al., “TCP over IP Anycast—Pipe Dream or Reality?”</p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780134762814/files/9780134762852.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

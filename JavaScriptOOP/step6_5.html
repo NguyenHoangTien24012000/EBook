@@ -1,0 +1,82 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="The builder pattern"><div class="titlepage"><div><div><h1 class="title"><a id="ch06lvl1sec42"></a>The builder pattern</h1></div></div></div><p>Another way to delegate the task of creating objects to another object is using the <span class="strong"><strong>builder pattern</strong></span>. This pattern is used to create complex objects that usually require a step-by-step approach.</p><p>In the classical definition, this pattern involves the following actors:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>The client</strong></span>: This&nbsp;is the object that needs a new object</li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>The director</strong></span>: This is the actor who knows how to create an object, that is, it knows the necessary steps to get an object built</li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>The builder</strong></span>: This actor actually builds the object by providing methods used by the director</li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>The product</strong></span>: It is the resulting object built by the builder under the control of the director</li></ul></div><p>In a nutshell, the client asks for a product from the director, who creates it by means of the builder. The following diagram shows the interaction between the actors:</p><div class="mediaobject"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781785889103/files/graphics/image_06_003.jpg" alt="The builder pattern" width="730" height="559"></div><p>Let's map this pattern in our software house context.</p><p>Suppose that our <code class="literal">SoftwareHouse</code> class has a <code class="literal">createSoftware()</code>method that takes a software specification and returns an application. The software development is a complex task that involves several steps. Usually, it is not a good idea to start to develop it without a plan and a work organization. So, it should be better to set up a developer team (the builder) and assign it to a project manager (the director). Translating this scenario to code we would get something similar to the following:</p><pre class="programlisting">class SoftwareHouse { 
+  constructor() {...} 
+ 
+  createSoftware(specs) { 
+    var webSwBuilderTeam = new WebSwBuilderTeam(); 
+    var projectManager = new ProjectManager(webSwBuilderTeam); 
+    return projectManager.buildSoftware(specs); 
+  } 
+} 
+</pre><p>Inside the <code class="literal">createSoftware()</code> method, we create an instance of a web developer's team (<code class="literal">WebSwBuilderTeam()</code>) and pass it to the constructor of a project manager (<code class="literal">ProjectManager()</code>). Then, we call the <code class="literal">buildSoftware()</code> method of the project manager object passing to it the software specification. As we can see, the <code class="literal">SoftwareHouse</code> class, which has the role of the client in the pattern's scenario, does not know the details about how to build a software. It simply provides a development team and delegates to the project manager the task of controlling and ensuring that the software is developed following the specifications.</p><p>It is worth nothing that in our example we used an instance of <code class="literal">WebSwBuilderTeam()</code> to represent a development team specialized in building web applications, but the software house can use different development teams based on the type of application to develop: web, mobile, desktop, and so on. Of course, all these teams need to have a common interface in order to be uniformly used by the project manager.</p><p>Let's see how the <code class="literal">ProjectManager</code> class may be implemented:</p><pre class="programlisting">class ProjectManager { 
+  constructor(builderTeam) { 
+    IDevelopmentTeam.isImplementedBy(builderTeam); 
+    this.builderTeam = builderTeam; 
+  } 
+ 
+  buildSoftware(specs) { 
+    var detailedSpecs = this.builderTeam.analyze(specs); 
+    var code = this.builderTeam.writeCode(detailedSpecs); 
+    var testedCode = this.builderTeam.test(code); 
+ 
+    return this.builderTeam.deploy(testedCode); 
+  } 
+} 
+</pre><p>In the constructor, we want to be sure that the team passed as a parameter complies&nbsp;with the contract defined by the interface <code class="literal">IDevelopmentTeam</code>, borrowing the approach used in the previous chapter. If the team is valid, it is taken as the current development team.</p><p>The <code class="literal">buildSoftware()</code> method takes the software specification as an input and uses the methods provided by the current development team in order to develop the software.</p><p>The <code class="literal">ProjectManager</code> class is responsible for the development of the software, and it can change the execution flow of the team's methods on the basis of the specification or by following other criteria.</p><div class="section" title="When to use the builder pattern?"><div class="titlepage"><div><div><h2 class="title"><a id="ch06lvl2sec49"></a>When to use the builder pattern?</h2></div></div></div><p>We have seen that the builder pattern allows a client to ignore the steps behind the creation of complex objects. It assigns to another object (the director) the responsibility for following each step of the creation process.</p><p>Typical scenarios in which we can apply the builder pattern include the conversion of documents in different formats. For each format, we implement a specific builder that exposes methods to convert paragraphs, format information, page layouts, and so on. The director will use these methods to convert a document passed as a parameter by following its structure.</p><p>In classical Object-Oriented Programming contexts, such as in Java, the builder pattern is often used to refactor a class with a constructor with many parameters, some mandatory and other optionals, such as the following:</p><pre class="programlisting">Pizza(int size) {...} 
+Pizza(int size, boolean cheese) {...} 
+Pizza(int size, boolean cheese, boolean tomato) {...} 
+Pizza(int size, boolean cheese, boolean tomato, boolean bacon)  {...}</pre><p>These kinds of constructors are difficult to read and error prone due to the presence of many parameters of the same type:</p><pre class="programlisting">Pizza pizza = new Pizza(10, true, false, true); 
+</pre><p>By defining a builder with methods that allows us to set specific parameters make the code more readable, even if more verbose:</p><pre class="programlisting">Pizza pizza = new Pizza.Builder(10).addCheese().addBacon(); 
+</pre><p>Although we can apply this approach in JavaScript, it might&nbsp;not be a good idea. In JavaScript, a more simple approach is usually used to manage this situation—an option object. Thanks to the dynamic nature of JavaScript objects, we can create a literal with the only options we want to pass to the constructor, as shown here:</p><pre class="programlisting">var pizza = new Pizza({size: 10, cheese: true, bacon; true}); 
+</pre><p>The constructor function will apply just the properties of the options object leaving the other properties to their default value:</p><pre class="programlisting">function Pizza(options) { 
+  this.size = options.size || 5; 
+  this.cheese = options.chees || false; 
+  this.tomato = options.tomato || false; 
+  this.bacon = options.bacon || false; 
+} 
+</pre></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

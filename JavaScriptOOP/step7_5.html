@@ -1,0 +1,211 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="The Model-View-ViewModel pattern"><div class="titlepage"><div><div><h1 class="title"><a id="ch07lvl1sec50"></a>The Model-View-ViewModel pattern</h1></div></div></div><p>The Model-View-ViewModel pattern or <span class="strong"><strong>MVVM</strong></span> tries to go further in reducing the dependencies among the presentation pattern components. This pattern introduces the <span class="strong"><strong>ViewModel</strong></span> component that substitutes the Presenter. Of course, it is more than a simple renaming. Let's try to understand how it works by comparing it to the MVP pattern.</p><p>Just like with MVP, the View is totally unaware of the existence of the Model. But while in the MVP pattern, the View was aware that it was talking to some intermediate component. In the MVVM pattern, the View believes that the ViewModel is its Model. Instead of asking the Presenter to bind data and manipulate the Model, the View manages its own Model represented by the ViewModel. It acts as a wrapper around the actual Model and makes some consistency validations and other activities concerning the management of data.</p><p>The following image outlines the interactions between the components of the MVVM pattern:</p><div class="mediaobject"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781785889103/files/graphics/image_07_004.jpg" alt="The Model-View-ViewModel pattern" width="761" height="504"></div><p>Let's take a look at how we can implement a View in the MVVM pattern:</p><pre class="programlisting">var View = (function () { 
+        function View(modelView) { 
+          var self = this; 
+          var txtName = document.getElementById("txtName"); 
+          var txtSurname = document.getElementById("txtSurname"); 
+          var btnSave = document.getElementById("btnSave"); 
+          var btnReset = document.getElementById("btnReset"); 
+       
+          self.modelView = modelView; 
+          txtName.value = modelView.name; 
+          txtSurname.value = modelView.surname; 
+       
+          btnSave.onclick = function () { 
+            self.save(); 
+          }; 
+       
+          btnReset.onclick = function () { 
+            self.clear(); 
+          }; 
+        } 
+       
+        View.prototype.clear = function () { 
+          var txtName = document.getElementById("txtName"); 
+          var txtSurname = document.getElementById("txtSurname"); 
+          var divMessage = document.getElementById("divMessage"); 
+       
+          txtName.value = ""; 
+          txtSurname.value = ""; 
+          divMessage.innerHTML = ""; 
+        }; 
+       
+        View.prototype.setMessage = function (message) { 
+          var divMessage = document.getElementById("divMessage"); 
+          divMessage.innerHTML = message; 
+        }; 
+       
+        View.prototype.save = function () { 
+          var txtName = document.getElementById("txtName"); 
+          var txtSurname = document.getElementById("txtSurname"); 
+          var data = { 
+            name: txtName.value, 
+            surname: txtSurname.value 
+          }; 
+       
+          this.modelView.save(data, this.setMessage); 
+        }; 
+        return View; 
+      }()); 
+      </pre><p>As we can see from the preceding code, the View uses the ViewModel passed in the constructor as if it was the actual Model. It binds the ViewModel's properties to the elements of the user's interface and uses the ViewModel's methods to manipulate it.</p><p>The following code defines the View as a class:</p><pre class="programlisting">class View { 
+        constructor(modelView) { 
+          var self = this; 
+          var txtName = document.getElementById("txtName"); 
+          var txtSurname = document.getElementById("txtSurname"); 
+          var btnSave = document.getElementById("btnSave"); 
+          var btnReset = document.getElementById("btnReset"); 
+       
+          self.modelView = modelView; 
+       
+          txtName.value = modelView.name; 
+          txtSurname.value = modelView.surname; 
+       
+          btnSave.onclick = function() { 
+            self.save(); 
+          }; 
+          btnReset.onclick =  function() { 
+            self.clear(); 
+          }; 
+        } 
+       
+        clear() { 
+          var txtName = document.getElementById("txtName"); 
+          var txtSurname = document.getElementById("txtSurname"); 
+          var divMessage = document.getElementById("divMessage"); 
+       
+          txtName.value = ""; 
+          txtSurname.value = ""; 
+          divMessage.innerHTML = ""; 
+        } 
+       
+        setMessage(message) { 
+          var divMessage = document.getElementById("divMessage"); 
+          divMessage.innerHTML = message; 
+        } 
+       
+        save() { 
+          var txtName = document.getElementById("txtName"); 
+          var txtSurname = document.getElementById("txtSurname"); 
+       
+          var data = { 
+            name: txtName.value, 
+            surname: txtSurname.value 
+          }; 
+       
+          this.modelView.save(data, this.setMessage); 
+        } 
+      } 
+      </pre><p>As said before, the ViewModel wraps the Model and adds some methods to allow controlled data manipulation. The following code shows how we can implement it for our example:</p><pre class="programlisting">var ViewModel = (function () { 
+        function ViewModel(model) { 
+          this.model = model; 
+        } 
+       
+        Object.defineProperty(ViewModel.prototype, "name", { 
+          get: function () { 
+            return this.model.name; 
+          } 
+        }); 
+       
+        Object.defineProperty(ViewModel.prototype, "surname", { 
+          get: function () { 
+            return this.model.surname; 
+          } 
+        }); 
+       
+        ViewModel.prototype.save = function (data, callback) { 
+          if (data.name &amp;&amp; data.surname) { 
+            this.model.name = data.name; 
+            this.model.surname = data.surname; 
+       
+            if (callback) { 
+              callback("Saved!"); 
+            } 
+          } 
+          else { 
+            if (callback) { 
+              callback("Please, enter name and surname!"); 
+            } 
+          } 
+        }; 
+       
+        return ViewModel; 
+      }()); 
+      </pre><p>The ViewModel definition exposes the <code class="literal">name</code> and <code class="literal">surname</code> properties of the underlying Model via its own read-only properties. Moreover, it defines the <code class="literal">save()</code> method that allows to update the Model after data validation. An interesting point in the <code class="literal">save()</code> method is the presence of the <code class="literal">callback</code> argument. This argument allows the caller to pass a function that will be called after the Model updating with information about the outcome of the operation. In our case, the ViewModel passes the message to be displayed as a parameter of the callback function. The use of the callback function allows to make the ViewModel independent from the View. Of course other techniques could be used, such as making the <code class="literal">save()</code> method to return the message or, even better, return code. The goal is to make the ViewModel unaware of the View using it.</p><p>We can define the ViewModel as a class with the following code:</p><pre class="programlisting">class ViewModel { 
+        constructor(model) { 
+          this.model = model; 
+        } 
+       
+        get name() { 
+          return this.model.name; 
+        } 
+        get surname() { 
+          return this.model.surname; 
+        } 
+       
+        save(data, callback) { 
+          if (data.name &amp;&amp; data.surname) { 
+          this.model.name = data.name; 
+          this.model.surname = data.surname; 
+       
+          if (callback) { 
+            callback("Saved!"); 
+          } 
+       
+          } else { 
+            if (callback) { 
+              callback("Please, enter name and surname!"); 
+            } 
+          } 
+        } 
+      } 
+      </pre><p>Now, we can combine all the components of the MVVM pattern to make them work:</p><pre class="programlisting">window.onload = function() { 
+        var model = new Model("John", "Smith"); 
+        var viewModel = new ViewModel(model); 
+        var view = new View(viewModel); 
+      }; 
+      </pre><p>With this code, we created each component injecting in its constructor the only component it depends on.</p></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

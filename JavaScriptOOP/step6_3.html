@@ -1,0 +1,119 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="Creating a singleton"><div class="titlepage"><div><div><h1 class="title"><a id="ch06lvl1sec40"></a>Creating a singleton</h1></div></div></div><p>Sometimes, we may need to have a single occurrence of an object throughout the application life. Consider, for example, a configuration manager or a cache manager. Since they provide a global point of access to an internal or external resource, they need to be implemented in a way so that only one instance must exist, that is, they need to be implemented as a <span class="strong"><strong>singleton</strong></span>.</p><p>The singleton pattern is one of the simplest design patterns—it involves only one entity which is responsible for making sure it creates not more than one instance and provides a global point of access to itself. For a class-based language, this means that a class can be instantiated only one time and any attempt to create a new instance of the class returns the instance already created.</p><p>In JavaScript, we can create objects through the literal notation, so any such object is already a singleton:</p><pre class="programlisting">var johnSingleton = { 
+        name: "John", 
+        surname: "Singleton" 
+    }; 
+    </pre><p>So, why do we need to implement this design pattern?</p><p>In the preceding example, we created an object which, if created in the global context of an application, is accessible from everywhere in the application. However, we are not sure that this object will actually be used during the application life. If a particular execution flow of the application does not use our object, we unnecessarily wasted the system's resources. Moreover, if we need some data or any preprocessing must be performed before the creation of the object's instance, we need to delay the object creation. Finally, if our object has to manage a private state, using a literal object is not the best way.</p><div class="section" title="The mysterious behavior of constructors"><div class="titlepage"><div><div><h2 class="title"><a id="ch06lvl2sec43"></a>The mysterious behavior of constructors</h2></div></div></div><p>So, how can we implement singletons in JavaScript? Before we go into that, let's explore an interesting behavior of constructor functions.</p><p>Usually, when we define a constructor, we do not specify a return value. The <code class="literal">new</code> operator causes the return of a new object instance from the current value of <code class="literal">this</code>. If we create a constructor returning a primitive value, such as a string or a number, it will be ignored:</p><pre class="programlisting">function Person(name, surname) { 
+      this.name = name; 
+      this.surname = surname; 
+     
+      return "This is a person"; 
+    } 
+     
+    var johnSmith = new Person("John", "Smith"); 
+     
+    console.log(johnSmith.name);         //John 
+    console.log(johnSmith.surname);      //Smith 
+    </pre><p>In this example, the constructor returns a string, but we have no effect on the creation of a new object nor get any trace of the string returned by the constructor.</p><p>If our constructor returns an object, it will be returned and the object bound to the <code class="literal">this</code> keyword will be lost:</p><pre class="programlisting">function Person(name, surname) { 
+      this.name = name; 
+      this.surname = surname; 
+     
+      return { firstName: name, secondName: surname }; 
+    } 
+     
+    var johnSmith = new Person("John", "Smith"); 
+     
+    console.log(johnSmith.name);          //undefined 
+    console.log(johnSmith.surname);       //undefined 
+    console.log(johnSmith.firstName);     //John 
+    console.log(johnSmith.secondName);    //Smith 
+    </pre><p>Here, our new object will have the properties defined in the returned object, not the properties attached to <code class="literal">this</code>.</p></div><div class="section" title="Singletons"><div class="titlepage"><div><div><h2 class="title"><a id="ch06lvl2sec44"></a>Singletons</h2></div></div></div><p>With this constructor's behavior in mind, let's take a look at how we can implement a singleton in JavaScript. Suppose, for example, we need an identifier generator returning unique values, we can define it as follows:</p><pre class="programlisting">var IdGenerator = (function() { 
+      var instance; 
+      var counter = 0; 
+     
+      var Constructor = function() { 
+        if (!instance) { 
+          instance = this; 
+        } 
+     
+        return instance; 
+      }; 
+     
+      Constructor.prototype.newId = function() { 
+      return ++counter; 
+    }; 
+     
+      return Constructor; 
+    })(); 
+    </pre><p>We used an IIFE in order to keep private the unique instance of the object created by the constructor and the <code class="literal">counter</code> variable that tracks the current value of the generated identifier. The interesting part of this code is the constructor definition. We check if an instance has been defined, if this is not the case, we associate the current value of <code class="literal">this</code> to the <code class="literal">instance</code> variable, otherwise, we return the current value of the <code class="literal">instance</code> variable. This ensures that an object instance will be created just when it's needed, and the same object will be returned each time an attempt to create a new generator will be made:</p><pre class="programlisting">var g = new IdGenerator(); 
+     
+    console.log(g.newId());        //result:    1 
+    console.log(g.newId());        //result:    2 
+     
+    var g1 = new IdGenerator(); 
+     
+    console.log(g1.newId());       //result:    3 
+    </pre><p>In the constructor definition, we attached the <code class="literal">newId()</code> method to the constructor's prototype, as usual. However in this case, it is not strictly necessary since we will have just one object instance all over the application, so we could attach the method to <code class="literal">this</code>.</p><p>Of course, we can define our singleton using the ES6 <code class="literal">class</code> syntax as shown here:</p><pre class="programlisting">var IdGenerator = (function(){ 
+        var instance; 
+        var counter = 0; 
+     
+        return class { 
+          constructor() { 
+            if (!instance) { 
+            instance = this; 
+          } 
+     
+          return instance; 
+        } 
+     
+        newId() { 
+          return ++counter; 
+        } 
+      }; 
+    })(); 
+    </pre></div><div class="section" title="When to use singletons?"><div class="titlepage"><div><div><h2 class="title"><a id="ch06lvl2sec45"></a>When to use singletons?</h2></div></div></div><p>When we introduced singletons, we provided some examples in which they can be used. Not only did we mention the configuration and cache managers, but also mentioned that the log manager could be a good candidate. However, the choice to implement the singleton pattern must be made carefully, otherwise, we risk creating objects that pollute the global environment and can become a bottleneck in the system. From a certain point of view, we can consider singletons like global variables whose drawbacks we all know. In particular, its globally availability may create tight coupling among the various components of the application, reducing their reusability.</p><p>So, in order to decide whether to implement an object as a singleton, we can ask ourselves if it is really necessary and possibly use it with caution.</p></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

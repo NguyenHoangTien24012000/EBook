@@ -1,0 +1,286 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="Duck typing"><div class="titlepage"><div><div><h1 class="title"><a id="ch05lvl1sec35"></a>Duck typing</h1></div></div></div><p>We introduced the concepts of contract and interface and mentioned how interfaces are defined in two well-known strongly typed languages. Contracts enforced by the implementation of interfaces would allow us to solve the problem of hiring just developers, that is, persons able to write code. However, we saw that interfaces in languages such as C# and Java rely on their type checking system. How can we benefit from contracts and interfaces in JavaScript?</p><p>JavaScript neither has a native support of interfaces nor allows us to define new types. Moreover, it is an extremely dynamic language that not only allows to create objects with specific members but also to change their structure at runtime so that we cannot make any assumptions based on instance type or other similar static information. However, we can try to define contracts using the so called <span class="strong"><strong>duck typing</strong></span>.</p><p>Duck typing is a programming technique where a contract is established between a function and its caller, requiring the parameters passed in by the caller to have specific members. David Thomas gave this curious name to this technique referring to the colloquial saying "<span class="emphasis"><em>If it walks like a duck and quacks like a duck, it is a duck.</em></span>"</p><p>Duck typing is not so much a type system as it is an approach to treating objects as if they are certain types based on their behavior rather than their declared type. In other words, rather than checking if an object <span class="strong"><strong>is</strong></span> a duck, we check if it <span class="strong"><strong>behaves like</strong></span> a duck.</p><p>Let's see how we can implement duck typing in JavaScript.</p><div class="section" title="A basic approach"><div class="titlepage"><div><div><h2 class="title"><a id="ch05lvl2sec39"></a>A basic approach</h2></div></div></div><p>The most simple approach to implement duck typing is to check the presence of the required members directly in the method which needs the contract compliance. Referring to our software house example, we can check if the object passed as an argument to the <code class="literal">hire()</code> method has a method named <code class="literal">writeCode</code>:</p><pre class="programlisting">class SoftwareHouse { 
+  constructor() { 
+    this.employees = []; 
+  } 
+ 
+  hire(dev) { 
+<span class="strong"><strong>    if (dev &amp;&amp; dev["writeCode"] &amp;&amp; dev["writeCode"] instanceof
+    Function) {</strong></span> 
+      this.employees.push(dev); 
+    } else { 
+      throw new Error("The argument do not implements writeCode        method") 
+    } 
+  } 
+} 
+</pre><p>We added the highlighted code checking whether a <code class="literal">writeCode</code> member exists and if it is a function. If it is not true, an exception is raised. This approach works but it tends to make the <code class="literal">hire()</code> method very verbose, especially if more than one member has to be checked.</p><p>In a more readable and generic approach, we can define a private function that checks if an object implements a specific method:</p><pre class="programlisting">var  SoftwareHouse = (function() { 
+<span class="strong"><strong>  function implement(obj, method) {
+</strong></span>
+<span class="strong"><strong>    return (obj &amp;&amp; obj[method] &amp;&amp; obj[method] instanceof
+    Function);</strong></span>
+<span class="strong"><strong>  }</strong></span> 
+ 
+  return class { 
+    constructor() { 
+      this.employees = []; 
+    } 
+ 
+    hire(dev) { 
+<span class="strong"><strong>      if (implement(dev, "writeCode")) {</strong></span> 
+        this.employees.push(dev); 
+      } else { 
+        throw new Error("The argument does not implement writeCode          method") 
+      } 
+    } 
+  }; 
+})(); 
+</pre><p>Here, we included the class definition in an <span class="strong"><strong>Immediately Invoked Function Expression</strong></span> (<span class="strong"><strong>IIFE</strong></span>) in order to keep private the <code class="literal">implements()</code> function.</p><p>An interface also consists of public properties. For example, in addition to be able to write code, we can require that our candidates should have a name. This requirement can be easily checked as shown by the following code:</p><pre class="programlisting">var  SoftwareHouse = (function() { 
+ 
+<span class="strong"><strong>  function implementsMethod(obj, method) {
+</strong></span>
+<span class="strong"><strong>    return !!(obj &amp;&amp; obj[method] &amp;&amp; obj[method] instanceof
+    Function);</strong></span>
+<span class="strong"><strong>  }
+</strong></span>
+<span class="strong"><strong>  function implementsProperty(obj, property) {
+</strong></span>
+<span class="strong"><strong>    return !!(obj &amp;&amp; obj[property] &amp;&amp; !(obj[property] instanceof
+    Function))
+</strong></span>
+<span class="strong"><strong>  }</strong></span> 
+ 
+  return class { 
+    constructor() { 
+      this.employees = []; 
+    } 
+ 
+    hire(dev) { 
+<span class="strong"><strong>      if (implementsMethod(dev, "writeCode") &amp;&amp;
+      implementsProperty(dev, "name")) {</strong></span> 
+        this.employees.push(dev); 
+      } else { 
+        throw new Error("The argument is not compatible with the          required interface") 
+      } 
+    } 
+  }; 
+})(); 
+</pre><p>Here, we highlighted the changes to the code, where we implemented two functions to check if an object implements the required methods and properties: <code class="literal">implementsMethod()</code> and <code class="literal">implementsProperty()</code>.</p><p>Note that we used the double not operator in order to force the conversion to Boolean, when the property or method is undefined.</p></div><div class="section" title="A general solution"><div class="titlepage"><div><div><h2 class="title"><a id="ch05lvl2sec40"></a>A general solution</h2></div></div></div><p>The previous solution requires&nbsp;us to implement private methods to check if an object implements the methods and properties required by a contract. This forces us to replicate quite general code for each class or constructor definition. A more general approach would be desirable.</p><p>We can attach the <code class="literal">implementsMethod()</code> and <code class="literal">implementsProperty()</code> methods to the prototype of the <code class="literal">Object()</code> constructor, as shown here:</p><pre class="programlisting">Object.prototype.implementsMethod = function(method) { 
+  return !!(this[method] &amp;&amp; this[method] instanceof Function) 
+}; 
+ 
+Object.prototype.implementsProperty = function(property) { 
+  return !!(this[property] &amp;&amp; !(this[property] instanceof    Function)) 
+}; 
+</pre><p>This approach allows us to get these methods for each object so that we can check if an object implements a method or a property very easily:</p><pre class="programlisting">var johnSmith = {name: "John", surname: "Smith", writeCode: function() {...}}; 
+ 
+johnSmith.implementsMethod("name");         //result: true 
+johnSmith.implementsMethod("writeCode");    //result: true 
+johnSmith.implementsMethod("writePoems");   //result: false 
+</pre><p>Using this approach, we can rewrite our software house class as follows:</p><pre class="programlisting">class SoftwareHouse { 
+  constructor() { 
+    this.employees = []; 
+  } 
+ 
+  hire(dev) { 
+    if (dev.implementsMethod("writeCode") &amp;&amp;      dev.implementsProperty("name")) { 
+      this.employees.push(dev); 
+    } else { 
+      throw new Error("The argument is not compatible with the        required interface") 
+    } 
+  } 
+} 
+</pre><p>Even if this is a powerful approach, it should be pointed out that in general attaching methods to the prototype of a built-in constructor is not a good practice. It might clash with other extensions or future additions of the ECMAScript standard.</p></div><div class="section" title="Emulating Interfaces with duck typing"><div class="titlepage"><div><div><h2 class="title"><a id="ch05lvl2sec41"></a>Emulating Interfaces with duck typing</h2></div></div></div><p>So far, we found a way as general as possible to check if an object complies with a contract. Such solutions are not true interfaces as per classical OOP languages. In languages such as Java and C#, an interface is a syntactical entity that describes the members an object must implement to comply with a contract. Then, a class declares that it is implementing a specific interface and the type system checks if the declaration of the class actually does what it is saying. In JavaScript, we cannot rely on a mechanism like this, we have no syntactical entity to declare interfaces nor a type system to check compliance. However, we can emulate interfaces in some way letting the code look more similar to classical OOP interfaces.</p><p>In order to obtain an interface-like approach, we define a class that emulates an interface declaration and check if an object implements it. Let's take a look at the code:</p><pre class="programlisting">class Interface { 
+  constructor(name, methods=[], properties=[]) { 
+    this.name = name; 
+    this.methods = []; 
+    this.properties = []; 
+ 
+    for (let i = 0, len = methods.length; i &lt; len; i++) { 
+      if (typeof methods[i] !== 'string') { 
+        throw new Error("Interface constructor expects method
+        names to be passed in as a string."); 
+      } 
+      this.methods.push(methods[i]); 
+    } 
+ 
+    for (let i = 0, len = properties.length; i &lt; len; i++) { 
+      if (typeof properties[i] !== 'string') { 
+        throw new Error("Interface constructor expects property
+        names to be passed in as a string."); 
+      } 
+      this.properties.push(properties[i]); 
+    } 
+  } 
+ 
+  isImplementedBy(obj) { 
+    var methodsLen = this.methods.length; 
+    var propertiesLen = this.properties.length; 
+    var currentMember; 
+ 
+    if (obj) { 
+      //check methods 
+      for (let i = 0; i &lt; methodsLen; i++) { 
+        currentMember = this.methods[i]; 
+        if (!obj[currentMember] || typeof obj[currentMember] !==
+        "function") {
+          throw new Error("The object does not implement the
+          interface " + this.name + ". Method " + currentMember +
+          " not found."); 
+        } 
+      } 
+ 
+      //check properties 
+      for (let i = 0; i &lt; propertiesLen; i++) { 
+        currentMember = this.properties[i]; 
+        if (!obj[currentMember] || typeof obj[currentMember] ===
+        "function") {
+          throw new Error("The object does not implement the
+          interface " + this.name + ". Property " + currentMember
+          + " not found."); 
+        } 
+      } 
+    } else { 
+      throw new Error("No object to check!"); 
+    } 
+  } 
+} 
+</pre><p>In essential parts, the class constructor takes three arguments: the name of the interface, an array of method names, and an array of property names. By creating an instance of the <code class="literal">Interface</code> class, we are declaring the existence of a contract requiring the implementation of the methods and properties passed as arguments. During the instance construction, the method and the property names are stored in the property's <code class="literal">methods</code> and <code class="literal">properties</code> of the instance itself.</p><p>The <code class="literal">isImplementedBy()</code> method takes an object as argument and checks if it complies with the contract described by the interface, that is, checks if it implements all required methods and properties. If at least one of the required members is not among the members implemented by the object, an exception is thrown saying which member is missing.</p><p>Of course, we can implement the <code class="literal">Interface</code> class as a constructor function for backward compatibility. The following code shows the equivalent version without ECMAScript 6 syntax:</p><pre class="programlisting">function Interface(name, methods, properties) { 
+  "use strict"; 
+ 
+  methods = methods || []; 
+  properties = properties || []; 
+ 
+  this.name = name; 
+  this.methods = []; 
+  this.properties = []; 
+ 
+  for (let i = 0, len = methods.length; i &lt; len; i++) { 
+    if (typeof methods[i] !== 'string') { 
+      throw new Error("Interface constructor expects method names
+      to be passed in as a string."); 
+    } 
+    this.methods.push(methods[i]); 
+  } 
+ 
+  for (let i = 0, len = properties.length; i &lt; len; i++) { 
+    if (typeof properties[i] !== 'string') { 
+      throw new Error("Interface constructor expects property
+      names to be passed in as a string."); 
+    } 
+    this.properties.push(properties[i]); 
+  } 
+} 
+ 
+ 
+Interface.prototype.isImplementedBy = function(obj) { 
+  "use strict"; 
+  var methodsLen = this.methods.length; 
+  var propertiesLen = this.properties.length; 
+  var currentMember; 
+ 
+  if (obj) { 
+    //check methods 
+    for (let i = 0; i &lt; methodsLen; i++) { 
+      currentMember = this.methods[i]; 
+      if (!obj[currentMember] || typeof obj[currentMember] !==
+      "function") {
+        throw new Error("The object does not implement the
+        interface " + this.name + ". Method " +currentMember + "
+        not found."); 
+      } 
+    } 
+ 
+    //check properties 
+    for (let i = 0; i &lt; propertiesLen; i++) { 
+      currentMember = this.properties[i]; 
+      if (!obj[currentMember] || typeof obj[currentMember] ===
+      "function") {
+        throw new Error("The object does not implement the
+        interface " + this.name + ". Property " + currentMember +
+        " not found."); 
+      } 
+    } 
+  } else { 
+    throw new Error("No object to check!"); 
+  } 
+}; 
+</pre><p>Now, we can easily create an interface requiring the constraints an object must comply with in order to interact with other objects. For example, we can create an interface that establishes the criteria by which a candidate can be hired:</p><pre class="programlisting">var IHireable = new Interface("IHireable", ["writeCode"],  ["name"]);</pre><p>Here, we created the interface <code class="literal">IHireable</code> requiring that an object must implement a method named <code class="literal">writeCode</code> and a property named <code class="literal">name</code>. Note how we have taken the naming convention borrowed from C#, although it is not mandatory.</p><p>Now, our software house class definition is more compact and readable and its method <code class="literal">hire()</code> will get any object with a name and will be able to write the code:</p><pre class="programlisting">class SoftwareHouse { 
+  constructor() { 
+    this.employees = []; 
+  } 
+ 
+  hire(dev) { 
+    IHireable.isImplementedBy(dev); 
+    this.employees.push(dev); 
+  } 
+} 
+</pre><p>As a result, only if an object implements the <code class="literal">IHireable</code> interface, it will be pushed in to the <code class="literal">employees</code> array.</p></div><div class="section" title="Multiple interface implementation"><div class="titlepage"><div><div><h2 class="title"><a id="ch05lvl2sec42"></a>Multiple interface implementation</h2></div></div></div><p>As we said so far, an object implementing an interface can also have other methods and properties that are not required by the specific interface. It can also implement multiple interfaces without breaking the contract. Let's make an example of multiple interface implementation by considering that our software house needs a developer to be also a team leader. Team leadership is a cross competence, so it not necessarily tied to the developer role. Instead of including the team leadership feature in the <code class="literal">IHireable</code> interface, we can define a new specific interface:</p><pre class="programlisting">var ITeamLeadership = new Interface("ITeamLeadership",  ["delegateTo", "motivate"], ["team"]);</pre><p>We defined the <code class="literal">ITeamLeadership</code> interface, which requires the implementation of two methods, <code class="literal">delegateTo()</code> and <code class="literal">motivate()</code>, and one property, <code class="literal">team</code>.</p><p>Now, our <code class="literal">SoftwareHouse</code> class should check the implementation of both interfaces before hiring a new developer:</p><pre class="programlisting">class SoftwareHouse { 
+  constructor() { 
+    this.employees = []; 
+  } 
+ 
+  hire(dev) { 
+    IHireable.isImplementedBy(dev); 
+    ITeamLeadership.isImplementedBy(dev); 
+    this.employees.push(dev); 
+  } 
+} 
+</pre><p>As we can see, checking if a developer implements both interfaces is simply made by executing the <code class="literal">isImplementedBy()</code> method of both interfaces.</p><p>The following is an example of checking the implementation of the <code class="literal">IHireable</code> and <code class="literal">ITeamLeaderhip</code> interfaces:</p><pre class="programlisting">var johnSmith = { 
+  name: "John", 
+  surname: "Smith", 
+  writeCode: function() {...}, 
+  delegateTo: function() {...}, 
+  motivate: function() {...}, 
+  team: []}; 
+ 
+var swHouse = new SoftwareHouse(); 
+ 
+swHouse.hire(johnSmith); 
+ 
+console.log(swHouse.employees.indexOf(johnSmith)); //result:   0 
+</pre></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

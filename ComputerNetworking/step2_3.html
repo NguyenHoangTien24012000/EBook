@@ -1,0 +1,526 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 class="h2" id="ch13"><a id="page_341"></a><strong>Chapter 13<br>Unicast Loop-Free Paths (2)</strong></h2>
+        <div class="sidebar">
+        <p class="sb-noindent"><strong>Learning Objectives</strong></p>
+        <p class="sb-noindent">After reading this chapter, you should be able to understand:</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Dijkstra’s Shortest Path First algorithm</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The computation of Loop-Free Alternates using Dijkstra’s algorithm</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Suurballe’s Disjoint Path algorithm</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> DFS numbering for calculating disjoint paths</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Maximally redundant trees for calculating disjoint paths</p>
+        </div>
+        <p class="noindent">The preceding chapter discussed the shortest path rule and two algorithms (or perhaps systems) to find loop-free paths through a network. There is a wide range of such systems—far too many to cover in a few chapters of a larger book—but it is important for network engineers to be familiar with at least a few of these systems. This chapter considers Dijkstra’s Shortest Path First, Path Vector, and two different disjoint path algorithms: Suurballe’s and Maximally Redundant Trees (MRTs). Finally, this chapter will consider one other problem that control planes need to solve: ensuring two-way connectivity through the network.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch13lev1">Dijkstra’s Shortest Path First</h3>
+        <p class="noindent">Dijkstra’s Shortest Path First (SPF) algorithm is, perhaps, the most widely recognized and understood system for discovering loop-free paths through a network. It is <a id="page_342"></a>used by two widely deployed routing protocols, and in many other everyday systems such as software designed to find the shortest path through a road network, or to discover connections and connection patterns in social networks.</p>
+        </div>
+        <div class="sidebar1">
+        <p class="title1"><strong>The History of Dijkstra’s Algorithm</strong></p>
+        <p class="noindent">Edsger Dijkstra, a theoretical physicist, published his shortest path algorithm in 1959.<sup><a id="ch13fn1"></a><a href="ch13.xhtml#ch13fn-1">1</a></sup> This greedy algorithm, in its original form, ran in the worst case in O(n<sup>2</sup>), but has been optimized through the use of self-balancing and ordered heaps, to O(|E|+|V| log |V|), where <em>E</em> is the number of edges (or links) in the network, and <em>V</em> is the number of vertices (or nodes). In most real-world networks, various assumptions are made that allow the algorithm to run faster than this, computing a tree across a large set of nodes and edges in tens to hundreds of milliseconds.</p>
+        <p class="indent">Dijkstra originally designed this algorithm as a “toy problem” to demonstrate the abilities of a 6-bit computer and then reused it to find the minimum amount of wire required to connect several computers. The algorithm is often considered a version of <em>Prim’s Universal Shortest Path First</em> algorithm. Prim published a version in 1957, a version of which was apparently known by Jarnik in the 1920s.</p>
+        <p class="indent">This intertwined history of algorithms is common in the field of computer science; it is often difficult to unwind the true history of any particular algorithm, as many were discovered (in theory) by very early Greek or other classical mathematicians.</p>
+        </div>
+        <p class="indent">Dijkstra’s algorithm, in pseudocode, uses two data structures. The first is the tentative list, or the TENT; this list contains the set of nodes under consideration for inclusion in the Shortest Path Tree. The second is the PATH; this list contains the set of nodes (and therefore links, as well), which are on the Shortest Path Tree.</p>
+        <p class="codelink"><a href="ch13_images.xhtml#p13pro01a" id="p13pro01">Click here to view code image</a></p>
+        <p class="pre">
+        01 move "me" to the TENT<br>
+        02 while TENT is not empty {<br>
+        <br>
+        03&nbsp;&nbsp;&nbsp;sort TENT<br>
+        04&nbsp;&nbsp;&nbsp;selected == first node on TENT<br>
+        <br>
+        05&nbsp;&nbsp;&nbsp;if selected is in PATH {<br>
+        <a id="page_343"></a>
+        06&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*do nothing*<br>
+        07&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        08&nbsp;&nbsp;&nbsp;else {<br>
+        09&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;add selected to PATH<br>
+        <br>
+        10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for each node connected to selected in TOPO<br>
+        11&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v = find node in TENT<br>
+        12&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (!v)<br>
+        13&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;move node to TENT<br>
+        14&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else if node.cost &lt; v.cost<br>
+        15&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;replace v with node on TENT<br>
+        16&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else<br>
+        17&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;remove node from TOPO<br>
+        <br>
+        18&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        19 }</p>
+        <p class="indentb">As always, the algorithm is less complex than it appears on initial inspection; the key is the sorting of the two lists and the order in which nodes are processed off the TENT list. Here are some notes on the pseudocode before walking through an example:</p>
+        <p class="indenthangingN">1. The process starts with a copy of the topology database, called TOPO here; this will be clearer in the example, but it is simply a structure containing the source nodes, the destination nodes, and the cost of the link between them.</p>
+        <p class="indenthangingN">2. The TENT is the list of nodes that may, tentatively, be considered the shortest path to any particular node.</p>
+        <p class="indenthangingN">3. The PATH is the Shortest Path Tree (SPT), a structure containing a loop-free path to each node, and the next hop from “me” to that node.</p>
+        <p class="indenthangingN">4. The first crucial point in this algorithm is keeping only nodes already somehow connected to a node on the PATH list on the TENT; this means the shortest path on the TENT is the next shortest path in the network.</p>
+        <p class="indenthangingN">5. The second crucial point in this algorithm is the comparison between any existing nodes on the TENT that connect to the same node; this, combined with the sorting of the TENT and the separation of the TENT from the PATH, executes the shortest path rule.</p>
+        <p class="indentt">With these points in mind, <a href="ch13.xhtml#ch13fig01">Figures 13-1</a> through <a href="ch13.xhtml#ch13fig09">13-9</a> are used to illustrate the operation of Dijkstra’s SPF algorithm.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig01.jpg" aria-describedby="Al13fig01" alt="Figure represents a small network for demonstrating Dijkstras SPF Algorithm." width="469" height="501"><aside class="hidden" id="Al13fig01">
+        <p>A circle labeled A has four lines labeled 1, 5, 2, and 1 reaching circles, B, D, E, and F. A line labeled 1 leads from B to reach a circle labeled C. A line labeled 1 leads from C to reach a circle labeled D. A line labeled 2 leads from D to reach a circle labeled G. A line labeled 1 leads from F to E. A line labeled 2 leads from E to G."</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig01"></a><strong>Figure 13-1</strong> <em>A Small Network for Demonstrating Dijkstra’s SPF Algorithm</em></p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig02.jpg" aria-describedby="Al13fig02" alt="Figure represents the first step in Dijkstras SPF Calculation." width="701" height="409"><aside class="hidden" id="Al13fig02">
+        <p>A circle labeled A has four lines labeled 1, 5, 2, and 1 reaching circles, B, D, E, and F. The circle "A" is highlighted in the figure. A line labeled 1 leads from B to reach a circle labeled C. A line labeled 1 leads from C to reach a circle labeled D. A line labeled 2 leads from D to reach a circle labeled G. A line labeled 1 leads from F to E. A line labeled 2 leads from E to G." Three tables labeled TOP0, TENT, and PATH are mentioned to the right. TOP0 is filled with information regarding the connected lines and the value labeled in between. The remaining two tables are empty.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig02"></a><strong>Figure 13-2</strong> <em>The First Step in Dijkstra’s SPF Calculation</em></p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig03.jpg" aria-describedby="Al13fig03" alt="Figure represents the second step in Dijkstras SPF Calculation." width="701" height="409"><aside class="hidden" id="Al13fig03">
+        <p>A circle labeled A has four lines labeled 1, 5, 2, and 1 reaching circles, B, D, E, and F. Only these circles are highlighted in the figure. A line labeled 1 leads from B to reach a circle labeled C. A line labeled 1 leads from C to reach a circle labeled D. A line labeled 2 leads from D to reach a circle labeled G. A line labeled 1 leads from F to E. A line labeled 2 leads from E to G." Three tables labeled TOP0, TENT, and PATH are to the right. The TOP0 table has the values of connections with circles that are not highlighted. The TENT table shows values assigned for B, F, E, and D. The PATH table remains empty.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig03"></a><strong>Figure 13-3</strong> <em>The Second Step in Dijkstra’s SPF Calculation</em></p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig04.jpg" aria-describedby="Al13fig04" alt="Figure shows the third step in Dijkstras SPF Calculation." width="701" height="409"><aside class="hidden" id="Al13fig04">
+        <p>A circle labeled A has four lines labeled 1, 5, 2, and 1 reaching circles, B, D, E, and F. All circles except G are highlighted. A line labeled 1 leads from B to reach a circle labeled C. A line labeled 1 leads from C to reach a circle labeled D. A line labeled 2 leads from D to reach a circle labeled G. A line labeled 1 leads from F to E. A line labeled 2 leads from E to G." Three tables, TOP0, TENT, and PATH are mentioned to the right. The TOP0 table has circles C, D, E, and Fs connection to G and the values. The TENT table shows values for F, C, E, and D. The PATH table shows values for A and B.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig04"></a><strong>Figure 13-4</strong> <em>The Third Step in Dijkstra’s SPF Calculation</em></p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig05.jpg" aria-describedby="Al13fig05" alt="Figure shows the fourth step in Dijkstras SPF Calculation." width="701" height="409"><aside class="hidden" id="Al13fig05">
+        <p>A circle labeled A has four lines labeled 1, 5, 2, and 1 reaching circles, B, D, E, and F. All circles except G are highlighted. A line labeled 1 leads from B to reach a circle labeled C. A line labeled 1 leads from C to reach a circle labeled D. A line labeled 2 leads from D to reach a circle labeled G. A line labeled 1 leads from F to E. A line labeled 2 leads from E to G." Three tables, TOP0, TENT, and PATH are mentioned to the right. The TOP0 table has circles C, D, and Es connection to G and the values. The TENT table shows values for C, E, and D. The PATH table shows values for A, B, and F.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig05"></a><strong>Figure 13-5</strong> <em>The Fourth Step in Dijkstra’s SPF Calculation</em></p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig06.jpg" aria-describedby="Al13fig06" alt="Figure represents the fifth step in Dijkstras SPF Calculation." width="701" height="409"><aside class="hidden" id="Al13fig06">
+        <p>A circle labeled A has four lines labeled 1, 5, 2, and 1 reaching circles, B, D, E, and F. All circles except G are highlighted. A line labeled 1 leads from B to reach a circle labeled C. A line labeled 1 leads from C to reach a circle labeled D. A line labeled 2 leads from D to reach a circle labeled G. A line labeled 1 leads from F to E. A line labeled 2 leads from E to G." Three tables, TOP0, TENT, and PATH are mentioned to the right. The TOP0 table has circles D and Es connection to G and the values. The TENT table shows values for E and D. The PATH table shows values for A, B, F, and C.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig06"></a><strong>Figure 13-6</strong> <em>The Fifth Step in Dijkstra’s SPF Calculation</em></p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig07.jpg" aria-describedby="Al13fig07" alt="Figure represents the sixth step in Dijkstras SPF Calculation." width="701" height="409"><aside class="hidden" id="Al13fig07">
+        <p>A circle labeled A has four lines labeled 1, 5, 2, and 1 reaching circles, B, D, E, and F. All circles except G are highlighted. A line labeled 1 leads from B to reach a circle labeled C. A line labeled 1 leads from C to reach a circle labeled D. A line labeled 2 leads from D to reach a circle labeled G. A line labeled 1 leads from F to E. A line labeled 2 leads from E to G." Three tables, TOP0, TENT, and PATH are mentioned to the right. The TOP0 table has Ds connection to G and the value. The TENT table shows values for D and G. The PATH table shows values for A, B, F, C, and E.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig07"></a><strong>Figure 13-7</strong> <em>The Sixth Step in Dijkstra’s SPF Calculation</em></p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig08.jpg" aria-describedby="Al13fig08" alt="Figure represents the seventh step in Dijkstras SPF Calculation." width="701" height="409"><aside class="hidden" id="Al13fig08">
+        <p>A circle labeled A has four lines labeled 1, 5, 2, and 1 reaching circles, B, D, E, and F. All circles except G are highlighted. A line labeled 1 leads from B to reach a circle labeled C. A line labeled 1 leads from C to reach a circle labeled D. A line labeled 2 leads from D to reach a circle labeled G. A line labeled 1 leads from F to E. A line labeled 2 leads from E to G." Three tables, TOP0, TENT, and PATH are mentioned to the right. The TOP0 table and the TENT table are empty. The PATH table shows values for A, B, F, C, E, D, and G.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig08"></a><strong>Figure 13-8</strong> <em>The Seventh Step in Dijkstra’s SPF Calculation</em></p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig09.jpg" aria-describedby="Al13fig09" alt="Figure represents the process of partial and incremental SPF." width="696" height="212"><aside class="hidden" id="Al13fig09">
+        <p>A circle labeled A is to the left with a line to the right, meeting a circle labeled C. Two lines lead upward from C to reach circles, B and D. A line leads from C to reach a circle labeled E. A line leads upward from E to a circle labeled F. A line leads from E to reach a circle labeled G. To the right, text reads: 2001:db8:3e8:100::/64.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig09"></a><strong>Figure 13-9</strong> <em>Partial and Incremental SPF</em></p>
+        </div>
+        <p class="indent"><a id="page_344"></a>Each of the following illustrations, along with the accompanying description, will show one step in the SPF algorithm on this network, beginning with <a href="ch13.xhtml#ch13fig02">Figure 13-2</a>.</p>
+        <p class="indent"><a id="page_345"></a>At the point illustrated in <a href="ch13.xhtml#ch13fig02">Figure 13-2</a>, A has been moved from the TOPO into the TENT and then into the PATH. The cost of the origin node to itself is always 0; this link is included to start the SPF calculation. This represents lines 01 through 09 in the pseudocode shown earlier. <a href="ch13.xhtml#ch13fig03">Figure 13-3</a> illustrates the second step in the SPF calculation.</p>
+        <p class="indent">In <a href="ch13.xhtml#ch13fig03">Figure 13-3</a>, each node connected to A has been moved from the TOPO to the TENT; this represents lines 10 through 17 in the pseudocode shown earlier. When this step began, there was only A in the TENT, so there are no existing nodes in the TENT that would have caused any metric comparisons. The TENT is now sorted, and execution continues with line 03 in the pseudocode. <a href="ch13.xhtml#ch13fig04">Figure 13-4</a> illustrates.</p>
+        <p class="indent">In <a href="ch13.xhtml#ch13fig04">Figure 13-4</a>, one of the two shortest cost paths—to B and F, each with a cost of 1—has been chosen and moved to the PATH (lines 05–09 in the pseudocode shown earlier). When B is moved from the TENT to the PATH, any nodes with an origin of B in the TOPO are moved to the TENT (lines 10–17 in the pseudocode). Note C was not already in the TENT before being drawn on through B’s move to the PATH, so no metric comparison is done. The cost to C is the sum of the cost of its predecessor in the PATH (which is B, with a cost of 1), and the link between the two nodes; hence C is added to the TENT with a cost of 2. The TENT is sorted (line 3 of the pseudocode), so the process is ready to begin again. <a href="ch13.xhtml#ch13fig05">Figure 13-5</a> illustrates the next step in the process.</p>
+        <p class="indent">In <a href="ch13.xhtml#ch13fig05">Figure 13-5</a>, the shortest path on the TENT has been chosen, and F moved from the TENT to the PATH. There is a link between F and E (shown in previous illustrations as [E,F]), but the path through F to E is the same cost as the path [A,E], so this link is not added to the TENT. Rather, it remains grayed out, as not being considered for inclusion in the SPT, and is removed from the TOPO. <a href="ch13.xhtml#ch13fig06">Figure 13-6</a> illustrates the next step in the process, which will move one of the metric 2 paths into the PATH.</p>
+        <div class="note">
+        <p class="title"><a id="page_346"></a><a id="page_347"></a><strong>Note</strong></p>
+        <p class="notepara">Most real-world implementations support carrying multiple equal cost paths from the TENT into the PATH, so they can forward traffic across all links with the same metric. This is called equal cost multipath, or ECMP. There are a number of different ways to accomplish this, but they are not covered here.</p>
+        </div>
+        <p class="indent"></p>
+        <p class="indent">In <a href="ch13.xhtml#ch13fig06">Figure 13-6</a>, the path to C through B, with a cost of 2, has been moved to the PATH, and the path to D through [A,B,C,D] has been moved to the TENT. In moving this path to the TENT, however, line 11 in the pseudocode finds an existing path to D on the TENT, the [A,D] path, with a cost of 5. The metric through the new path, 3, is lower than the metric through the existing path, 5, so the [A,D] path is removed from the TENT when the [A,B,C,D] path is added (line 15 in the pseudo-code). <a href="ch13.xhtml#ch13fig07">Figure 13-7</a> shows the next step, where the remaining cost 2 link is moved from the TENT to the PATH.</p>
+        <p class="indent">In <a href="ch13.xhtml#ch13fig07">Figure 13-7</a>, the path to E, with a cost of 2, has been moved from the TENT to the PATH. G has been moved to the TENT with a cost of 4 (the sum of [A,E] and [E,G]). E’s other neighbor, F, is explored, but it is already on the PATH, so it is not considered for inclusion in the TENT. <a href="ch13.xhtml#ch13fig08">Figure 13-8</a> illustrates the next step, which moves D onto the PATH.</p>
+        <p class="indent"><a id="page_348"></a>In <a href="ch13.xhtml#ch13fig08">Figure 13-8</a>, D, with a total cost of 3, has been moved from the TENT to the PATH. This brings D’s neighbor, G—the last entry in TOPO—into consideration for the TENT. However, there is already a path to G with a total cost of 4 through [A,E,G], so line 14 in the pseudocode fails, and the path [D,G] is removed from the TOPO. This is the final SPT.</p>
+        <p class="indentb"><a id="page_349"></a>The primary difficulty in understanding Dijkstra’s algorithm is the shortest path rule isn’t executed in one place (or on one router), as it is with Bellman-Ford or the Diffusing Update Algorithm (DUAL). The shortest path is (apparently) checked only when moving nodes from the TOPO to the TENT—but in reality, the sorting of the TENT itself executes another portion of the shortest path rule, and checking against the PATH for existing nodes constitutes another step in the process, making the process three steps:</p>
+        <p class="indenthangingN">1. If the path to the node is longer than any on the TENT, then the one on the TENT is a shorter path across the entire network.</p>
+        <p class="indenthangingN">2. A path that has risen to the top of the TENT through sorting is the shortest to that node in the network.</p>
+        <p class="indenthangingN">3. If the path moves to the PATH from the top of the TENT, it is the shortest path to that node in the network, and any other entries in the TOPO to that node should be discarded.</p>
+        <p class="indentt">With the base algorithm in place, it is useful to look at some optimizations, and the calculation of Loop-Free Alternates (LFAs) and remote Loop-Free Alternates (rLFAs).</p>
+        <div class="heading">
+        <h4 class="h4" id="ch13lev2"><strong>Partial and Incremental SPF</strong></h4>
+        <p class="noindent">There is no particular reason that the entire SPT must be rebuilt each time there is a change to the network topology or reachability information; <a href="ch13.xhtml#ch13fig09">Figure 13-9</a> is used to explain.</p>
+        </div>
+        <p class="indent">Assume G loses its connection to 2001:db8:3e8:100::/64; device A does not need to recalculate its path to any of the nodes in the network. The reachable destination is just a leaf on the tree, even if it is a set of hosts connected to a single wire (such as an Ethernet). There is no reason to recalculate the entire SPT when a single <a id="page_350"></a>leaf (or any set of leaves) is disconnected from the network. In this case, only the leaf (the Internet Protocol [IP] address or the reachable destination) itself would need to be removed from the network (or rather, the destination can be removed from the database without any change to the network). This is a <em>partial</em> recalculation of the SPT.</p>
+        <p class="indent">Assume the [C,E] link fails. What does A do in this case? Again, there is no change to the topology of C, B, and D, so there is no reason for A to recalculate the entire tree. It is possible, in this case, for A to remove the entire tree beyond E. To compute just the changed portion of the graph, do the following:</p>
+        <p class="bullt">• Remove the failed node and all nodes that A passes through E to reach.</p>
+        <p class="bullb">• Recalculate the tree just from C’s predecessor (in this case, A) to determine if there are alternate paths to reach nodes previously reachable through E before the [C,E] link failed.</p>
+        <p class="indent">This is called an <em>incremental</em> SPF.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch13lev3"><strong>Calculating LFAs and rLFAs</strong></h4>
+        <p class="noindent"><a href="ch12.xhtml#ch12">Chapter 12</a>, “<a href="ch12.xhtml#ch12">Unicast Loop-Free Paths (1)</a>,” considered the theory behind LFAs and rLFAs. Bellman-Ford does not calculate either downstream neighbors or LFAs, and does not appear to have the information required to do so. DUAL calculates downstream neighbors by default and uses them during convergence. What about protocols based on Dijkstra (and, by extension, similar SPF algorithms)? <a href="ch13.xhtml#ch13fig10">Figure 13-10</a> illustrates a simple mechanism that these protocols can use to find LFAs and downstream neighbors.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig10.jpg" aria-describedby="Al13fig10" alt="Figure represents the process of calculating LFAs and Downstream Neighbors with Dijkstras Algorithm." width="530" height="579"><aside class="hidden" id="Al13fig10">
+        <p>A circle labeled A is at the top with two lines leading to two circles, B and C. A line leads from B to reach a circle labeled E. A line leads from C to reach a circle labeled D. The line continues from D to reach E. A line leads downward from E and is labeled Destination.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig10"></a><strong>Figure 13-10</strong> <em>Calculating LFAs and Downstream Neighbors with Dijkstra’s Algorithm</em></p>
+        </div>
+        <p class="indent">The definition of a downstream neighbor is one where the neighbor’s cost to reach a destination is less than the local cost to reach the destination. From A’s perspective:</p>
+        <p class="bullt">• A knows the local cost to reach the destination, based on the SPT built by running Dijkstra’s SPF.</p>
+        <p class="bullb">• A knows B’s and C’s cost to reach the destination, by subtracting the cost of the [A,B] and [A,C] links from the locally calculated cost.</p>
+        <p class="indent">Hence, A can compare the local cost with the cost from each neighbor to determine if any neighbor is downstream in relation to any particular destination. The definition of an LFA is</p>
+        <p class="blockquote"><a id="page_351"></a><strong>If the neighbor’s cost to “me” plus the neighbor’s cost to reach the destination is lower than the local cost, the neighbor is an LFA.</strong></p>
+        <p class="indentb">Or rather, given</p>
+        <p class="bullt">• NC is the neighbor’s cost to the destination.</p>
+        <p class="bull">• BC is the neighbor’s cost to me.</p>
+        <p class="bullb">• LC is the local cost to the destination.</p>
+        <p class="indentt">If NC + BC &lt; LC, then the neighbor is an LFA. In this case, A knows the cost of the [B,A] and [C,A] links from the perspective of the neighbor (it would be contained in the topology table, although it is not used in computing the SPT using Dijkstra’s algorithm). So LFAs and downstream neighbors require very little additional work to calculate, but what about remote LFAs? The P/Q Space model <a id="page_352"></a>provides the simplest way for Dijkstra-based algorithms to compute downstream neighbors and LFAs. <a href="ch13.xhtml#ch13fig11">Figure 13-11</a> is used to illustrate from within the P/Q Space (see <a href="ch12.xhtml#ch12">Chapter 12</a>).</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig11.jpg" aria-describedby="Al13fig11" alt="Figure shows P/Q Space and the process of calculating Remote LFAs with Dijkstras Algorithm." width="646" height="676"><aside class="hidden" id="Al13fig11">
+        <p>A circle labeled A has two lines meeting two circles to the left and right, reaching B and C. A line leads from C to reach a circle labeled D. Lines lead from D and B to reach a circle labeled E. A line leads downward from the circle, labeled Destination. Dotted lines surround circles, A, B, and E and labeled Q space. Dotted lines surround circles, A, C, and D and labeled P space.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig11"></a><strong>Figure 13-11</strong> <em>P/Q Space and Calculating Remote LFAs with Dijkstra’s Algorithm</em></p>
+        </div>
+        <p class="indent">The definition of the P space is the set of nodes reachable from one end of the protected link, and the definition of Q space is the set of nodes reachable without traversing the protected link. This should suggest a moderately simple way to calculate these two spaces using Dijkstra:</p>
+        <p class="blockquote"><strong>Calculate an SPT from the perspective of the device connected to one end of the link; remove the link without recalculating the SPT. The remaining nodes are reachable from this end of the link</strong>.</p>
+        <p class="indent"><a id="page_353"></a>In <a href="ch13.xhtml#ch13fig11">Figure 13-11</a>, E can</p>
+        <p class="bullt">• Calculate the Q space by removing the [E,D] link from a copy of the local SPT, and all nodes that E uses D to reach.</p>
+        <p class="bull">• Calculate the P space by calculating an SPT from D’s perspective (using D as the root of the tree), removing the [D,E] link, and then all nodes that D uses E to reach.</p>
+        <p class="bullb">• Find the closest node reachable from both E and D with the [E,D] link removed.</p>
+        <p class="indentt">Dijkstra’s SPF is a versatile, widely used algorithm for computing Shortest Path Trees through a network.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch13lev4">Path Vector</h3>
+        <p class="noindent">Path vector relies on keeping a list of the nodes through which a path passes. Any node that receives an update with itself in the path will just discard the update, as it is not a viable path. <a href="ch13.xhtml#ch13fig12">Figure 13-12</a> is used for an example.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig12.jpg" aria-describedby="Al13fig12" alt="Figure shows an example of a path vector operation." width="530" height="619"><aside class="hidden" id="Al13fig12">
+        <p>A circle labeled A has two lines meeting two circles B and C to the left and right respectively. A line leads from C to reach a circle labeled D. Lines from D and B reach a circle labeled E. A line leads from E to reach a square labeled F.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig12"></a><strong>Figure 13-12</strong> <em>Path Vector Operation Example</em></p>
+        </div>
+        <p class="indentb">In <a href="ch13.xhtml#ch13fig12">Figure 13-12</a>, each device advertises information about destinations to each neighboring device; for the destination attached to E:</p>
+        <p class="indenthangingN">1. E will advertise F with itself in the source, so with a path of [E], to both B and D.</p>
+        <p class="indenthangingN">2. From B:</p>
+        <p class="indenthangingNA">B will advertise F to A with a path of [E,B].</p>
+        <p class="indenthangingN">3. From D:</p>
+        <p class="indenthangingNA">D will advertise F to C with a path of [E,D].</p>
+        <p class="indenthangingN">4. From C:</p>
+        <p class="indenthangingNA">C will advertise F to A with a path of [E,D,C].</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">Path vector was not developed as a theory or algorithm, but rather as a protocol; it is unique among the algorithms discussed here in this regard.</p>
+        </div>
+        <p class="indent">Which path will A prefer? In a path vector system, there can be a number of metrics, including the length of the path, policy preferences, etc. For instance, assume <a id="page_354"></a>there is a metric that is set locally at each node carried with each route. This local metric is carried between nodes but not summed in any way as it passes through the network, and each node can set this metric independently of the other nodes (so long as the node uses the same metric toward every neighbor). For instance, E’s local metric is advertised to B, which then sets its own local metric for this destination and advertises the resulting route to A, etc.</p>
+        <p class="indent">To determine the best path, each node can then</p>
+        <p class="bullt">• <em>Discard</em> any destination with the local node identifier in the path.</p>
+        <p class="bull">• <em>Compare the metric</em>, choosing the highest local metric among those it has received.</p>
+        <p class="bull">• <em>Compare the length of the path</em>, choosing the shortest path among those it has received.</p>
+        <p class="bullb">• Advertise only the path being used to forward traffic.</p>
+        <a id="page_355"></a>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">It does not matter if each node chooses the highest or the lowest metric; it only matters that each node does the same thing throughout the entire network. If comparing paths, however, the node must always choose the shorter path.</p>
+        </div>
+        <p class="indent">If every node in the network always follows these three rules, no loop will form. For instance:</p>
+        <p class="bullt">• E advertises F to B with a path of [E] and a metric of 100.</p>
+        <p class="bull">• B advertises F to A with a path of [E,B] and a metric of 100.</p>
+        <p class="bull">• E advertises F to D with a path of [E] and a metric of 100.</p>
+        <p class="bull">• D advertises F to C with a path of [E,D] and a metric of 100.</p>
+        <p class="bullb">• C advertises F to A with a path of [E,D,C] and a metric of 100.</p>
+        <p class="indent">A has two paths, both with the same metric, and hence will use the second rule to choose one, which is the shorter path. In this case, A will choose the path through [E,B]. A will advertise the route it is using toward C, but if C is following the same set of rules, it will also have two paths with a metric of 100 available, one with the path [E,B,A], and the second with a path of [E,D,C]. In this case, there must be a tie breaker that C uses internally to choose between the two routes. It isn’t important what this tie breaker is, so long as it is consistently applied within the node; no matter which path C chooses, the traffic toward F will not loop.</p>
+        <p class="indent">Assume, however, a slightly different set of circumstances:</p>
+        <p class="bullt">• E advertises F to B with a path of [E] and a metric of 100.</p>
+        <p class="bull">• B advertises F to A with a path of [E,B] and a metric of 100.</p>
+        <p class="bull">• E advertises F to D with a path of [E] and a metric of 50.</p>
+        <p class="bull">• D advertises F to C with a path of [E,D] and a metric of 50.</p>
+        <p class="bullb">• C advertises F to A with a path of [E,D,C] and a metric of 50.</p>
+        <p class="indent">A has two paths, one with a metric of 100, and another with a metric of 50. Therefore:</p>
+        <p class="bullt">• A will choose the higher of the two metrics, the path through [E,B], and advertise this route to C.</p>
+        <p class="bull"><a id="page_356"></a>• C will choose the higher of the two metrics, the path through [E,B,A], and advertise this route to D.</p>
+        <p class="bull">• D will choose the higher of the two metrics, the path through [E,B,A,C], and advertise this route to E.</p>
+        <p class="bullb">• E will discard this route, as E itself is already in the path.</p>
+        <p class="indent">Hence, even if the metric overrides the path length at (almost) every node, no loop will form.</p>
+        <div class="sidebar1">
+        <p class="title1"><strong>The Multiple Metric Problem</strong></p>
+        <p class="noindent">Every algorithm discussed to this point has used a single metric to compute loop-free paths except path-vector, and path-vector uses two metrics in a very constrained way, with one always preferred over the other. The path, in fact, can be seen as a “tie breaker” that comes into play only when the primary metric, which does not relate to the path in any way (because it is not summed hop by hop in the network) fails to prevent a loop. Some protocols can use multiple metrics, but they will always combine these metrics in some way so only a single combined metric is used to find loop-free paths. Why?</p>
+        <p class="indent">In mathematical terms, all methods used to find a set of loop-free (or shortest) paths through a network are solvable in polynomial, or nonexponential, time—or rather, they are considered problems of the class <em>P</em>. There is a broader class of problems, containing <em>P</em>, that contains any problem solvable using a (theoretical) nondeterministic Turing machine. Among the NP problems, there is a set of problems considered NP-complete, which means there is no known efficient way to solve the problem; in other words, to solve the problem, every possible combination must be listed, and the best possible solution chosen from among this set.</p>
+        <p class="indent">The multiple metric problem is classified as NP-complete, and hence— while solvable—it is not solvable in any way lending itself to use in near- real-time communication networks.</p>
+        </div>
+        <div class="heading">
+        <h3 class="h3" id="ch13lev5">Disjoint Path Algorithms</h3>
+        <p class="noindent">Consider the problem of a medical procedure executed by a robot following the hands of a live surgeon halfway across the world. It is possible that making such a system work requires packets to be delivered from the sensors on the surgeon’s hands <a id="page_357"></a>to the robot in near real time, in order, with little or no jitter, and absolutely no packets can be dropped. This example, of course, can be expanded to many different situations, including financial systems and other mechanical control systems where near-real-time packet delivery with no failures is required.</p>
+        </div>
+        <p class="indent">What is often needed in these situations is to transmit two copies of each packet and then allow the receiver to choose the packet best fitting the Quality of Service (QoS) and packet loss characteristics needed to support the application. All of the systems discussed so far, however, can find only one loop-free path, and potentially an alternate path (an LFA and/or an rLFA). The problem being solved, then, by disjoint path algorithms, is this:</p>
+        <p class="blockquote">How can paths be built through a network in such a way as to make certain they use the smallest number of overlapping resources (devices and links) as possible (hence are maximally disjoint, or maximally redundant)?</p>
+        <p class="indent">This section will begin by describing the concept of a two-connected network, and then consider two different (but seemingly related) ways of calculating disjoint topologies on two-connected networks.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch13lev6"><strong>Two-Connected Networks</strong></h4>
+        <p class="noindent">A two-connected network is any network in which there are at least two paths between a source and destination that do not use the same devices (nodes) or links (edges). There are points to pay attention to here:</p>
+        </div>
+        <p class="bullt">• A network is two-connected in relation to a specific set of sources and destinations; most networks are not two-connected for every source and every destination.</p>
+        <p class="bullb">• Small blocks of any given network may be two-connected for some sources and destinations, and these blocks may be interconnected by narrow one- or two-connected <em>choke points.</em></p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">Choke points will play a major role in many different areas of network design, a topic considered in <a href="part3.xhtml#part3">Part III</a>, “<a href="part3.xhtml#part3">Network Design</a>.”</p>
+        </div>
+        <p class="indent">It is often easiest to understand two-connectedness through an actual example; <a href="ch13.xhtml#ch13fig13">Figure 13-13</a> shows a network marked out in blocks.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig13.jpg" aria-describedby="Al13fig13" alt="Figure represents a two-way connected network example." width="701" height="296"><aside class="hidden" id="Al13fig13">
+        <p>A square labeled Block A has X at the bottom left, with two lines leading to two circles, A and C, that are connected to each other. Two lines lead from A and C to circles, B and F, that are connected to each other. Lines lead from B and F to meet a circle labeled E. A line leads from F to a circle labeled G. Two lines lead from G to reach circles, H and K. Lines lead from H and K to reach a circle labeled L. A line leads from L to reach a square labeled Z.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig13"></a><strong>Figure 13-13</strong> <em>Two-Way Connected Network Example</em></p>
+        </div>
+        <p class="indent"><a id="page_358"></a>In <em>block A</em>, there are at least two different disjoint paths between X and F:</p>
+        <p class="bullt">• [X,A,B,E,F] and [X,C,F]</p>
+        <p class="bullb">• [X,A,B,F] and [X,C,F]</p>
+        <p class="indent">In <em>block B</em>, there is one pair of disjoint paths from G to L: [G,K,L] and [G,H,L]. There are no disjoint paths to Z, as this node is <em>single connected</em>. There are also no disjoint paths between F and G, as these two are single connected. The [F,G] link can be considered a choke point between these two topology blocks. It is not possible, in the network illustrated in <a href="ch13.xhtml#ch13fig13">Figure 13-13</a>, to compute two disjoint paths between X and Z.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch13lev7"><strong>Suurballe’s Disjoint Path Algorithm</strong></h4>
+        <p class="noindent">In 1974, J. W. Suurballe published a paper describing how to use multiple runs of Dijkstra’s SPF algorithm to find multiple disjoint topologies in a network.<sup><a id="ch13fn2"></a><a href="ch13.xhtml#ch13fn-2">2</a></sup> The algorithm essentially computes SPF once, removes a subset of the links in use on the SPT, and then computes a second SPF across the remaining links. Suurballe’s algorithm is harder to explain than to illustrate in an example because of its reliance on the directional nature of the links computed through SPT; <a href="ch13.xhtml#ch13fig14">Figure 13-14</a> through <a href="ch13.xhtml#ch13fig18">Figure 13-18</a> are used as examples.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig14.jpg" aria-describedby="Al13fig14" alt="Figure represents the first step of using Suurballes algorithm for finding Disjoint paths." width="702" height="458"><aside class="hidden" id="Al13fig14">
+        <p>A square labeled X is at the bottom left with a line leading to a circle labeled A. An arrow labeled 1 leads downward to reach a circle labeled B. An arrow labeled 1 leads upward from B to reach a circle labeled D. An arrow labeled 2 leads rightward from B to reach a circle labeled E. A dotted line labeled 2 leads from E to reach a circle labeled F. A circle labeled D has an arrow labeled 2 leading rightward to a circle labeled F. A dotted line labeled 2 leads from D to reach a circle labeled C. An arrow labeled 2 leads from the circle A to reach a circle labeled C. A line leads from F to reach a square labeled Z.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig14"></a><strong>Figure 13-14</strong> <em>Using Suurballe’s Algorithm for Finding Disjoint Paths, Step 1</em></p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig15.jpg" aria-describedby="Al13fig15" alt="Figure represents the second step of using Suurballes algorithm for finding Disjoint paths." width="702" height="458"><aside class="hidden" id="Al13fig15">
+        <p>A square labeled X is at the bottom left with a line leading to a circle labeled A. An arrow labeled 0 leads downward to reach a circle labeled B. An arrow labeled 0 leads upward from B to reach a circle labeled D. An arrow labeled 0 leads rightward from B to reach a circle labeled E. A bidirectional arrow labeled 2 connects E and F. A circle labeled D has an arrow labeled 0 leading rightward to a circle labeled F. A bidirectional arrow labeled 2 connects D to a circle labeled C. An arrow labeled 0 leads from the circle A to reach a circle labeled C. A line leads from F to reach a square labeled Z.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig15"></a><strong>Figure 13-15</strong> <em>Using Suurballe’s Algorithm for Finding Disjoint Paths, Step 2</em></p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig16.jpg" aria-describedby="Al13fig16" alt="Figure represents the third step of using Suurballes algorithm for finding Disjoint paths." width="702" height="458"><aside class="hidden" id="Al13fig16">
+        <p>A square labeled X is at the bottom left with a line leading to a circle labeled A. An arrow labeled 0 leads from a circle labeled B to reach A. An arrow labeled 0 leads downward from D to reach a circle labeled B. An arrow labeled 0 leads rightward from B to reach a circle labeled E. A dotted arrow labeled 4 leads from E to reach B. A bidirectional arrow labeled 2 connects E and F. A circle labeled F has an arrow labeled 0 leading upward to a circle labeled D. A bidirectional arrow labeled 2 connects D to a circle labeled C. A dotted arrow labeled 4 leads from C to reach a circle labeled A. An arrow labeled 0 leads from the circle A to reach a circle labeled C. A line leads from F to reach a square labeled Z.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig16"></a><strong>Figure 13-16</strong> <em>Using Suurballe’s Algorithm for Finding Disjoint Paths, Step 3</em></p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig17.jpg" aria-describedby="Al13fig17" alt="Figure represents the fourth step of using Suurballes algorithm for finding Disjoint paths." width="702" height="458"><aside class="hidden" id="Al13fig17">
+        <p>A square labeled X is at the bottom left with a line leading to a circle labeled A. A set of lines connect A, B, E, F, D, and G," which forms a hexagon shape. Dotted lines lie all over the hexagon. A line leads from F to reach a square labeled Z.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig17"></a><strong>Figure 13-17</strong> <em>Using Suurballe’s Algorithm for Finding Disjoint Paths, Step 4</em></p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig18.jpg" aria-describedby="Al13fig18" alt="Two figures show an example for a depth first search tree." width="701" height="268"><aside class="hidden" id="Al13fig18">
+        <p>The figure on the right has a circle labeled A at the top with three lines leading downward to circles, B, C, and D. Two lines lead from B to reach circles, E and F. Two lines lead from two circles, C and D to reach a circle labeled G. To the right, a circle labeled 1 has three lines leading downward to circles, 2, 5, and 7. Two lines lead from 2 to reach circles, 3 and 4. Two lines lead from two circles, 5 and 7 to reach a circle labeled 6.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig18"></a><strong>Figure 13-18</strong> <em>A Depth First Search Tree Example</em></p>
+        </div>
+        <p class="indent"><a href="ch13.xhtml#ch13fig14">Figure 13-14</a> shows the state of the operations after the first SPF run has completed and the initial SPT is computed. Note the directional arrows on the links; it is <a id="page_359"></a>not common to think about an SPT as being directional, but in reality it is, with each link oriented away from the source, or the root of the tree. When F computes a tree back toward X, it would also produce a directional tree with the arrows pointing in the opposite direction.</p>
+        <p class="indent">Edges (or links) on the SPT are called tree edges, and edges (or links) not on the resulting SPT are called nontree edges. In <a href="ch13.xhtml#ch13fig14">Figure 13-14</a>, the tree edges are marked in solid black with directional arrows, and the nontree edges are lighter gray dashed lines.</p>
+        <p class="indent">The second step is shown in <a href="ch13.xhtml#ch13fig15">Figure 13-15</a>.</p>
+        <p class="indentb"><a href="ch13.xhtml#ch13fig15">Figure 13-15</a> shows each link with modified costs; each link that was a part of the original SPT (each tree edge, shown as a solid line) has two costs, one in each direction, while links not originally part of the SPT (nontree edges, shown as dashed lines) have their original costs. Note the arrows showing the direction of the cost in each case; this will be important in the next stage of the calculation. To calculate the costs of the two directional links for each tree edge:</p>
+        <p class="indenthangingN">1. Call one end of the link <em>u</em> and the other end of the link <em>v;</em> note the equation is being run in both directions.</p>
+        <p class="indenthangingN">2. Subtract the cost from the source to <em>v</em> from the cost of the link from <em>u</em> to <em>v</em>.</p>
+        <p class="indenthangingN">3. Add the cost from the source to <em>u</em>.</p>
+        <a id="page_360"></a>
+        <p class="indentb">If the source is <em>s:</em></p>
+        <p class="indent">d[sp](u,v) = d(u,v) − d(s,v) + d(s,u)</p>
+        <p class="indent1">This essentially sets the cost of tree edges to 0, as can be seen by doing the math for the [B,E] link:</p>
+        <p class="bullt">• B is <em>u</em>, E is <em>v</em>, A is <em>s</em></p>
+        <p class="bull">• d(<em>u,v</em>) = 2, d(<em>s,v</em>) = 3, d(<em>s,u</em>) = 1</p>
+        <p class="bullb">• 2 − 3 + 1 = 0</p>
+        <p class="indentt">All of the nontree edges, however, will be set to some (generally larger) nonzero cost. For the network in <a href="ch13.xhtml#ch13fig15">Figure 13-15</a>:</p>
+        <p class="bullt">• For the [B,A] link (note [A,B] is not a link in the directional tree being calculated):</p>
+        <p class="bulla">B is <em>u</em>, A is <em>v</em>, A is <em>s</em></p>
+        <p class="bulla">d(<em>u,v</em>) = 0, d(<em>s,v</em>) = 0, d(<em>s,u</em>) = 1</p>
+        <p class="bulla">0 − 0 + 1 = 1</p>
+        <p class="bull"><a id="page_361"></a>• For the [E,B] link:</p>
+        <p class="bulla">E is <em>u</em>, B is <em>v</em>, A is <em>s</em></p>
+        <p class="bulla">d(<em>u,v</em>) = 2, d(<em>s,v</em>) = 1, d(<em>s,u</em>) = 3</p>
+        <p class="bulla">2 − 1 + 3 = 4</p>
+        <p class="bull">• For the [C,A] link:</p>
+        <p class="bulla">C is <em>u</em>, A is <em>v</em>, A is <em>s</em></p>
+        <p class="bulla">d(<em>u,v</em>) = 2, d(<em>s,v</em>) = 0, d(<em>s,u</em>) = 2</p>
+        <p class="bulla">2 − 0 + 2 = 4</p>
+        <p class="bull">• For the [F,D] link:</p>
+        <p class="bulla">F is <em>u</em>, D is <em>v</em>, A is <em>s</em></p>
+        <p class="bulla">d(<em>u,v</em>) = 1, d(<em>s,v</em>) = 4, d(<em>s,u</em>) = 5</p>
+        <p class="bulla">1 − 4 + 5 = 2</p>
+        <p class="bull">• For the [D,B] link:</p>
+        <p class="bulla">D is <em>u</em>, B is <em>v</em>, A is <em>s</em></p>
+        <p class="bulla">d(<em>u,v</em>) = 1, d(<em>s,v</em>) = 1, d(<em>s,u</em>) = 2</p>
+        <p class="bulla">1 − 1 + 2 = 2</p>
+        <p class="indentt">The next step, shown in <a href="ch13.xhtml#ch13fig16">Figure 13-16</a>, is to remove all the directional edges pointing toward the source that lies along the original SPT toward the specific destination (Z, in this case), reverse the direction of the zero-cost edges (links) along this same path, and then run Dijkstra’s SPF again, creating a second SPT on the same topology.</p>
+        <p class="indent">Returning to the original SPT, the path from X to Z was along the path [A,B,D,F]. Hence, the four nonzero-cost edges (the dashed lines) pointing back toward the source, A, along this path have been removed. Along the same path, [A,B,D,F], the direction of each edge has been reversed; for instance, [A,B] originally pointed from A toward B and now points from B toward A. The next step is to run SPF across this graph, remembering <em>traffic cannot flow against the direction of the link.</em> The resulting tree is shown in <a href="ch13.xhtml#ch13fig17">Figure 13-17</a>.</p>
+        <p class="indent"><a href="ch13.xhtml#ch13fig17">Figure 13-17</a> shows the original tree and the newly calculated tree overlaid on the original topology as two different dashed lines. The two topologies still share the [B,D] link in common, so they are not truly disjoint yet. At this point, there are two shortest paths from X to Z:</p>
+        <p class="bullt"><a id="page_362"></a><a id="page_363"></a>• [A,B,D,F]</p>
+        <p class="bullb">• [A,C,D,B,E,F]</p>
+        <p class="indent">These two graphs are merged to form a set of edges, and any links that are included in both graphs, but in opposite directions, are discarded; the combined set looks like this:</p>
+        <p class="indent1">[A-&gt;B, B-&gt;E, E-&gt;F, A-&gt;C, C-&gt;D, D-&gt;F]</p>
+        <p class="indent">Note the directionality of each link again—it is crucial to paring out the overlapping link, which would be listed both as [B-&gt;D] and [D-&gt;B]. With this subset of possible edges on the graph, it is possible to see the correct set of shortest paths are [A,B,E,F] and [A,C,D,F].</p>
+        <p class="indent">Suurballe’s algorithm is complex, but shows the principal points of calculating disjoint trees—including how difficult they are to compute.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch13lev8"><strong>Maximally Redundant Trees</strong></h4>
+        <p class="noindent">A simpler alternative to Suurballe’s algorithm to calculate disjoint trees is computing Maximally Redundant Trees (MRTs). The best place to begin in understanding MRTs is with the humble Depth First Search (DFS), particularly the numbered DFS. <a href="ch13.xhtml#ch13fig18">Figure 13-18</a> is used as an illustration.</p>
+        </div>
+        <p class="indent"><a id="page_364"></a>In <a href="ch13.xhtml#ch13fig18">Figure 13-18</a>, the left side represents a simple topology; the right, the same topology that has been numbered using a DFS. Assuming the DFS algorithm used to “walk” the tree always chooses the left node over the right, the process would look something like this:</p>
+        <p class="codelink"><a href="ch13_images.xhtml#p13pro02a" id="p13pro02">Click here to view code image</a></p>
+        <p class="pre">
+        01 main {<br>
+        02&nbsp;&nbsp;&nbsp;dfs_number = 1<br>
+        03&nbsp;&nbsp;&nbsp;root.number = dfs_number<br>
+        <br>
+        04&nbsp;&nbsp;&nbsp;recurse_dfs(root)<br>
+        05 }<br>
+        <br>
+        06 recurse_dfs(current) {<br>
+        <br>
+        07&nbsp;&nbsp;&nbsp;for each neighbor of current {<br>
+        08&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;child = left most neighbor (not visited)<br>
+        09&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if child.number == 0 {<br>
+        10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dfs_number++<br>
+        11&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;child.number = dfs_number<br>
+        12&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if child.children &gt; 0 {<br>
+        13&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;recurse_dfs(child)<br>
+        14&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        15&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        16&nbsp;&nbsp;&nbsp;}<br>
+        17 }</p>
+        <p class="indent">The best way to understand this code is to walk through the recursion a few times to see how it works. Using <a href="ch13.xhtml#ch13fig18">Figure 13-18</a>:</p>
+        <p class="bullt">• In the first call into <em>recurse_dfs</em>, A, or <em>root</em>, is set as the current node.</p>
+        <p class="bull">• Once inside <em>recurse_dfs</em>, the leftmost node of A is chosen, or B.</p>
+        <p class="bull">• B does not have a <em>number</em> when the loop is entered, so the <em>if</em> statement on line 09 is true.</p>
+        <p class="bull">• B is assigned the next DFS number (line 11).</p>
+        <p class="bull">• B has children (line 12), so <em>recurse_dfs</em> is called again with B as the current node.</p>
+        <p class="bull">• Once inside the (second level of) <em>recurse_dfs</em>, the leftmost neighbor of B is chosen, which is E.</p>
+        <p class="bull">• E does not have a DFS number, so the <em>if</em> statement on line 09 is true.</p>
+        <p class="bull">• E is assigned the next DFS number (3).</p>
+        <p class="bull"><a id="page_365"></a>• E does not have children, so the processing winds back to the top of the loop.</p>
+        <p class="bull">• F is now the leftmost neighbor of B that has not been visited, so it is assigned to <em>child</em>.</p>
+        <p class="bull">• F does not have a number, so the <em>if</em> statement on line 09 is true.</p>
+        <p class="bull">• F is assigned the next DFS number (4).</p>
+        <p class="bull">• B has no more children, so the <em>for</em> loop at line 07 fails, and the <em>recurse_dfs</em> exits.</p>
+        <p class="bull">• However, <em>recurse_dfs</em> does not actually exit—it just “falls back” to the previous recursion level, which is line 14; this level of recursion is still processing A’s neighbors.</p>
+        <p class="bull">• C is the next neighbor of A that has not been touched, so <em>child</em> is set to C.</p>
+        <p class="bullb">• And so on.</p>
+        <p class="indent">Examining the numbers of the nodes on the right side of <a href="ch13.xhtml#ch13fig18">Figure 13-18</a> leads to the following interesting observations:</p>
+        <p class="bullt">• If A always follows an increasing number to reach D, it will follow the path [A,C,G,D].</p>
+        <p class="bull">• If D always follows a decreasing DFS number to reach A, it will follow the path [D,A].</p>
+        <p class="bullb">• These two paths are, in fact, disjoint.</p>
+        <p class="indent">This property holds for all topologies that have been assigned numbers through a DFS search: a path that follows always-increasing numbers will always be disjoint with a path that always follows decreasing numbers. This is precisely the property MRTs rely on to build disjoint paths. The problem with DFS numbering, however, is it is difficult to do in near real time. There must be some sort of elected <em>root</em>, traffic is suboptimal at a local level (much like a Minimum Spanning Tree, or MST, might be), and any changes to the topology require the entire DFS numbering scheme to be rebuilt.</p>
+        <p class="indent">To work around these problems, MRT builds disjoint topologies using the same principle but in a different way. <a href="ch13.xhtml#ch13fig19">Figure 13-19</a> is used to explain.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/13fig19.jpg" aria-describedby="Al13fig19" alt="Figure shows sample network for building a MRT." width="552" height="361"><aside class="hidden" id="Al13fig19">
+        <p>A circle labeled A has two lines leading upward and downward to meet circles, B and D. Two lines lead from B and D to reach a circle labeled C. A line leads from B to reach a circle labeled E. A line leads from D to reach a circle labeled F. E and F are connected to each other. Two lines lead from E and F to reach a circle labeled G.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch13fig19"></a><strong>Figure 13-19</strong> <em>Sample Network for Building an MRT</em></p>
+        </div>
+        <p class="indent">The first step in building an MRT is to find a short loop through the topology from a root (generally these loops are found using Dijkstra’s SPF algorithm). In this case, A will be chosen as the root, and the loop will be [A,B,C,D]. This first loop will be used as the first of the two topologies, say the <em>red</em> topology. Reversing the loop to [A,D,C,B] generates a disjoint topology, say the <em>blue</em> topology. This first pair of topologies through this short loop is called an <em>ear</em>.</p>
+        <p class="indent">To expand the range of the MRT, a second <em>ear</em> is added to the first. To do this, a second loop is discovered, this time through [A,D,F,E,B], and the disjoint topology <a id="page_366"></a>is [A,B,E,F,D]. The question is: which of these two topology extensions should be added to the <em>red</em> topology, and which should be added to the <em>blue?</em> This is where a form of DFS numbering comes into play.</p>
+        <p class="indent">Each device in the network must already have an identifier assigned, either by the administrator, or through some other mechanism. These identifiers must be unique per device. Within the DFS numbering scheme there is also the concept of a <em>low point</em>, which indicates where on a particular tree this node attaches, and also what nodes attach to the tree through this node.</p>
+        <p class="indent">Given these unique identifiers and the ability to calculate a <em>low point</em>, each node in the network can be <em>ordered</em> just like it were given a number through a DFS numbering process. The key is to know how the ordering corresponds to the existing <em>red</em> and <em>blue</em> topologies. Assume B’s low point is higher than C’s, if the [A,B,C,D] topology is part of the <em>red</em> topology. For any other <em>ear</em> or loop in the topology, which passes through B and C, the direction of the <em>ear</em> in which B is less than C should be placed on the <em>red</em> topology. The loop in the opposite direction should be place on the <em>blue</em> topology.</p>
+        <p class="indent">This explanation is rather cursory, but it does give you the sense of how MRTs form disjoint topologies. Refer to the “Further Reading” section at the end of this chapter for more information on MRTs and their construction.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch13lev9">Two-Way Connectivity</h3>
+        <p class="noindent">This chapter and the preceding one have described a number of different ways to compute a loop-free path (or a set of disjoint paths) through a network. In each of these cases, the path computed is unidirectional—from the root of the tree to the <a id="page_367"></a>edges, or reachable destinations. It is, in fact, possible, for <em>no return path to exist</em>. In other words, a source may be able to reach a destination along a loop-free path, but there may be no return path from the destination to the source. This can be an uncommon failure mode in some link types, a result of filtering reachability information, or a number of other situations in the network.</p>
+        </div>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">Two-way connectivity is not always desired; consider the case of a submarine, for instance, that needs to receive information about its current mission but cannot transmit any information without revealing its current position. The ability to send packets to devices located on the submarine, even though there is no twoway connectivity to them, would be desirable. Control planes either must be modified or specially designed to handle this kind of uncommon case, as the common case is for two-way connectivity to be required for proper network operation.</p>
+        </div>
+        <p class="blockquote"><strong>One other problem control planes must contend with in the area of computing paths is ensuring end-to-end two-way connectivity exists</strong>.</p>
+        <p class="indent">There are a number of ways a control plane can solve this problem:</p>
+        <p class="bullt">• Some control planes just ignore this problem, which means they assume some other protocol, such as a transport protocol, will detect this condition.</p>
+        <p class="bull">• The control plane can check for this problem during route calculation. It is possible, for instance, when calculating routes using Dijkstra’s algorithm, to perform a back link check while computing loop-free paths. Performing this back link check at each step of the computation can ensure two-way connectivity exists.</p>
+        <p class="bullb">• The control plane can assume two-way connectivity between neighbors ensures end-to-end two-way connectivity. Control planes that perform explicit two-way connectivity checks on a per neighbor basis can (generally) safely assume any path through those neighbors is also capable of two-way communications.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch13lev10">Final Thoughts</h3>
+        <p class="noindent">These two chapters have covered a lot of ground, beginning with the shortest path rule and its importance in the process of computing loop-free paths through a network. Bellman-Ford, in its original form, was discussed next, then Garcia’s DUAL. <a id="page_368"></a>Routing protocols built on these two protocols are considered <em>distance-vector</em> protocols, a term you will encounter in following chapters. Dijkstra’s SPF was considered next; protocols built on this algorithm are considered <em>link state.</em> Then the path-vector solution was discussed, and finally disjoint paths.</p>
+        </div>
+        <p class="indent">Most of these algorithms can be used either by a distributed control plane or a centralized one. The primary point is to know how the loop-free path problem can be solved, so you can recognize it in its many forms and understand how it is being solved, no matter what protocol or controller you are looking at.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch13lev11">Further Reading</h3>
+        <p class="ref">Chandra, Ravi, and John Scudder. <em>Capabilities Advertisement with BGP-4</em>. Request for Comments 5492. RFC Editor, 2009. doi:10.17487/rfc5492.</p>
+        </div>
+        <p class="ref">Chen, Enke, Tony J. Bates, and Ravi Chandra. <em>BGP Route Reflection: An Alternative to Full Mesh Internal BGP (IBGP)</em>. Request for Comments 4456. RFC Editor, 2006. doi:10.17487/rfc4456.</p>
+        <p class="ref">Chen, Enke, John Scudder, Alvaro Retana, and Daniel Walton. <em>Advertisement of Multiple Paths in BGP</em>. Request for Comments 7911. RFC Editor, 2016. doi:10.17487/rfc7911.</p>
+        <p class="ref">Chen, Enke, and Quaizar Vohra. <em>BGP Support for Four-Octet AS Number Space</em>. Request for Comments 4893. RFC Editor, 2007. doi:10.17487/rfc4893.</p>
+        <p class="ref">Chunduri, Uma, Wenhu Lu, Albert Tian, and Naiming Shen. <em>IS-IS Extended Sequence Number TLV</em>. Request for Comments 7602. RFC Editor, 2015. doi:10.17487/rfc7602.</p>
+        <p class="ref">Dijkstra, E. W. “A Note on Two Problems in Connexion with Graphs.” <em>Numerische Mathematik</em> 1, no. 1 (1959): 269–71. doi:10.1007/BF01386390.</p>
+        <p class="ref">Doyle, Jeff, and Jennifer DeHaven Carroll. <em>Routing TCP/IP, Volume 1</em>. 2nd edition. New Delhi, India: Cisco Press, 2005.</p>
+        <p class="ref">Ferguson, Dennis, Acee Lindem, and John Moy. <em>OSPF for IPv6</em>. Request for Comments 5340. RFC Editor, 2008. doi:10.17487/rfc5340.</p>
+        <p class="ref">Ginsberg, Les, Stephane Litkowski, and Stefano Previdi. <em>IS-IS Route Preference for Extended IP and IPv6 Reachability</em>. Request for Comments 7775. RFC Editor, 2016. doi:10.17487/rfc7775.</p>
+        <p class="ref">Heitz, Jakob, Keyur Patel, Job Snijders, Ignas Bagdonas, and Nick Hilliard. “BGP Large Communities.” Internet-Draft. Internet Engineering Task Force, January 2017. <a href="https://tools.ietf.org/html/draft-ietf-idr-large-community-12">https://tools.ietf.org/html/draft-ietf-idr-large-community-12</a>.</p>
+        <p class="ref"><a id="page_369"></a>“Intermediate System to Intermediate System Intra-Domain Routing Information Exchange Protocol for Use in Conjunction with the Protocol for Providing the Connectionless-Mode Network Service.” Standard. Geneva: International Organization for Standardization, 2002. <a href="http://standards.iso.org/ittf/PubliclyAvailableStandards/">http://standards.iso.org/ittf/PubliclyAvailableStandards/</a>.</p>
+        <p class="ref">Katz, Dave. “OSPF and IS-IS: A Comparative Anatomy.” Presented at the NANOG19, Albuquerque, NM, June 12, 2000. <a href="https://nanog.org/meetings/abstract?id=1084">https://nanog.org/meetings/abstract?id=1084</a>.</p>
+        <p class="ref">McPherson, Danny R., and Keyur Patel. <em>Experience with the BGP-4 Protocol</em>. Request for Comments 4277. RFC Editor, 2006. doi:10.17487/rfc4277.</p>
+        <p class="ref">Meyer, David, and Keyur Patel. <em>BGP-4 Protocol Analysis</em>. Request for Comments 4274. RFC Editor, 2006. doi:10.17487/rfc4274.</p>
+        <p class="ref">Mirtorabi, Sina, Abhay Roy, Acee Lindem, and Fred Baker. “OSPFv3 LSA Extendibility.” Internet-Draft. Internet Engineering Task Force, October 2016. <a href="https://tools.ietf.org/html/draft-ietf-ospf-ospfv3-lsa-extend-13">https://tools.ietf.org/html/draft-ietf-ospf-ospfv3-lsa-extend-13</a>.</p>
+        <p class="ref">Moy, John. “OSPF Version 2.” Request for Comments 2328. RFC Editor, April 1998. doi:10.17487/RFC2328.</p>
+        <p class="ref">Parker, Jeff. <em>Recommendations for Interoperable Networks Using Intermediate System to Intermediate System (IS-IS)</em>. Request for Comments 3719. RFC Editor, 2004. doi:10.17487/rfc3719.</p>
+        <p class="ref">Przygienda, Dr. Antoni B. <em>Optional Checksums in Intermediate System to Intermediate System (ISIS)</em>. Request for Comments 3358. RFC Editor, 2002. doi:10.17487/rfc3358.</p>
+        <p class="ref">Ramachandra, Srihari S., and Yakov Rekhter. <em>BGP Extended Communities Attribute</em>. Request for Comments 4360. RFC Editor, 2006. doi:10.17487/rfc4360.</p>
+        <p class="ref">Raszuk, Robert, Christian Cassar, Bruno Decraene, Stephane Litkowski, Kevin Wang, and Erik Aman. “BGP Optimal Route Reflection (BGP-ORR).” Internet-Draft. Internet Engineering Task Force, January 2017. <a href="https://tools.ietf.org/html/draft-ietf-idr-bgp-optimal-route-reflection-13">https://tools.ietf.org/html/draft-ietf-idr-bgp-optimal-route-reflection-13</a>.</p>
+        <p class="ref">Rekhter, Yakov, Susan Hares, and Tony Li. <em>A Border Gateway Protocol 4 (BGP-4)</em>.</p>
+        <p class="ref">Request for Comments 4271. RFC Editor, 2006. doi:10.17487/rfc4271.</p>
+        <p class="ref">Retana, Alvaro, and Russ White. “BGP Custom Decision Process.” Internet-Draft. Internet Engineering Task Force, February 2017. <a href="https://tools.ietf.org/html/draft-ietf-idr-custom-decision-08">https://tools.ietf.org/html/draft-ietf-idr-custom-decision-08</a>.</p>
+        <p class="ref">Roy, Abhay, Yi Yang, and Alvaro Retana. <em>Hiding Transit-Only Networks in OSPF</em>. Request for Comments 6860. RFC Editor, 2013. doi:10.17487/rfc6860.</p>
+        <p class="ref"><a id="page_370"></a>Shand, Mike, Stefano Previdi, Les Ginsberg, and Danny R. McPherson. <em>Simplified Extension of Link State PDU (LSP) Space for IS-IS</em>. Request for Comments 5311. RFC Editor, 2009. doi:10.17487/rfc5311.</p>
+        <p class="ref">Suurballe, J. W. “Disjoint Paths in a Network.” <em>Networks</em> 4, no. 2 (1974): 125–45. doi:10.1002/net.3230040204.</p>
+        <p class="ref">Vohra, Quaizar, and Enke Chen. <em>BGP Support for Four-Octet Autonomous System (AS) Number Space</em>. Request for Comments 6793. RFC Editor, 2012. doi:10.17487/rfc6793.</p>
+        <p class="ref">Walton, Daniel, Alvaro Retana, Enke Chen, and John Scudder. <em>Solutions for BGP Persistent Route Oscillation</em>. Request for Comments 7964. RFC Editor, 2016. doi:10.17487/rfc7964.</p>
+        <p class="ref">Wang, Lili, Zhaohui (Jeffrey) Zhang, and Nischal Sheth. <em>OSPF Hybrid Broadcast and Point-to-Multipoint Interface Type</em>. Request for Comments 6845. RFC Editor, 2013. doi:10.17487/rfc6845.</p>
+        <p class="ref">“What Are the Differences between NP, NP-Complete and NP-Hard? Stack Overflow.” Accessed September 24, 2017. <a href="https://stackoverflow.com/questions/1857244/what-are-the-differences-between-np-np-complete-and-np-hard">https://stackoverflow.com/questions/1857244/what-are-the-differences-between-np-np-complete-and-np-hard</a>.</p>
+        <p class="ref">White, Russ. <em>Intermediate System to Intermediate System (IS-IS) Routing Protocol LiveLessons</em>. Video. LiveLessons. Cisco Press, 2016. <a href="http://www.ciscopress.com/store/intermediate-system-to-intermediate-system-is-is-routing-9780134465326?link=text&amp;cmpid=2017_02_02_CP_RussWhiteVideo">http://www.ciscopress.com/store/intermediate-system-to-intermediate-system-is-is-routing-9780134465326?link=text&amp;cmpid=2017_02_02_CP_RussWhiteVideo</a>.</p>
+        <p class="ref">White, Russ. “iSPF Versus PRC.” <em>Rule 11 Reader</em>, June 7, 2017. <a href="https://rule11.tech/ispf-verse-prc/">https://rule11.tech/ispf-verse-prc/</a>.</p>
+        <p class="ref">White, Russ, Danny McPherson, and Srihari Sangli. <em>Practical BGP</em>. Boston, MA: Addison-Wesley Professional, 2004.</p>
+        <p class="ref">White, Russ, and Alvaro Retana. <em>IS-IS: Deployment in IP Networks</em>. 1st edition. Boston, MA: Addison-Wesley, 2003.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch13lev12">Review Questions</h3>
+        <p class="indenthangingN">1. Read through the additional material on DFS numbering systems. The concept of the low point was left out of the main text for brevity. Can you expand on this concept and the importance of finding the low point in determining disjoint paths through the network?</p>
+        </div>
+        <p class="indenthangingN">2. Compare the operation of Bellman-Ford and Dijkstra in a network with negative cost links; draw a small network of six or seven routers, set one of the links <a id="page_371"></a>so it has a negative cost in both directions, and determine the set of loop-free paths through the network using both algorithms. You do not need to run the algorithm to do this in a formal way; just describe which paths the Dijkstra algorithm will have a problem with and how the Bellman-Ford algorithm will react to these same paths.</p>
+        <p class="indenthangingN">3. Run MRT across the network shown in <a href="ch13.xhtml#ch13fig19">Figure 13-19</a> and show the resulting disjoint topologies.</p>
+        <p class="indenthangingN">4. Run Dijkstra’s SPF across the network shown in <a href="ch13.xhtml#ch13fig19">Figure 13-19</a> from the perspective of A, using a cost of 1 for each link. Show the resulting shortest paths.</p>
+        <p class="indenthangingN">5. Using the network shown in <a href="ch13.xhtml#ch13fig19">Figure 13-19</a>, assuming all link costs are 1, what would be the best path toward G? Would D have an LFA or rLFA in this network?</p>
+        <p class="indenthangingN">6. Is there any way you can think of to ensure connectivity exists with a unidirectional connectivity problem, such as the submarine example given in the note? <a id="page_372"></a></p>
+        <p class="footnotet"><a id="ch13fn-1"></a><a href="ch13.xhtml#ch13fn1">1</a>. Dijkstra, “A Note on Two Problems in Connexion with Graphs.”</p>
+        <p class="footnote"><a id="ch13fn-2"></a><a href="ch13.xhtml#ch13fn2">2</a>. Suurballe, “Disjoint Paths in a Network.”</p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780134762814/files/9780134762852.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

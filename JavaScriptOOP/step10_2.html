@@ -1,0 +1,122 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="Creating namespaces"><div class="titlepage"><div><div><h1 class="title"><a id="ch10lvl1sec64"></a>Creating namespaces</h1></div></div></div><p>In order to reduce the negative impact of using the global scope, we should avoid creating global objects unless they are absolutely necessary. A first approach to avoid the global scope pollution and organizing our code is to use namespaces. A <span class="strong"><strong>namespace</strong></span> is a collection of names used to identify objects in a given context. The purpose of namespaces is to avoid confusion and collisions with objects having the same names in another context, providing a way to group names together by category.</p><p>Many programming languages support namespaces in order to organize blocks of functionality in our application into easily manageable groups that can be uniquely identified. JavaScript has no built-in support for namespaces, but we can use objects and closures in order to create similar structures.</p><div class="section" title="Namespaces as object literals"><div class="titlepage"><div><div><h2 class="title"><a id="ch10lvl2sec82"></a>Namespaces as object literals</h2></div></div></div><p>A first and simple way to emulate a namespace in JavaScript is using like object literal like the one shown here:</p><pre class="programlisting">var myApplication = { 
+        version: "1.0", 
+        name: "My Application", 
+        config: {...}, 
+        init: function() {...} 
+      }; 
+      </pre><p>In this example, we can see a variable declaration which is assigned to an object literal describing an application. The use of object literals as namespaces has the advantage of reducing the pollution of the global scope and helps to organize code and variables logically. We can access such namespaces as in the following example:</p><pre class="programlisting">console.log(myApplication.name);    //My Application 
+      myApplication.init(); 
+      </pre><p>It's possible to span a single namespace across multiple files. If data is&nbsp;well structured, this can help the reader to easily navigate the code. In this case, it is important to check if the variable to which the namespace is assigned already exists before defining it, as in the following example:</p><pre class="programlisting">var myApplication = myApplication || {}; 
+      myApplication = { 
+        version: "1.0", 
+        name: "My Application", 
+        config: {...}, 
+        init: function() {...} 
+      }; 
+      </pre><p>Namespaces can have a hierarchical structure. We can define nested namespaces very easily as follows:</p><pre class="programlisting">var myApplication = { 
+        version: "1.0", 
+        name: "My Application", 
+        config: { 
+          ui: { 
+            backgroundColor: "green", 
+            fontSize: 12 
+          }, 
+          localization: { 
+            language: "english", 
+            dateFormat: "MM-dd-yyyy" 
+          } 
+        }, 
+        init: function() {...} 
+      }; 
+      </pre><p>Or, for better readability, we can define it by making many explicit assignments:</p><pre class="programlisting">var myApplication = { 
+        version: "1.0", 
+        name: "My Application", 
+        init: function() {...} 
+      }; 
+       
+      myApplication.config: {}; 
+      myApplication.config.ui: { 
+        backgroundColor: "green", 
+        fontSize: 12 
+      }; 
+      myApplication.config.localization: { 
+        language: "english", 
+        dateFormat: "MM-dd-yyyy" 
+      }; 
+      </pre><p>As we expect, we can access nested namespaces as nested objects, which they actually are:</p><pre class="programlisting">myApplication.config.localization.language: "italian", 
+      myApplication.config.localization.dateFormat = "dd-MM-yyyy"; 
+      </pre><p>In order to get a better performance when multiple accesses are made to a sub-namespace, we should use an alias, as shown in the following:</p><pre class="programlisting">var localizationConfig = myApplication.config.localization; 
+      localizationConfig.language: "italian", 
+      localizationConfig.dateFormat = "dd-MM-yyyy"; 
+      </pre><p>The benefit of using object literals as&nbsp;namespaces is that they offer us a very simple and elegant key/value syntax to work with.</p></div><div class="section" title="Defining namespaces with IIFE"><div class="titlepage"><div><div><h2 class="title"><a id="ch10lvl2sec83"></a>Defining namespaces with IIFE</h2></div></div></div><p>Using object literals as namespaces is extremely simple and convenient, but this approach still uses a global variable, even if it is well identified. If having one known variable as namespace may be acceptable in an application under our control, it should be avoided in libraries or components that should be used inside a context out of our control. In this case, we should leave to the programmer the decision concerning the name of the global variable. A possible solution is based on the use of an <span class="strong"><strong>Immediately Invoked Function Expression</strong></span> or <span class="strong"><strong>IIFE</strong></span>, as in the following example:</p><pre class="programlisting">var myApplication = {}; 
+       
+      (function(nameSpace) { 
+        nameSpace.version = "1.0", 
+        nameSpace.name = "My Application", 
+        nameSpace.config = {/*...*/}, 
+        nameSpace.init = function() {/*...*/} 
+      })(myApplication); 
+      </pre><p>Here, we define the variable <code class="literal">myApplication</code> that is assigned an empty object literal and pass it to an IIFE that attaches the content of the namespace. The user of our namespace definition can decide the name of the global variable avoiding name clashes. For example, instead of using the <code class="literal">myApplication</code> variable, they&nbsp;might decide to declare a variable with a different name. They might also decide to assign the namespace to a local variable instead of using a global one.</p><p>A variant of the previous approach uses the <code class="literal">this</code> keyword instead to rely on the <code class="literal">nameSpace</code> parameter:</p><pre class="programlisting">var myApplication = {}; 
+       
+      (function() { 
+        this.version: "1.0", 
+        this.name: "My Application", 
+        this.config: {...}, 
+        this.init: function() {...} 
+      }).apply(myApplication); 
+      </pre><p>An interesting aspect of using an IIFE to define a namespace is that we can define and use private variables inside the body of the IIFE:</p><pre class="programlisting">var myApplication = {}; 
+       
+      (function(nameSpace) { 
+        var i = 0; 
+       
+        nameSpace.version = "1.0", 
+        nameSpace.name = "My Application", 
+        nameSpace.counter = function() { return i++;}; 
+      })(myApplication); 
+      </pre><p>This can be useful when we need an internal state that cannot be accessed by external code.</p></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

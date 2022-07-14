@@ -1,0 +1,800 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 15. Space-Based Architecture Style"><div class="chapter" id="ch-style-space-based">
+        <h1><span class="label">Chapter 15. </span>Space-Based Architecture Style</h1>
+        
+        
+        <p>Most web-based business applications follow the same general request flow: a request from a browser hits the web server, then an application server, then finally the database server.<a data-type="indexterm" data-primary="web applications, scaling to meet increased loads" id="idm45838971056816"></a><a data-type="indexterm" data-primary="space-based architecture" id="ix_sparch"></a><a data-type="indexterm" data-primary="request-based model (applications)" data-secondary="scaling to meet increased loads in web applications" id="idm45838971055168"></a> While this pattern works great for a small set of users, bottlenecks start appearing as the user load increases, first at the web-server layer, then at the application-server layer, and finally at the database-server layer. The usual response to bottlenecks based on an increase in user load is to scale out the web servers. This is relatively easy and inexpensive, and it sometimes works to address the bottleneck issues. However, in most cases of high user load, scaling out the web-server layer just moves the bottleneck down to the application server.<a data-type="indexterm" data-primary="web servers" data-secondary="scaling, problems with" id="idm45838971053472"></a><a data-type="indexterm" data-primary="application servers" data-secondary="scaling, problems with" id="idm45838971052528"></a> Scaling application servers can be more complex and expensive than web servers and usually just moves the bottleneck down to the database server, which is even more difficult and expensive to scale.<a data-type="indexterm" data-primary="databases" data-secondary="scaling database server, problems with" id="idm45838971051248"></a> Even if you can scale the database, what you eventually end up with is a triangle-shaped topology, with the widest part of the triangle being the web servers (easiest to scale) and the smallest part being the database (hardest to scale), as illustrated in <a data-type="xref" href="#fig-style-space-based-scale-issue">Figure&nbsp;15-1</a>.</p>
+        
+        <p>In any high-volume application with a large concurrent user load, the database will usually be the final limiting factor in how many transactions you can process concurrently.<a data-type="indexterm" data-primary="scalability" data-secondary="limits for web-based topologies" id="idm45838971048624"></a> While various caching technologies and database scaling products help to address these issues, the fact remains that scaling out a normal application for extreme loads is a very difficult proposition.</p>
+        
+        <figure><div id="fig-style-space-based-scale-issue" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1501.png" alt="Scalability Limits for Web-Based Topologies" width="1338" height="977">
+        <h6><span class="label">Figure 15-1. </span>Scalability limits within a traditional web-based topology</h6>
+        </div></figure>
+        
+        <p>The <em>space-based</em> architecture style is specifically<a data-type="indexterm" data-primary="space-based architecture" data-secondary="advantages of" id="idm45838971044528"></a> designed to address problems involving high scalability, elasticity, and high concurrency issues. It is also a useful architecture style for applications that have variable and unpredictable concurrent user volumes.<a data-type="indexterm" data-primary="scalability" data-secondary="solving issues with space-based architecture" id="idm45838971043040"></a> Solving the extreme and variable scalability issue architecturally is often a better approach than trying to scale out a database or retrofit caching technologies into a nonscalable architecture.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="General Topology"><div class="sect1" id="idm45838971041600">
+        <h1>General Topology</h1>
+        
+        <p>Space-based architecture gets its<a data-type="indexterm" data-primary="space-based architecture" data-secondary="general topology" id="idm45838971039904"></a> name from the concept of <a href="https://oreil.ly/XVJ_D"><em>tuple space</em></a>, the technique of using multiple parallel processors communicating through shared memory.<a data-type="indexterm" data-primary="tuple space" id="idm45838971037856"></a> High scalability, high elasticity, and high performance are achieved by removing the central database as a synchronous constraint in the system and instead leveraging replicated in-memory data grids.<a data-type="indexterm" data-primary="databases" data-secondary="removing as synchronous constraint in space-based architecture" id="idm45838971036832"></a> Application data is kept in-memory and replicated among all the active processing units. When a processing unit updates data, it asynchronously sends that data to the database, usually via messaging with persistent queues. Processing units start up and shut down dynamically as user load increases and decreases, thereby addressing variable scalability. Because there is no central database involved in the standard transactional processing of the <span class="keep-together">application,</span> the database bottleneck is removed, thus providing near-infinite scalability within the application.</p>
+        
+        <p>There are several architecture components that make up a space-based architecture: a <em>processing unit</em> containing<a data-type="indexterm" data-primary="processing units" id="idm45838971033552"></a><a data-type="indexterm" data-primary="virtualized middleware" id="idm45838971032816"></a><a data-type="indexterm" data-primary="data pumps" id="idm45838971032144"></a> the application code, <em>virtualized middleware</em> used to manage and coordinate the processing units, <em>data pumps</em> to asynchronously send updated data to the database, <em>data writers</em> that perform the updates from the data pumps, and <em>data readers</em> that read database data and deliver it to processing units upon startup.<a data-type="indexterm" data-primary="data writers" id="idm45838971029552"></a><a data-type="indexterm" data-primary="data readers" id="idm45838971028848"></a> <a data-type="xref" href="#fig-style-space-based-topology">Figure&nbsp;15-2</a> illustrates these primary architecture components.</p>
+        
+        <figure><div id="fig-style-space-based-topology" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1502.png" alt="Space-based architecture Topology" width="1391" height="1033">
+        <h6><span class="label">Figure 15-2. </span>Space-based architecture basic topology</h6>
+        </div></figure>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Processing Unit"><div class="sect2" id="idm45838971025264">
+        <h2>Processing Unit</h2>
+        
+        <p>The processing unit (illustrated in <a data-type="xref" href="#fig-style-space-based-pu">Figure&nbsp;15-3</a>) contains the application logic (or portions of the application logic). <a data-type="indexterm" data-primary="application logic in processing units" id="idm45838971022816"></a><a data-type="indexterm" data-primary="space-based architecture" data-secondary="general topology" data-tertiary="processing unit" id="idm45838971022128"></a>This usually includes web-based components as well as backend business logic. The contents of the processing unit vary based on the type of application. Smaller web-based applications would likely be deployed into a single processing unit, whereas larger applications may split the application functionality into multiple processing units based on the functional areas of the application. The processing unit can also contain small, single-purpose services (as with microservices).<a data-type="indexterm" data-primary="replication unit in processing unit" id="idm45838971020272"></a><a data-type="indexterm" data-primary="Hazelcast" id="idm45838971019584"></a><a data-type="indexterm" data-primary="Apache Ignite" id="idm45838971018912"></a><a data-type="indexterm" data-primary="Oracle Coherence" id="idm45838971018240"></a> In addition to the application logic, the processing unit also contains an in-memory data grid and replication engine usually implemented through such products as <a href="https://hazelcast.com">Hazelcast</a>, <a href="https://ignite.apache.org">Apache Ignite</a>, and <a href="https://oreil.ly/XOUJL">Oracle Coherence</a>.</p>
+        
+        <figure><div id="fig-style-space-based-pu" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1503.png" alt="Space-based Processing Unit" width="519" height="487">
+        <h6><span class="label">Figure 15-3. </span>Processing unit</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Virtualized Middleware"><div class="sect2" id="idm45838971012800">
+        <h2>Virtualized Middleware</h2>
+        
+        <p>The virtualized middleware handles the infrastructure concerns within the architecture that control various <a data-type="indexterm" data-primary="virtualized middleware" id="ix_virmid"></a><a data-type="indexterm" data-primary="space-based architecture" data-secondary="general topology" data-tertiary="virtualized middleware" id="ix_sparchvirmid"></a>aspects of data synchronization and request handling. The components that make up the virtualized middleware include a <em>messaging grid</em>, <em>data grid</em>, <em>processing grid</em>, and <em>deployment manager</em>. These components, which are described in detail in the next sections, can be custom written or purchased as third-party products.<a data-type="indexterm" data-primary="messaging grid" id="idm45838971006352"></a></p>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Messaging grid"><div class="sect3" id="idm45838971005648">
+        <h3>Messaging grid</h3>
+        
+        <p>The messaging grid, shown in <a data-type="xref" href="#fig-style-space-based-messaging-grid">Figure&nbsp;15-4</a>, manages input request and session state. <a data-type="indexterm" data-primary="virtualized middleware" data-secondary="messaging grid" id="idm45838971003472"></a>When a request comes into the virtualized middleware, the messaging grid component determines which active processing components are available to receive the request and forwards the request to one of those processing units. The complexity of the messaging grid can range from a simple round-robin algorithm to a more complex next-available algorithm that keeps track of which request is being processed by which processing unit. This component is usually implemented using a typical web server with load-balancing capabilities (such as HA Proxy and Nginx).</p>
+        
+        <figure><div id="fig-style-space-based-messaging-grid" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1504.png" alt="Messaging Grid" width="1275" height="1071">
+        <h6><span class="label">Figure 15-4. </span>Messaging grid</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Data grid"><div class="sect3" id="idm45838970999616">
+        <h3>Data grid</h3>
+        
+        <p>The data grid component is perhaps the most important and crucial component in this architecture style.<a data-type="indexterm" data-primary="virtualized middleware" data-secondary="data grid" id="idm45838970997808"></a><a data-type="indexterm" data-primary="data grid" id="idm45838970996832"></a> In most modern implementations the data grid is implemented solely within the processing units as a replicated cache. However, for those replicated caching implementations that require an external controller, or when using a distributed cache, this functionality would reside in both the processing units as well as in the data grid component within the virtualized middleware. Since the messaging grid can forward a request to any of the processing units available, it is essential that each processing unit contains exactly the same data in its in-memory data grid. Although <a data-type="xref" href="#fig-style-space-based-data-grid">Figure&nbsp;15-5</a> shows a synchronous data replication between processing units, in reality this is done asynchronously and very quickly, usually completing the data synchronization in less than 100 milliseconds.</p>
+        
+        <figure><div id="fig-style-space-based-data-grid" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1505.png" alt="Data Grid" width="1275" height="1063">
+        <h6><span class="label">Figure 15-5. </span>Data grid</h6>
+        </div></figure>
+        
+        <p>Data is synchronized between processing units that contain the same named data grid. To illustrate this point, consider the following code in Java using Hazelcast that creates an internal <a data-type="indexterm" data-primary="Hazelcast" data-secondary="creating internal replicated data grid with" id="idm45838970991808"></a>replicated data grid for processing units containing customer profile information:</p>
+        
+        <pre data-type="programlisting" data-code-language="java"><code class="n">HazelcastInstance</code> <code class="n">hz</code> <code class="o">=</code> <code class="n">Hazelcast</code><code class="o">.</code><code class="na">newHazelcastInstance</code><code class="o">();</code>
+        <code class="n">Map</code><code class="o">&lt;</code><code class="n">String</code><code class="o">,</code> <code class="n">CustomerProfile</code><code class="o">&gt;</code> <code class="n">profileCache</code> <code class="o">=</code>
+            <code class="n">hz</code><code class="o">.</code><code class="na">getReplicatedMap</code><code class="o">(</code><code class="s">"CustomerProfile"</code><code class="o">);</code></pre>
+        
+        <p>All processing units needing access to the customer profile information would contain this code. Changes made to the <code>CustomerProfile</code> named cache from any of the processing units would have that change replicated to all other processing units containing that same named cache. <a data-type="indexterm" data-primary="caching" data-secondary="named caches in space-based architecture" id="idm45838970973376"></a>A processing unit can contain as many replicated caches as needed to complete its work. Alternatively, one processing unit can make a remote call to another processing unit to ask for data (choreography) or leverage the processing grid (described in the next section) to orchestrate the request.</p>
+        
+        <p class="pagebreak-before">Data replication within the processing units also allows service instances to come up and down without having to read data from the database, providing there is at least one instance containing the named replicated cache.<a data-type="indexterm" data-primary="processing units" data-secondary="data replication within" id="idm45838970971072"></a><a data-type="indexterm" data-primary="services" data-secondary="service instances using named cache in space-based architecture" id="idm45838970970096"></a> When a processing unit instance comes up, it connects to the cache provider (such as Hazelcast) and makes a request to get the named cache. Once the connection is made to the other processing units, the cache will be loaded from one of the other instances.</p>
+        
+        <p>Each processing unit knows about all other processing unit instances through the use of a <em>member list</em>. <a data-type="indexterm" data-primary="member list of processing units" id="idm45838970967872"></a>The member list contains the IP address and ports of all other processing units using that same named cache. For example, suppose there is a single processing instance containing code and replicated cached data for the customer profile. In this case there is only one instance, so the member list for that instance only contains<a data-type="indexterm" data-primary="Hazelcast" data-secondary="logging statements generated with" id="idm45838970966688"></a><a data-type="indexterm" data-primary="logging" data-secondary="statements generated with Hazelcast in space-based architecture" id="idm45838970965728"></a> itself, as illustrated in the following logging statements generated using Hazelcast:</p>
+        
+        <pre data-type="programlisting" data-code-language="text">Instance 1:
+        Members {size:1, ver:1} [
+            Member [172.19.248.89]:5701 - 04a6f863-dfce-41e5-9d51-9f4e356ef268 this
+        ]</pre>
+        
+        <p>When another processing unit starts up with the same named cache, the member list of both services is updated to reflect the IP address and port of each processing unit:</p>
+        
+        <pre data-type="programlisting" data-code-language="text">Instance 1:
+        Members {size:2, ver:2} [
+            Member [172.19.248.89]:5701 - 04a6f863-dfce-41e5-9d51-9f4e356ef268 this
+            Member [172.19.248.90]:5702 - ea9e4dd5-5cb3-4b27-8fe8-db5cc62c7316
+        ]
+        
+        Instance 2:
+        Members {size:2, ver:2} [
+            Member [172.19.248.89]:5701 - 04a6f863-dfce-41e5-9d51-9f4e356ef268
+            Member [172.19.248.90]:5702 - ea9e4dd5-5cb3-4b27-8fe8-db5cc62c7316 this
+        ]</pre>
+        
+        <p>When a third processing unit starts up, the member list of instance 1 and instance 2 are both updated to reflect the new third instance:</p>
+        
+        <pre data-type="programlisting" data-code-language="text">Instance 1:
+        Members {size:3, ver:3} [
+            Member [172.19.248.89]:5701 - 04a6f863-dfce-41e5-9d51-9f4e356ef268 this
+            Member [172.19.248.90]:5702 - ea9e4dd5-5cb3-4b27-8fe8-db5cc62c7316
+            Member [172.19.248.91]:5703 - 1623eadf-9cfb-4b83-9983-d80520cef753
+        ]
+        
+        Instance 2:
+        Members {size:3, ver:3} [
+            Member [172.19.248.89]:5701 - 04a6f863-dfce-41e5-9d51-9f4e356ef268
+            Member [172.19.248.90]:5702 - ea9e4dd5-5cb3-4b27-8fe8-db5cc62c7316 this
+            Member [172.19.248.91]:5703 - 1623eadf-9cfb-4b83-9983-d80520cef753
+        ]
+        
+        Instance 3:
+        Members {size:3, ver:3} [
+            Member [172.19.248.89]:5701 - 04a6f863-dfce-41e5-9d51-9f4e356ef268
+            Member [172.19.248.90]:5702 - ea9e4dd5-5cb3-4b27-8fe8-db5cc62c7316
+            Member [172.19.248.91]:5703 - 1623eadf-9cfb-4b83-9983-d80520cef753 this
+        ]</pre>
+        
+        <p>Notice that all three instances know about each other (including themselves). Suppose instance 1 receives a request to update the customer profile information. When instance 1 updates the cache with a <code>cache.put()</code> or similar cache update method, the data grid (such as Hazelcast) will asynchronously update the other replicated caches with the same update, ensuring all three customer profile caches always remain in sync with one another.</p>
+        
+        <p>When processing unit instances go down, all other processing units are automatically updated to reflect the lost member.<a data-type="indexterm" data-primary="processing units" data-secondary="loss of" id="idm45838970895056"></a> For example, if instance 2 goes down, the member lists of instance 1 and 3 are updated as follows:</p>
+        
+        <pre data-type="programlisting" data-code-language="text">Instance 1:
+        Members {size:2, ver:4} [
+            Member [172.19.248.89]:5701 - 04a6f863-dfce-41e5-9d51-9f4e356ef268 this
+            Member [172.19.248.91]:5703 - 1623eadf-9cfb-4b83-9983-d80520cef753
+        ]
+        
+        Instance 3:
+        Members {size:2, ver:4} [
+            Member [172.19.248.89]:5701 - 04a6f863-dfce-41e5-9d51-9f4e356ef268
+            Member [172.19.248.91]:5703 - 1623eadf-9cfb-4b83-9983-d80520cef753 this
+        ]</pre>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Processing grid"><div class="sect3" id="idm45838970998960">
+        <h3>Processing grid</h3>
+        
+        <p>The processing grid, illustrated in <a data-type="xref" href="#fig-style-space-based-processing-grid">Figure&nbsp;15-6</a>, is an optional component<a data-type="indexterm" data-primary="virtualized middleware" data-secondary="processing grid" id="idm45838970871088"></a><a data-type="indexterm" data-primary="processing grid" id="idm45838970870176"></a> within the virtualized middleware that manages orchestrated request processing when there are multiple processing units involved in a single business request. If a request comes in that requires coordination between processing unit types (e.g., an order processing unit and a payment processing unit), it is the processing grid that mediates and orchestrates the request between those two processing units.</p>
+        
+        <figure><div id="fig-style-space-based-processing-grid" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1506.png" alt="Processing Grid" width="1275" height="1064">
+        <h6><span class="label">Figure 15-6. </span>Processing grid</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Deployment manager"><div class="sect3" id="idm45838970866704">
+        <h3>Deployment manager</h3>
+        
+        <p>The deployment manager component manages the dynamic startup and shutdown of processing unit instances based on load conditions.<a data-type="indexterm" data-primary="virtualized middleware" data-secondary="deployment manager" id="idm45838970865200"></a><a data-type="indexterm" data-primary="deployment" data-secondary="deployment manager in space-based architecture" id="idm45838970850304"></a> This component continually monitors response times and user loads, starts up new processing units when load increases, and shuts down processing units when the load decreases. It is a critical component to achieving variable scalability (elasticity) needs within an application.<a data-type="indexterm" data-primary="space-based architecture" data-secondary="general topology" data-tertiary="virtualized middleware" data-startref="ix_sparchvirmid" id="idm45838970848912"></a><a data-type="indexterm" data-primary="virtualized middleware" data-startref="ix_virmid" id="idm45838970847408"></a></p>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Data Pumps"><div class="sect2" id="idm45838970846208">
+        <h2>Data Pumps</h2>
+        
+        <p>A <em>data pump</em> is a way of sending data to another processor which then updates data in a database.<a data-type="indexterm" data-primary="data pumps" id="idm45838970844224"></a><a data-type="indexterm" data-primary="space-based architecture" data-secondary="general topology" data-tertiary="data pumps" id="idm45838970843520"></a> Data pumps are a necessary component within space-based architecture, as processing units do not directly read from and write to a database. Data pumps within a space-based architecture are always asynchronous, providing eventual consistency with the in-memory cache and the database. When a processing unit instance receives a request and updates its cache, that processing unit becomes the owner of the update and is therefore responsible for sending that update through the data pump so that the database can be updated eventually.</p>
+        
+        <p class="pagebreak-before">Data pumps are usually implemented using messaging, as shown in <a data-type="xref" href="#fig-style-space-based-data-pump">Figure&nbsp;15-7</a>. Messaging is a good choice for data pumps when using a space-based architecture.<a data-type="indexterm" data-primary="messaging" data-secondary="data pumps implemented as" id="idm45838970926256"></a> Not only does messaging support asynchronous communication, but it also supports guaranteed delivery and preserving message order through first-in, first-out (FIFO) queueing. Furthermore, messaging provides a decoupling between the processing unit and the data writer so that if the data writer is not available, uninterrupted processing can still take place within the processing units.<a data-type="indexterm" data-primary="databases" data-secondary="data pump sending data to in space-based architecture" id="idm45838970924768"></a></p>
+        
+        <figure><div id="fig-style-space-based-data-pump" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1507.png" alt="Data Pump" width="826" height="816">
+        <h6><span class="label">Figure 15-7. </span>Data pump used to send data to a database</h6>
+        </div></figure>
+        
+        <p>In most cases there are multiple data pumps, each one usually dedicated to a particular domain or subdomain (such as customer or inventory).<a data-type="indexterm" data-primary="caching" data-secondary="data pumps in caches in space-based architecture" id="idm45838970921264"></a> Data pumps can be dedicated to each type of cache (such as <code>CustomerProfile</code>, <code>CustomerWishlist</code>, and so on), or they can be dedicated to a processing unit domain (such as <code>Customer</code>) containing a much larger and general cache.</p>
+        
+        <p>Data pumps usually have associated contracts, including an action associated with the contract data (add, delete, or update).<a data-type="indexterm" data-primary="contracts" data-secondary="data pumps in space-based architecture" id="idm45838970824144"></a> The contract can be a JSON schema, XML schema, an object, or even a <em>value-driven message</em> (map message containing name-value pairs). <a data-type="indexterm" data-primary="value-driven messages" id="idm45838970822624"></a>For updates, the data contained in the message of the data pump usually only contains the new data values. For example, if a customer changes a phone number on their profile, only the new phone number would be sent, along with the customer ID and an action to update the data.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Data Writers"><div class="sect2" id="idm45838970821376">
+        <h2>Data Writers</h2>
+        
+        <p>The data writer component accepts messages from a data pump and updates the database with the information contained in the message of the data pump (see <a data-type="xref" href="#fig-style-space-based-data-pump">Figure&nbsp;15-7</a>).<a data-type="indexterm" data-primary="data writers" id="idm45838970818912"></a><a data-type="indexterm" data-primary="space-based architecture" data-secondary="general topology" data-tertiary="data writers" id="idm45838970818208"></a> Data writers can be implemented as services, applications, or data hubs (such as <a href="https://www.abinitio.com/en">Ab Initio</a>). The granularity of the data writers can vary based on the scope of the data pumps and processing units.</p>
+        
+        <p>A domain-based data writer contains all of the necessary database logic to handle all the updates within a particular domain (such as customer), regardless of the number of data pumps it is accepting.<a data-type="indexterm" data-primary="domains" data-secondary="domain-based data writers" id="idm45838970815184"></a><a data-type="indexterm" data-primary="data pumps" data-secondary="in domain-based data writers" id="idm45838970814240"></a><a data-type="indexterm" data-primary="processing units" data-secondary="data writers and" id="idm45838970813280"></a> Notice in <a data-type="xref" href="#fig-style-space-based-dw-domain">Figure&nbsp;15-8</a> that there are four different processing units and four different data pumps representing the customer domain (<span class="keep-together"><code>Profile</code></span>, <code>WishList</code>, <code>Wallet</code>, and <code>Preferences</code>) but only one data writer. The single customer data writer listens to all four data pumps and contains the necessary database logic (such as SQL) to update the customer-related data in the database.</p>
+        <figure><div id="fig-style-space-based-dw-domain" class="figure"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1508.png" alt="Domain-based Data Writer" width="1400" height="1285">
+        <h6><span class="label">Figure 15-8. </span>Domain-based data writer</h6>
+        </div></figure>
+        
+        <p>Alternatively, each class of processing unit can have its own dedicated data writer component, as illustrated in <a data-type="xref" href="#fig-style-space-based-dw-dedicated">Figure&nbsp;15-9</a>. In this model the data writer is dedicated to each corresponding data pump and contains only the database processing logic for that particular processing unit (such as <code>Wallet</code>). While this model tends to produce too many data writer components, it does provide better scalability and agility due to the alignment of processing unit, data pump, and data writer.</p>
+        <figure><div id="fig-style-space-based-dw-dedicated" class="figure"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1509.png" alt="Dedicated Data Writer" width="1303" height="1243">
+        <h6><span class="label">Figure 15-9. </span>Dedicated data writers for each data pump</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Data Readers"><div class="sect2" id="idm45838970802992">
+        <h2>Data Readers</h2>
+        
+        <p>Whereas data writers take on the responsibility for updating the database, data readers take on the responsibility for reading data from the database and sending it to the processing units via a reverse data pump.<a data-type="indexterm" data-primary="data readers" id="idm45838970801264"></a><a data-type="indexterm" data-primary="space-based architecture" data-secondary="general topology" data-tertiary="data readers" id="idm45838970800560"></a> In space-based architecture, data readers are only invoked under one of three situations: a crash of all processing unit instances of the same named cache, a redeployment of all processing units within the same named cache, or retrieving archive data not contained in the replicated cache.<a data-type="indexterm" data-primary="caching" data-secondary="named caches and data readers" id="idm45838970798944"></a></p>
+        
+        <p>In the event where all instances come down (due to a system-wide crash or redeployment of all instances), data must be read from the database (something that is generally avoided in space-based architecture). When instances of a class of processing unit start coming up, each one tries to grab a lock on the cache. The first one to get the lock becomes the temporary cache owner; the others go into a wait state until the lock is released (this might vary based on the type of cache implementation being used, but regardless, there is one primary owner of the cache in this scenario). To load the cache, the instance that gained temporary cache owner status sends a message to a queue requesting data. The data reader component accepts the read request and then performs the necessary database query logic to retrieve the data needed by the processing unit.<a data-type="indexterm" data-primary="data pumps" data-secondary="data reader with reverse data pump" id="idm45838970796720"></a> As the data reader queries data from the database, it sends that data to a different queue (called a reverse data pump). The temporary cache owner processing unit receives the data from the reverse data pump and loads the cache. Once all the data is loaded, the temporary owner releases the lock on the cache, all other instances are then synchronized, and processing can begin. This processing flow is illustrated in <a data-type="xref" href="#fig-style-space-based-dr">Figure&nbsp;15-10</a>.</p>
+        
+        <figure><div id="fig-style-space-based-dr" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1510.png" alt="Data Reader" width="1380" height="742">
+        <h6><span class="label">Figure 15-10. </span>Data reader with reverse data pump</h6>
+        </div></figure>
+        
+        <p>Like data writers, data readers can also be domain-based or dedicated to a specific class of processing unit (which is usually the case). The implementation is also the same as the data writers—either service, application, or data hub.<a data-type="indexterm" data-primary="domains" data-secondary="domain-based data readers" id="idm45838970791696"></a><a data-type="indexterm" data-primary="processing units" data-secondary="data readers and" id="idm45838970790656"></a></p>
+        
+        <p>The data writers and data readers essentially form what is usually known as a <em>data abstraction layer</em> (or <em>data access layer</em> in some cases).<a data-type="indexterm" data-primary="data abstraction layer" id="idm45838970788368"></a><a data-type="indexterm" data-primary="data access layer" id="idm45838970787632"></a> The difference between the two is in the amount of detailed knowledge the processing units have with regard to the structure of the tables (or schema) in the database. A data access layer means that the processing units are coupled to the underlying data structures in the database, and only use the data readers and writers to indirectly access the database. A data abstraction layer, on the other hand, means that the processing unit is decoupled from the underlying database table structures through separate contracts. Space-based architecture generally relies on a data abstraction layer model so that the replicated cache schema in each processing unit can be different than the underlying database table structures. This allows for incremental changes to the database without necessarily impacting the processing units. To facilitate this incremental change, the data writers and data readers contain transformation logic so that if a column type changes or a column or table is dropped, the data readers and data writers can buffer the database change until the necessary changes can be made to the processing unit caches.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Data Collisions"><div class="sect1" id="sec-data-collisions">
+        <h1>Data Collisions</h1>
+        
+        <p>When using replicated caching in an active/active state where updates can occur to any service instance containing the same named<a data-type="indexterm" data-primary="space-based architecture" data-secondary="data collisions" id="ix_sparchdaco"></a><a data-type="indexterm" data-primary="data collisions" id="ix_dacoll"></a> cache, there is the possibility of a <em>data collision</em> due to replication latency. A data collision occurs when data is updated in one cache instance (cache A), and during replication to another cache instance (cache B), the same data is updated by that cache (cache B). In this scenario, the local update to cache B will be overridden through replication by the old data from cache A, and through replication the same data in cache A will be overridden by the update from cache B.</p>
+        
+        <p>To illustrate this problem, assume there are two service instances (Service A and Service B) containing a replicated cache of product inventory. The following flow demonstrates the data collision problem:</p>
+        
+        <ul>
+        <li>
+        <p>The current inventory count for blue widgets is 500 units</p>
+        </li>
+        <li>
+        <p>Service A updates the inventory cache for blue widgets to 490 units (10 sold)</p>
+        </li>
+        <li>
+        <p>During replication, Service B updates the inventory cache for blue widgets to 495 units (5 sold)</p>
+        </li>
+        <li>
+        <p>The Service B cache gets updated to 490 units due to replication from Service A update</p>
+        </li>
+        <li>
+        <p>The Service A cache gets updates to 495 units due to replication from Service B update</p>
+        </li>
+        <li>
+        <p>Both caches in Service A and B are incorrect and out of sync (inventory should be 485 units)</p>
+        </li>
+        </ul>
+        
+        <p>There are several factors that influence how many data collisions might occur: the number of processing unit instances containing the same cache, the update rate of the cache, the cache size, and finally the replication latency of the caching product.<a data-type="indexterm" data-primary="caching" data-secondary="data collisions and caches in space-based architecture" id="idm45838970772928"></a><a data-type="indexterm" data-primary="data collisions" data-secondary="formula to calculate probable number of" id="idm45838970771824"></a> The formula used to determine probabilistically how many potential data collisions might occur based on these factors is as follows:</p>
+        <div data-type="equation">
+        <mjx-container class="MathJax CtxtMenu_Attached_0" jax="SVG" display="true" tabindex="0" ctxtmenu_counter="11" style="position: relative;"><svg xmlns="http://www.w3.org/2000/svg" width="30.009ex" height="5.018ex" role="img" focusable="false" viewBox="0 -1509.9 13264.1 2217.9" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" style="vertical-align: -1.602ex;"><defs><path id="MJX-12-TEX-I-1D436" d="M50 252Q50 367 117 473T286 641T490 704Q580 704 633 653Q642 643 648 636T656 626L657 623Q660 623 684 649Q691 655 699 663T715 679T725 690L740 705H746Q760 705 760 698Q760 694 728 561Q692 422 692 421Q690 416 687 415T669 413H653Q647 419 647 422Q647 423 648 429T650 449T651 481Q651 552 619 605T510 659Q484 659 454 652T382 628T299 572T226 479Q194 422 175 346T156 222Q156 108 232 58Q280 24 350 24Q441 24 512 92T606 240Q610 253 612 255T628 257Q648 257 648 248Q648 243 647 239Q618 132 523 55T319 -22Q206 -22 128 53T50 252Z"></path><path id="MJX-12-TEX-I-1D45C" d="M201 -11Q126 -11 80 38T34 156Q34 221 64 279T146 380Q222 441 301 441Q333 441 341 440Q354 437 367 433T402 417T438 387T464 338T476 268Q476 161 390 75T201 -11ZM121 120Q121 70 147 48T206 26Q250 26 289 58T351 142Q360 163 374 216T388 308Q388 352 370 375Q346 405 306 405Q243 405 195 347Q158 303 140 230T121 120Z"></path><path id="MJX-12-TEX-I-1D459" d="M117 59Q117 26 142 26Q179 26 205 131Q211 151 215 152Q217 153 225 153H229Q238 153 241 153T246 151T248 144Q247 138 245 128T234 90T214 43T183 6T137 -11Q101 -11 70 11T38 85Q38 97 39 102L104 360Q167 615 167 623Q167 626 166 628T162 632T157 634T149 635T141 636T132 637T122 637Q112 637 109 637T101 638T95 641T94 647Q94 649 96 661Q101 680 107 682T179 688Q194 689 213 690T243 693T254 694Q266 694 266 686Q266 675 193 386T118 83Q118 81 118 75T117 65V59Z"></path><path id="MJX-12-TEX-I-1D456" d="M184 600Q184 624 203 642T247 661Q265 661 277 649T290 619Q290 596 270 577T226 557Q211 557 198 567T184 600ZM21 287Q21 295 30 318T54 369T98 420T158 442Q197 442 223 419T250 357Q250 340 236 301T196 196T154 83Q149 61 149 51Q149 26 166 26Q175 26 185 29T208 43T235 78T260 137Q263 149 265 151T282 153Q302 153 302 143Q302 135 293 112T268 61T223 11T161 -11Q129 -11 102 10T74 74Q74 91 79 106T122 220Q160 321 166 341T173 380Q173 404 156 404H154Q124 404 99 371T61 287Q60 286 59 284T58 281T56 279T53 278T49 278T41 278H27Q21 284 21 287Z"></path><path id="MJX-12-TEX-I-1D460" d="M131 289Q131 321 147 354T203 415T300 442Q362 442 390 415T419 355Q419 323 402 308T364 292Q351 292 340 300T328 326Q328 342 337 354T354 372T367 378Q368 378 368 379Q368 382 361 388T336 399T297 405Q249 405 227 379T204 326Q204 301 223 291T278 274T330 259Q396 230 396 163Q396 135 385 107T352 51T289 7T195 -10Q118 -10 86 19T53 87Q53 126 74 143T118 160Q133 160 146 151T160 120Q160 94 142 76T111 58Q109 57 108 57T107 55Q108 52 115 47T146 34T201 27Q237 27 263 38T301 66T318 97T323 122Q323 150 302 164T254 181T195 196T148 231Q131 256 131 289Z"></path><path id="MJX-12-TEX-I-1D45B" d="M21 287Q22 293 24 303T36 341T56 388T89 425T135 442Q171 442 195 424T225 390T231 369Q231 367 232 367L243 378Q304 442 382 442Q436 442 469 415T503 336T465 179T427 52Q427 26 444 26Q450 26 453 27Q482 32 505 65T540 145Q542 153 560 153Q580 153 580 145Q580 144 576 130Q568 101 554 73T508 17T439 -10Q392 -10 371 17T350 73Q350 92 386 193T423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 180T152 343Q153 348 153 366Q153 405 129 405Q91 405 66 305Q60 285 60 284Q58 278 41 278H27Q21 284 21 287Z"></path><path id="MJX-12-TEX-I-1D445" d="M230 637Q203 637 198 638T193 649Q193 676 204 682Q206 683 378 683Q550 682 564 680Q620 672 658 652T712 606T733 563T739 529Q739 484 710 445T643 385T576 351T538 338L545 333Q612 295 612 223Q612 212 607 162T602 80V71Q602 53 603 43T614 25T640 16Q668 16 686 38T712 85Q717 99 720 102T735 105Q755 105 755 93Q755 75 731 36Q693 -21 641 -21H632Q571 -21 531 4T487 82Q487 109 502 166T517 239Q517 290 474 313Q459 320 449 321T378 323H309L277 193Q244 61 244 59Q244 55 245 54T252 50T269 48T302 46H333Q339 38 339 37T336 19Q332 6 326 0H311Q275 2 180 2Q146 2 117 2T71 2T50 1Q33 1 33 10Q33 12 36 24Q41 43 46 45Q50 46 61 46H67Q94 46 127 49Q141 52 146 61Q149 65 218 339T287 628Q287 635 230 637ZM630 554Q630 586 609 608T523 636Q521 636 500 636T462 637H440Q393 637 386 627Q385 624 352 494T319 361Q319 360 388 360Q466 361 492 367Q556 377 592 426Q608 449 619 486T630 554Z"></path><path id="MJX-12-TEX-I-1D44E" d="M33 157Q33 258 109 349T280 441Q331 441 370 392Q386 422 416 422Q429 422 439 414T449 394Q449 381 412 234T374 68Q374 43 381 35T402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487Q506 153 506 144Q506 138 501 117T481 63T449 13Q436 0 417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157ZM351 328Q351 334 346 350T323 385T277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q217 26 254 59T298 110Q300 114 325 217T351 328Z"></path><path id="MJX-12-TEX-I-1D461" d="M26 385Q19 392 19 395Q19 399 22 411T27 425Q29 430 36 430T87 431H140L159 511Q162 522 166 540T173 566T179 586T187 603T197 615T211 624T229 626Q247 625 254 615T261 596Q261 589 252 549T232 470L222 433Q222 431 272 431H323Q330 424 330 420Q330 398 317 385H210L174 240Q135 80 135 68Q135 26 162 26Q197 26 230 60T283 144Q285 150 288 151T303 153H307Q322 153 322 145Q322 142 319 133Q314 117 301 95T267 48T216 6T155 -11Q125 -11 98 4T59 56Q57 64 57 83V101L92 241Q127 382 128 383Q128 385 77 385H26Z"></path><path id="MJX-12-TEX-I-1D452" d="M39 168Q39 225 58 272T107 350T174 402T244 433T307 442H310Q355 442 388 420T421 355Q421 265 310 237Q261 224 176 223Q139 223 138 221Q138 219 132 186T125 128Q125 81 146 54T209 26T302 45T394 111Q403 121 406 121Q410 121 419 112T429 98T420 82T390 55T344 24T281 -1T205 -11Q126 -11 83 42T39 168ZM373 353Q367 405 305 405Q272 405 244 391T199 357T170 316T154 280T149 261Q149 260 169 260Q282 260 327 284T373 353Z"></path><path id="MJX-12-TEX-N-3D" d="M56 347Q56 360 70 367H707Q722 359 722 347Q722 336 708 328L390 327H72Q56 332 56 347ZM56 153Q56 168 72 173H708Q722 163 722 153Q722 140 707 133H70Q56 140 56 153Z"></path><path id="MJX-12-TEX-I-1D441" d="M234 637Q231 637 226 637Q201 637 196 638T191 649Q191 676 202 682Q204 683 299 683Q376 683 387 683T401 677Q612 181 616 168L670 381Q723 592 723 606Q723 633 659 637Q635 637 635 648Q635 650 637 660Q641 676 643 679T653 683Q656 683 684 682T767 680Q817 680 843 681T873 682Q888 682 888 672Q888 650 880 642Q878 637 858 637Q787 633 769 597L620 7Q618 0 599 0Q585 0 582 2Q579 5 453 305L326 604L261 344Q196 88 196 79Q201 46 268 46H278Q284 41 284 38T282 19Q278 6 272 0H259Q228 2 151 2Q123 2 100 2T63 2T46 1Q31 1 31 10Q31 14 34 26T39 40Q41 46 62 46Q130 49 150 85Q154 91 221 362L289 634Q287 635 234 637Z"></path><path id="MJX-12-TEX-N-2A" d="M215 721Q216 732 225 741T248 750Q263 750 273 742T284 721L270 571L327 613Q383 654 388 657T399 660Q412 660 423 650T435 624T424 600T376 575Q363 569 355 566L289 534L355 504L424 470Q435 462 435 447Q435 431 424 420T399 409Q393 409 388 412T327 456L270 498L277 423L284 348Q280 320 250 320T215 348L229 498L172 456Q116 415 111 412T100 409Q87 409 76 420T64 447Q64 461 75 470L144 504L210 534L144 566Q136 570 122 576Q83 593 74 600T64 624Q64 639 75 649T100 660Q106 660 111 657T172 613L229 571Q229 578 222 643T215 721Z"></path><path id="MJX-12-TEX-I-1D448" d="M107 637Q73 637 71 641Q70 643 70 649Q70 673 81 682Q83 683 98 683Q139 681 234 681Q268 681 297 681T342 682T362 682Q378 682 378 672Q378 670 376 658Q371 641 366 638H364Q362 638 359 638T352 638T343 637T334 637Q295 636 284 634T266 623Q265 621 238 518T184 302T154 169Q152 155 152 140Q152 86 183 55T269 24Q336 24 403 69T501 205L552 406Q599 598 599 606Q599 633 535 637Q511 637 511 648Q511 650 513 660Q517 676 519 679T529 683Q532 683 561 682T645 680Q696 680 723 681T752 682Q767 682 767 672Q767 650 759 642Q756 637 737 637Q666 633 648 597Q646 592 598 404Q557 235 548 205Q515 105 433 42T263 -22Q171 -22 116 34T60 167V183Q60 201 115 421Q164 622 164 628Q164 635 107 637Z"></path><path id="MJX-12-TEX-N-32" d="M109 429Q82 429 66 447T50 491Q50 562 103 614T235 666Q326 666 387 610T449 465Q449 422 429 383T381 315T301 241Q265 210 201 149L142 93L218 92Q375 92 385 97Q392 99 409 186V189H449V186Q448 183 436 95T421 3V0H50V19V31Q50 38 56 46T86 81Q115 113 136 137Q145 147 170 174T204 211T233 244T261 278T284 308T305 340T320 369T333 401T340 431T343 464Q343 527 309 573T212 619Q179 619 154 602T119 569T109 550Q109 549 114 549Q132 549 151 535T170 489Q170 464 154 447T109 429Z"></path><path id="MJX-12-TEX-I-1D446" d="M308 24Q367 24 416 76T466 197Q466 260 414 284Q308 311 278 321T236 341Q176 383 176 462Q176 523 208 573T273 648Q302 673 343 688T407 704H418H425Q521 704 564 640Q565 640 577 653T603 682T623 704Q624 704 627 704T632 705Q645 705 645 698T617 577T585 459T569 456Q549 456 549 465Q549 471 550 475Q550 478 551 494T553 520Q553 554 544 579T526 616T501 641Q465 662 419 662Q362 662 313 616T263 510Q263 480 278 458T319 427Q323 425 389 408T456 390Q490 379 522 342T554 242Q554 216 546 186Q541 164 528 137T492 78T426 18T332 -20Q320 -22 298 -22Q199 -22 144 33L134 44L106 13Q83 -14 78 -18T65 -22Q52 -22 52 -14Q52 -11 110 221Q112 227 130 227H143Q149 221 149 216Q149 214 148 207T144 186T142 153Q144 114 160 87T203 47T255 29T308 24Z"></path><path id="MJX-12-TEX-I-1D43F" d="M228 637Q194 637 192 641Q191 643 191 649Q191 673 202 682Q204 683 217 683Q271 680 344 680Q485 680 506 683H518Q524 677 524 674T522 656Q517 641 513 637H475Q406 636 394 628Q387 624 380 600T313 336Q297 271 279 198T252 88L243 52Q243 48 252 48T311 46H328Q360 46 379 47T428 54T478 72T522 106T564 161Q580 191 594 228T611 270Q616 273 628 273H641Q647 264 647 262T627 203T583 83T557 9Q555 4 553 3T537 0T494 -1Q483 -1 418 -1T294 0H116Q32 0 32 10Q32 17 34 24Q39 43 44 45Q48 46 59 46H65Q92 46 125 49Q139 52 144 61Q147 65 216 339T285 628Q285 635 228 637Z"></path></defs><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mrow"><g data-mml-node="mi"><use data-c="1D436" xlink:href="#MJX-12-TEX-I-1D436"></use></g><g data-mml-node="mi" transform="translate(760,0)"><use data-c="1D45C" xlink:href="#MJX-12-TEX-I-1D45C"></use></g><g data-mml-node="mi" transform="translate(1245,0)"><use data-c="1D459" xlink:href="#MJX-12-TEX-I-1D459"></use></g><g data-mml-node="mi" transform="translate(1543,0)"><use data-c="1D459" xlink:href="#MJX-12-TEX-I-1D459"></use></g><g data-mml-node="mi" transform="translate(1841,0)"><use data-c="1D456" xlink:href="#MJX-12-TEX-I-1D456"></use></g><g data-mml-node="mi" transform="translate(2186,0)"><use data-c="1D460" xlink:href="#MJX-12-TEX-I-1D460"></use></g><g data-mml-node="mi" transform="translate(2655,0)"><use data-c="1D456" xlink:href="#MJX-12-TEX-I-1D456"></use></g><g data-mml-node="mi" transform="translate(3000,0)"><use data-c="1D45C" xlink:href="#MJX-12-TEX-I-1D45C"></use></g><g data-mml-node="mi" transform="translate(3485,0)"><use data-c="1D45B" xlink:href="#MJX-12-TEX-I-1D45B"></use></g><g data-mml-node="mi" transform="translate(4085,0)"><use data-c="1D445" xlink:href="#MJX-12-TEX-I-1D445"></use></g><g data-mml-node="mi" transform="translate(4844,0)"><use data-c="1D44E" xlink:href="#MJX-12-TEX-I-1D44E"></use></g><g data-mml-node="mi" transform="translate(5373,0)"><use data-c="1D461" xlink:href="#MJX-12-TEX-I-1D461"></use></g><g data-mml-node="mi" transform="translate(5734,0)"><use data-c="1D452" xlink:href="#MJX-12-TEX-I-1D452"></use></g><g data-mml-node="mo" transform="translate(6477.8,0)"><use data-c="3D" xlink:href="#MJX-12-TEX-N-3D"></use></g><g data-mml-node="mi" transform="translate(7533.6,0)"><use data-c="1D441" xlink:href="#MJX-12-TEX-I-1D441"></use></g><g data-mml-node="mo" transform="translate(8421.6,0)"><use data-c="2A" xlink:href="#MJX-12-TEX-N-2A"></use></g><g data-mml-node="mfrac" transform="translate(8921.6,0)"><g data-mml-node="mrow" transform="translate(220,676)"><g data-mml-node="mi"><use data-c="1D448" xlink:href="#MJX-12-TEX-I-1D448"></use></g><g data-mml-node="msup" transform="translate(767,0)"><g data-mml-node="mi"><use data-c="1D445" xlink:href="#MJX-12-TEX-I-1D445"></use></g><g data-mml-node="mn" transform="translate(792,363) scale(0.707)"><use data-c="32" xlink:href="#MJX-12-TEX-N-32"></use></g></g></g><g data-mml-node="mi" transform="translate(878.8,-686)"><use data-c="1D446" xlink:href="#MJX-12-TEX-I-1D446"></use></g><rect width="2162.6" height="60" x="120" y="220"></rect></g><g data-mml-node="mo" transform="translate(11324.1,0)"><use data-c="2A" xlink:href="#MJX-12-TEX-N-2A"></use></g><g data-mml-node="mi" transform="translate(11824.1,0)"><use data-c="1D445" xlink:href="#MJX-12-TEX-I-1D445"></use></g><g data-mml-node="mi" transform="translate(12583.1,0)"><use data-c="1D43F" xlink:href="#MJX-12-TEX-I-1D43F"></use></g></g></g></g></svg><mjx-assistive-mml unselectable="on" display="block"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="upper C o l l i s i o n upper R a t e equals upper N asterisk StartFraction upper U upper R squared Over upper S EndFraction asterisk upper R upper L" display="block"><mrow><mi>C</mi><mi>o</mi><mi>l</mi><mi>l</mi><mi>i</mi><mi>s</mi><mi>i</mi><mi>o</mi><mi>n</mi><mi>R</mi><mi>a</mi><mi>t</mi><mi>e</mi><mo>=</mo><mi>N</mi><mo data-mjx-pseudoscript="true">*</mo><mfrac><mrow><mi>U</mi><msup><mi>R</mi><mn>2</mn></msup></mrow><mi>S</mi></mfrac><mo data-mjx-pseudoscript="true">*</mo><mi>R</mi><mi>L</mi></mrow></math></mjx-assistive-mml></mjx-container>
+        </div>
+        
+        <p>where <em>N</em> represents the number of service instances using the same named cache, <em>UR</em> represents the update rate in milliseconds (squared), <em>S</em> the cache size (in terms of number of rows), and <em>RL</em> the replication latency of the caching product.<a data-type="indexterm" data-primary="services" data-secondary="service instances using named cache in space-based architecture" data-tertiary="data collisions and" id="idm45838970754896"></a></p>
+        
+        <p>This formula is useful for determining the percentage of data collisions that will likely occur and hence the feasibility of the use of replicated caching. For example, consider the following values for the factors involved in this calculation:</p>
+        <table style="width: 80%">
+        
+        <tbody>
+        <tr>
+        <td><p>Update rate (UR):</p></td>
+        <td><p>20 updates/second</p></td>
+        </tr>
+        <tr>
+        <td><p>Number of instances (N):</p></td>
+        <td><p>5</p></td>
+        </tr>
+        <tr>
+        <td><p>Cache size (S):</p></td>
+        <td><p>50,000 rows</p></td>
+        </tr>
+        <tr>
+        <td><p>Replication latency (RL):</p></td>
+        <td><p>100 milliseconds</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td></td>
+        </tr>
+        <tr>
+        <td><p>Updates:</p></td>
+        <td><p>72,000 per hour</p></td>
+        </tr>
+        <tr>
+        <td><p>Collision rate:</p></td>
+        <td><p>14.4 per hour</p></td>
+        </tr>
+        <tr>
+        <td><p>Percentage:</p></td>
+        <td><p>0.02%</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>Applying these factors to the formula yields 72,000 updates and hour, with a high probability that 14 updates to the same data may collide. Given the low percentage (0.02%), replication would be a viable option.</p>
+        
+        <p>Varying the replication latency has a significant impact on the consistency of data.<a data-type="indexterm" data-primary="latency" data-secondary="varying replication latency in space-based architecture" id="idm45838970738480"></a><a data-type="indexterm" data-primary="replication" data-secondary="varying latency in space-based architecture" id="idm45838970737408"></a> Replication latency depends on many factors, including the type of network and the physical distance between processing units. For this reason replication latency values are rarely published and must be calculated and derived from actual measurements in a production environment. The value used in the prior example (100 milliseconds) is a good planning number if the actual replication latency, a value we frequently use to determine the number of data collisions, is not available. For example, changing the replication latency from 100 milliseconds to 1 millisecond yields the same number of updates (72,000 per hour) but produces only the probability of 0.1 collisions per hour! This scenario is shown in the following table:</p>
+        <table style="width: 80%">
+        
+        <tbody>
+        <tr>
+        <td><p>Update rate (UR):</p></td>
+        <td><p>20 updates/second</p></td>
+        </tr>
+        <tr>
+        <td><p>Number of instances (N):</p></td>
+        <td><p>5</p></td>
+        </tr>
+        <tr>
+        <td><p>Cache size (S):</p></td>
+        <td><p>50,000 rows</p></td>
+        </tr>
+        <tr>
+        <td><p>Replication latency (RL):</p></td>
+        <td><p>1 millisecond (changed from 100)</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td></td>
+        </tr>
+        <tr>
+        <td><p>Updates:</p></td>
+        <td><p>72,000 per hour</p></td>
+        </tr>
+        <tr>
+        <td><p>Collision rate:</p></td>
+        <td><p>0.1 per hour</p></td>
+        </tr>
+        <tr>
+        <td><p>Percentage:</p></td>
+        <td><p>0.0002%</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>The number of processing units containing the same named cache (as represented through the <em>number of instances</em> factor) also has a direct proportional relationship to the number of data collisions possible.<a data-type="indexterm" data-primary="processing units" data-secondary="containing same named cache, data collisions and" id="idm45838970721136"></a><a data-type="indexterm" data-primary="data collisions" data-secondary="number of processing unit instances and" id="idm45838970720128"></a> For example, reducing the number of processing units from 5 instances to 2 instances yields a data collision rate of only 6 per hour out of 72,000 updates per hour:</p>
+        <table style="width: 80%">
+        
+        <tbody>
+        <tr>
+        <td><p>Update rate (UR):</p></td>
+        <td><p>20 updates/second</p></td>
+        </tr>
+        <tr>
+        <td><p>Number of instances (N):</p></td>
+        <td><p>2 (changed from 5)</p></td>
+        </tr>
+        <tr>
+        <td><p>Cache size (S):</p></td>
+        <td><p>50,000 rows</p></td>
+        </tr>
+        <tr>
+        <td><p>Replication latency (RL):</p></td>
+        <td><p>100 milliseconds</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td></td>
+        </tr>
+        <tr>
+        <td><p>Updates:</p></td>
+        <td><p>72,000 per hour</p></td>
+        </tr>
+        <tr>
+        <td><p>Collision rate:</p></td>
+        <td><p>5.8 per hour</p></td>
+        </tr>
+        <tr>
+        <td><p>Percentage:</p></td>
+        <td><p>0.008%</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>The cache size is the only factor that is inversely proportional to the collision rate. As the cache size decreases, collision rates increase. In our example, reducing the cache size from 50,000 rows to 10,000 rows (and keeping everything the same as in the first example) yields a collision rate of <a data-type="indexterm" data-primary="data collisions" data-secondary="cache size and" id="idm45838970704816"></a>72 per hour, significantly higher than with 50,000 rows:</p>
+        <table style="width: 80%">
+        
+        <tbody>
+        <tr>
+        <td><p>Update rate (UR):</p></td>
+        <td><p>20 updates/second</p></td>
+        </tr>
+        <tr>
+        <td><p>Number of instances (N):</p></td>
+        <td><p>5</p></td>
+        </tr>
+        <tr>
+        <td><p>Cache size (S):</p></td>
+        <td><p>10,000 rows (changed from 50,000)</p></td>
+        </tr>
+        <tr>
+        <td><p>Replication latency (RL):</p></td>
+        <td><p>100 milliseconds</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td></td>
+        </tr>
+        <tr>
+        <td><p>Updates:</p></td>
+        <td><p>72,000 per hour</p></td>
+        </tr>
+        <tr>
+        <td><p>Collision rate:</p></td>
+        <td><p>72.0 per hour</p></td>
+        </tr>
+        <tr>
+        <td><p>Percentage:</p></td>
+        <td><p>0.1%</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>Under normal circumstances, most systems do not have consistent update rates over such a long period of time. As such, when using this calculation it is helpful to understand the maximum update rate during peak usage and calculate minimum, normal, and peak collision rates.<a data-type="indexterm" data-primary="space-based architecture" data-secondary="data collisions" data-startref="ix_sparchdaco" id="idm45838970689568"></a><a data-type="indexterm" data-primary="data collisions" data-startref="ix_dacoll" id="idm45838970688272"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Cloud Versus On-Premises Implementations"><div class="sect1" id="idm45838970785088">
+        <h1>Cloud Versus On-Premises Implementations</h1>
+        
+        <p>Space-based architecture offers some unique options when it comes to the environments in which it is deployed.<a data-type="indexterm" data-primary="space-based architecture" data-secondary="cloud vs. on-premises implementations" id="idm45838970685968"></a><a data-type="indexterm" data-primary="cloud, space-based architecture implementations on" id="idm45838970685008"></a> The entire topology, including the processing units, virtualized middleware, data pumps, data readers and writers, and the database, can be deployed within cloud-based environments on-premises (“on-prem”). However, this architecture style can also be deployed between these environments, offering a unique feature not found in other architecture styles.<a data-type="indexterm" data-primary="on-premises implementations of space-based architecture" id="idm45838970683744"></a></p>
+        
+        <p>A powerful feature of this architecture style (as illustrated in <a data-type="xref" href="#fig-style-space-based-hybrid-cloud">Figure&nbsp;15-11</a>) is to deploy applications via processing units and virtualized middleware in managed cloud-based environments while keeping the physical databases and corresponding data on-prem. This topology supports very effective cloud-based data synchronization due to the asynchronous data pumps and eventual consistency model of this architecture style. Transactional processing can occur on dynamic and elastic cloud-based environments while preserving physical data management, reporting, and data analytics within secure and local on-prem environments.</p>
+        
+        <figure><div id="fig-style-space-based-hybrid-cloud" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1511.png" alt="Hybrid Cloud" width="1411" height="1048">
+        <h6><span class="label">Figure 15-11. </span>Hybrid cloud-based and on-prem topology</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Replicated Versus Distributed Caching"><div class="sect1" id="idm45838970678960">
+        <h1>Replicated Versus Distributed Caching</h1>
+        
+        <p>Space-based architecture relies on caching for the transactional processing of an application.<a data-type="indexterm" data-primary="distributed vs. replicated caching in space-based architecture" id="ix_dstcach"></a><a data-type="indexterm" data-primary="replication" data-secondary="replicated vs. distributed caching in space-based architecture" id="ix_repcach"></a><a data-type="indexterm" data-primary="space-based architecture" data-secondary="replicated vs. distributed caching in" id="ix_sparchcach"></a><a data-type="indexterm" data-primary="caching" data-secondary="replicated vs. distributed in space-based architecture" id="ix_cachrvd"></a> Removing the need for direct reads and writes to a database is how space-based architecture is able to support high scalability, high elasticity, and high performance. Space-based architecture mostly relies on replicated caching, although distributed caching can be used as well.</p>
+        
+        <p>With replicated caching, as illustrated in <a data-type="xref" href="#fig-style-space-based-replicated">Figure&nbsp;15-12</a>, each processing unit contains its own in-memory data grid that is synchronized between all processing units using that same named cache. When an update occurs to a cache within any of the processing units, the other processing units are automatically updated with the new <span class="keep-together">information.</span></p>
+        
+        <figure><div id="fig-style-space-based-replicated" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1512.png" alt="Replicated caching" width="1384" height="617">
+        <h6><span class="label">Figure 15-12. </span>Replicated caching between processing units</h6>
+        </div></figure>
+        
+        <p>Replicated caching is not only extremely fast, but it also supports high levels of fault tolerance. Since there is no central server holding the cache, replicated caching does not have a single point of failure. There may be exceptions to this rule, however, based on the implementation of the caching product used. Some caching products require the presence of an external controller to monitor and control the replication of data between processing units, but most product companies are moving away from this model.</p>
+        
+        <p>While replicated caching is the standard caching model for space-based architecture, there are some cases where it is not possible to use replicated caching. These situations include high data volumes (size of the cache) and high update rates to the cache data. Internal memory caches in excess of 100 MB might start to cause issues with regard to elasticity and high scalability due to the amount of memory used by each processing unit. Processing units are generally deployed within a virtual machine (or in some cases represent the virtual machine). Each virtual machine only has a certain amount of memory available for internal cache usage, limiting the number of processing unit instances that can be started to process high-throughput situations. Furthermore, as shown in <a data-type="xref" href="#sec-data-collisions">“Data Collisions”</a>, if the update rate of the cache data is too high, the data grid might be unable to keep up with that high update rate to ensure data consistency across all processing unit instances. When these situations occur, distributed caching can be used.</p>
+        
+        <p>Distributed caching, as illustrated in <a data-type="xref" href="#fig-style-space-based-distributed">Figure&nbsp;15-13</a>, requires an external server or service dedicated to holding a centralized cache. In this model the processing units do not store data in internal memory, but rather use a proprietary protocol to access the data from the central cache server. Distributed caching supports high levels of data consistency because the data is all in one place and does not need to be replicated. However, this model has less performance than replicated caching because the cache data must be accessed remotely, adding to the overall latency of the system. Fault tolerance is also an issue with distributed caching. If the cache server containing the data goes down, no data can be accessed or updated from any of the processing units, rendering them nonoperational. Fault <span class="keep-together">tolerance</span> can be mitigated by mirroring the distributed cache, but this could present consistency issues if the primary cache server goes down unexpectedly and the data does not make it to the mirrored cache server.</p>
+        
+        <figure><div id="fig-style-space-based-distributed" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1513.png" alt="Distributed caching" width="1384" height="640">
+        <h6><span class="label">Figure 15-13. </span>Distributed caching between processing units</h6>
+        </div></figure>
+        
+        <p>When the size of the cache is relatively small (under 100 MB) and the update rate of the cache is low enough that the replication engine of the caching product can keep up with the cache updates, the decision between using a replicated cache and a distributed cache becomes one of data consistency versus performance and fault tolerance. A distributed cache will always offer better data consistency over a replicated cache because the cache of data is in a single place (as opposed to being spread across multiple processing units). However, performance and fault tolerance will always be better when using a replicated cache. Many times this decision comes down to the type of data being cached in the processing units. The need for highly consistent data (such as inventory counts of the available products) usually warrants a distributed cache, whereas data that does not change often (such as reference data like name/value pairs, product codes, and product descriptions) usually warrants a replicated cache for quick lookup. Some of the selection criteria that can be used as a guide for choosing when to use a distributed cache versus a replicated cache are listed in <a data-type="xref" href="#table-style-space-based-caching">Table&nbsp;15-1</a>.</p>
+        <table id="table-style-space-based-caching" style="width: 100%">
+        <caption><span class="label">Table 15-1. </span>Distributed versus replicated caching</caption>
+        <thead>
+        <tr>
+        <th>Decision criteria</th>
+        <th>Replicated cache</th>
+        <th>Distributed cache</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Optimization</p></td>
+        <td><p>Performance</p></td>
+        <td><p>Consistency</p></td>
+        </tr>
+        <tr>
+        <td><p>Cache size</p></td>
+        <td><p>Small (&lt;100 MB)</p></td>
+        <td><p>Large (&gt;500 MB)</p></td>
+        </tr>
+        <tr>
+        <td><p>Type of data</p></td>
+        <td><p>Relatively static</p></td>
+        <td><p>Highly dynamic</p></td>
+        </tr>
+        <tr>
+        <td><p>Update frequency</p></td>
+        <td><p>Relatively low</p></td>
+        <td><p>High update rate</p></td>
+        </tr>
+        <tr>
+        <td><p>Fault tolerance</p></td>
+        <td><p>High</p></td>
+        <td><p>Low</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>When choosing the type of caching model to use with space-based architecture, remember that in most cases <em>both</em> models will be applicable within any given application context. In other words, neither replicated caching nor distributed caching solve every problem. Rather than trying to seek compromises through a single consistent caching model across the application, leverage each for its strengths. For example, for a processing unit that maintains the current inventory, choose a distributed caching model for data consistency; for a processing unit that maintains the customer profile, choose a replicated cache for performance and fault tolerance.<a data-type="indexterm" data-primary="distributed vs. replicated caching in space-based architecture" data-startref="ix_dstcach" id="idm45838970640256"></a><a data-type="indexterm" data-primary="replication" data-secondary="replicated vs. distributed caching in space-based architecture" data-startref="ix_repcach" id="idm45838970639408"></a><a data-type="indexterm" data-primary="space-based architecture" data-secondary="replicated vs. distributed caching in" data-startref="ix_sparchcach" id="idm45838970638240"></a><a data-type="indexterm" data-primary="caching" data-secondary="replicated vs. distributed in space-based architecture" data-startref="ix_cachrvd" id="idm45838970637040"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Near-Cache Considerations"><div class="sect1" id="idm45838970678336">
+        <h1>Near-Cache Considerations</h1>
+        
+        <p>A <em>near-cache</em> is a type of caching hybrid model bridging in-memory data grids with a distributed cache.<a data-type="indexterm" data-primary="caching" data-secondary="near-cache considerations in space-based architecture" id="idm45838970633456"></a><a data-type="indexterm" data-primary="near-cache, considerations in space-based architecture" id="idm45838970632448"></a><a data-type="indexterm" data-primary="space-based architecture" data-secondary="near-cache, considerations with" id="idm45838970631744"></a> In this model (illustrated in <a data-type="xref" href="#fig-style-space-based-near-cache">Figure&nbsp;15-14</a>) the distributed cache is referred to as the <em>full backing cache</em>, and each in-memory data grid contained within each processing unit is referred to as the <em>front cache</em>.<a data-type="indexterm" data-primary="full backing cache" id="idm45838970628912"></a><a data-type="indexterm" data-primary="front cache" id="idm45838970628176"></a> The front cache always contains a smaller subset of the full backing cache, and it leverages an <em>eviction policy</em> to remove older items so that newer ones can be added.<a data-type="indexterm" data-primary="eviction policy in front cache" id="idm45838970626816"></a><a data-type="indexterm" data-primary="most frequently used (MFU) cache" id="idm45838970626096"></a><a data-type="indexterm" data-primary="most recently used (MRU) cache" id="idm45838970625408"></a> The front cache can be what is known as a most recently used (MRU) cache containing the most recently used items or a most frequently used (MFU) cache containing the most frequently used items. Alternatively, a <em>random replacement</em> eviction policy can be used in the front cache so that items are removed in a random manner when space is needed to add a new item.<a data-type="indexterm" data-primary="random replacement eviction policy in front cache" id="idm45838970623840"></a> Random replacement (RR) is a good eviction policy when there is no clear analysis of the data with regard to keeping either the latest used versus the most frequently used.</p>
+        
+        <figure><div id="fig-style-space-based-near-cache" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1514.png" alt="Near-cache" width="1436" height="731">
+        <h6><span class="label">Figure 15-14. </span>Near-cache topology</h6>
+        </div></figure>
+        
+        <p>While the front caches are always kept in sync with the full backing cache, the front caches contained within each processing unit are not synchronized between other processing units sharing the same data. This means that multiple processing units sharing the same data context (such as a customer profile) will likely all have different data in their front cache. This creates inconsistencies in performance and responsiveness between processing units because each processing unit contains different data in the front cache. For this reason we do not recommended using a near-cache model for space-based architecture.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Implementation Examples"><div class="sect1" id="idm45838970619664">
+        <h1>Implementation Examples</h1>
+        
+        <p>Space-based architecture <a data-type="indexterm" data-primary="space-based architecture" data-secondary="implementation examples" id="ix_sparchimp"></a>is well suited for applications that experience high spikes in user or request volume and applications that have throughput in excess of 10,000 concurrent users. Examples of space-based architecture include applications like online concert ticketing systems and online auction systems. Both of these examples require high performance, high scalability, and high levels of elasticity.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Concert Ticketing System"><div class="sect2" id="idm45838970616368">
+        <h2>Concert Ticketing System</h2>
+        
+        <p>Concert ticketing systems have a unique problem domain in that concurrent user volume is relatively low until a popular concert is announced.<a data-type="indexterm" data-primary="concert ticketing system example (space-based architecture)" id="idm45838970614944"></a><a data-type="indexterm" data-primary="space-based architecture" data-secondary="implementation examples" data-tertiary="concert ticketing system" id="idm45838970614192"></a> Once concert tickets go on sale, user volumes usually spike from several hundred concurrent users to several thousand (possibly in the tens of thousands, depending on the concert), all trying to acquire a ticket for the concert (hopefully, good seats!). Tickets usually sell out in a matter of minutes, requiring the kind of architecture characteristics supported by space-based architecture.</p>
+        
+        <p>There are many challenges associated with this sort of system. First, there are only a certain number of tickets available, regardless of the seating preferences. Seating availability must continually be updated and made available as fast as possible given the high number of concurrent requests. Also, assuming assigned seats are an option, seating availability must also be updated as fast as possible. Continually accessing a central database synchronously for this sort of system would likely not work—it would be very difficult for a typical database to handle tens of thousands of concurrent requests through standard database transactions at this level of scale and update frequency.</p>
+        
+        <p>Space-based architecture would be a good fit for a concert ticketing system due to the high elasticity requirements required of this type of application. An instantaneous increase in the number of concurrent users wanting to purchase concert tickets would be immediately recognized by the <em>deployment manager</em>, which in turn would start up a large number of processing units to handle the large volume of requests. Optimally, the deployment manager would be configured to start up the necessary number of processing units shortly <em>before</em> the tickets went on sale, therefore having those instances on standby right before the significant increase in user load.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Online Auction System"><div class="sect2" id="idm45838970608976">
+        <h2>Online Auction System</h2>
+        
+        <p>Online auction systems (bidding on items within an auction) share the same sort of characteristics as the online concert ticketing systems described<a data-type="indexterm" data-primary="online auction system example (space-based architecture)" id="idm45838970607488"></a><a data-type="indexterm" data-primary="space-based architecture" data-secondary="implementation examples" data-tertiary="online auction system" id="idm45838970606736"></a> previously—both require high levels of performance and elasticity, and both have unpredictable spikes in user and request load. When an auction starts, there is no way of determining how many people will be joining the auction, and of those people, how many concurrent bids will occur for each asking price.</p>
+        
+        <p>Space-based architecture is well suited for this type of problem domain in that multiple processing units can be started as the load increases; and as the auction winds down, unused processing units could be destroyed. Individual processing units can be devoted to each auction, ensuring consistency with bidding data. Also, due to the asynchronous nature of the data pumps, bidding data can be sent to other processing (such as bid history, bid analytics, and auditing) without much latency, therefore increasing the overall performance of the bidding process.<a data-type="indexterm" data-primary="space-based architecture" data-secondary="implementation examples" data-startref="ix_sparchimp" id="idm45838970604096"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" class="pagebreak-before less_space" data-pdf-bookmark="Architecture Characteristics Ratings"><div class="sect1" id="idm45838970602448">
+        <h1>Architecture Characteristics Ratings</h1>
+        
+        <p>A one-star rating in the characteristics ratings table in <a data-type="xref" href="#fig-style-space-based-ratings">Figure&nbsp;15-15</a> means the specific architecture characteristic<a data-type="indexterm" data-primary="space-based architecture" data-secondary="architecture characteristics ratings" id="idm45838970599584"></a><a data-type="indexterm" data-primary="architecture characteristics" data-secondary="ratings in space-based architecture" id="idm45838970598608"></a> isn’t well supported in the architecture, whereas a five-star rating means the architecture characteristic is one of the strongest features in the architecture style. The definition for each characteristic identified in the scorecard can be found in <a data-type="xref" href="ch04.html#ch-architecture-characteristics-defined">Chapter&nbsp;4</a>.</p>
+        
+        <figure class="width-75"><div id="fig-style-space-based-ratings" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1515.png" alt="Space-based Ratings" width="1240" height="1401">
+        <h6><span class="label">Figure 15-15. </span>Space-based architecture characteristics ratings</h6>
+        </div></figure>
+        
+        <p>Notice that space-based architecture maximizes elasticity, scalability, and performance (all five-star ratings).<a data-type="indexterm" data-primary="elasticity" data-secondary="rating in space-based architecture" id="idm45838970593536"></a><a data-type="indexterm" data-primary="scalability" data-secondary="rating in space-based architecture" id="idm45838970592544"></a><a data-type="indexterm" data-primary="performance" data-secondary="rating in service-based architecture" id="idm45838970591584"></a> These are the driving attributes and main advantages of this architecture style. High levels of all three of these architecture characteristics are achieved by leveraging in-memory data caching and removing the database as a constraint. As a result, processing millions of concurrent users is possible using this architecture style.</p>
+        
+        <p>While high levels of elasticity, scalability, and performance are advantages in this architecture style, there is a trade-off for this advantage, specifically with regard to overall simplicity and testability.<a data-type="indexterm" data-primary="simplicity" data-secondary="in space-based architecture" id="idm45838970589536"></a><a data-type="indexterm" data-primary="testability" data-secondary="rating in space-based architecture" id="idm45838970588544"></a> Space-based architecture is a very complicated architecture style due to the use of caching and eventual consistency of the primary data store, which is the ultimate system of record. Care must be taken to ensure no data is lost in the event of a crash in any of the numerous moving parts of this architecture style (see <a data-type="xref" href="ch14.html#sec-data-loss">“Preventing Data Loss”</a> in <a data-type="xref" href="ch14.html#ch-style-eda">Chapter&nbsp;14</a>).</p>
+        
+        <p>Testing gets a one-star rating due to the complexity involved with simulating the high levels of scalability and elasticity supported in this architecture style.<a data-type="indexterm" data-primary="testing" data-secondary="rating in space-based architecture" id="idm45838970584896"></a> Testing hundreds of thousands of concurrent users at peak load is a very complicated and expensive task, and as a result most high-volume testing occurs within production environments with actual extreme load. This produces significant risk for normal operations within a production environment.</p>
+        
+        <p>Cost is another factor when choosing this architecture style. <a data-type="indexterm" data-primary="cost" data-secondary="in space-based architecture" data-secondary-sortas="space-based" id="idm45838970583072"></a>Space-based architecture is relatively expensive, mostly due to licensing fees for caching products and high resource utilization within cloud and on-prem systems due to high scalability and elasticity.</p>
+        
+        <p>It is difficult to identify the partitioning type of space-based architecture, and as a result we have identified it as both domain partitioned as well as technically partitioned.<a data-type="indexterm" data-primary="partitioning of components" data-secondary="in space-based architecture" id="idm45838970580800"></a><a data-type="indexterm" data-primary="domain partitioning (components)" data-secondary="in space-based architecture" id="idm45838970579792"></a> Space-based architecture is domain partitioned not only because it aligns itself with a specific type of domain (highly elastic and scalable systems), but also because of the<a data-type="indexterm" data-primary="processing units" data-secondary="flexibility of" id="idm45838970578496"></a> flexibility of the processing units. Processing units can act as domain services in the same way services are defined in a service-based architecture or microservices architecture. At the same time, space-based architecture is technically partitioned in the way it separates the concerns about transactional processing using caching from the actual storage of the data in the database via data pumps. The processing units, data pumps, data readers and writers, and the database all form a technical layering in terms of how requests are processed, very similar with regard to how a monolithic n-tiered layered architecture is structured.</p>
+        
+        <p>The number of quanta within space-based architecture can vary based on how the user interface is designed and how communication happens between processing units.<a data-type="indexterm" data-primary="architecture quantum" data-secondary="architecture quanta in space-based architecture" id="idm45838970576208"></a> Because the processing units do not communicate synchronously with the database, the database itself is not part of the quantum equation. As a result, quanta within a space-based architecture are typically delineated through the association between the various user interfaces and the processing units.<a data-type="indexterm" data-primary="orchestration and choreography" data-secondary="orchestration in space-based architecture" id="idm45838970574688"></a> Processing units that synchronously communicate with each other (or synchronously through the processing grid for orchestration) would all be part of the same architectural quantum.<a data-type="indexterm" data-primary="space-based architecture" data-startref="ix_sparch" id="idm45838970573376"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        </div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492043447/files/epub.css" crossorigin="anonymous"><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/mml-svg.js"></script></div></div></section>
+</div>
+
+https://learning.oreilly.com

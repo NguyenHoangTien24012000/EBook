@@ -1,0 +1,387 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 class="h2" id="ch18"><a id="page_481"></a><strong>Chapter 18<br>Centralized Control Planes</strong></h2>
+        <div class="sidebar">
+        <p class="sb-noindent"><strong>Learning Objectives</strong></p>
+        <p class="sb-noindent">After reading this chapter, you should understand:</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> An overview of the interfaces between components in a network device used in building the information needed to forward packets</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The four different control plane models</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Using BGP as a southbound interface for a centralized control plane</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Using fibbing to modify paths in a link state protocol</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The Interface to the Routing System as a southbound interface</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The Path Control Element Protocol</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> OpenFlow’s origins and operation</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> ACP Theorem and the subsidiarity principle</p>
+        </div>
+        <p class="noindent">As much as it might seem otherwise, the information technology field is strongly driven by egos and fashion. What was “in” last year will be “out” this year, often with very little reason other than “this is new, and that is old.” Network engineering is no different in this regard. For instance, network designs have swung between an “ideal” of decentralized control planes to centralized control planes a number of times over their history. Which is truly better?</p>
+        <p class="indent"><a id="page_482"></a>The best way to cut through these pendulum swings, and their attendant hype factor, is to be able to understand the underlying problems, the underlying solutions, and the tradeoffs between the various solutions (as well as whether the problem at hand even needs to be solved at all—a point far too many designers and architects tend to forget). Toward this end, this chapter will begin by explaining a taxonomy of centralized control planes, developed on the model of a forwarding device.</p>
+        <p class="indent">With this model in hand, several specific examples will be surveyed. Each of these systems will be placed into the framework of the problems a control plane needs to solve, and the tradeoffs against distributed control planes, examples of which were considered in the preceding two chapters, will be examined. These solutions all fit into the roughly defined categories of a Software-Defined Network (SDN) or Programmable Network (PN).</p>
+        <div class="heading">
+        <h3 class="h3" id="ch18lev1">Considering the Definition of Software Defined</h3>
+        <p class="noindent">SDN is often presented as an either/or proposition: either you build a network using distributed protocols, <em>or</em> you build a network with a centralized control plane. The nebulous nature of the term <em>SDN</em> contributes to this way of seeing <em>software defined</em>. Specifically, how is an implementation of Open Shortest Path First (OSPF), for instance, not <em>software defined</em>? The general idea seems to be this: in hardware-based networks the software is <em>embedded</em> in appliances; the software and hardware are purchased, configured, and managed as one “thing.” In software defined, the software is separate from the hardware. Hence, in the SDN model, the software is seen as separate from the appliance; in the distributed model, the software has traditionally been seen as part of (or embedded in) the hardware. This brings us to a second false either/or divide. In reality, <em>every</em> distributed control plane is implemented in software, and hence can <em>always</em> be separated from the hardware.</p>
+        </div>
+        <p class="indent">Given software can always be separated from hardware, how can SDN be differentiated from the “traditional” model? The primary idea revolves around separating some part of the functionality of the control plane from the individual forwarding devices, or rather, pulling some part of the functionality of the control plane into a “centralized” control plane. It is important to note the term <em>centralized control plane</em>, as it is used here, does not mean a single “god box” that controls the network. Rather, it simply means a control plane that, in some way, does not run entirely on the network devices.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch18lev2"><a id="page_483"></a><strong>A Taxonomy of Interfaces</strong></h4>
+        <p class="noindent">The SDN and PN worlds, in many ways, have their own terminology; the most important are the <em>southbound interface</em> and the <em>northbound interface</em>:</p>
+        </div>
+        <p class="bullt">• The <em>southbound interface</em> is the interface between the controller and the network devices.</p>
+        <p class="bullb">• The <em>northbound interface</em> is the interface between the controller and applications (or business logic).</p>
+        <p class="indent">Within the realm of southbound interfaces, there are a number of different interaction points, or ways in which the controller interacts with the forwarding devices.</p>
+        <p class="indent"><a href="ch18.xhtml#ch18fig01">Figure 18-1</a> shows four different control plane models:</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/18fig01.jpg" aria-describedby="Al18fig01" alt="Diagrammatic representation of the four different Control Plane models." width="708" height="247"><aside class="hidden" id="Al18fig01">
+        <p>From left to right, four block diagrams labeled Distributed, Augmented, Hybrid, and Replace are shown. Distributed has three layers "On Box Control Plane, RIB, and Forwarding Engine." Augmented has the same structure has Distributed has a fourth layer at the top: Off Box Processes, with an arrow that flows down from it to On Box Control Plane. Hybrid has a similar structure as the Augmented, but its "On Control Box Plane layer", it has another block for the transition of flow control from Off Box Processes to RIB and Forwarding Engine separately. Replace has only two layers, Off Box Processes at the top with an arrow that flows down to Forwarding Engine at the bottom.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch18fig01"></a><strong>Figure 18-1</strong> <em>Centralized control plane models</em></p>
+        </div>
+        <p class="bullt">• In the <strong>distributed</strong> model, the control plane software runs <em>primarily</em> on forwarding devices. This does not mean the control plane software is <em>embedded</em> in the forwarding device. In an appliance model, the software is treated as an embedded part of the appliance itself. In a disaggregated model, however, the software runs primarily on the forwarding device, but the software is clearly delineated from the forwarding hardware.</p>
+        <p class="bull">• In the <strong>augmented</strong> model, the control plane software runs <em>primarily</em> on forwarding devices. Like the distributed model, the control plane is not necessarily embedded in the forwarding device. In the augmented model, the local control plane processes interact with the routing table (Routing Information Base, or RIB). Off-box processes interact with the distributed control plane to influence the set of loop-free paths installed in the RIB.</p>
+        <p class="bull"><a id="page_484"></a>• In the <strong>hybrid</strong> model, the centralized component of the control plane runs in parallel with the distributed control plane. From the distributed control plane process running on each device, the controller just appears to be another distributed control plane running in parallel (in effect). From the controller’s perspective, much the same is true; the distributed control plane is just another control plane running in parallel with the controller.</p>
+        <p class="bullb">• In the <strong>replace</strong> model, there is no distributed control plane; the centralized control plane is the only source of loop-free paths for the local switching device. One key marker of implementations using this model is the controller speaks directly to the forwarding table (FIB) rather than the RIB.</p>
+        <p class="indent">Within this framework, it is important to ask which <em>part</em> of the control plane— or more specifically, which functionality—is placed in the distribution control plane and which is placed in the centralized control plane.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch18lev3"><strong>Considering the Division of Labor</strong></h4>
+        <p class="noindent">Which <em>part</em> of the control plane is centralized is <em>the</em> crucial question when considering SDNs and PNs. What are the <em>parts</em> of a control plane?</p>
+        </div>
+        <p class="indent">There are three “things” a control plane must provide to support applications and businesses: topology information, reachability information, and policy. Almost every control plane implemented since the beginning of network engineering time has assumed these three functions are part of a single “thing,” and hence they must all be done in a single protocol.</p>
+        <p class="indent">Just as data planes are layered by function and location, however, it makes more sense to consider the control plane as a set of functions that can be split into layers. What would these layers look like?</p>
+        <p class="bullt">• Discovering topology and advertising reachability are inseparable in some protocols, such as the Routing Information Protocol (RIP) and the Enhanced Interior Gateway Routing Protocol (EIGRP). In other protocols, such as Intermediate System to Intermediate System (IS-IS), the Shortest Path Tree (SPT) is calculated based on the topology, and reachability is “hung off the tree” as leaf nodes. Conceptually, then, it is difficult to see how topology and reachability could be separated into layers; the interplay between the two pieces of information is direct and immediate.</p>
+        <p class="bullb">• Policy, on the other hand, relies on the topology and reachability information, but otherwise does not interact with topology and reachability. In fact, control plane policy is generally the process of overriding the basic topology and reachability information calculated by the control plane.</p>
+        <p class="indent"><a id="page_485"></a>There appears to be a natural “split,” with topology and reachability on one side of the divide, and policy on the other side of the divide. It is possible, then, to break the control plane into two “layers,” with the bottom layer providing topology and reachability information, and the upper layer providing modifications to the paths calculated by the lower layer in order to implement specific policies.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch18lev4">BGP as an SDN</h3>
+        <p class="noindent">While the Border Gateway Protocol (BGP) was originally designed to interconnect networks operated by different companies—particularly transit service provider networks—providers with large-scale data centers realized it could be used to scale spine and leaf fabrics. <a href="ch18.xhtml#ch18fig02">Figure 18-2</a> is used for illustrating BGP as used in a data center.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/18fig02.jpg" aria-describedby="Al18fig02" alt="Diagrammatic illustration of usage of BGP in a data center fabric." width="483" height="433"><aside class="hidden" id="Al18fig02">
+        <p>A data center is shown with 20 routers placed in a five cross four grid with connections that form a mesh topology. The columns are labeled "col a to d." The rows are labeled "row 1 to 5." Each row is shown to be separate Autonomous System. Autonomous numbers are: Row 1 AS65000, Row 2 AS65001, Row 3 AS65002, Row 4 AS65003 Row 5 AS65004. An iBGP controller is at the bottom of this data center structure and is connected to the routers in "col a" and "row 5." This connection is shown as dotted lines.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch18fig02"></a><strong>Figure 18-2</strong> <em>BGP in a data center fabric</em></p>
+        </div>
+        <p class="indent"><a href="ch18.xhtml#ch18fig02">Figure 18-2</a> shows a five-stage spine and leaf fabric using eBGP as a control plane; as there are no “cross links” in a spine and leaf, there is no iBGP between (using the row and column identifiers to label routers) routers 5a and 5b. Rows 1 and 5 are Top of Rack (ToR) devices, connected to servers hosting the applications using the fabric.</p>
+        <p class="indent">To provide the example, assume some flow should be pinned between 5b and 1d. It is always possible to manually configure each router in the network with static routes to pin this one flow to a specific path, but this creates a lot of opportunities for configuration mistakes.</p>
+        <div class="note">
+        <p class="title"><a id="page_486"></a><strong>Note</strong></p>
+        <p class="notepara">Of course, you could always automate the configuration. But automation does not really reduce the amount of complexity; it just relocates the complexity from the human-to-device interface into a three-layer structure, human- to-automation system, automation system to device. In other words, automating a complex configuration does not make the configuration less complex; it just makes the complexity less apparent. There is no doubt this can sometimes be a good thing, but there is also no doubt automating a bad process does not improve the process. Automation can solve many things, but network engineers need to be careful in thinking automated configurations will “solve all problems.”</p>
+        </div>
+        <p class="indent">Another option, particularly since BGP is already running on every router in the network, is to use BGP as an SDN. Toward this end, an iBGP controller, shown at the bottom of the diagram, is connected to every router in the fabric.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">Only a small number of the iBGP connections are shown so the illustration remains readable.</p>
+        </div>
+        <p class="indent">Once the iBGP sessions are in place, the controller can “read” the entire topology and use local policies to determine which path the flow should be pinned to, and also which flows need to avoid the path over which the pinned flow is passing. For instance, assume the flow should be pinned to the [5b,4a,3c,2b,1d] path. A lower-cost path toward the destination (behind 1d) through 4a can be injected at 5b, and again through 3c at 4a, and again through 2b at 3c, etc., until the best path at each router along the path is through the selected path. The easiest way to accomplish this in BGP would be to inject a route from the controller with a lower local preference— but there are many ways to express such a policy in BGP.</p>
+        <p class="indent">This is an example of an augmented model; the centralized part of the control plane interacts with the distributed control plane (eBGP) directly. This is a rather interesting version of a hybrid model implementation, however, in that the protocol used to push policy (the southbound interface) is the same as the protocol used to discover and distribute topology and reachability information.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch18lev5"><a id="page_487"></a>Fibbing</h3>
+        <p class="noindent">Link state protocols, unlike BGP, are focused on finding the <em>shortest</em> path to a given destination; while most implementations do support tags that can be carried in the protocol, these tags are rarely (actually never) used to modify traffic flow. The reason for this is fairly simple: the link state database must be synchronized among all routers. If two routers have a different view of the network topology, it is possible they will compute a looped path through the network.</p>
+        </div>
+        <p class="indent">Fibbing works within this set of constraints to allow traffic-engineered paths to be computed without modifying the link state protocol, such as Open Shortest Path First (OSPF) or Intermediate System to Intermediate System (IS-IS). Essentially, fibbing works by inserting false nodes, similar to pseudonodes, into the link state database, causing OSPF and IS-IS to change the shortest path, and hence engineering traffic flows through the network.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">This technique requires the route type used to create these fake nodes be able to carry a third-party next hop; v1, for instance, must be able to set the next hop for h1, which has the same address as H, to D, rather than to the fake node itself. Among link state protocols, as of this writing, only one kind of route can carry a third-party next hop: the OSPF external route. This means destinations for which traffic is engineered using fibbing must be external routes, and the fake nodes and other information the controller injects must also be OSPF external routes.</p>
+        </div>
+        <p class="indent"><a href="ch18.xhtml#ch18fig03">Figure 18-3</a> illustrates one possible way in which such fake nodes can be inserted into the network to modify traffic flow.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/18fig03.jpg" aria-describedby="Al18fig03" alt="Network Diagrams illustrating the concept of fibbing traffic by insertion of fake nodes." width="519" height="785"><aside class="hidden" id="Al18fig03">
+        <p>Three diagrams are shown labeled: Original Network, Network with Fibbing nodes and Network with Optimized nodes. The original network setup and the cost per link are the same across all the three diagrams. The cost per link, host to router, router to router, or router server, is 10. Original Network: Host A is connected to router B, which in turn is connected to two other routers C and D. C is connected to F which is connected to the server H. D is connected to E. E is connected to the F and another router G. This G is also connected to the F and the server H. Network with Fibbing nodes: In addition to the previous network setup, the router F is connected to a controller K. B and D are connected to an LSA v1 which in turn is connected to the next hop router h1. D and E are connected to an LSA router v2 which in turn is connected to another next hop router h2. E and G are connected to an LSA router v3, which in turn is connected to a next hop router h3. Network with optimized nodes: In addition to the previous network setup, the router F is connected to a controller K. B and D are connected to an LSA v1 which in turn is connected to the next hop router h1. E and G are connected to an LSA router v3, which in turn is connected to a next hop router h3.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch18fig03"></a><strong>Figure 18-3</strong> <em>Fibbing traffic engineering process</em></p>
+        </div>
+        <p class="indent"><a href="ch18.xhtml#ch18fig03">Figure 18-3</a> illustrates three stages in the same network: the first stage is the network without fibbing, the second is with fibbing nodes included to alter the best path chosen by OSPF, and the third is after the fibbing nodes have been optimized.</p>
+        <p class="indent">In 1, the top network illustrated in <a href="ch18.xhtml#ch18fig03">Figure 18-3</a>, OSPF would choose the best path from A to H along [A,B,C,F,H], as this path has a total cost of 40. The next shortest path is through [B,D,E,F] or [B,D,E,G], both of which have a cost of 50. The policy to be applied to this network is to force the A to H traffic along the path [A,B,D,E,G,H]. The first step is adding a controller that can consume the link state database by participating in OSPF, and can also inject new LSAs into the network. This controller is attached to F and is labeled K in the diagram.</p>
+        <p class="indent"><a id="page_488"></a>To put the policy in place, the controller must convince</p>
+        <p class="bullt">• B that the shortest path toward H passes through D.</p>
+        <p class="bull">• D that the shortest path toward H passes through E.</p>
+        <p class="bullb">• E that the shortest path toward H passes through G.</p>
+        <p class="indent"><a id="page_489"></a>To do this, the controller can inject three LSAs for fake nodes into the network, <em>v1, v2</em>, and <em>v3</em>, each of which advertises the destination H as directly connected (shown as <em>h1, h2</em>, and <em>h3</em> on the diagram):</p>
+        <p class="bullt">• The advertisement for <em>h1</em> from <em>v1</em> has D set as the next hop, so that if B chooses this path toward H, the traffic is forwarded to D rather than <em>v1</em>.</p>
+        <p class="bull">• The advertisement for <em>h2</em> from <em>v2</em> has E set as the next hop, so that if B chooses this path toward H, the traffic is forwarded to E rather than <em>v2</em>.</p>
+        <p class="bullb">• The advertisement for <em>h3</em> from <em>v3</em> has G set as the next hop, so that if B chooses this path toward H, the traffic is forwarded to G rather than <em>v3</em>.</p>
+        <p class="indent">The controller must also advertise some new links—specifically:</p>
+        <p class="bullt">• [B,v1] with some cost lower than 40</p>
+        <p class="bull">• [v1,B] with an infinite cost</p>
+        <p class="bull">• [v1,D] with any cost</p>
+        <p class="bull">• [D,v1] with an infinite cost</p>
+        <p class="bull">• [D,v2] with any cost less than 30</p>
+        <p class="bull">• [v2,D] with an infinite cost</p>
+        <p class="bull">• [E,v2] with any cost</p>
+        <p class="bull">• [v2,E] with an infinite cost</p>
+        <p class="bull">• [E,v3] with any cost less than 20</p>
+        <p class="bull">• [v3,E] with an infinite cost</p>
+        <p class="bull">• [v3,G] with any cost</p>
+        <p class="bullb">• [G,v3] with an infinite cost</p>
+        <p class="indent">Given this set of nodes and links:</p>
+        <p class="bullt">• B will compute the path to H through v1, and forward the traffic toward H to D (because the next hop advertised by v1 to h1 is through D).</p>
+        <p class="bull">• D will compute the path to H through v2, and forward the traffic toward H to E (because the next hop advertised by v2 to h2 is through E).</p>
+        <p class="bullb">• E will compute the path to H through v3, and forward the traffic toward H to G (because the next hop advertised by v3 to h3 is through G).</p>
+        <p class="indent"><a id="page_490"></a>These alternate best paths, then, will carry the traffic along the path [A,B,v1(to D),v2(to E),v3(to G),H]. Adding a node per hop might seem inefficient; hence the fibbing process includes an optimization step. At each hop along the calculated path, the algorithm can compute where each router would forward traffic anyway. In the case of B, the shortest path is normally through C, so the fake node is required to redirect the traffic. In the case of D, however, the shortest path is normally through E, which is the correct path; the fake node does not need to be created to convince D to forward traffic toward H through E. In the case of E, there are two equal cost paths; the fake node would be needed to force E to choose the correct path of the two. The final network, 3, illustrated in <a href="ch18.xhtml#ch18fig03">Figure 18-3</a>, shows the optimized set of fake nodes inserted in the network.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch18lev6">I2RS</h3>
+        <p class="noindent">Work on the Interface to the Routing Systems (I2RS) began in the Internet Engineering Task Force (IETF) in 2012. The original charter was to build an interface into the RIB to act as an interface between the RIB and an off-device process or application. To quote the problem statement RFC7920, directly:</p>
+        </div>
+        <p class="blockquote">Traditionally, routing systems have implemented routing and signaling (e.g., Multiprotocol Label Switching, or MPLS) to control traffic forwarding in a network. Route computation has been controlled by relatively static policies that define link cost, route cost, or import and export routing policies. Requirements have emerged to more dynamically manage and program routing systems due to the advent of highly dynamic data-center networking, on-demand Wide Area Network (WAN) services, dynamic policy-driven traffic steering and service chaining, the need for real-time security threat responsiveness via traffic control, and a paradigm of separating policy-based decision-making from the router itself. These requirements should allow controlling routing information and traffic paths and extracting network topology information, traffic statistics, and other network analytics from routing systems.<sup><a id="ch18fn1"></a><a href="ch18.xhtml#ch18fn-1">1</a></sup></p>
+        <p class="indentt"><a href="ch18.xhtml#ch18fig04">Figure 18-4</a> illustrates the architecture of I2RS.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/18fig04.jpg" aria-describedby="Al18fig04" alt="Diagrammatic representation of I2RS architecture." width="637" height="281"><aside class="hidden" id="Al18fig04">
+        <p>The block diagram has an I2RS controller at the top right connected to an Application at the left through Northbound application programming interface and another block at the bottom through Southbound application programming interface. The block at the bottom has four components: Routing protocol top left, I2RS Agent top right, a RIB in the middle and a FIB at the bottom. The Southbound API connects the controller to both the routing protocol and the I2RS agent. RIB and FIB are shown to be interconnected. "Packet Flow" is shown to pass through the FIB from one side of the block to the other.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch18fig04"></a><strong>Figure 18-4</strong> <em>I2RS architecture</em></p>
+        </div>
+        <p class="indent">In <a href="ch18.xhtml#ch18fig04">Figure 18-4</a>, there are several critical components:</p>
+        <p class="bullt"><a id="page_491"></a>• The <em>application</em>, which is normally some sort of network-level orchestration package providing a “business policy” or “intent-focused” interface to the user. This application is responsible for translating intent into some form of input that the I2RS controller can understand, or translating the information that the I2RS controller provides into some form of human-readable information (such as an overlay view of all the topologies currently enabled on the network).</p>
+        <p class="bull">• The <em>northbound Application Programming Interface (API)</em>, which is not defined by the I2RS specifications.</p>
+        <p class="bull">• The <em>I2RS controller</em>, which is a package executing on a server someplace (virtual or otherwise). This translates the intent and “human readable” requests from the application into the format of the <em>southbound API</em>.</p>
+        <p class="bull">• The <em>southbound API</em>, which is YANG-modeled data carried over one of several different transport mechanisms.</p>
+        <p class="bull">• The <em>I2RS agent</em>, which does two things:</p>
+        <p class="bull1"><span class="pd_ash">•</span> Translates the YANG-modeled data into local RIB API calls to install, remove, and modify routes.</p>
+        <p class="bull1"><span class="pd_ash">•</span> Translates local RIB and routing information into YANG models describing the topology of the network (including overlay topologies).</p>
+        <p class="indentt">It is possible to run only an I2RS agent on each router, replacing the distributed control plane completely. In this case, the controller would take the connected interface and destination information from the RIB, possibly using information from other protocols (such as the Link Local Discovery Protocol, or LLDP), to verify adjacent connected routers, to build a complete view of the network. Based on <a id="page_492"></a>this information, the controller could use any one of the loop-free path calculation mechanisms to calculate a set of loop-free routes through the network, modify them based on the policy being fed to the controller by the application(s), and then distribute the resulting routes to the RIB at each router. Deploying I2RS in this way would be an example of the <em>replace</em> model discussed in the first section of this chapter.</p>
+        <p class="indent">I2RS is not designed to be deployed in <em>replace</em> mode, however. The I2RS agent, which interfaces with the RIB in the same way any distributed routing protocol running on the device does, allows I2RS to act in parallel with other control planes; this would fall under the <em>hybrid</em> mode considered in the first part of this chapter. <a href="ch18.xhtml#ch18fig05">Figure 18-5</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/18fig05.jpg" aria-describedby="Al18fig05" alt="Network diagram represents an I2RS use case." width="503" height="243"><aside class="hidden" id="Al18fig05">
+        <p>Host A is connected to router B and Host H is connected router E. B and E are connected to each other, while B is also connected to router D, and E is connected to two other routers F and G. F and G are also connected to each other. Router G is connected to the server K. Controller C is placed at the of the diagram. This controller C is connected to every router in the diagram and the connection is indicated using dotted lines.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch18fig05"></a><strong>Figure 18-5</strong> <em>An I2RS use case</em></p>
+        </div>
+        <p class="indent">In <a href="ch18.xhtml#ch18fig05">Figure 18-5</a>, A and H are both sending large streams of data to two different services residing on K. The shortest path, calculated by the routing protocol, from A to K is along the path [B,E,G]; the shortest path calculated by the routing protocol from H to K is [E,G]. If both of these flows are placed on the [E,G] link, it could overwhelm the link, so the network operator would like to move A’s traffic to an alternate path. This might be expressed as a policy something like “the differential between the utilization of any two paths in the network should not be more than 20%,” or something similar.</p>
+        <p class="indent">The controller, C, can then monitor each link in the network; when both A and H send traffic, the controller can note the [E,G] link is out of policy, and hence look for some alternate path over which to send some part of the traffic. The obvious choice will be the traffic originating at A; what is not so obvious is where to send this traffic. There are a number of options available to the controller, depending on the capabilities of each device in the network. For instance:</p>
+        <p class="bullt">• If the network supports MPLS label stacks, the controller could impose a label stack on the traffic on the inbound port connecting B to A, causing the traffic to follow the path [B,E,F,G]; this would be implementing <em>segment routing</em> using I2RS to push the label stacks to network devices.</p>
+        <p class="bull"><a id="page_493"></a>• If E supports forwarding based on the source and destination addresses, the controller could push a forwarding rule stating all traffic sourced from A, and destined to K, should be forwarded toward F instead of toward G; the controller would need to calculate that F will not forward the traffic back to E, of course, which would depend on the local link metrics.</p>
+        <p class="bullb">• If F, for some reason, would normally use the path through E to reach K, the controller can set destination-based forwarding rules in B, D, F, and G to cause the traffic sourced from A, and destined to K, to follow the path [B,D,F,G].</p>
+        <p class="indent">All other traffic in the network would continue to follow the routes calculated by the distributed routing protocol running in parallel with I2RS. This means I2RS is being used in a <em>hybrid</em> model programmable network mode in this example. This is the operational role I2RS was designed to fill.</p>
+        <p class="indent">I2RS uses the YANG modeling language to describe forwarding and topology information. For instance, a route is modeled as a set of objects, as shown in <a href="ch18.xhtml#ch18fig06">Figure 18-6</a>.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/18fig06.jpg" aria-describedby="Al18fig06" alt="Tree diagram representing the components of an I2RS route." width="709" height="303"><aside class="hidden" id="Al18fig06">
+        <p>The tree diagram has three layers. The root node at the top is the "Route" which branches out to three nodes at the next layer: Attributes, Match and Next Hop. The Match node branches out to the next layer and has 5 child nodes: IPv4, IPv6, MPLS Label, MAC Address, and Interface.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch18fig06"></a><strong>Figure 18-6</strong> <em>The components of an I2RS route</em></p>
+        </div>
+        <p class="indent">The three kinds of objects in a route model shown in <a href="ch18.xhtml#ch18fig06">Figure 18-6</a> are as follows:</p>
+        <p class="bullt">• Route attributes, such as the metric.</p>
+        <p class="bull">• The route match, which is the portion of the route that is matched to the destination address; when being processed, the destination of the packet can be matched on an IPv4 address, an IPv6 address, an MPLS label, a Media Access Control (MAC) address, or an interface.</p>
+        <p class="bullb">• When the route and the attributes match, the packet is sent to what is contained in the next hop field.</p>
+        <p class="indent"><a id="page_494"></a>Why not define this in a single structure, rather than as a set of related objects? After all, this sort of structure appears to make the model of a single route more complex. The advantage here, however, is the same as the advantages of encoding information into a Type Length Vector (TLV); it is very easy to extend the model if some new kind of match is needed, some new attribute is needed, or some new kind of next hop is needed. One specific example is the idea of an equal cost multipath (ECMP) group. The next hop object can be a single next hop, or a collection of next hops in the form of an ECMP group, or even, perhaps, a next hop and a fast reroute next hop (an alternate next hop).</p>
+        <p class="indent">The model of each route, expressed in YANG, looks like this:</p>
+        <p class="codelink"><a href="ch18_images.xhtml#p18pro01a" id="p18pro01">Click here to view code image</a></p>
+        <p class="pre">
+        +--rw route-list* [route-index]<br>
+        &nbsp;|&nbsp;&nbsp;+--rw route-index&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uint64<br>
+        &nbsp;|&nbsp;&nbsp;+--rw match<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;+--rw (route-type)?<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+--:(ipv4)<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;...<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+--:(ipv6)<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;...<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+--:(mpls-route)<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;...<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+--:(mac-route)<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;...<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+--:(interface-route)<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+        &nbsp;|&nbsp;&nbsp;+--rw nexthop<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;+--rw nexthop-id?uint32<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;+--rw sharing-flag?&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;boolean<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;+--rw (nexthop-type)?<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+--:(nexthop-base)<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;...<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+--:(nexthop-chain) {nexthop-chain}?<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;...<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+--:(nexthop-replicates) {nexthop-replicates}?<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;...<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+--:(nexthop-protection) {nexthop-protection}?<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;...<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+--:(nexthop-load-balance) {nexthop-load-balance}?<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+        &nbsp;|&nbsp;&nbsp;+--rw route-status<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;...<br>
+        &nbsp;|&nbsp;&nbsp;+--rw route-attributes<br>
+        &nbsp;|&nbsp;&nbsp;|&nbsp;&nbsp;...<br>
+        &nbsp;|&nbsp;&nbsp;+--rw route-vendor-attributes<br>
+        &nbsp;+--rw nexthop-list* [nexthop-member-id]<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;+--rw nexthop-member-id&nbsp;&nbsp;&nbsp;&nbsp;uint32</p>
+        <p class="indent"><a id="page_495"></a>You can see each of the elements shown here in the diagram laid out in a human-readable, textual format within the YANG model.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch18lev7">PCEP</h3>
+        <p class="noindent">The original Path Control Element Protocol (PCEP) work dates from the early 2000s, with the first IETF RFC (4655) being made informational in 2006, which means PCEP predates the time when SDNs were “cool.” PCEP was created because of the increasingly complex nature of computing Traffic Engineering (TE) paths through (primarily) Service Provider (SP) networks. Three specific developments drove the design, standardization, and deployment of PCEP:</p>
+        </div>
+        <p class="bullt">• The complexity of calculating TE paths across large, dispersed networks with a lot of different available paths</p>
+        <p class="bull">• The complexity of calculating TE paths across multiple organizations and internal network boundaries; for instance multiple flooding domains, multiple interior gateway protocols stitched together with BGP, or multiple BGP autonomous systems</p>
+        <p class="bullb">• The complexity of computing TE paths through multiple levels of abstraction, such as computing an MPLS TE path on top of an optical path; this includes the difficulty of computing Shared Risk Link Groups (SRLGs) where a large set of virtual topologies cross a complex set of physical (primarily optical) links</p>
+        <p class="indent">The state necessary to compute TE paths in each of these situations is either very difficult or impossible to assemble in a single distributed control plane. All of these functions require some sort of overlay controller-based network with visibility into the entire network, including the physical through the application layers, and across administrative and failure domain boundaries.</p>
+        <p class="indent">If this set of requirements is starting to sound familiar, it should be; many of the SDN type overlays discussed in this chapter were created to solve some variant of this problem set. <a href="ch18.xhtml#ch18fig07">Figure 18-7</a> illustrates the components of the PCEP ecosystem.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/18fig07.jpg" aria-describedby="Al18fig07" alt="Network Diagram illustrates the essential components to establish a PCEP deployment." width="681" height="357"><aside class="hidden" id="Al18fig07">
+        <p>6 routers connected to form a liner topology at the bottom, labeled A to F. Router A and Router F are LERs, while the middle four: B, C, D, and E are LSRs. The routers A, B, and C are connected to a PCE controller G placed above them. The routers D, E, and F are connected to a PCE controller H placed above them. The controllers G and H are in turn connected to a PCC client K placed at the top left of the diagram.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch18fig07"></a><strong>Figure 18-7</strong> <em>The elements of a PCEP deployment</em></p>
+        </div>
+        <p class="indent"><a id="page_496"></a>There are four crucial components of PCEP shown in <a href="ch18.xhtml#ch18fig07">Figure 18-7</a>:</p>
+        <p class="bullt">• The PCC is the Path Computation Client; this is the application or service requesting a new TE path be configured through the network.</p>
+        <p class="bull">• The PCE is the Path Computation Element; this is the controller with the overall view of the network, and it computes the TE path through the network (normally using some form of Constrained SPF).</p>
+        <p class="bull">• The LER is the Label Edge Router; this is the head- and tailend of the TE Label Switched Path (LSP) through the network.</p>
+        <p class="bullb">• The LSR is the Label Switch Router; these simply forward based on the labels as they are configured by the PCE using PCEP.</p>
+        <p class="indent">In a single network (domain or autonomous system), there may be multiple PCEs that may communicate in a number of different ways. For instance, PCEs may share topology information using a link state protocol or BGP (particularly if BGP is carrying topology information through BGP-LS). There may also be one or more PCCs. PCEP is also designed to build paths across domains or autonomous systems; a set of PCCs may communicate with one another to build a TE path across multiple provider networks, instructing local PCEs to set up the correct LSPs through each LSR along the path.</p>
+        <p class="indent">The way a TE path is normally designed in PCEP is each device is configured with a simple set of forwarding rules; any packet received with one label, say <em>X</em>, is forwarded out the indicated interface with a new label <em>Y</em>. This is exactly the same as any other MPLS technology that swaps the outer label at each hop.</p>
+        <p class="indent"><a id="page_497"></a>PCEP, as a protocol, is highly tuned to the process of inserting the inbound label, outbound interface, and outbound label into the forwarding table at each LER and LSR. While PCEP does encode information into TLVs, there is no specific capability to insert filtering or traffic classification rules of any kind. The controller must be able to configure the LER to channel the correct traffic into the LSP headend in some way. It is possible, of course, to configure a label to be routed to the NULL0 interface, which effectively filters the packet stream, so it is possible to do some forms of packet filtering using PCEP.</p>
+        <p class="indent">PCEP falls into the <em>hybrid</em> model described in the first part of this chapter.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch18lev8">OpenFlow</h3>
+        <p class="noindent">OpenFlow made SDN technology “cool.” The project began in 2006 with two sets of problems. The first was a project at Stanford built around centrally managing policy in a network. The second was a group of projects in other universities where researchers wanted to try new ways of building routing protocols; however, the hardware platforms available at the time were not something end users could modify by installing new routing code on them. These requirements breathed new life into the concept of separating the control and forwarding planes, driven by the idea of a standard protocol to carry information between the control plane and the FIB. <a href="ch18.xhtml#ch18fig08">Figure 18-8</a> illustrates the basic concept.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/18fig08.jpg" aria-describedby="Al18fig08" alt="Block diagram illustrates the concept of OpenFlow." width="692" height="169"><aside class="hidden" id="Al18fig08">
+        <p>An OpenFlow controller at top right is connected to an Application at its left through Northbound API and to a FBI at the bottom through Southbound API. The FBI is enclosed inside a separate block which is labeled "switch." The packet flow is shown to pass through the Switch from one end to the other of the block.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch18fig08"></a><strong>Figure 18-8</strong> <em>Basic OpenFlow</em></p>
+        </div>
+        <p class="indent"><a href="ch18.xhtml#ch18fig08">Figure 18-8</a> illustrates the most basic OpenFlow configuration. The switching device does not have any control plane at all, as the controller interacts directly with the FIB. OpenFlow provides a packet format and a protocol over which these packets can be carried that describes forwarding table entries in the FIB directly. The FIB, in OpenFlow documentation, is referred to as the <em>flow table</em>, as it contains information about each individual flow the switch needs to know about.</p>
+        <p class="indent">Note the wording here: <em>each individual flow</em>. This is because OpenFlow was originally designed to operate on any and (possibly) every field in a packet header.</p>
+        <p class="noindent"><a id="page_498"></a>The controller specifies a set of bits and an offset the switch is supposed to match, and then a set of actions to take if a packet matches the specified pattern. The switch, then, can just check each packet it processes to see if it matches this pattern. The pattern might contain, for instance, the source and destination Internet Protocol (IP) addresses, the source and destination media access addresses, protocol numbers, port numbers, and just about anything contained in the packet header.</p>
+        <p class="indentb">It is impossible to build hardware able to contain information on every flow passing through the device. It is impossible, as well, for the controller to know about every flow being initiated by every host attached to the network. To resolve these problems, OpenFlow is normally implemented as a reactive control plane. This means processing a new stream takes several steps:</p>
+        <p class="indenthangingN">1. The host starts sending packets in the new stream.</p>
+        <p class="indenthangingN">2. The first hop switch receives these packets and finds it has no flow label matching the new flow.</p>
+        <p class="indenthangingN">3. The first hop switch will send the packets to the controller.</p>
+        <p class="indenthangingN">4. The controller examines the packet, finds a matching policy (if there is one), and computes a loop-free path through the network.</p>
+        <p class="indenthangingN">5. The controller installs flow label information for this new flow in every switch through which packets in this flow will pass.</p>
+        <p class="indenthangingN">6. The switches now forward traffic normally.</p>
+        <p class="indentt">Flow labels are cached, which means each flow label is held until it has not been used for some time. OpenFlow, then, was originally designed as, and is often deployed as, a reactive control plane, which means the control plane relies on information dynamically (in near real time) supplied by the data plane to build forwarding information.</p>
+        <p class="indent">This kind of processing is generally not scalable in many environments, particularly in the environment OpenFlow is considered ideal for—hyperscale data center fabrics for building private and public clouds. Because of this, many implementations rely on wildcard flow labels, which work much like IP routes; if a subset of the information is matched, the packet is processed based on the rules given for the partial match. Much like more traditional IP routing, the partial match is often the destination subnet.</p>
+        <p class="indent">While OpenFlow is often shown with an off-device controller, this is not the only deployment pattern where OpenFlow has been used. <a href="ch18.xhtml#ch18fig09">Figure 18-9</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/18fig09.jpg" aria-describedby="Al18fig09" alt="Block diagram illustrates the OpenFlow implementation in a Chassis System." width="702" height="369"><aside class="hidden" id="Al18fig09">
+        <p>The block diagram has two main blocks placed adjacent to each other, each marked as a Chassis. Both chassis have the following structure: A "Routing Protocol" at the top is connected with a bi-directional arrow to an "OpenFlow Controller." Two small blocks represent two FIB switches enclosed inside them, one inside each, are shown with packet flows passing in and out through them. The OpenFlow controller is connected to both FIB switches with bi-directional arrows. The Routing Protocols at the top of the two chassis are connected to each other with a bi-directional arrow.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch18fig09"></a><strong>Figure 18-9</strong> <em>OpenFlow in a chassis system</em></p>
+        </div>
+        <p class="indent"><a id="page_499"></a>In <a href="ch18.xhtml#ch18fig09">Figure 18-9</a>, two chassis devices are represented. In each one, there is a processor (or compute engine) running a standard distributed routing protocol. This routing engine communicates with an OpenFlow controller <em>within</em> the device, perhaps running on the same processor. This controller then uses OpenFlow to send routes to individual line cards, each of which acts as a sort of independent switch. The entire unit might appear to be a fairly standard chassis switch, with OpenFlow being used as a sort of Interprocess Communication (IPC) system between the components. The advantage in such a design is that line cards with different sorts of processors can be used; so long as each kind of processor has an OpenFlow interface, the hardware under the controller (and within the stack or chassis) can be replaced fairly easily.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch18lev9">CAP Theorem and Subsidiarity</h3>
+        <p class="noindent">Centralization can often bring many benefits in terms of policy implementation; some engineers and researchers think centralized control planes are much simpler than distributed control planes. Why not completely centralize all control planes, then? The answer lies in another three-way tradeoff problem, much like the State/Optimization/Surface (SOS) three-way problem discussed in <a href="ch01.xhtml#ch01">Chapter 1</a>, “<a href="ch01.xhtml#ch01">Fundamental Concepts</a>.” To understand this problem, consider <a href="ch18.xhtml#ch18fig10">Figure 18-10</a>.<a id="page_500"></a></p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/18fig10.jpg" aria-describedby="Al18fig10" alt="Four different diagrams illustrating the concept of CAP theorem." width="593" height="251"><aside class="hidden" id="Al18fig10">
+        <p>The four diagrams are labeled set 1, set 2, set 3, and set 4. Each diagram has three layers, the database is the first layer, the server is the second layer and hosts are the third. Set 1: database A, a server and two hosts C and D are shown. Set 2: Two databases A and B, a server, and two hosts C and D are shown. Set 3: Two databases A and B, two servers connected to each other and two hosts C and D. Set 4: Two databases A and B, two servers connected to each other through a router, and two hosts C and D.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch18fig10"></a><strong>Figure 18-10</strong> <em>Understanding the CAP theorem</em></p>
+        </div>
+        <p class="indentb">There are four <em>sets</em> illustrated in <a href="ch18.xhtml#ch18fig10">Figure 18-10</a>:</p>
+        <p class="indenthangingN">1. A single database on a single server, accessed by two processes running on two hosts, C and D</p>
+        <p class="indenthangingN">2. A pair of databases containing the same information (which must be synchronized) running on a single server, accessed by two processes running on two hosts, C and D</p>
+        <p class="indenthangingN">3. A pair of databases containing the same information (which must be synchronized) running on a pair of servers connected by a single wire, accessed by two processes running on two hosts, C and D</p>
+        <p class="indenthangingN">4. A pair of databases containing the same information (which must be synchronized) running on a pair of servers connected through a router, accessed by two processes running on two hosts, C and D</p>
+        <p class="indent1">Now consider what happens in each case if C writes some piece of information and D immediately reads it:</p>
+        <p class="indenthangingN">1. The information is written to the database; when D reads the information, it will be identical to what C has written.</p>
+        <p class="indenthangingN">2. The information is written to one database, and it takes a few moments to be synchronized to the other database because it must be transferred across some sort of internal bus so it can be copied from one database to the other. If D reads the information immediately from B, it will receive the old information; D must wait for the synchronization process to complete to see an accurate copy of the information (or the database).</p>
+        <p class="indenthangingN"><a id="page_501"></a>3. Once C has written the information to copy A, the information must cross an internal bus to a network interface, be marshaled into some form of data packet, serialized onto the wire (potentially after being queued for a few moments), copied off the wire at the second server, passed over the second server’s internal bus, and then synchronized to the second copy of the database.</p>
+        <p class="indenthangingN">4. Once C has written the information to copy A, the information must cross an internal bus to a network interface, be marshaled into some form of data packet, serialized onto the wire (potentially after being queued for a few moments), copied off the wire by the router, processed and switched in memory, queued in the router, serialized back onto the wire, copied off the wire at the second server, passed over the second server’s internal bus, and then synchronized to the second copy of the database.</p>
+        <p class="indentt">It should be obvious that the farther apart the two copies of the database are logically, the longer it will take for the information in copy B to match the information in copy A after C has finished writing. This is the first third of the CAP theorem: partitionability. The database in set 1 is not partitioned; as you move left to right, the database becomes more “strongly” partitioned by adding more processes that the information must pass through before the two copies of the database can be synchronized.</p>
+        <p class="indent">Assume you must ensure that the information D retrieves is exactly what C writes. The simplest way to ensure this is to simply block D from reading the copy at B until you know the two copies are synchronized. To put this in other terms, you can block D’s access to the database. This is the second third of the CAP theorem, the “A”— accessibility. You can solve the synchronization problem solved by partitioning the database by making the database unreadable part of the time, or less accessible.</p>
+        <p class="indent">An alternate assumption might be that you do not need B to read precisely the same information as C has written; hence the read and write do not need to be consistent. This is the third third of the CAP theorem, the “C”—consistency.</p>
+        <p class="indent">Putting this all together, the CAP theorem states there are three design parameters in building a database: <em>consistency, accessibility</em>, and <em>partitionability</em>. You can choose, in some measure, two of the three.</p>
+        <p class="indent">How does this apply to control planes? The answer is quite simple: if you want to have a consistent view of the network, you must somehow block access to the database containing the description of the network topology during some periods of time (specifically while the network is converging). What distributed routing protocols do is to allow access all the time, and simply “live with” the inconsistencies resulting from this “always available” distributed database of topology and reachability information.</p>
+        <p class="indent"><a id="page_502"></a>Centralized control planes, however, face a double problem. First, the database is now distributed between the actual forwarding devices and the device with the database describing the network. Second, there cannot be “only one controller”—this would create an unacceptable single point of failure. To prevent having a single point of failure, there must be at least two controllers. Those controllers must be synchronized in some way.</p>
+        <p class="indent">So centralized control planes face a number of challenges, such as</p>
+        <p class="bullt">• Ensuring the actual state of the network is reflected from the devices that are connected to links and destinations into the controller</p>
+        <p class="bull">• Ensuring controllers have a consistent view of the network, or that an inconsistent view of the network does not cause systemic, large-scale failures in some way</p>
+        <p class="bullb">• Ensuring the information needed to forward packets is available at individual forwarding devices fast enough that forwarding does not suffer because of the distributed nature of the control and forwarding planes</p>
+        <p class="indent">There are solutions in each of these spaces, but they often introduce as much complexity as a distributed control plane in the first place. Quite often, hybrid models are chosen to balance between the complexity of distributed control planes and the complexities of centralized control planes.</p>
+        <p class="indent">One interesting way to think about centralization and decentralization is through the <em>subsidiarity principle</em>. Applying subsidiarity, which arises out of the social teaching of Thomas Aquinas, might seem to go far afield of engineering, but consider the principle itself:</p>
+        <p class="blockquote">This tenet holds that nothing should be done by a larger and more complex organization which can be done as well by a smaller and simpler organization.<sup><a id="ch18fn2"></a><a href="ch18.xhtml#ch18fn-2">2</a></sup></p>
+        <p class="indent">The “root” of the subsidiarity principle is this: decisions should be made as close as possible to the information the decisions themselves depend on. Applying this principle to network engineering means thinking about where information is <em>produced</em> and placing any <em>decision maker</em> (generally a protocol, process, etc.) as close to the source of information as possible. Looking at this from a CAP theorem perspective, putting the decision maker close to the source of the information on which the decision maker depends reduces the amount of time between the information being available and the decision being made.</p>
+        <p class="indent">What does this suggest in the network engineering world? Policy comes primarily out of business decisions, and business decisions should be close to the business, not <a id="page_503"></a>the topology. Hence, policy, or least some element of policy, is often best done when centralized. Topology and reachability, however, are grounded in what should be the only source of truth about the state of the network, the network itself. Therefore, it makes sense that decisions related to the topology and reachability, from detection to reaction, should be kept close to the network itself; hence, topology and reachability decisions should trend toward being decentralized.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch18lev10">Final Thoughts on Centralized Control Planes</h3>
+        <p class="noindent">There are no absolutes in the world of network engineering; if you have not found the tradeoff, you have not looked hard enough. This is true of choosing when and where to centralize, and when and where to decentralize. These choices are presented as either/or absolute choices far too often. The reality is that different problems often require different solutions.</p>
+        </div>
+        <p class="indent">Centralization and distribution, in terms of solving the many different problems control planes must resolve in the real world, provide network and protocol designers with a number of tradeoffs. A range of possible solutions seems obvious when considering these two different ways of providing reachability and topology information; for instance:</p>
+        <p class="bullt">• Centralize reachability and topology discovery in a set of distributed controllers, <em>replacing</em> the distributed control plane with a centralized one. This model does not truly assume a “centralized” control plane, so much as it does removing the processing of information discovered about the network out of the individual switching devices. Distribution of the information across a number of devices is still key in creating a resilient design.</p>
+        <p class="bull">• Centralize some part of the function of the control plane, normally the policy, and distribute the remaining parts. PCEP, I2RS, and many other “overlay” control planes take this route.</p>
+        <p class="bullb">• Decentralize all of the control plane components, including reachability, topology, and pushing policy. There are actually very few large-scale networks fully decentralized in this way; at least some policy is normally.</p>
+        <p class="indent">There is, in the end, no simple answer to the problems control planes pose in the real world. Between the three-way tradeoff implied by complexity theory (state, optimization, and surface) and the CAP theorem (consistency, accessibility, and partitioning), designers can make a wide range of choices when building networks and protocols.</p>
+        <p class="indent">Choose wisely.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch18lev11"><a id="page_504"></a>Further Reading</h3>
+        <p class="ref">Atlas, Alia, David Ward, and Thomas Nadeau. <em>Problem Statement for the Interface to the Routing System</em>. Request for Comments 7920. RFC Editor, 2016. <a href="https://rfc-editor.org/rfc/rfc7920.txt">https://rfc-editor.org/rfc/rfc7920.txt</a>.</p>
+        </div>
+        <p class="ref">Bjorklund, Martin. <em>The YANG 1.1 Data Modeling Language</em>. Request for Comments 7950. RFC Editor, 2016. <a href="https://rfc-editor.org/rfc/rfc7950.txt">https://rfc-editor.org/rfc/rfc7950.txt</a>.</p>
+        <p class="ref">Bosnich, David A. “The Principle of Subsidiarity.” <em>Religion &amp; Liberty</em> 4, no. 4 (July 2010). <a href="https://acton.org/pub/religion-liberty/volume-6-number-4/principle-subsidiarity">https://acton.org/pub/religion-liberty/volume-6-number-4/principle-subsidiarity</a>.</p>
+        <p class="ref">Clarke, Joe, Gonzalo Salgueiro, and Carlos Pignataro. <em>Interface to the Routing System (I2RS) Traceability: Framework and Information Model</em>. Request for Comments 7922. RFC Editor, 2016. <a href="https://rfc-editor.org/rfc/rfc7922.txt">https://rfc-editor.org/rfc/rfc7922.txt</a>.</p>
+        <p class="ref">Doria, Avri, Ligang Dong, Weiming Wang, Hormuzd M. Khosravi, Jamal Hadi Salim, and Ram Gopal. <em>Forwarding and Control Element Separation (ForCES) Protocol Specification</em>. Request for Comments 5810. RFC Editor, 2010. <a href="https://rfc-editor.org/rfc/rfc5810.txt">https://rfc-editor.org/rfc/rfc5810.txt</a>.</p>
+        <p class="ref">Hares, Susan, and Mach Chen. “Summary of I2RS Use Case Requirements.” Internet-Draft. Internet Engineering Task Force, November 2016. <a href="https://tools.ietf.org/html/draft-ietf-i2rs-usecase-reqs-summary-03">https://tools.ietf.org/html/draft-ietf-i2rs-usecase-reqs-summary-03</a>.</p>
+        <p class="ref">Hares, Susan, Qin Wu, and Russ White. “Filter-Based Packet Forwarding ECA Policy.” Internet-Draft. Internet Engineering Task Force, October 2016. <a href="https://tools.ietf.org/html/draft-ietf-i2rs-pkt-eca-data-model-02">https://tools.ietf.org/html/draft-ietf-i2rs-pkt-eca-data-model-02</a>.</p>
+        <p class="ref">Medved, Jan, Nitin Bahadur, Hariharan Ananthakrishnan, Xufeng Liu, Robert Varga, and Alexander Clemm. “A Data Model for Network Topologies.” Internet-Draft. Internet Engineering Task Force, March 2017. <a href="https://tools.ietf.org/html/draft-ietf-i2rs-yang-network-topo-12">https://tools.ietf.org/html/draft-ietf-i2rs-yang-network-topo-12</a>.</p>
+        <p class="ref">Medved, Jan, Nitin Bahadur, and Sriganesh Kini. “Routing Information Base Info Model.” Internet-Draft. Internet Engineering Task Force, December 2016. <a href="https://tools.ietf.org/html/draft-ietf-i2rs-rib-info-model-10">https://tools.ietf.org/html/draft-ietf-i2rs-rib-info-model-10</a>.</p>
+        <p class="ref">Medved, Jan, Robert Varga, Hariharan Ananthakrishnan, Nitin Bahadur, Xufeng Liu, and Alexander Clemm. “A YANG Data Model for Layer 3 Topologies.” Internet-Draft. Internet Engineering Task Force, January 2017. <a href="https://tools.ietf.org/html/draft-ietf-i2rs-yang-l3-topology-08">https://tools.ietf.org/html/draft-ietf-i2rs-yang-l3-topology-08</a>.</p>
+        <p class="ref">Nadeau, Thomas, Alia Atlas, Joel M. Halpern, Susan Hares, and David Ward. <em>An Architecture for the Interface to the Routing System</em>. Request for Comments 7921. RFC Editor, 2016. <a href="https://rfc-editor.org/rfc/rfc7921.txt">https://rfc-editor.org/rfc/rfc7921.txt</a>.</p>
+        <p class="ref"><a id="page_505"></a>Prieto, Alberto Gonzalez, Eric Voit, Ambika Tripathy, Einar Nilsen-Nygaard, Balazs Lengyel, Andy Bierman, and Alexander Clemm. “Subscribing to YANG Data-store Push Updates.” Internet-Draft. Internet Engineering Task Force, October 2016. <a href="https://tools.ietf.org/html/draft-ietf-netconf-yang-push-04">https://tools.ietf.org/html/draft-ietf-netconf-yang-push-04</a>.</p>
+        <p class="ref">Vissicchio, Stefano, Laurent Vanbever, and Jennifer Rexford. “Sweet Little Lies: Fake Topologies for Flexible Routing.” In <em>ACM HotNets</em>. Los Angeles, California, 2014.</p>
+        <p class="ref">Wang, Lixing, Hariharan Ananthakrishnan, Mach Chen, Sriganesh Kini, and Nitin Bahadur. “A YANG Data Model for Routing Information Base (RIB).” Internet-Draft. Internet Engineering Task Force, January 2017. <a href="https://tools.ietf.org/html/draft-ietf-i2rs-rib-data-model-07">https://tools.ietf.org/html/draft-ietf-i2rs-rib-data-model-07</a>.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch18lev12">Review Questions</h3>
+        <p class="indenthangingN">1. Research Microsoft’s SWAN architecture. How would you classify this architecture? What parts of the control plane are centralized, what parts are distributed, what interface is used, and what is the southbound protocol?</p>
+        </div>
+        <p class="indenthangingN">2. Research Google’s FirePath architecture. How would you classify this architecture? What parts of the control plane are centralized, what parts are distributed, what interface is used, and what is the southbound protocol?</p>
+        <p class="indenthangingN">3. Research OpenFabric. How would you classify this architecture? What parts of the control plane are centralized, what parts are distributed, what interface is used, and what is the southbound protocol?</p>
+        <p class="indenthangingN">4. Research RESTful interfaces. What is the difference between a RESTful and non-RESTful interface?</p>
+        <p class="indenthangingN">5. Among the four possible interfaces, what interface did the forCES protocol interact with?</p>
+        <p class="indenthangingN">6. Research OpenFlow hybrid mode. Why did the developers of the OpenFlow protocol abandon this idea? How would this mode have changed the classification of the OpenFlow protocol?</p>
+        <p class="indenthangingN">7. One of the problems facing operators who use BGP as a southbound interface is the lack of a full view of the network topology. How does BGP-LS (Link State) solve this problem?</p>
+        <p class="indenthangingN">8. What are the state, surface, and optimization tradeoffs in fibbing?<a id="page_506"></a></p>
+        <p class="footnotet"><a id="ch18fn-1"></a><a href="ch18.xhtml#ch18fn1">1</a>. Atlas, Ward, and Nadeau, <em>Problem Statement for the Interface to the Routing System.</em></p>
+        <p class="footnote"><a id="ch18fn-2"></a><a href="ch18.xhtml#ch18fn2">2</a>. Bosnich, “The Principle of Subsidiarity.”</p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780134762814/files/9780134762852.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

@@ -1,0 +1,970 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section epub:type="chapter">
+        <h2 class="ch2" id="ch11"><span epub:type="pagebreak" id="page_220"></span>Chapter 11. Metaprogramming</h2>
+        <div class="outline">
+        <p class="outh">Topics in This Chapter</p>
+        <p class="chap-lev1"><a href="#ch11lev1sec1">11.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Symbols</a></p>
+        <p class="chap-lev1"><a href="#ch11lev1sec2">11.2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Customization with Symbol Properties</a></p>
+        <p class="chap-lev1"><a href="#ch11lev1sec3">11.3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Property Attributes</a></p>
+        <p class="chap-lev1"><a href="#ch11lev1sec4">11.4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Enumerating Properties</a></p>
+        <p class="chap-lev1"><a href="#ch11lev1sec5">11.5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Testing a Single Property</a></p>
+        <p class="chap-lev1"><a href="#ch11lev1sec6">11.6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Protecting Objects</a></p>
+        <p class="chap-lev1"><a href="#ch11lev1sec7">11.7&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creating or Updating Objects</a></p>
+        <p class="chap-lev1"><a href="#ch11lev1sec8">11.8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Accessing and Updating the Prototype</a></p>
+        <p class="chap-lev1"><a href="#ch11lev1sec9">11.9&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Cloning Objects</a></p>
+        <p class="chap-lev1"><a href="#ch11lev1sec10">11.10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Function Properties</a></p>
+        <p class="chap-lev1"><a href="#ch11lev1sec11">11.11&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Binding Arguments and Invoking Methods</a></p>
+        <p class="chap-lev1"><a href="#ch11lev1sec12">11.12&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Proxies</a></p>
+        <p class="chap-lev1"><a href="#ch11lev1sec13">11.13&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The <code>Reflect</code> Class</a></p>
+        <p class="chap-lev1"><a href="#ch11lev1sec14">11.14&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Proxy Invariants</a></p>
+        <p class="chap-lev1"><a href="#ch11lev1sec15">Exercises</a></p>
+        </div>
+        <p class="noindent"><span epub:type="pagebreak" id="page_221"></span>This chapter is a deep dive into advanced APIs that you can use to create objects that have nonstandard behavior, and to write code that works with generic objects.</p>
+        <p class="noindent">We start by looking at symbols, the only type other than strings that can be used for object property names. By defining properties with certain “well-known” symbols, you can customize the behavior of certain API methods.</p>
+        <p class="noindent">Then we look at object properties in detail. Properties can have attributes, and you will learn how to analyze, create, and update properties with the appropriate attributes. As an application, we will walk through a robust clone function for making deep copies.</p>
+        <p class="noindent">We then turn to function objects and methods for binding parameters and invoking functions with given parameters. Finally, you will see how proxies can intercept every aspect of working with objects. We will study two applications in detail: spying on object access and dynamically creating properties.</p>
+        <section>
+        <h3 class="h3" id="ch11lev1sec1">11.1 Symbols</h3>
+        <p class="noindent">As you have seen throughout this book, a JavaScript object has keys of type <code>String</code>. However, using strings as keys has some limitations. Modern JavaScript provides a second type that you can use for object keys—the <code>Symbol</code> type.</p>
+        <p class="noindent">Symbols have string labels, but they are not strings. Create a symbol like this:<span epub:type="pagebreak" id="page_222"></span></p>
+        <pre class="pre">const sym = Symbol('label')</pre>
+        <p class="noindent">Symbols are unique. If you create a second symbol</p>
+        <pre class="pre">const sym2 = Symbol('label')</pre>
+        <p class="noindent">then <code>sym !== sym2</code>.</p>
+        <p class="noindent">This is the principal advantage of symbols. If you wanted to have a string key that is guaranteed to be unique, you might add a counter or a time stamp or a random number, and you’d still fret if that was good enough.</p>
+        <div class="note">
+        <p class="note-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">You cannot use <code>new</code> to make a symbol: <code>new Symbol('label')</code> throws an exception.</p>
+        </div>
+        <p class="noindent">Since symbols are not strings, you cannot use the dot notation for symbol keys. Instead, use the bracket operator:</p>
+        <p class="codelink"><a id="rch11pr01" href="ch11_images.xhtml#ch11pr01">Click here to view code image</a></p>
+        <pre class="pre">let obj = { [sym]: initialValue }
+        obj[sym] = newValue</pre>
+        <p class="noindent">If you want to attach some property to an existing object, such as a DOM node, it isn’t a good idea to use a string key:</p>
+        <pre class="pre">node.outcome = 'success'</pre>
+        <p class="noindent">Even if nodes don’t currently have a key named <code>outcome</code>, they might in the future.</p>
+        <p class="noindent">But a symbol is completely safe:</p>
+        <p class="codelink"><a id="rch11pr02" href="ch11_images.xhtml#ch11pr02">Click here to view code image</a></p>
+        <pre class="pre">let outcomeSymbol = Symbol('outcome')
+        node[outcomeSymbol] = 'success'</pre>
+        <p class="noindent">Note that you need to save the symbol in a variable or object, so that it is available when you need it.</p>
+        <p class="noindent">For example, the <code>Symbol</code> class has “well-known” symbols in the fields <code>Symbol.iterator</code> and <code>Symbol.species</code> that we will study in the next section.</p>
+        <p class="noindent">If you need to share symbols across “realms” (such as different iframes or web workers), you can use the global symbol registry. To create or retrieve a previously created global symbol, call the <code>Symbol.for</code> method. Supply a key that should be globally unique:</p>
+        <p class="codelink"><a id="rch11pr03" href="ch11_images.xhtml#ch11pr03">Click here to view code image</a></p>
+        <pre class="pre">let sym3 = Symbol.for('com.horstmann.outcome')</pre>
+        <div class="note">
+        <p class="note-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">The <code>typeof</code> operator yields the string <code>'symbol'</code> when applied to a symbol.</p>
+        </div>
+        </section>
+        <section>
+        <h3 class="h3" id="ch11lev1sec2"><span epub:type="pagebreak" id="page_223"></span>11.2 Customization with Symbol Properties</h3>
+        <p class="noindent">Symbol properties are used in the JavaScript API for customizing the behavior of classes. The <code>Symbol</code> class defines a number of “well-known ” symbol constants for this purpose, shown in <a href="#ch11tbl01">Table 11-1</a>. The following subsections examine three of them in detail.</p>
+        <figure class="table" id="ch11tbl01">
+        <figcaption><p class="table-title"><strong>Table 11-1</strong>&nbsp;&nbsp;&nbsp;&nbsp;Well-Known Symbols</p></figcaption>
+        <table class="tabletb">
+        <thead>
+        <tr>
+        <th style="width: 30%;"><p class="tableth">Symbol</p></th>
+        <th style="width: 70%;"><p class="tableth">Description</p></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p class="tabletd"><code>toStringTag</code></p></td>
+        <td><p class="tabletd">Customizes the <code>toString</code> method of the <code>Object</code> class—see <a href="ch11.xhtml#ch11lev2sec2_1">Section 11.2.1</a></p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>toPrimitive</code></p></td>
+        <td><p class="tabletd">Customizes conversion to a primitive type—see <a href="ch11.xhtml#ch11lev2sec2_2">Section 11.2.2</a></p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>species</code></p></td>
+        <td><p class="tabletd">A constructor function to create a result collection, used by methods such as <code>map</code> and <code>filter</code>—see <a href="ch11.xhtml#ch11lev2sec2_3">Section 11.2.3</a></p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>iterator</code>, <code>asyncIterator</code></p></td>
+        <td><p class="tabletd">Define iterators (<a href="ch09.xhtml#ch09">Chapter 9</a>) and asynchronous iterators (<a href="ch10.xhtml#ch10">Chapter 10</a>)</p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>hasInstance</code></p></td>
+        <td><p class="tabletd">Customize the behavior of <code>instanceof</code>:</p>
+        <pre class="pre">class Iterable {
+          static [Symbol.hasInstance](obj) {
+            return Symbol.iterator in obj
+          }
+        }
+        [1, 2, 3] instanceof Iterable</pre></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>match</code>, <code>matchAll</code>, <code>replace</code>, <code>search</code>, <code>split</code></p></td>
+        <td><p class="tabletd">Called from the <code>String</code> methods with the same name. Redefine for objects other than <code>RegExp</code>—see <a href="#ch11ex02">Exercise 2</a>.</p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>isConcatSpreadable</code></p></td>
+        <td><p class="tabletd">Used in the <code>concat</code> method of <code>Array</code>:</p>
+        <pre class="pre">const a = [1, 2]
+        const b = [3, 4]
+        a[Symbol.isConcatSpreadable] = false
+        [].concat(a, b) <span class="cite"><strong>⇒</strong></span> [[1, 2], 3, 4]</pre></td>
+        </tr>
+        </tbody>
+        </table>
+        </figure>
+        <section>
+        <h4 class="h4" id="ch11lev2sec2_1">11.2.1 Customizing <code>toString</code></h4>
+        <p class="noindent">You can change the behavior of the <code>toString</code> method in the <code>Object</code> class. By default, it yields <code>'[object Object]'</code>. But if an object has a property with the key <code>Symbol.toStringTag</code>, then that property value is used instead of <code>Object</code>. For example:<span epub:type="pagebreak" id="page_224"></span></p>
+        <p class="codelink"><a id="rch11pr04" href="ch11_images.xhtml#ch11pr04">Click here to view code image</a></p>
+        <pre class="pre">const harry = { name: 'Harry Smith', salary: 100000 }
+        harry[Symbol.toStringTag] = 'Employee'
+        console.log(harry.toString())
+          // <span class="cite">Now <code>toString</code> yields <code>'[object Employee]</code></span></pre>
+        <p class="noindent">When you define a class, you can set the property in the constructor:</p>
+        <p class="codelink"><a id="rch11pr05" href="ch11_images.xhtml#ch11pr05">Click here to view code image</a></p>
+        <pre class="pre">class Employee {
+          constructor(name, salary) {
+            this[Symbol.toStringTag] = 'Employee'
+            . . .
+          }
+          . . .
+        }</pre>
+        <p class="noindent">Or you can provide a get method, using the following special syntax:</p>
+        <p class="codelink"><a id="rch11pr06" href="ch11_images.xhtml#ch11pr06">Click here to view code image</a></p>
+        <pre class="pre">class Employee {
+          . . .
+          get [Symbol.toStringTag]() { return JSON.stringify(this) }
+        }</pre>
+        <p class="noindent">The point is that the well-known symbol provides a hook for customizing the behavior of an API method.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch11lev2sec2_2">11.2.2 Controlling Type Conversion</h4>
+        <p class="noindent">The <code>Symbol.toPrimitive</code> symbol gives you additional control over the conversion to primitive types if overriding the <code>valueOf</code> method is not sufficient. Consider this class representing percentages:</p>
+        <p class="codelink"><a id="rch11pr07" href="ch11_images.xhtml#ch11pr07">Click here to view code image</a></p>
+        <pre class="pre">class Percent {
+          constructor(rate) { this.rate = rate }
+          toString() { return `${this.rate}%` }
+          valueOf() { return this.rate * 0.01 }
+        }</pre>
+        <p class="noindent">Now consider:</p>
+        <p class="codelink"><a id="rch11pr08" href="ch11_images.xhtml#ch11pr08">Click here to view code image</a></p>
+        <pre class="pre">const result = new Percent(99.44)
+        console.log('Result: ' + result) // <span class="cite">Prints <code>Result: 0.9944</code></span></pre>
+        <p class="noindent">Why not <code>'99.44%'</code>? The <code>+</code> operator uses the <code>valueOf</code> method when it is available. The remedy is to add a method with key <code>Symbol.toPrimitive</code>:</p>
+        <p class="codelink"><a id="rch11pr09" href="ch11_images.xhtml#ch11pr09">Click here to view code image</a></p>
+        <pre class="pre">[Symbol.toPrimitive](hint) {
+          if (hint === 'number') return this.rate * 0.01
+          else return `${this.rate}%`
+        }</pre>
+        <p class="noindent">The hint parameter is:</p>
+        <ul class="bullet">
+        <li><p class="list-item"><code>'number'</code> with arithmetic other than <code>+</code> and comparisons<span epub:type="pagebreak" id="page_225"></span></p></li>
+        <li><p class="list-item"><code>'string'</code> with <code>` ${. . .} `</code> or <code>String(. . .)</code></p></li>
+        <li><p class="list-item"><code>'default'</code> with <code>+</code> or <code>==</code></p></li>
+        </ul>
+        <p class="noindent">In practice, this mechanism is of limited utility because the hint doesn’t give you enough information. What you really want is the type of the other operand—see <a href="#ch11ex01">Exercise 1</a>.</p>
+        </section>
+        <section>
+        <h4 class="h4" id="ch11lev2sec2_3">11.2.3 Species</h4>
+        <p class="noindent">By default, the <code>Array</code> method <code>map</code> produces the same collection that it received:</p>
+        <p class="codelink"><a id="rch11pr10" href="ch11_images.xhtml#ch11pr10">Click here to view code image</a></p>
+        <pre class="pre">class MyArray extends Array {}
+        let myValues = new MyArray(1, 2, 7, 9)
+        myValues.map(x =&gt; x * x) // <span class="cite">Yields a <code>MyArray</code></span></pre>
+        <p class="noindent">That’s not always appropriate. Suppose we have a class <code>Range</code> extending <code>Array</code> that describes a range of integers.</p>
+        <p class="codelink"><a id="rch11pr11" href="ch11_images.xhtml#ch11pr11">Click here to view code image</a></p>
+        <pre class="pre">class Range extends Array {
+          constructor(start, end) {
+            super()
+            for (let i = 0; i &lt; end - start; i++)
+              this[i] = start + i
+          }
+        }</pre>
+        <p class="noindent">Transforms of ranges aren’t usually ranges:</p>
+        <p class="codelink"><a id="rch11pr12" href="ch11_images.xhtml#ch11pr12">Click here to view code image</a></p>
+        <pre class="pre">const myRange = new Range(10, 99)
+        myRange.map(x =&gt; x * x) // <span class="cite">Should not be a <code>Range</code></span></pre>
+        <p class="noindent">Such a collection class can specify a different constructor as the value of the <code>Symbol.species</code> property:</p>
+        <p class="codelink"><a id="rch11pr13" href="ch11_images.xhtml#ch11pr13">Click here to view code image</a></p>
+        <pre class="pre">class Range extends Array {
+          . . .
+          static get [Symbol.species]() { return Array }
+        }</pre>
+        <p class="noindent">This constructor function is used by the <code>Array</code> methods that create new arrays: <code>map</code>, <code>filter</code>, <code>flat</code>, <code>flatMap</code>, <code>subarray</code>, <code>slice</code>, <code>splice</code>, and <code>concat</code>.</p>
+        </section>
+        </section>
+        <section>
+        <h3 class="h3" id="ch11lev1sec3">11.3 Property Attributes</h3>
+        <p class="noindent">In this and the following sections, we will examine all functions and methods of the <code>Object</code> class that are summarized in <a href="#ch11tbl02">Table 11-2</a>.<span epub:type="pagebreak" id="page_226"></span></p>
+        <figure class="table" id="ch11tbl02">
+        <figcaption><p class="table-title"><strong>Table 11-2</strong>&nbsp;&nbsp;&nbsp;&nbsp;Object Functions and Methods</p></figcaption>
+        <table class="tabletb">
+        <thead>
+        <tr>
+        <th style="width: 60%;"><p class="tableth">Name</p></th>
+        <th style="width: 40%;"><p class="tableth">Description</p></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td colspan="2"><p class="tabletd"><strong>Functions</strong></p></td>
+        </tr>
+        <tr>
+        <td><pre class="tpre">defineProperty(obj, name, descriptor)
+        defineProperties(obj,
+          { name1: descriptor1, . . . })</pre></td>
+        <td><p class="tabletd">Define one or multiple property descriptors</p></td>
+        </tr>
+        <tr>
+        <td><pre class="tpre">getOwnPropertyDescriptor(obj, name)
+        getOwnPropertyDescriptors(obj)
+        getOwnPropertyNames(obj)
+        getOwnPropertySymbols(obj)</pre></td>
+        <td><p class="tabletd">Gets one or all noninherited descriptors of an object, or just their string names/symbols</p></td>
+        </tr>
+        <tr>
+        <td>
+        <pre class="tpre">keys(obj)
+        values(obj)
+        entries(obj)</pre></td>
+        <td><p class="tabletd">The names, values, and <code>[<span class="var">name</span>, <span class="var">value</span>]</code> pairs of own enumerable properties</p></td>
+        </tr>
+        <tr>
+        <td>
+        <pre class="tpre">preventExtensions(obj)
+        seal(obj)
+        freeze(obj)</pre></td>
+        <td><p class="tabletd">Disallow prototype change and property addition; also, property deletion and configuration; also, property change</p></td>
+        </tr>
+        <tr>
+        <td>
+        <pre class="tpre">isExtensible(obj)
+        isSealed(obj)
+        isFrozen(obj)</pre></td>
+        <td><p class="tabletd">Checks if <code>obj</code> has been protected by one of the functions from the preceding row</p></td>
+        </tr>
+        <tr>
+        <td>
+        <pre class="tpre">create(prototype,
+          { name1: descriptor1, . . . })
+        fromEntries([[name1, value1], . . .])</pre></td>
+        <td><p class="tabletd">Creates a new object with the given properties</p></td>
+        </tr>
+        <tr>
+        <td>
+        <pre class="tpre">assign(target, source1, source2, . . .)</pre></td>
+        <td><p class="tabletd">Copies all enumerable own properties from the sources to the target. Use a spread instead.</p></td>
+        </tr>
+        <tr>
+        <td>
+        <pre class="tpre">getPrototypeOf(obj)
+        setPrototypeOf(obj, proto)</pre></td>
+        <td><p class="tabletd">Gets or sets the prototype</p></td>
+        </tr>
+        <tr>
+        <td colspan="2"><p class="tabletd"><strong>Methods</strong></p></td>
+        </tr>
+        <tr>
+        <td>
+        <pre class="tpre">hasOwnProperty(stringOrSymbol)
+        propertyIsEnumerable(stringOrSymbol)</pre></td>
+        <td><p class="tabletd"><code>true</code> if the object has the given property, or if it is enumerable</p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>isPrototypeOf(other)</code></p></td>
+        <td><p class="tabletd">Checks if this object is a prototype of another</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </figure>
+        <p class="noindent">Let us start out with a close look at working with object properties. Every property of a JavaScript object has three <em>attributes</em>:<span epub:type="pagebreak" id="page_227"></span></p>
+        <ol class="order">
+        <li><p class="list"><code>enumerable</code>: When <code>true</code>, the property is visited in <code>for in</code> loops.</p></li>
+        <li><p class="list"><code>writable</code>: When <code>true</code>, the property value can be updated.</p></li>
+        <li><p class="list"><code>configurable</code>: When <code>true</code>, the property can be deleted and its attributes can be modified.</p></li>
+        </ol>
+        <p class="noindent">When you set a property in an object literal or by assignment, all three attributes are <code>true</code>, with one exception. Properties with symbol keys are not enumerable.</p>
+        <p class="codelink"><a id="rch11pr14" href="ch11_images.xhtml#ch11pr14">Click here to view code image</a></p>
+        <pre class="pre">let james = { name: 'James Bond' }
+          // <span class="cite"><code>james.name</code> is writable, enumerable, configurable</span></pre>
+        <p class="noindent">On the other hand, the <code>length</code> property of an array is writable but not enumerable or configurable.</p>
+        <div class="note">
+        <p class="note-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">The <code>writable</code> and <code>configurable</code> attributes are enforced in strict mode by throwing an exception. In non-strict mode, violations are silently ignored.</p>
+        </div>
+        <p class="noindent">You can dynamically define properties with arbitrary names and attribute values by calling the <code>Object.defineProperty</code> function:</p>
+        <p class="codelink"><a id="rch11pr15" href="ch11_images.xhtml#ch11pr15">Click here to view code image</a></p>
+        <pre class="pre">Object.defineProperty(james, 'id', {
+          value: '007',
+          enumerable: true,
+          writable: false,
+          configurable: true
+        })</pre>
+        <p class="noindent">The last argument is called the <em>property descriptor</em>.</p>
+        <p class="noindent">When you define a new property and do not specify an attribute, it is set to <code>false</code>.</p>
+        <p class="noindent">You can use the same function to change the attributes of an existing property, provided the property is configurable.</p>
+        <p class="codelink"><a id="rch11pr16" href="ch11_images.xhtml#ch11pr16">Click here to view code image</a></p>
+        <pre class="pre">Object.defineProperty(james, 'id', {
+          configurable: false
+        }) // <span class="cite">Now <code>james.id</code> can’t be deleted, and its attributes can’t be changed</span></pre>
+        <p class="noindent">You can define getter and setter properties by providing functions with keys <code>get</code> and <code>set</code>:</p>
+        <p class="codelink"><a id="rch11pr17" href="ch11_images.xhtml#ch11pr17">Click here to view code image</a></p>
+        <pre class="pre">Object.defineProperty(james, 'lastName', {
+          get: function() { return this.name.split(' ')[1] },
+          set: function(last) { this.name = this.name.split(' ')[0] + ' ' + last }
+        })</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_228"></span>Note that you can’t use arrow functions here since you need the <code>this</code> parameter.</p>
+        <p class="noindent">The <code>get</code> function is invoked when using the property as a value:</p>
+        <p class="codelink"><a id="rch11pr18" href="ch11_images.xhtml#ch11pr18">Click here to view code image</a></p>
+        <pre class="pre">console.log(james.lastName) // <span class="cite">Prints <code>Bond</code></span></pre>
+        <p class="noindent">The <code>set</code> function is invoked when a new value is assigned to the property:</p>
+        <p class="codelink"><a id="rch11pr19" href="ch11_images.xhtml#ch11pr19">Click here to view code image</a></p>
+        <pre class="pre">james.lastName = 'Smith' // <span class="cite">Now <code>james.name</code> is <code>'James Smith'</code></span></pre>
+        <div class="note">
+        <p class="note-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">You saw in <a href="ch04.xhtml#ch04">Chapter 4</a> how to define getters and setters in a class: by prefixing a method with <code>get</code> or <code>set</code>. As you just saw, you don’t need to define a class to have getters and setters.</p>
+        </div>
+        <p class="noindent">Finally, the <code>Object.defineProperties</code> function can define or update multiple properties. Pass an object whose keys are property names and whose values are property descriptors.</p>
+        <p class="codelink"><a id="rch11pr20" href="ch11_images.xhtml#ch11pr20">Click here to view code image</a></p>
+        <pre class="pre">Object.defineProperties(james, {
+          id: { value: '007', writable: false, enumerable: true, configurable: false },
+          age: { value: 42, writable: true, enumerable: true, configurable: true }
+        })</pre>
+        </section>
+        <section>
+        <h3 class="h3" id="ch11lev1sec4">11.4 Enumerating Properties</h3>
+        <p class="noindent">In the preceding section, you saw how to define one or multiple properties. The <code>getOwnPropertyDescriptor</code>/<code>getOwnPropertyDescriptors</code> functions yield property descriptors in the same format as the arguments to the <code>defineProperty</code>/<code>defineProperties</code> functions. For example,</p>
+        <p class="codelink"><a id="rch11pr21" href="ch11_images.xhtml#ch11pr21">Click here to view code image</a></p>
+        <pre class="pre">Object.getOwnPropertyDescriptor(james, 'name')</pre>
+        <p class="noindent">yields the descriptor</p>
+        <p class="codelink"><a id="rch11pr22" href="ch11_images.xhtml#ch11pr22">Click here to view code image</a></p>
+        <pre class="pre">{ value: 'James Bond',
+          writable: true,
+          enumerable: true,
+          configurable: true }</pre>
+        <p class="noindent">To get all descriptors, call</p>
+        <p class="codelink"><a id="rch11pr23" href="ch11_images.xhtml#ch11pr23">Click here to view code image</a></p>
+        <pre class="pre">Object.getOwnPropertyDescriptors(james)</pre>
+        <p class="noindent">The result is an object whose keys are property names and whose values are descriptors:<span epub:type="pagebreak" id="page_229"></span></p>
+        <p class="codelink"><a id="rch11pr24" href="ch11_images.xhtml#ch11pr24">Click here to view code image</a></p>
+        <pre class="pre">{ name:
+            { value: 'James Bond',
+              writable: true,
+              enumerable: true,
+              configurable: true },
+          lastName:
+            { get: [Function: get],
+              set: [Function: set],
+              enumerable: false,
+              configurable: false }
+          . . .
+        }</pre>
+        <p class="noindent">The function is called <code>get<strong>Own</strong>PropertyDescriptors</code> since it only yields the properties that are defined with the object itself, not those inherited from the prototype chain.</p>
+        <div class="tip">
+        <p class="tip-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/tip.jpg" alt="Images" width="36" height="33"></span> Tip</p>
+        <p class="noindent"><code>Object.getOwnPropertyDescriptors</code> is very useful to “spy” on an object since it lists all properties, including those that are not enumerable—see <a href="#ch11ex09">Exercise 9</a>.</p>
+        </div>
+        <p class="noindent">If you don’t want the firehose of information that <code>Object.getOwnPropertyDescriptors</code> yields, you can call <code>Object.getOwnPropertyNames(obj)</code> or <code>Object.getOwnPropertySymbols(obj)</code> to get all string or symbol-valued property keys, whether enumerable or not, and then look up those property descriptors that interest you.</p>
+        <p class="noindent">Finally, there are <code>Object.keys</code>, <code>Object.values</code>, and <code>Object.entries</code> functions that yield the names, values, and <code>[<span class="var">name</span>, <span class="var">value</span>]</code> pairs of own enumerable properties. These are similar to the <code>keys</code>, <code>values</code>, and <code>entries</code> methods of the <code>Map</code> class that you saw in <a href="ch07.xhtml#ch07">Chapter 7</a>. However, they are not methods, and they yield arrays, not iterators.</p>
+        <p class="codelink"><a id="rch11pr25" href="ch11_images.xhtml#ch11pr25">Click here to view code image</a></p>
+        <pre class="pre">const obj = { name: 'Fred', age: 42 }
+        Object.entries(obj) // [['name', 'Fred'], ['age', 42]]</pre>
+        <p class="noindent">You can iterate over the properties with this loop:</p>
+        <p class="codelink"><a id="rch11pr26" href="ch11_images.xhtml#ch11pr26">Click here to view code image</a></p>
+        <pre class="pre">for (let [key, value] of Object.entries(obj))
+          console.log(key, value)</pre>
+        </section>
+        <section>
+        <h3 class="h3" id="ch11lev1sec5">11.5 Testing a Single Property</h3>
+        <p class="noindent">The condition</p>
+        <pre class="pre">stringOrSymbol in obj</pre>
+        <p class="noindent">checks whether a property exists in an object or within its prototype chain.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_230"></span>Why not simply check whether <code>obj[stringOrSymbol] !== undefined</code>? The <code>in</code> operator yields <code>true</code> for properties whose value is <code>undefined</code>. Given the object</p>
+        <p class="codelink"><a id="rch11pr27" href="ch11_images.xhtml#ch11pr27">Click here to view code image</a></p>
+        <pre class="pre">const harry = { name: 'Harry', partner: undefined }</pre>
+        <p class="noindent">the condition <code>'partner' in harry</code> is <code>true</code>.</p>
+        <p class="noindent">Sometimes you may not want to look into the prototype chain. To find out whether an object itself has a property with a given name, call</p>
+        <p class="codelink"><a id="rch11pr28" href="ch11_images.xhtml#ch11pr28">Click here to view code image</a></p>
+        <pre class="pre">obj.hasOwnProperty(stringOrSymbol)</pre>
+        <p class="noindent">To test for the presence of an enumerable property, call</p>
+        <p class="codelink"><a id="rch11pr29" href="ch11_images.xhtml#ch11pr29">Click here to view code image</a></p>
+        <pre class="pre">obj.propertyIsEnumerable(stringOrSymbol)</pre>
+        <p class="noindent">Note that using these methods has a potential downside. An object can override the methods and lie about its properties. In this regard, it is safer to use the <code>in</code> operator and functions such as <code>Object.getOwnPropertyDescriptior</code>.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch11lev1sec6">11.6 Protecting Objects</h3>
+        <p class="noindent">The <code>Object</code> class has three functions for protecting objects to increasing degrees:</p>
+        <ol class="order">
+        <li><p class="list"><code>Object.preventExtensions(obj)</code>: Own properties cannot be added, and the prototype cannot be changed.</p></li>
+        <li><p class="list"><code>Object.seal(obj)</code>: In addition, properties cannot be deleted or configured.</p></li>
+        <li><p class="list"><code>Object.freeze(obj)</code>: In addition, properties cannot be set.</p></li>
+        </ol>
+        <p class="noindent">The three functions return the object that is being protected. For example, you can construct and freeze an object like this:</p>
+        <p class="codelink"><a id="rch11pr30" href="ch11_images.xhtml#ch11pr30">Click here to view code image</a></p>
+        <pre class="pre">const frozen = Object.freeze({ . . . })</pre>
+        <p class="noindent">Note that these protections only apply in strict mode.</p>
+        <p class="noindent">Even freezing doesn’t make an object entirely immutable since property values might be mutable:</p>
+        <p class="codelink"><a id="rch11pr31" href="ch11_images.xhtml#ch11pr31">Click here to view code image</a></p>
+        <pre class="pre">const fred = Object.freeze({ name: 'Fred', luckyNumbers: [17, 29] })
+        fred.luckyNumbers[0] = 13 // <span class="cite">OK—<code>luckyNumbers</code> isn’t frozen</span></pre>
+        <p class="noindent">If you want complete immutability, you need to recursively freeze all dependent objects—see <a href="#ch11ex08">Exercise 8</a>.</p>
+        <p class="noindent">To find out whether an object has been protected through one of these functions, call <code>Object.isExtensible(obj)</code>, <code>Object.isSealed(obj)</code>, or <code>Object.isFrozen(obj)</code>.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch11lev1sec7"><span epub:type="pagebreak" id="page_231"></span>11.7 Creating or Updating Objects</h3>
+        <p class="noindent">The <code>Object.create</code> function gives you complete control over creating a new object. Specify the prototype and the names and descriptors of all properties:</p>
+        <p class="codelink"><a id="rch11pr32" href="ch11_images.xhtml#ch11pr32">Click here to view code image</a></p>
+        <pre class="pre">const obj = Object.create(proto, propertiesWithDescriptors)</pre>
+        <p class="noindent">Here, <code>propertiesWithDescriptors</code> is an object whose keys are property names and whose values are descriptors, as in <a href="ch11.xhtml#ch11lev1sec4">Section 11.4</a>, “<a href="ch11.xhtml#ch11lev1sec4">Enumerating Properties</a>” (<a href="ch11.xhtml#page_228">page 228</a>).</p>
+        <p class="noindent">If you have the property names and values in an iterable of key/value pair arrays, then call the <code>Object.fromEntries</code> function to make an object with these properties:</p>
+        <p class="codelink"><a id="rch11pr33" href="ch11_images.xhtml#ch11pr33">Click here to view code image</a></p>
+        <pre class="pre">let james = Object.fromEntries([['name', 'James Bond'], ['id', '007']])</pre>
+        <p class="noindent">The call <code>Object.assign(target, source1, source2, . . .)</code> copies all enumerable own properties from the sources into the target and returns the updated target:</p>
+        <p class="codelink"><a id="rch11pr34" href="ch11_images.xhtml#ch11pr34">Click here to view code image</a></p>
+        <pre class="pre">james = Object.assign(james, { salary: 300000 }, genericSpy)</pre>
+        <p class="noindent">These days, there is no good reason to use <code>Object.assign</code>. Just use a spread <code>{ ...james, salary: 300000, ...genericSpy }</code>.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch11lev1sec8">11.8 Accessing and Updating the Prototype</h3>
+        <p class="noindent">As you know, the prototype chain is a key concept in JavaScript programming. If you use the <code>class</code> and <code>extends</code> keywords, the prototype chain is established for you. In this section, you will learn how to manage it manually.</p>
+        <p class="noindent">To get the prototype of an object (that is, the value of the internal [[Prototype]] slot), call:</p>
+        <p class="codelink"><a id="rch11pr35" href="ch11_images.xhtml#ch11pr35">Click here to view code image</a></p>
+        <pre class="pre">const proto = Object.getPrototypeOf(obj)</pre>
+        <p class="noindent">For example,</p>
+        <p class="codelink"><a id="rch11pr36" href="ch11_images.xhtml#ch11pr36">Click here to view code image</a></p>
+        <pre class="pre">Object.getPrototypeOf('Fred') === String.prototype</pre>
+        <p class="noindent">When you have an instance of a class that was created with the <code>new</code> operator, such as</p>
+        <p class="codelink"><a id="rch11pr37" href="ch11_images.xhtml#ch11pr37">Click here to view code image</a></p>
+        <pre class="pre"> const obj = new ClassName(args)</pre>
+        <p class="noindent">then <code>Object.getPrototypeOf(obj)</code> is the same as <code>ClassName.prototype</code>. But you can set the prototype of any object by calling</p>
+        <p class="codelink"><a id="rch11pr38" href="ch11_images.xhtml#ch11pr38">Click here to view code image</a></p>
+        <pre class="pre">Object.setPrototypeOf(obj, proto)</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_232"></span>We have done this briefly in <a href="ch04.xhtml#ch04">Chapter 4</a> before introducing the <code>new</code> operator.</p>
+        <p class="noindent">However, changing the prototype of an existing object is a slow operation for JavaScript virtual machines because they speculatively assume that object prototypes do not change. If you need to make an object with a custom prototype, it is better to use the <code>Object.create</code> method from <a href="ch11.xhtml#ch11lev1sec7">Section 11.7</a>, “<a href="ch11.xhtml#ch11lev1sec7">Creating or Updating Objects</a>” (<a href="ch11.xhtml#page_231">page 231</a>).</p>
+        <p class="noindent">The call <code>proto.isPrototypeOf(obj)</code> returns <code>true</code> if <code>proto</code> is in the prototype chain of <code>obj</code>. Unless you set a special prototype, you can just use the <code>instanceof</code> operator: <code>obj instanceof ClassName</code> is the same as <code>ClassName.prototype.isPrototypeOf(obj)</code>.</p>
+        <div class="note">
+        <p class="note-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">Unlike all other prototype objects, <code>Array.prototype</code> is actually an array!</p>
+        </div>
+        </section>
+        <section>
+        <h3 class="h3" id="ch11lev1sec9">11.9 Cloning Objects</h3>
+        <p class="noindent">As an application of the material of the preceding sections, let us develop a function that can make a deep copy or “clone” of an object.</p>
+        <p class="noindent">A naïve approach makes use of the spread operator:</p>
+        <p class="codelink"><a id="rch11pr39" href="ch11_images.xhtml#ch11pr39">Click here to view code image</a></p>
+        <pre class="pre">const cloned = { ...original } // <span class="cite">In general, not a true clone</span></pre>
+        <p class="noindent">However, this only copies the enumerable properties. And it does nothing about prototypes.</p>
+        <p class="noindent">We can copy the prototype and all properties:</p>
+        <p class="codelink"><a id="rch11pr40" href="ch11_images.xhtml#ch11pr40">Click here to view code image</a></p>
+        <pre class="pre">const cloned = Object.create(Object.getPrototypeOf(original),
+          Object.getOwnPropertyDescriptors(original)) // <span class="cite">Better, but still shallow</span></pre>
+        <p class="noindent">Now the clone has the same prototype and the same properties as the original, with all property attributes faithfully copied.</p>
+        <p class="noindent">But the copy is still shallow. Mutable property values are not cloned. To see the problem with shallow copies, consider this object:</p>
+        <p class="codelink"><a id="rch11pr41" href="ch11_images.xhtml#ch11pr41">Click here to view code image</a></p>
+        <pre class="pre">const original = { radius: 10, center: { x: 20, y: 30 } }</pre>
+        <p class="noindent">Then the <code>original.center</code> and <code>clone.center</code> are the same object, as you can see in <a href="#ch11fig01">Figure 11-1</a>. Mutating <code>original</code> also mutates <code>clone</code>:</p>
+        <p class="codelink"><a id="rch11pr42" href="ch11_images.xhtml#ch11pr42">Click here to view code image</a></p>
+        <pre class="pre">original.center.x = 40 // <span class="cite"><code>clone.center.x</code> is also changed</span></pre>
+        <figure class="figure" id="ch11fig01">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/pg233_Image_646.jpg" alt="Images" width="725" height="338">
+        <figcaption><p class="fig-title"><strong>Figure 11-1</strong>&nbsp;&nbsp;&nbsp;&nbsp;A shallow copy</p></figcaption>
+        </figure>
+        <p class="noindent">The remedy is to recursively clone all values:<span epub:type="pagebreak" id="page_233"></span></p>
+        <p class="codelink"><a id="rch11pr43" href="ch11_images.xhtml#ch11pr43">Click here to view code image</a></p>
+        <pre class="pre">const clone = obj =&gt; {
+          if (typeof obj !== 'object' || Object.isFrozen(obj)) return obj
+          const props = Object.getOwnPropertyDescriptors(obj)
+          let result = Object.create(Object.getPrototypeOf(obj), props)
+          for (const prop in props)
+            result[prop] = clone(obj[prop])
+          return result
+        }</pre>
+        <p class="noindent">However, this version fails when there are circular references.</p>
+        <p class="noindent">Consider two people who are each other’s best friend (see <a href="#ch11fig02">Figure 11-2</a>):</p>
+        <p class="codelink"><a id="rch11pr44" href="ch11_images.xhtml#ch11pr44">Click here to view code image</a></p>
+        <pre class="pre">const fred = { name: 'Fred' }
+        const barney = { name: 'Barney' }
+        fred.bestFriend = barney
+        barney.bestFriend = fred</pre>
+        <figure class="figure" id="ch11fig02">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/pg234_Image_651.jpg" alt="Images" width="535" height="271">
+        <figcaption><p class="fig-title"><strong>Figure 11-2</strong>&nbsp;&nbsp;&nbsp;&nbsp;Circular references</p></figcaption>
+        </figure>
+        <p class="noindent">Now suppose we recursively clone <code>fred</code>. The result is a new object</p>
+        <p class="codelink"><a id="rch11pr45" href="ch11_images.xhtml#ch11pr45">Click here to view code image</a></p>
+        <pre class="pre">cloned = { name: 'Fred', bestFriend: clone(barney) }</pre>
+        <p class="noindent">What does <code>clone(barney)</code> do? It makes an object <code>{ name: 'Barney', bestFriend: clone(fred) }</code>. But that is not right. We get an infinite recursion. And even if we didn’t, we would get an object with the wrong structure. We expect an object so that</p>
+        <p class="codelink"><a id="rch11pr46" href="ch11_images.xhtml#ch11pr46">Click here to view code image</a></p>
+        <pre class="pre">cloned.bestFriend.bestFriend === cloned</pre>
+        <p class="noindent">We need to refine the recursive cloning process. If an object has already been cloned, don’t clone it again. Instead, use the reference to the existing clone. This can be implemented with a map from original to cloned objects. When <span epub:type="pagebreak" id="page_234"></span>a previously uncloned object is encountered, add the references to the original and the clone to the map. When the object has already been cloned, just look up the clone.</p>
+        <p class="codelink"><a id="rch11pr47" href="ch11_images.xhtml#ch11pr47">Click here to view code image</a></p>
+        <pre class="pre">const clone = (obj, cloneRegistry = new Map()) =&gt; {
+          if (typeof obj !== 'object' || Object.isFrozen(obj)) return obj
+          if (cloneRegistry.has(obj)) return cloneRegistry.get(obj)
+          const props = Object.getOwnPropertyDescriptors(obj)
+          let result = Object.create(Object.getPrototypeOf(obj), props)
+          cloneRegistry.set(obj, result)
+          for (const prop in props)
+            result[prop] = clone(obj[prop], cloneRegistry)
+          return result
+        }</pre>
+        <p class="noindent">This is getting very close to the perfect clone function. However, it does not work for arrays. Calling <code>clone([1, 2, 3])</code> yields an array-like object whose prototype is <code>Array.prototype</code>. However, it is not an array—<code>Array.isArray</code> returns <code>false</code>.</p>
+        <p class="noindent">The remedy is to copy arrays with <code>Arrays.from</code>, not <code>Object.create</code>. Here is the final version:</p>
+        <p class="codelink"><a id="rch11pr48" href="ch11_images.xhtml#ch11pr48">Click here to view code image</a></p>
+        <pre class="pre">const clone = (obj, cloneRegistry = new Map()) =&gt; {
+          if (typeof obj !== 'object' || Object.isFrozen(obj)) return obj
+          if (cloneRegistry.has(obj)) return cloneRegistry.get(obj)
+          const props = Object.getOwnPropertyDescriptors(obj)
+          <strong>let result = Array.isArray(obj) ? Array.from(obj)
+            : Object.create(Object.getPrototypeOf(obj), props)</strong>
+          cloneRegistry.set(obj, result)
+          for (const prop in props)
+            result[prop] = clone(obj[prop], cloneRegistry)
+          return result
+        }</pre>
+        </section>
+        <section>
+        <h3 class="h3" id="ch11lev1sec10"><span epub:type="pagebreak" id="page_235"></span>11.10 Function Properties</h3>
+        <p class="noindent">Now that we have discussed the methods of the <code>Object</code> class, let us move on to function objects. Every function that is an instance of the class <code>Function</code> has these three nonenumerable properties:</p>
+        <ul class="bullet">
+        <li><p class="list-item"><code>name</code>: the name with which the function was defined or, for anonymous functions, the name of the variable to which the function was assigned (see <a href="#ch11ex14">Exercise 14</a>)</p></li>
+        <li><p class="list-item"><code>length</code>: the number of arguments, not counting a rest argument</p></li>
+        <li><p class="list-item"><code>prototype</code>: an object intended to be filled with prototype properties</p></li>
+        </ul>
+        <p class="noindent">Recall that in classic JavaScript, there is no difference between functions and constructors. Even in strict mode, every function can be called with <code>new</code>. Therefore, every function has a <code>prototype</code> object.</p>
+        <p class="noindent">Let us look at the <code>prototype</code> object of a function more closely. It has no enumerable properties and one nonenumerable property <code>constructor</code> that points back to the constructor function—see <a href="#ch11fig03">Figure 11-3</a>. For example, suppose we define a <code>class Employee</code>. The constructor function, <code>Employee</code>, like any function, has a <code>prototype</code> property, and</p>
+        <p class="codelink"><a id="rch11pr49" href="ch11_images.xhtml#ch11pr49">Click here to view code image</a></p>
+        <pre class="pre">Employee.prototype.constructor === Employee</pre>
+        <p class="noindent">Any object inherits the <code>constructor</code> property from the prototype. Therefore, you can get the class name of an object as</p>
+        <pre class="pre">obj.constructor.name</pre>
+        <figure class="figure" id="ch11fig03">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/pg235_Image_655.jpg" alt="Images" width="726" height="232">
+        <figcaption><p class="fig-title"><strong>Figure 11-3</strong>&nbsp;&nbsp;&nbsp;&nbsp;The <code>constructor</code> property</p></figcaption>
+        </figure>
+        <div class="note">
+        <p class="note-caption"><span epub:type="pagebreak" id="page_236"></span><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">Inside a constructor, the odd-looking expression <code>new.target</code> evaluates to the function with which the object is constructed. You can use this expression to find out whether an object is constructed as an instance of a subclass, which may be of some utility—see <a href="#ch11ex11">Exercise 11</a>. You can also tell if the function was called without <code>new</code>. In that case, <code>new.target === undefined</code>.</p>
+        </div>
+        </section>
+        <section>
+        <h3 class="h3" id="ch11lev1sec11">11.11 Binding Arguments and Invoking Methods</h3>
+        <p class="noindent">Given a function, the <code>bind</code> method yields a different function that has locked in the initial arguments:</p>
+        <p class="codelink"><a id="rch11pr50" href="ch11_images.xhtml#ch11pr50">Click here to view code image</a></p>
+        <pre class="pre">const multiply = (x, y) =&gt; x * y
+        const triple = multiply.bind(null, <strong>3</strong>)
+        triple(14) // <span class="cite">Yields <code>42</code>, or <code>multiply(<strong>3</strong>, 14)</code></span></pre>
+        <p class="noindent">Because one argument of <code>multiply</code> is locked in by the <code>bind</code> method, the result is a function <code>triple</code> with a single argument.</p>
+        <p class="noindent">The first argument of the <code>bind</code> method is the binding for the <code>this</code> parameter. Here is an example:</p>
+        <p class="codelink"><a id="rch11pr51" href="ch11_images.xhtml#ch11pr51">Click here to view code image</a></p>
+        <pre class="pre">const isPet = Array.prototype.includes.bind(['cat', 'dog', 'fish'])</pre>
+        <p class="noindent">You can use <code>bind</code> for turning a method into a function:</p>
+        <p class="codelink"><a id="rch11pr52" href="ch11_images.xhtml#ch11pr52">Click here to view code image</a></p>
+        <pre class="pre">button.onclick = this.handleClick.bind(this)</pre>
+        <p class="noindent">There is no need to use <code>bind</code> in any of these cases. You can define an explicit function:</p>
+        <p class="codelink"><a id="rch11pr53" href="ch11_images.xhtml#ch11pr53">Click here to view code image</a></p>
+        <pre class="pre">const triple = y =&gt; multiply(3, y)
+        const isPet = x =&gt; ['cat', 'dog', 'fish'].includes(x)
+        button.onclick = (...args) =&gt; this.handleClick(...args)</pre>
+        <p class="noindent">The <code>call</code> method is similar to <code>bind</code>. However, all arguments are supplied, and the function or method is invoked. For example:</p>
+        <p class="codelink"><a id="rch11pr54" href="ch11_images.xhtml#ch11pr54">Click here to view code image</a></p>
+        <pre class="pre">let answer = multiply.call(null, 6, 7)
+        let uppercased = String.prototype.toUpperCase.call('Hello')</pre>
+        <p class="noindent">Of course, it would be much simpler to call <code>multiply(6, 7)</code> or <code>'Hello'.toUpperCase()</code>.</p>
+        <p class="noindent">However, there is one situation where a direct function call does not work. Consider this example:</p>
+        <p class="codelink"><a id="rch11pr55" href="ch11_images.xhtml#ch11pr55">Click here to view code image</a></p>
+        <pre class="pre">const spacedOut = Array.prototype.join.call('Hello', ' ') // 'H e l l o'</pre>
+        <p class="noindent">We can’t call</p>
+        <pre class="pre">'Hello'.join(' ')</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_237"></span>because <code>join</code> is not a method of the <code>String</code> class. It is a method of the <code>Array</code> class that happens to work with strings.</p>
+        <p class="noindent">Finally, <code>apply</code> is like <code>call</code>, but the arguments other than <code>this</code> are in an array (or array-like object):</p>
+        <p class="codelink"><a id="rch11pr56" href="ch11_images.xhtml#ch11pr56">Click here to view code image</a></p>
+        <pre class="pre">String.prototype.substring.apply('Hello', [1, 4]) // <code>'ell'</code></pre>
+        <p class="noindent">If you need to apply an arbitrary function, stored in a variable <code>f</code>, to arbitrary arguments, it is simpler to use the expression <code>f(...args)</code> instead of <code>f.apply(null, args)</code>. But if the variable <code>f</code> holds a <em>method</em>, then you have no choice. You cannot call <code>obj.f(...args)</code> and must use <code>f.apply(obj, args)</code>.</p>
+        <div class="note">
+        <p class="note-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">Before JavaScript had the <code>super</code> keyword, you had to use <code>bind</code>, <code>call</code>, or <code>apply</code> to invoke a superclass constructor—see <a href="#ch11ex16">Exercise 16</a>.</p>
+        </div>
+        </section>
+        <section>
+        <h3 class="h3" id="ch11lev1sec12">11.12 Proxies</h3>
+        <p class="noindent">A proxy is an entity that appears to its user as if it were an object, but that intercepts property access, prototype access, and method invocations. When intercepted, these actions can do arbitrary work.</p>
+        <p class="noindent">For example, an ORM (object-relational mapper) might support method names such as</p>
+        <p class="codelink"><a id="rch11pr57" href="ch11_images.xhtml#ch11pr57">Click here to view code image</a></p>
+        <pre class="pre">const result = orm.findEmployeeById(42)</pre>
+        <p class="noindent">where <code>Employee</code> matches a database table. But if there is no matching table, the method would produce an error.</p>
+        <p class="noindent">Here, <code>orm</code> is a proxy object that intercepts all method invocations. When invoked with a method whose name is <code>find...ById</code>, the intercepting code extracts the table name from the method name and makes a database lookup.</p>
+        <p class="noindent">This is a powerful concept that can be used for very dynamic and powerful effects. Examples are:</p>
+        <ul class="bullet">
+        <li><p class="list-item">Automatic logging of property access or mutation</p></li>
+        <li><p class="list-item">Controlling property access, such as validation or protection of sensitive data</p></li>
+        <li><p class="list-item">Dynamic properties, for example DOM elements or database columns</p></li>
+        <li><p class="list-item">Making remote calls as if they were local</p></li>
+        </ul>
+        <p class="noindent">To construct a proxy, provide two objects:</p>
+        <ul class="bullet">
+        <li><p class="list-item">The <em>target</em> is the object whose operations we want to control.<span epub:type="pagebreak" id="page_238"></span></p></li>
+        <li><p class="list-item">The <em>handler</em> is an object with <em>trap functions</em> that are invoked when the proxy is being manipulated.</p></li>
+        </ul>
+        <p class="noindent">There are thirteen possible trap functions, shown in <a href="#ch11tbl03">Table 11-3</a>.</p>
+        <p class="noindent">Let us start with a simple example, where we log property reads and writes to an object <code>obj</code>. In the handler, we set two trap functions.</p>
+        <p class="codelink"><a id="rch11pr58" href="ch11_images.xhtml#ch11pr58">Click here to view code image</a></p>
+        <pre class="pre">const obj = { name: 'Harry Smith', salary: 100000 }
+        const logHandler = {
+          get(target, key, receiver) {
+            const result = target[key]
+            console.log(`get ${key.toString()} as ${result}`)
+            return result
+          },
+          set(target, key, value, receiver) {
+            console.log(`set ${key.toString()} to ${value}`)
+            target[key] = value
+            return true
+          }
+        }
+        const proxy = new Proxy(obj, logHandler)</pre>
+        <p class="noindent">In the <code>get</code> and <code>set</code> functions, the <code>target</code> parameter is the target object of the proxy (here, <code>obj</code>). The <code>receiver</code> is the object whose property was accessed. That is the <code>proxy</code> object unless it is in the prototype chain of another object.</p>
+        <p class="noindent">Now we must give the proxy, not the original object, to any code that we want to monitor.</p>
+        <p class="noindent">Suppose someone changes the salary:</p>
+        <pre class="pre">proxy.salary = 200000</pre>
+        <p class="noindent">Then a message is generated:</p>
+        <pre class="pre">set salary to 200000</pre>
+        <p class="noindent">Operations that are not trapped are passed to the target. In our example, calling</p>
+        <pre class="pre">delete proxy.salary</pre>
+        <p class="noindent">will delete the <code>salary</code> field from the target.</p>
+        <figure class="table" id="ch11tbl03">
+        <figcaption><p class="table-title"><strong>Table 11-3</strong>&nbsp;&nbsp;&nbsp;&nbsp;Trap Functions</p></figcaption>
+        <table class="tabletb">
+        <thead>
+        <tr>
+        <th style="width: 60%;"><p class="tableth">Name</p></th>
+        <th style="width: 40%;"><p class="tableth">Description</p></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p class="tabletd"><code>get(target, key, receiver)</code></p></td>
+        <td><p class="tabletd"><code>receiver[key]</code>, <code>receiver.key</code></p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>set(target, key, value, receiver)</code></p></td>
+        <td><p class="tabletd"><code>receiver[key] = value</code>, <code>receiver.key = value</code></p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>deleteProperty(target, key)</code></p></td>
+        <td><p class="tabletd"><code>delete proxy[key]</code>, <code>delete proxy.key</code></p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>has(target, key)</code></p></td>
+        <td><p class="tabletd"><code>key in target</code></p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>getPrototypeOf(target)</code></p></td>
+        <td><p class="tabletd"><code>Object.getPrototypeOf(proxy)</code></p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>setPrototypeOf(target, proto)</code></p></td>
+        <td><p class="tabletd"><code>Object.setPrototypeOf(proxy, proto)</code></p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>isExtensible(target)</code></p></td>
+        <td><p class="tabletd"><code>Object.isExtensible(proxy)</code></p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>preventExtensions(target)</code></p></td>
+        <td><p class="tabletd"><code>Object.preventExtensions(proxy)</code></p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>getOwnPropertyDescriptor(target, key)</code></p></td>
+        <td><p class="tabletd"><code>Object.getOwnPropertyDescriptor(proxy, key)</code>, <code>Object.keys(proxy)</code></p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>ownKeys(target)</code></p></td>
+        <td><p class="tabletd"><code>Object.keys(proxy)</code>, <code>Object.getOwnProperty</code>(<code>Names</code>|<code>Symbols</code>)<code>(proxy)</code></p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>defineProperty(target, key, descriptor)</code></p></td>
+        <td><p class="tabletd"><code>Object.defineProperty(proxy, key, descriptor)</code></p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>apply(target, thisArg, args)</code></p></td>
+        <td><p class="tabletd"><code>thisArg.proxy(...args)</code>, <code>proxy(...args)</code>, <code>proxy.apply(thisArg, args)</code>, <code>proxy.call(thisArg, ...args)</code></p></td>
+        </tr>
+        <tr>
+        <td><p class="tabletd"><code>construct(target, args, newTarget)</code></p></td>
+        <td><p class="tabletd"><code>new proxy(args)</code>, or invocation through <code>super</code></p></td>
+        </tr>
+        </tbody>
+        </table>
+        </figure>
+        <p class="noindent">The JavaScript API provides one useful proxy implementation that allows you to hand a proxied object to code that you trust, and then revoke access because you don’t trust what might happen later.</p>
+        <p class="noindent">Obtain the proxy as:</p>
+        <p class="codelink"><a id="rch11pr59" href="ch11_images.xhtml#ch11pr59">Click here to view code image</a></p>
+        <pre class="pre">const target = . . .
+        const p = Proxy.revocable(target, {})</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_239"></span>The <code>Proxy.revocable</code> function returns an object with a property <code>proxy</code>, the proxied object, and a <code>revoke</code> method that revokes all access to the proxy.</p>
+        <p class="noindent">Hand the proxy to the code that you trust. All operations access the target object.</p>
+        <p class="noindent">After you call</p>
+        <pre class="pre">p.revoke() // <span class="cite"><code>p.proxy</code> is no longer usable</span></pre>
+        <p class="noindent">all operations on the proxy throw an exception.</p>
+        <p class="noindent">You are required to supply a handler for intercepting traps. If you are happy with the default behavior, supply an empty object. See <a href="#ch11ex24">Exercise 24</a> for an example with a nontrivial handler.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch11lev1sec13"><span epub:type="pagebreak" id="page_240"></span>11.13 The <code>Reflect</code> Class</h3>
+        <p class="noindent">The <code>Reflect</code> class implements the thirteen trap operations from <a href="#ch11tbl03">Table 11-3</a>.</p>
+        <p class="noindent">You can call the corresponding <code>Reflect</code> functions instead of implementing their actions manually:</p>
+        <p class="codelink"><a id="rch11pr60" href="ch11_images.xhtml#ch11pr60">Click here to view code image</a></p>
+        <pre class="pre">const logHandler = {
+          get(target, key, receiver) {
+            console.log(`get ${key.toString()}`)
+            return Reflect.get(target, key, receiver)
+              // <span class="cite">Instead of <code>return target[key]</code></span>
+          },
+          set(target, key, value, receiver) {
+            console.log(`set ${key.toString()}`)
+            return Reflect.set(target, key, value, receiver)
+              // <span class="cite">Instead of <code>target[key] = value; return true</code></span>
+            }
+        }</pre>
+        <p class="noindent">Now suppose we want to log <em>all</em> trappable operations. Note that the code looks the same for each handler function, except for the function name. Instead of writing many almost identical handler functions, you can write a second proxy that traps the getter for the function name:</p>
+        <p class="codelink"><a id="rch11pr61" href="ch11_images.xhtml#ch11pr61">Click here to view code image</a></p>
+        <pre class="pre">const getHandler = {
+          get(target, trapKey, receiver) {
+            return (...args) =&gt; {
+              console.log(`Trapping ${trapKey}`)
+              return Reflect[trapKey](...args);
+            }
+          }
+        }
+        
+        const logEverythingHandler = new Proxy({}, getHandler)
+        
+        const proxy = new Proxy(obj, logEverythingHandler)</pre>
+        <p class="noindent">To understand what is happening, let us look at a specific scenario.</p>
+        <ol class="order">
+        <li><p class="list">The proxy user sets a property:</p>
+        <pre class="pre">proxy.name = 'Fred'</pre></li>
+        <li><p class="list">The appropriate method of the <code>logEverythingHandler</code> is invoked:</p>
+        <p class="codelink"><a id="rch11pr62" href="ch11_images.xhtml#ch11pr62">Click here to view code image</a></p>
+        <pre class="pre">logEverythingHandler.set(obj, 'name', 'Fred', proxy)</pre></li>
+        <li><p class="list">To make this call, the virtual machine must locate the <code>set</code> method of <code>logEverythingHandler</code>.</p></li>
+        <li><p class="list">Since <code>logEverythingHandler</code> is itself a proxy, the <code>get</code> method of that proxy’s handler is invoked:<span epub:type="pagebreak" id="page_241"></span></p>
+        <p class="codelink"><a id="rch11pr63" href="ch11_images.xhtml#ch11pr63">Click here to view code image</a></p>
+        <pre class="pre">getHandler.get({}, 'set', logEverythingHandler)</pre></li>
+        <li><p class="list">That call returns a function</p>
+        <p class="codelink"><a id="rch11pr64" href="ch11_images.xhtml#ch11pr64">Click here to view code image</a></p>
+        <pre class="pre">(...args) =&gt; { console.log(`Trapping set`); return Reflect.set(...args) }</pre>
+        <p class="noindent">as the value of <code>logEverythingHandler.set</code>.</p></li>
+        <li><p class="list">Now the function call that was started in step 2 can proceed. The function is invoked with arguments <code>(obj, 'name', 'Fred', proxy)</code>.</p></li>
+        <li><p class="list">A console message is printed, followed by the call</p>
+        <p class="codelink"><a id="rch11pr65" href="ch11_images.xhtml#ch11pr65">Click here to view code image</a></p>
+        <pre class="pre">Reflect.set(obj, 'name', 'Fred', proxy)</pre></li>
+        <li><p class="list">This call causes <code>obj.name</code> to be set to <code>'Fred'</code>.</p></li>
+        </ol>
+        <p class="noindent">If you want to log the arguments to the trap functions (which include the target and proxy), you have to be very careful to avoid infinite recursion. One way to do this is to keep a map of known objects that are printed by name, instead of calling <code>toString</code> which would cause further trap calls.</p>
+        <p class="codelink"><a id="rch11pr66" href="ch11_images.xhtml#ch11pr66">Click here to view code image</a></p>
+        <pre class="pre">const knownObjects = new WeakMap()
+        
+        const stringify = x =&gt; {
+          if (knownObjects.has(x))
+            return knownObjects.get(x)
+          else
+            return JSON.stringify(x)
+        }
+        const logEverything = (name, obj) =&gt; {
+          knownObjects.set(obj, name)
+          const getHandler = {
+            get(target, trapKey, receiver) {
+              return (...args) =&gt; {
+                console.log(`Trapping ${trapKey}(${args.map(stringify)})`)
+                return Reflect[trapKey](...args);
+              }
+            }
+          }
+          const result = new Proxy(obj, new Proxy({}, getHandler))
+          knownObjects.set(result, `proxy of ${name}`)
+          return result
+        }</pre>
+        <p class="noindent">Now you can call:</p>
+        <p class="codelink"><a id="rch11pr67" href="ch11_images.xhtml#ch11pr67">Click here to view code image</a></p>
+        <pre class="pre">const fred = { name: 'Fred' }
+        const proxyOfFred = logEverything('fred', fred)
+        proxyOfFred.age = 42</pre>
+        <p class="noindent">You will see the following logging statements:<span epub:type="pagebreak" id="page_242"></span></p>
+        <p class="codelink"><a id="rch11pr68" href="ch11_images.xhtml#ch11pr68">Click here to view code image</a></p>
+        <pre class="pre">Trapping set(fred,age,42,proxy of fred)
+        Trapping getOwnPropertyDescriptor(fred,age)
+        Trapping defineProperty(fred,"age",{"value":42,
+          "writable":true,"enumerable":true,"configurable":true})</pre>
+        <p class="noindent">The <code>Reflect</code> class was designed for use with proxies, but three of its methods are useful on their own because they are a bit more convenient than their classic counterparts:</p>
+        <ol class="order">
+        <li><p class="list"><code>Reflect.deleteProperty</code> returns a <code>boolean</code> to tell whether the deletion was successful. The <code>delete</code> operator doesn’t.</p></li>
+        <li><p class="list"><code>Reflect.defineProperty</code> returns a <code>boolean</code> to indicate whether the definition succeeded. <code>Object.defineProperty</code> throws an exception upon failure.</p></li>
+        <li><p class="list"><code>Reflect.apply(f, thisArg, args)</code> is guaranteed to call <code>Function.prototype.apply</code>, but <code>f.apply(thisArg, args)</code> might not since the <code>apply</code> property can be redefined.</p></li>
+        </ol>
+        </section>
+        <section>
+        <h3 class="h3" id="ch11lev1sec14">11.14 Proxy Invariants</h3>
+        <p class="noindent">When you implement proxy operations, the virtual machine checks that they do not yield nonsense values. For example:</p>
+        <ul class="bullet">
+        <li><p class="list-item"><code>construct</code> must return an object.</p></li>
+        <li><p class="list-item"><code>getOwnPropertyDescriptor</code> must return a descriptor object or <code>undefined</code>.</p></li>
+        <li><p class="list-item"><code>getPrototypeOf</code> must return an object or <code>null</code>.</p></li>
+        </ul>
+        <p class="noindent">In addition, the virtual machine carries out consistency checks for proxy operations. A proxy must respect certain aspects of its target, including:</p>
+        <ul class="bullet">
+        <li><p class="list-item">Nonwritable target properties</p></li>
+        <li><p class="list-item">Nonconfigurable target properties</p></li>
+        <li><p class="list-item">Nonextensible targets</p></li>
+        </ul>
+        <p class="noindent">The ECMAScript specification describes “invariants” that a proxy must fulfill. For example, the description of the <code>get</code> operation on proxies includes this requirement: “The value reported (by <code>get</code>) for a property must be the same as the value of the corresponding target object property if the target object property is a nonwritable, nonconfigurable own data property.”</p>
+        <p class="noindent">Similarly, if a target property is not configurable, then <code>has</code> cannot hide it. If a target is not extensible, then the <code>getPrototypeOf</code> operation must yield the actual prototype, and <code>has</code> and <code>getOwnPropertyDescriptor</code> must report the actual properties.</p>
+        <p class="noindent">These invariants make sense when a proxy augments an existing object without adding any properties of its own. Unfortunately, they force us to lie <span epub:type="pagebreak" id="page_243"></span>about the properties that the proxy adds. Consider an array-like object that stores a range of values, say the integers between 10 and 99. There is no need to store the values. We can compute them dynamically. That’s what proxies are good at. Here is a function that creates such a range proxy:</p>
+        <p class="codelink"><a id="rch11pr69" href="ch11_images.xhtml#ch11pr69">Click here to view code image</a></p>
+        <pre class="pre">const createRange = (start, end) =&gt; {
+          const isIndex = key =&gt;
+            typeof key === 'string' &amp;&amp; /^[0-9]+$/.test(key) &amp;&amp; parseInt(key) &lt; end - start
+        
+          return new Proxy({}, {
+            get: (target, key, receiver) =&gt; {
+              if (isIndex(key)) {
+                return start + parseInt(key)
+              } else {
+                return Reflect.get(target, key, receiver)
+              }
+            }
+          })
+        }</pre>
+        <p class="noindent">The <code>get</code> trap produces range values on demand:</p>
+        <p class="codelink"><a id="rch11pr70" href="ch11_images.xhtml#ch11pr70">Click here to view code image</a></p>
+        <pre class="pre">const range = createRange(10, 100)
+        console.log(range[10]) // 20</pre>
+        <p class="noindent">However, we can’t yet iterate over the keys:</p>
+        <p class="codelink"><a id="rch11pr71" href="ch11_images.xhtml#ch11pr71">Click here to view code image</a></p>
+        <pre class="pre">console.log(Object.keys(range)) // []</pre>
+        <p class="noindent">That is not surprising. We first need to define the <code>ownKeys</code> trap:</p>
+        <p class="codelink"><a id="rch11pr72" href="ch11_images.xhtml#ch11pr72">Click here to view code image</a></p>
+        <pre class="pre">ownKeys: target =&gt; {
+          const result = Reflect.ownKeys(target)
+          for (let i = 0; i &lt; end - start; i++)
+            result.push(String(i))
+          return result
+        }</pre>
+        <p class="noindent">Unfortunately, even after adding the <code>ownKeys</code> trap to the handler, <code>Object.keys(range)</code> yields an empty array.</p>
+        <p class="noindent">To fix this, we need to provide property descriptors for the index properties:</p>
+        <p class="codelink"><a id="rch11pr73" href="ch11_images.xhtml#ch11pr73">Click here to view code image</a></p>
+        <pre class="pre">getOwnPropertyDescriptor: (target, key) =&gt; {
+          if (isIndex(key)) {
+            return {
+              value: start + Number(key),
+              writable: false,
+              enumerable: true,
+              configurable: true // <span class="cite">Not what we actually want</span>
+              }
+            } else {
+        <span epub:type="pagebreak" id="page_244"></span>      return Reflect.getOwnPropertyDescriptor(target, key)
+            }
+        }</pre>
+        <p class="noindent">Now <code>Object.keys</code> yields an array containing <code>'10'</code> to <code>'99'</code>. However, there is a fly in the ointment. The index properties must be configurable. Otherwise, the invariant rules kick in. You cannot report a nonconfigurable property that isn’t already present in the target. (Our target is an empty object.) We don’t actually want index properties to be configurable, but our hands are tied. If we want to prohibit deletion or reconfiguration of index properties, we need to provide additional traps—see <a href="#ch11ex27">Exercise 27</a>.</p>
+        <p class="noindent">As you can see, implementing dynamic properties in proxies is not for the faint of heart. Whenever possible, situate properties in the proxy target. For example, the range proxy should have a <code>length</code> property and a <code>toString</code> method. Just add those to the target object and don’t handle them in the traps—see <a href="#ch11ex28">Exercise 28</a>.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch11lev1sec15">Exercises</h3>
+        <ol class="ol-exe">
+        <li><p class="list" id="ch11ex01">Why is the <code>Symbol.toPrimitive</code> method for the <code>Percent</code> class in <a href="ch11.xhtml#ch11lev1sec2">Section 11.2</a>, “<a href="ch11.xhtml#ch11lev1sec2">Customization with Symbol Properties</a>” (<a href="ch11.xhtml#page_223">page 223</a>), unsatisfactory? Try adding and multiplying percent values. Why can’t you provide a fix that works both for percent arithmetic and string concatenation?</p></li>
+        <li><p class="list" id="ch11ex02">A “glob pattern” is a pattern for matching file names. In its simplest form, <code>*</code> matches any sequence of characters other than the <code>/</code> path separator, and <code>?</code> matches a single character. Implement a class <code>Glob</code>. Using well-known symbols, enable the use of glob pattern for the string methods <code>match</code>, <code>matchAll</code>, <code>replace</code>, <code>search</code>, and <code>split</code>.</p></li>
+        <li><p class="list" id="ch11ex03">As described in <a href="#ch11tbl01">Table 11-1</a>, you can change the behavior of <code>x instanceof y</code> by ensuring that <code>y</code> has a well-known symbol property. Make it so that <code>x instanceof Natural</code> checks whether <code>x</code> is an integer ≥ 0, and <code>x instanceof Range(a, b)</code> checks if <code>x</code> is an integer in the given range. I am not saying this is a good idea, but it is interesting that it can be done.</p></li>
+        <li><p class="list" id="ch11ex04">Define a class <code>Person</code> so that for it and any subclasses, the <code>toString</code> method returns <code>[object <span class="var">Classname</span>]</code>.</p></li>
+        <li><p class="list" id="ch11ex05">Look at the output of the following calls and explain the results:</p>
+        <p class="codelink"><a id="rch11pr74" href="ch11_images.xhtml#ch11pr74">Click here to view code image</a></p>
+        <pre class="pre">Object.getOwnPropertyDescriptors([1,2,3])
+        Object.getOwnPropertyDescriptors([1,2,3].constructor)
+        Object.getOwnPropertyDescriptors([1,2,3].prototype)<span epub:type="pagebreak" id="page_245"></span></pre></li>
+        <li><p class="list" id="ch11ex06">Suppose you seal an object by calling <code>Object.seal(obj)</code>. Trying to set a nonexistent property throws an exception in strict mode. But you can still read nonexistent properties without an exception. Write a function <code>reallySeal</code> so that reading or writing nonexistent properties on the returned object throws an exception. Hint: Proxies.</p></li>
+        <li><p class="list" id="ch11ex07">Google for “JavaScript object clone” and review a few blog articles and StackOverflow answers. How many of them work correctly with shared mutable state and circular references?</p></li>
+        <li><p class="list" id="ch11ex08">Write a function <code>freezeCompletely</code> that freezes an object and recursively all of its property values. Handle cyclic dependencies.</p></li>
+        <li><p class="list" id="ch11ex09">Using <code>Object.getOwnPropertyDescriptors</code>, find all properties of the array <code>[1, 2, 3]</code>, the <code>Array</code> function, and of <code>Array.prototype</code>. Why do all three have a <code>length</code> property?</p></li>
+        <li><p class="list" id="ch11ex10">Construct a new string object as <code>new String('Fred')</code> and set its prototype to <code>Array.prototype</code>. Which methods can you successfully apply to the object? Start by trying <code>map</code> and <code>reverse</code>.</p></li>
+        <li><p class="list" id="ch11ex11">The <code>new.target</code> expression, introduced in the note at the end of <a href="ch11.xhtml#ch11lev1sec10">Section 11.10</a>, “<a href="ch11.xhtml#ch11lev1sec10">Function Properties</a>” (<a href="ch11.xhtml#page_235">page 235</a>), is set to the constructor function when an object is constructed with the <code>new</code> operator. Make use of this feature by designing an abstract class <code>Person</code> that cannot be instantiated with <code>new</code>. However, allow instantiation of concrete subclasses such as <code>Employee</code>.</p></li>
+        <li><p class="list" id="ch11ex12">How can one enforce abstract classes with the <code>constructor</code> property of the prototype instead of the technique of the preceding exercise? Which is more robust?</p></li>
+        <li><p class="list" id="ch11ex13">The <code>new.target</code> expression is <code>undefined</code> if a function is called without <code>new</code>. What is an easier way of determining this situation in strict mode?</p></li>
+        <li><p class="list" id="ch11ex14">Explore the <code>name</code> property of functions. What is it set to when the function is defined with a name? Without a name but assigned to a local variable? What about anonymous functions that are passed as arguments or returned as function results? What about arrow expressions?</p></li>
+        <li><p class="list" id="ch11ex15">In <a href="ch11.xhtml#ch11lev1sec11">Section 11.11</a>, “<a href="ch11.xhtml#ch11lev1sec11">Binding Arguments and Invoking Methods</a>” (<a href="ch11.xhtml#page_236">page 236</a>), you saw that <code>call</code> is necessary to invoke a method from a different class. Provide a similar example for <code>bind</code>.</p></li>
+        <li><p class="list" id="ch11ex16">In this exercise, you will explore how JavaScript programmers had to implement inheritance before the <code>extends</code> and <code>super</code> keywords. You are given a constructor function<span epub:type="pagebreak" id="page_246"></span></p>
+        <p class="codelink"><a id="rch11pr75" href="ch11_images.xhtml#ch11pr75">Click here to view code image</a></p>
+        <pre class="pre">function Employee(name, salary) {
+          this.name = name
+          this.salary = salary
+        }</pre>
+        <p class="noindent">Methods are added to the prototype.</p>
+        <p class="codelink"><a id="rch11pr76" href="ch11_images.xhtml#ch11pr76">Click here to view code image</a></p>
+        <pre class="pre">Employee.prototype.raiseSalary = function(percent) {
+          this.salary *= 1 + percent / 100
+        }</pre>
+        <p class="noindent">Now implement a <code>Manager</code> subclass without using the <code>extends</code> and <code>super</code> keywords. Use <code>Object.setPrototypeOf</code> to set the prototype of <code>Manager.prototype</code>. In the <code>Manager</code> constructor, you need to invoke the <code>Employee</code> constructor on the <em>existing</em> <code>this</code> object instead of creating a new one. Use the <code>bind</code> method described in <a href="ch11.xhtml#ch11lev1sec11">Section 11.11</a>, “<a href="ch11.xhtml#ch11lev1sec11">Binding Arguments and Invoking Methods</a>” (<a href="ch11.xhtml#page_236">page 236</a>).</p></li>
+        <li><p class="list" id="ch11ex17">Attempting to solve the preceding exercise, Fritzi sets</p>
+        <pre class="pre">Manager.prototype = Employee.prototype</pre>
+        <p class="noindent">instead of using <code>Object.setPrototypeOf</code>. What are the unhappy results of this decision?</p></li>
+        <li><p class="list" id="ch11ex18">As noted at the end of <a href="ch11.xhtml#ch11lev1sec8">Section 11.8</a>, “<a href="ch11.xhtml#ch11lev1sec8">Accessing and Updating the Prototype</a>” (<a href="ch11.xhtml#page_231">page 231</a>), <code>Array.prototype</code> is actually an array. Verify this with <code>Array.isArray</code>. Why is <code>[] instanceof Array</code> false? What happens to arrays if you add elements to the <code>Array.prototype</code> array?</p></li>
+        <li><p class="list" id="ch11ex19">Use the logging proxy from <a href="ch11.xhtml#ch11lev1sec12">Section 11.12</a>, “<a href="ch11.xhtml#ch11lev1sec12">Proxies</a>” (<a href="ch11.xhtml#page_237">page 237</a>), to monitor reading and writing of array elements. What happens when you read or write an element? The <code>length</code> property? What happens if you inspect the proxy object in the console by typing its name?</p></li>
+        <li><p class="list" id="ch11ex20">Isn’t it annoying when one misspells the name of a property or method? Using a proxy, implement autocorrect. Pick the closest existing name. You need to use some measure of closeness for strings, such as the number of common characters or the Levenshtein edit distance.</p></li>
+        <li><p class="list" id="ch11ex21">It is possible to change the behavior of objects, arrays, or strings by overriding methods of the <code>Object</code>, <code>Array</code>, or <code>String</code> class. Implement a proxy that disallows such overrides.</p></li>
+        <li><p class="list" id="ch11ex22">An expression <code>obj.prop1.prop2.prop3</code> will throw an exception if any of the intermediate properties yield <code>null</code> or <code>undefined</code>. Let’s solve that nuisance with proxies. First, define a safe object that returns itself when looking up any property. Next, define a function so that <code>safe(obj)</code> is a proxy for <code>obj</code> that returns the safe object when looking up any property whose <span epub:type="pagebreak" id="page_247"></span>value is <code>null</code> or <code>undefined</code>. Extra credit if you can extend this technique to method calls so that <code>safe(obj).m1().m2().m3()</code> doesn’t throw an exception if any of the intermediate methods return <code>null</code> or <code>undefined</code>.</p></li>
+        <li><p class="list" id="ch11ex23">Create a proxy that supports an XPath-like syntax for finding elements in an HTML or XML document.</p>
+        <p class="codelink"><a id="rch11pr77" href="ch11_images.xhtml#ch11pr77">Click here to view code image</a></p>
+        <pre class="pre">const root = makeRootProxy(document)
+        const firstItemInSecondList = root.html.body.ul[2].li[1]</pre></li>
+        <li><p class="list" id="ch11ex24">Make a revocable proxy, as described in <a href="ch11.xhtml#ch11lev1sec12">Section 11.12</a>, “<a href="ch11.xhtml#ch11lev1sec12">Proxies</a>” (<a href="ch11.xhtml#page_237">page 237</a>), that makes all properties read-only until access is revoked entirely.</p></li>
+        <li><p class="list" id="ch11ex25">In <a href="ch11.xhtml#ch11lev1sec14">Section 11.14</a>, “<a href="ch11.xhtml#ch11lev1sec14">Proxy Invariants</a>” (<a href="ch11.xhtml#page_242">page 242</a>), the <code>getOwnPropertyDescriptor</code> trap returns a descriptor for index properties whose <code>configurable</code> attribute is <code>true</code>. What happens if you set it to <code>false</code>?</p></li>
+        <li><p class="list" id="ch11ex26">Debug the <code>ownKeys</code> trap in <a href="ch11.xhtml#ch11lev1sec14">Section 11.14</a>, “<a href="ch11.xhtml#ch11lev1sec14">Proxy Invariants</a>” (<a href="ch11.xhtml#page_242">page 242</a>), by logging the calls to the <code>{}</code> target, using the <code>logEverything</code> method of <a href="ch11.xhtml#ch11lev1sec13">Section 11.13</a>, “<a href="ch11.xhtml#ch11lev1sec13">The <code>Reflect</code> Class</a>” (<a href="ch11.xhtml#page_240">page 240</a>). Also place a logging call into the <code>getOwnPropertyDescriptor</code> trap. Now read through Section 9.5.11 of the ECMAScript 2020 standard. Does the implementation follow the algorithm of the standard?</p></li>
+        <li><p class="list" id="ch11ex27">Add traps to the range proxy in <a href="ch11.xhtml#ch11lev1sec14">Section 11.14</a>, “<a href="ch11.xhtml#ch11lev1sec14">Proxy Invariants</a>” (<a href="ch11.xhtml#page_242">page 242</a>) to prevent deleting or modifying the index properties. Also add a <code>has</code> trap.</p></li>
+        <li><p class="list" id="ch11ex28">Add a <code>length</code> property and a <code>toString</code> method to the range proxy in <a href="ch11.xhtml#ch11lev1sec14">Section 11.14</a>, “<a href="ch11.xhtml#ch11lev1sec14">Proxy Invariants</a>” (<a href="ch11.xhtml#page_242">page 242</a>). Add it to the proxy target and don’t provide special handling in the traps. Provide appropriate attributes.</p></li>
+        <li><p class="list" id="ch11ex29">The range proxy in <a href="ch11.xhtml#ch11lev1sec14">Section 11.14</a>, “<a href="ch11.xhtml#ch11lev1sec14">Proxy Invariants</a>” (<a href="ch11.xhtml#page_242">page 242</a>), is instantiated by calling the <code>createRange</code> function. Use a constructor function so that a user can call <code>new Range(10, 100)</code> and get a proxy instance that looks as if it was an instance of a <code>Range</code> class.</p></li>
+        <li><p class="list" id="ch11ex30">Continue the preceding exercise so that the <code>Range</code> class extends <code>Array</code>. Be sure to set the <code>Symbol.species</code> property, as described in <a href="ch11.xhtml#ch11lev2sec2_3">Section 11.2.3</a>, “<a href="ch11.xhtml#ch11lev2sec2_3">Species</a>” (<a href="ch11.xhtml#page_225">page 225</a>).</p></li>
+        </ol>
+        </section>
+        </section>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780136502166/files/9780136502142.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

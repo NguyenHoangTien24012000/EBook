@@ -1,0 +1,146 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="The Single Responsibility Principle"><div class="titlepage"><div><div><h1 class="title"><a id="ch11lvl1sec70"></a>The Single Responsibility Principle</h1></div></div></div><p>The first principle of the SOLID stack is the <span class="strong"><strong>Single Responsibility Principle</strong></span>. Following Martin's definition, the principle says:</p><div class="blockquote"><blockquote class="blockquote"><p><span class="emphasis"><em>A class should have only one reason to change.</em></span></p></blockquote></div><p>The attribution of single responsibility leads to misunderstanding this principle. In fact it is often mistakenly taken to mean that a class should only do one thing. The definition of the principle, however, states that the only reason for which a class or object should be changed is because it has changed its responsibility. So, it is not true that an object can only do one thing, rather it can do more things that belong to the same responsibilities. In other words, the actions assigned to an object must be consistent with the unique responsibility that was given. If there are two different reasons why an object or class must be changed, then we have to separate the two responsibilities into as many objects or classes.</p><p>Let's look at a practical example of this principle by introducing an order constructor function:</p><pre class="programlisting">function Order(customerId) { 
+        this.customerId =  customerId; 
+        this.dateTime = new Date(); 
+        this.items = []; 
+      } 
+      </pre><p>The structure of the order is minimal to enable us to focus on our goal—we have a customer identifier, an order date, and an array containing the list of items that are part of the order.</p><p>Let's look at the class responsible for order management:</p><pre class="programlisting">var OrderManager = (function () { 
+       
+        function OrderManager() {} 
+       
+        OrderManager.prototype.createOrder = function (customerId) { 
+          this.order = new Order(customerId); 
+        }; 
+       
+        OrderManager.prototype.addItem = function (item) { 
+          this.order.items.push(item); 
+        }; 
+       
+        OrderManager.prototype.sendOrder = function () { 
+          if (this.isValid(this.order)) { 
+            var xhr = new XMLHttpRequest(); 
+            xhr.onreadystatechange = function () { 
+              if (xhr.readyState == 4 &amp;&amp; xhr.status == 200) { 
+                var response = JSON.parse(xhr.responseText); 
+                handleResponse(response); 
+              } 
+            }; 
+            xhr.open("POST", "/api/orders"); 
+            xhr.setRequestHeader("Content-Type", "application 
+            /json;charset=UTF-8"); 
+            xhr.send(JSON.stringify(order)); 
+          } 
+          else { 
+            handleError({ message: "Not valid order!" }); 
+          } 
+        }; 
+       
+        OrderManager.prototype.isValid = function (order) { 
+          return order.items.length &gt; 0; 
+        }; 
+       
+        return OrderManager; 
+      }()); 
+      </pre><p>This constructor provides a number of methods to create a new order (<code class="literal">createOrder()</code>), to add an item to the order (<code class="literal">addItem()</code>), to validate the order (<code class="literal">isValid()</code>), and to send an order to the server (<code class="literal">sendOrder()</code>).</p><p>An example of use of <code class="literal">OrderManager</code> is as follows:</p><pre class="programlisting">var orderMngr = new OrderManager(); 
+       
+      orderMngr.createOrder(1234); 
+      orderMngr.addItem({itemId: 111, description: "Item 111"}); 
+      orderMngr.sendOrder(); 
+      </pre><p>Analyzing the <code class="literal">OrderManager</code> constructor, we note that its main responsibility is to manage the order, as the name itself suggests. So its actions should be related to the order life cycle. If something changes in the way an order is managed, we expect to change the constructor's code in order to adapt it to the new management mode.</p><p>However, the <code class="literal">sendOrder()</code> method includes a responsibility that is not closely related to order management—we are talking about the actual sending of the order. In the example, the <code class="literal">sendOrder()</code> method takes care of sending the order to the server via an Ajax call to a specific URL. Suppose that at some point the approach to send the order to the server changes, not for reasons concerning the management order, but for technical reasons. For example, the server API specifications have changed or we no longer want to use <code class="literal">XMLHttpRequest</code> to send the request to the server but a third-party library. We identified a second reason to change the <code class="literal">OrderManager</code> constructor function. So, the constructor is breaking the Single Responsibility Principle because, in addition to the responsibility for managing the order, it also has the responsibility to take care of the technical details of sending the order to the server.</p><p>In order to apply the Single Responsibility Principle, the task of order sending must be assigned to another component. So, we define a new constructor that will take care of this responsibility:</p><pre class="programlisting">var OrderSender = (function() { 
+       
+        function OrderSender() {} 
+       
+        OrderSender.prototype.send = function(order) { 
+          var xhr = new XMLHttpRequest(); 
+       
+          xhr.onreadystatechange = function () { 
+            if (xhr.readyState == 4 &amp;&amp; xhr.status == 200) { 
+              var response = JSON.parse(xhr.responseText); 
+              handleResponse(response); 
+            } 
+          }; 
+       
+          xhr.open("POST", "/api/orders"); 
+          xhr.setRequestHeader("Content-Type", "application
+          /json;charset=UTF-8"); 
+          xhr.send(JSON.stringify(order)); 
+        } 
+       
+        return  OrderSender; 
+      })(); 
+      </pre><p>The <code class="literal">OrderSender</code> constructor has a unique method that performs the action that was previously carried out within the <code class="literal">sendOrder()</code> method of <code class="literal">OrderManager</code>. In other words, we moved to <code class="literal">OrderSender</code> a responsibility, which <code class="literal">OrderManager</code> had before.</p><p>We can rewrite <code class="literal">OrderManager</code> as shown here:</p><pre class="programlisting">var OrderManager = (function () { 
+       
+        function OrderManager() {} 
+       
+        OrderManager.prototype.createOrder = function (customerId) { 
+          this.order = new Order(customerId); 
+        }; 
+       
+        OrderManager.prototype.addItem = function (item) { 
+          this.order.items.push(item); 
+        }; 
+       
+        OrderManager.prototype.sendOrder = function () { 
+          if (this.isValid(this.order)) { 
+       
+      <span class="strong"><strong>      var orderSender = new OrderSender();</strong></span>
+      <span class="strong"><strong> 
+            orderSender.send(order);</strong></span> 
+          } 
+          else { 
+            handleError({ message: "Not valid order!" }); 
+          } 
+        }; 
+       
+        OrderManager.prototype.isValid = function (order) { 
+          return order.items.length &gt; 0; 
+        }; 
+       
+        return OrderManager; 
+      }()); 
+      </pre><p>The highlighted code shows the difference over the previous code: <code class="literal">OrderManager</code> assigns to <code class="literal">OrderSender</code> the task of actually sending the order to the server. In this way, the only reason to modify the <code class="literal">OrderManager</code> constructor will be because something has changed in the order management.</p><p>Applying the Single Responsibility Principle, we create an application with a clear layered structure that allows us to reuse the business logic across multiple applications, and improve its maintainability and scalability.</p></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

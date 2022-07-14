@@ -1,0 +1,643 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section epub:type="chapter">
+        <h2 class="ch2" id="ch12"><span epub:type="pagebreak" id="page_248"></span>Chapter 12. Iterators and Generators</h2>
+        <figure class="image-1">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/cat.jpg" alt="Images" width="85" height="85">
+        </figure>
+        <div class="outline">
+        <p class="outh"><strong>Topics in This Chapter</strong></p>
+        <p class="chap-lev1"><a href="#ch12lev1sec1">12.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Iterable Values</a></p>
+        <p class="chap-lev1"><a href="#ch12lev1sec2">12.2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Implementing an Iterable</a></p>
+        <p class="chap-lev1"><a href="#ch12lev1sec3">12.3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Closeable Iterators</a></p>
+        <p class="chap-lev1"><a href="#ch12lev1sec4">12.4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Generators</a></p>
+        <p class="chap-lev1"><a href="#ch12lev1sec5">12.5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Nested Yield</a></p>
+        <p class="chap-lev1"><a href="#ch12lev1sec6">12.6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Generators as Consumers</a></p>
+        <p class="chap-lev1"><a href="#ch12lev1sec7">12.7&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Generators and Asynchronous Processing</a></p>
+        <p class="chap-lev1"><a href="#ch12lev1sec8">12.8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Async Generators and Iterators</a></p>
+        <p class="chap-lev1"><a href="#ch12lev1sec9">Exercises</a></p>
+        </div>
+        <p class="noindent"><span epub:type="pagebreak" id="page_249"></span>In this short chapter, you will learn how to implement iterators that can be used in the <code>for of</code> loop and array spreads. You will be able to work with iterators in your own code.</p>
+        <p class="noindent">Implementing an iterator can be a bit tedious, but generators greatly simplify this task. A generator is a function that can yield multiple values, suspending after each value is produced and resuming when the next value is requested. Generators are also the building blocks of callback-free asynchronous programming.</p>
+        <p class="noindent">All of the material in this chapter is at an advanced level.</p>
+        <section>
+        <h3 class="h3" id="ch12lev1sec1">12.1 Iterable Values</h3>
+        <p class="noindent">Perhaps the most common use of iterable values in JavaScript is the <code>for of</code> loop. For example, arrays are iterable. The loop</p>
+        <pre class="pre">for (const element of [1, 2, 7, 9])</pre>
+        <p class="noindent">iterates over the elements of the given array. Strings are also iterable, and the loop</p>
+        <pre class="pre">for (const ch of 'Hello')</pre>
+        <p class="noindent">iterates over the code points of the given string.</p>
+        <p class="noindent">The following values are iterable:<span epub:type="pagebreak" id="page_250"></span></p>
+        <ul class="bullet">
+        <li><p class="list-item">Arrays and strings</p></li>
+        <li><p class="list-item">Sets and maps</p></li>
+        <li><p class="list-item">The objects returned by the <code>keys</code>, <code>values</code>, and <code>entries</code> methods of arrays, typed arrays, sets, and maps (but not <code>Object</code>)</p></li>
+        <li><p class="list-item">DOM data structures such as the one returned by the call <code>document .querySelectorAll('div')</code></p></li>
+        </ul>
+        <p class="noindent">In general, a value is iterable if it has a method with key <code>Symbol.iterator</code> that yields an iterator object:</p>
+        <p class="codelink"><a id="rch12pr01" href="ch12_images.xhtml#ch12pr01">Click here to view code image</a></p>
+        <pre class="pre">const helloIter = 'Hello'[Symbol.iterator]()</pre>
+        <p class="noindent">An iterator object has a <code>next</code> method that yields an object containing the next value and an indicator whether the iteration is finished:</p>
+        <p class="codelink"><a id="rch12pr02" href="ch12_images.xhtml#ch12pr02">Click here to view code image</a></p>
+        <pre class="pre">helloIter.next() // <span class="cite">Yields</span> <code>{ value: 'H', done: false }</code>
+        helloIter.next() // <span class="cite">Yields</span> <code>{ value: 'e', done: false }</code>
+        . . .
+        helloIter.next() // <span class="cite">Yields</span> <code>{ value: 'o', done: false }</code>
+        helloIter.next() // <span class="cite">Yields</span> <code>{ value: undefined, done: true }</code></pre>
+        <p class="noindent">In a loop</p>
+        <pre class="pre">for (const v of iterable)</pre>
+        <p class="noindent">an iterator object is obtained by calling <code>iterable[Symbol.iterator]()</code>. The <code>next</code> method of that object is invoked in each loop iteration. Each time, it yields an object <code>{ value: . . ., done: . . . }</code>. As long as <code>done</code> is <code>false</code>, the variable <code>v</code> is set to the object’s <code>value</code> property. Once <code>done</code> is <code>true</code>, the <code>for of</code> loop exits.</p>
+        <p class="noindent">Here is a list of situations in which iterables are used in JavaScript:</p>
+        <ul class="bullet">
+        <li><p class="list-item">As already discussed, in a loop <code>for (const v of iterable)</code></p></li>
+        <li><p class="list-item">In an array spread: <code>[...iterable]</code></p></li>
+        <li><p class="list-item">With array destructuring: <code>[first, second, third] = iterable</code></p></li>
+        <li><p class="list-item">With the function <code>Array.from(iterable)</code></p></li>
+        <li><p class="list-item">With set and map constructors: <code>new Set(iterable)</code></p></li>
+        <li><p class="list-item">With the <code>yield*</code> directive that you will see later in this chapter</p></li>
+        <li><p class="list-item">In any place where a programmer makes use of the iterator constructed by calling the function that is returned from <code>iterable[Symbol.iterable]()</code></p></li></ul>
+        </section>
+        <section>
+        <h3 class="h3" id="ch12lev1sec2">12.2 Implementing an Iterable</h3>
+        <p class="noindent">In this section, you will see how to create iterable objects that can appear in <code>for of</code> loops, array spreads, and so on.</p>
+        <p class="noindent"><span epub:type="pagebreak" id="page_251"></span>It is best to work through a concrete example first. Let us implement an iterable <code>Range</code> class whose iterator yields values between two given bounds.</p>
+        <p class="codelink"><a id="rch12pr03" href="ch12_images.xhtml#ch12pr03">Click here to view code image</a></p>
+        <pre class="pre">class Range {
+          constructor(start, end) {
+            this.start = start
+            this.end = end
+          }
+          . . .
+        }</pre>
+        <p class="noindent">If we have a <code>Range</code> instance, it should be usable in a <code>for of</code> loop:</p>
+        <p class="codelink"><a id="rch12pr04" href="ch12_images.xhtml#ch12pr04">Click here to view code image</a></p>
+        <pre class="pre">for (const element of new Range(10, 20))
+          console.log(element) // <span class="cite">Prints</span> <code>10 11 . . . 19</code></pre>
+        <p class="noindent">An iterable object must have a method with name <code>Symbol.iterator</code>. Since the method name is not a string, it is enclosed in brackets:</p>
+        <p class="codelink"><a id="rch12pr05" href="ch12_images.xhtml#ch12pr05">Click here to view code image</a></p>
+        <pre class="pre">class Range {
+          . . .
+          [Symbol.iterator]() { . . . }
+        }</pre>
+        <p class="noindent">That method returns an object with a <code>next</code> method. We define a second class to produce those objects.</p>
+        <p class="codelink"><a id="rch12pr06" href="ch12_images.xhtml#ch12pr06">Click here to view code image</a></p>
+        <pre class="pre">class RangeIterator {
+          constructor(current, last) {
+            this.current = current
+            this.last = last
+          }
+          next() { . . . }
+        }
+        
+        class Range {
+          . . .
+          [Symbol.iterator]() { return new RangeIterator(this.start, this.end) }
+        }</pre>
+        <p class="noindent">The <code>next</code> method returns objects of the form <code>{ value: . . ., done: . . . }</code>, like this:</p>
+        <p class="codelink"><a id="rch12pr07" href="ch12_images.xhtml#ch12pr07">Click here to view code image</a></p>
+        <pre class="pre">    next() {
+              . . .
+              if (. . .) {
+                return { value: <span class="var">some value</span>, done: false }
+              } else {
+                return { value: undefined, done: true }
+              }
+            }</pre>
+        <p class="noindent">If you like, you can omit <code>done: false</code> and <code>value: undefined</code>.</p>
+        <p class="noindent">In our example:<span epub:type="pagebreak" id="page_252"></span></p>
+        <p class="codelink"><a id="rch12pr08" href="ch12_images.xhtml#ch12pr08">Click here to view code image</a></p>
+        <pre class="pre">class RangeIterator {
+          . . .
+          next() {
+            if (this.current &lt; this.last) {
+              const result = { value: this.current }
+              this.current++
+              return result
+            } else {
+              return { done: true }
+            }
+          }
+        }</pre>
+        <p class="noindent">By explicitly defining two classes, it becomes obvious that the <code>Symbol.iterator</code> method yields an instance of a different class with a <code>next</code> method.</p>
+        <p class="noindent">Alternatively, you can create the iterator objects on the fly:</p>
+        <p class="codelink"><a id="rch12pr09" href="ch12_images.xhtml#ch12pr09">Click here to view code image</a></p>
+        <pre class="pre">class Range {
+          constructor(start, end) {
+            this.start = start
+            this.end = end
+          }
+          [Symbol.iterator]() {
+            let current = this.start
+            let last = this.end
+            return {
+              next() {
+                if (current &lt; last) {
+                  const result = { value: current }
+                  current++
+                  return result
+                } else {
+                  return { done: true }
+                }
+              }
+            }
+          }
+        }</pre>
+        <p class="noindent">The <code>Symbol.iterator</code> method yields an object with a <code>next</code> method, which yields the <code>{ value: current }</code> and <code>{ done: true }</code> objects.</p>
+        <p class="noindent">This is more compact but perhaps not quite as easy to read.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch12lev1sec3">12.3 Closeable Iterators</h3>
+        <p class="noindent">If an iterator object has a method called <code>return</code> (!), it is <em>closeable</em>. The <code>return</code> method is called when the iteration is terminated prematurely. For example, <span epub:type="pagebreak" id="page_253"></span>suppose <code>lines(filename)</code> is an iterable over the lines of a file. Now consider this function:</p>
+        <p class="codelink"><a id="rch12pr10" href="ch12_images.xhtml#ch12pr10">Click here to view code image</a></p>
+        <pre class="pre">const find = (filename, target) =&gt; {
+          for (line of lines(filename)) {
+            if (line.contains(target)) {
+              return line // <code>iterator.return()</code> <span class="cite">called</span>
+            }
+          } // <code>iterator.return()</code> <em>not</em> <span class="cite">called</span>
+        }</pre>
+        <p class="noindent">The <code>return</code> method of the iterator is called when the loop is abruptly exited through a <code>return</code>, <code>throw</code>, <code>break</code>, or labeled <code>continue</code> statement. In this example, the iterator’s <code>return</code> method is called if a line contains the target string.</p>
+        <p class="noindent">If no line contains the target string, the <code>for of</code> loop returns normally, and the <code>return</code> method is not called.</p>
+        <p class="noindent">If you use an iterator and manually call <code>next</code> on it, and if you abandon it before having received <code>done: true</code>, then you should call <code>iterator.return()</code>.</p>
+        <p class="noindent">Of course, you should never call <code>next</code> after <code>return</code>.</p>
+        <p class="noindent">Implementing a closeable iterator is a bit unpleasant because you need to put the closing logic in two places: the call to <code>return</code> and the branch of the <code>next</code> method that detects the absence of further values.</p>
+        <p class="noindent">Here is a skeleton implementation of a function that yields an iterable over the lines of a file. <a href="#ch12ex06">Exercise 6</a> asks you to flesh out the details.</p>
+        <p class="codelink"><a id="rch12pr11" href="ch12_images.xhtml#ch12pr11">Click here to view code image</a></p>
+        <pre class="pre">const lines = filename =&gt; {
+          const file = . . . // <span class="cite">Open the file</span>
+          return {
+            [Symbol.iterator]: () =&gt; ({
+              next: () =&gt; {
+                if (<span class="var">done</span>) {
+                  . . . // <span class="cite">Close the file</span>
+                  return { done: true }
+                } else {
+                  const line = . . . // <span class="cite">Read a line</span>
+                  return { value: line }
+                }
+              },
+            ['return']: () =&gt; {
+                . . . // <span class="cite">Close the file</span>
+                return { done: true } // <span class="cite">Must return an object</span>
+              }
+            })
+          }
+        }</pre>
+        </section>
+        <section>
+        <h3 class="h3" id="ch12lev1sec4"><span epub:type="pagebreak" id="page_254"></span>12.4 Generators</h3>
+        <p class="noindent">In the previous sections, you saw how to implement an iterator whose <code>next</code> method produces one value at a time. The implementation can be tedious. The iterator needs to remember some amount of state between successive calls to <code>next</code>. Even the case of a simple range was not trivial. Unfortunately, you can’t just use a loop:</p>
+        <p class="codelink"><a id="rch12pr12" href="ch12_images.xhtml#ch12pr12">Click here to view code image</a></p>
+        <pre class="pre">for (let i = start; i &lt; end; i++)
+          . . .</pre>
+        <p class="noindent">That doesn’t work because the values are produced all together, not one at a time.</p>
+        <p class="noindent">However, in a <em>generator function</em>, you can do just that:</p>
+        <p class="codelink"><a id="rch12pr13" href="ch12_images.xhtml#ch12pr13">Click here to view code image</a></p>
+        <pre class="pre">function* rangeGenerator(start, end) {
+          for (let i = start; i &lt; end; i++)
+            yield i
+        }</pre>
+        <p class="noindent">The <code>yield</code> keyword produces a value, but it does not exit the function. The function is suspended after each yielded value. When the next value is required, the function continues after the <code>yield</code> statement and eventually yields another value.</p>
+        <p class="noindent">The <code>*</code> symbol tags this function as a generator function. Unlike a regular function that can produce only one result when it returns, a generator function produces a result each time the <code>yield</code> statement is executed.</p>
+        <p class="noindent">When you invoke a generator function, the function body does not yet start executing. Instead, you obtain an iterator object:</p>
+        <p class="codelink"><a id="rch12pr14" href="ch12_images.xhtml#ch12pr14">Click here to view code image</a></p>
+        <pre class="pre">const rangeIter = rangeGenerator(10, 20)</pre>
+        <p class="noindent">Like any iterator, the <code>rangeIter</code> object has a <code>next</code> method. When you call <code>next</code> for the first time, the generator function body runs until it reaches a <code>yield</code> statement. Then the <code>next</code> method returns an object <code>{ value: <span class="var">yielded value</span>, done: false }.</code></p>
+        <p class="codelink"><a id="rch12pr15" href="ch12_images.xhtml#ch12pr15">Click here to view code image</a></p>
+        <pre class="pre">let nextResult = rangeIter.next() // { value: 10, done: false }</pre>
+        <p class="noindent">From now on, each time the <code>next</code> method is invoked, execution of the generator function resumes at the last <code>yield</code> statement and continues until another <code>yield</code> statement is reached.</p>
+        <p class="codelink"><a id="rch12pr16" href="ch12_images.xhtml#ch12pr16">Click here to view code image</a></p>
+        <pre class="pre">nextResult = rangeIter.next() // { value: 11, done: false }
+        . . .
+        nextResult = rangeIter.next() // { value: 19, done: false }</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_255"></span>When the generator function returns, the <code>next</code> method returns <code>{ value: <span class="var">returned value</span>, done: true }</code> to indicate that the iteration is complete.</p>
+        <p class="codelink"><a id="rch12pr17" href="ch12_images.xhtml#ch12pr17">Click here to view code image</a></p>
+        <pre class="pre">nextResult = rangeIter.next() // { value: undefined, done: true }</pre>
+        <p class="noindent">If at any time the generator function code throws an exception, the call to <code>next</code> terminates with that exception.</p>
+        <div class="note">
+        <p class="note-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">In JavaScript, <code>yield</code> is shallow—you can only yield inside the generator function, not in a function that the generator function calls.</p>
+        </div>
+        <p class="noindent">A generator function can be a named or anonymous function:</p>
+        <p class="codelink"><a id="rch12pr18" href="ch12_images.xhtml#ch12pr18">Click here to view code image</a></p>
+        <pre class="pre">function* myGenerator(. . .) { . . . }
+        const myGenerator = function* (. . .) { . . . }</pre>
+        <p class="noindent">If an object property or a method is a generator function, prefix it with an asterisk:</p>
+        <p class="codelink"><a id="rch12pr19" href="ch12_images.xhtml#ch12pr19">Click here to view code image</a></p>
+        <pre class="pre">const myObject = { * myGenerator(. . .) { . . . }, . . . }
+          // <span class="cite">Syntactic sugar for</span> <code>myGenerator: function* (. . .) { . . . }</code>
+        
+        class MyClass {
+          * myGenerator(. . .) { . . . }
+          . . .
+        }</pre>
+        <p class="noindent">Arrow functions cannot be generators.</p>
+        <p class="noindent">You can place an invocation of a generator function everywhere an iterable is accepted—in <code>for of</code> statements, array spreads, and so on:</p>
+        <p class="codelink"><a id="rch12pr20" href="ch12_images.xhtml#ch12pr20">Click here to view code image</a></p>
+        <pre class="pre">[...rangeGenerator(10, 15)] // <span class="cite">The array</span> <code>[10, 11, 12, 13, 14]</code></pre>
+        </section>
+        <section>
+        <h3 class="h3" id="ch12lev1sec5">12.5 Nested Yield</h3>
+        <p class="noindent">Suppose we want to iterate over all elements of an array. Of course, an array is already iterable, but let’s provide a generator anyway. The implementation is straightforward:</p>
+        <p class="codelink"><a id="rch12pr21" href="ch12_images.xhtml#ch12pr21">Click here to view code image</a></p>
+        <pre class="pre">function* arrayGenerator(arr) {
+          for (const element of arr)
+            yield element
+        }</pre>
+        <p class="noindent">What if <code>arr</code> is <code>[1, [2, 3, 4], 5]</code>, with an element that is itself an array? In this case, we would like to flatten out the traversal and yield the elements <code>1</code>, <code>2</code>, <code>3</code>, <code>4</code>, and <code>5</code> in turn. A first attempt might be:<span epub:type="pagebreak" id="page_256"></span></p>
+        <p class="codelink"><a id="rch12pr22" href="ch12_images.xhtml#ch12pr22">Click here to view code image</a></p>
+        <pre class="pre">function* flatArrayGenerator(arr) {
+          for (const element of arr)
+            if (Array.isArray(element)) {
+              arrayGenerator(element) // <span class="cite">Error—does not yield any elements</span>
+            } else {
+              yield element
+            }
+        }</pre>
+        <p class="noindent">However, this approach does not work. The call</p>
+        <pre class="pre">arrayGenerator(element)</pre>
+        <p class="noindent">does not execute the body of the <code>arrayGenerator</code> generator function. It merely obtains and discards the iterator. The call</p>
+        <p class="codelink"><a id="rch12pr23" href="ch12_images.xhtml#ch12pr23">Click here to view code image</a></p>
+        <pre class="pre">const result = [...flatArrayGenerator([1, [2, 3, 4], 5])]</pre>
+        <p class="noindent">sets <code>result</code> to the array <code>[1, 5]</code>.</p>
+        <p class="noindent">If you want to obtain all values of a generator inside a generator function, you need to use a <code>yield*</code> statement:</p>
+        <p class="codelink"><a id="rch12pr24" href="ch12_images.xhtml#ch12pr24">Click here to view code image</a></p>
+        <pre class="pre">function* flatArrayGenerator(arr) {
+          for (const element of arr)
+            if (Array.isArray(element)) {
+              yield* arrayGenerator(element) // <span class="cite">Yields the generated elements one at a time</span>
+            } else {
+              yield element
+            }
+        }</pre>
+        <p class="noindent">Now the call</p>
+        <p class="codelink"><a id="rch12pr25" href="ch12_images.xhtml#ch12pr25">Click here to view code image</a></p>
+        <pre class="pre">const result = [...flatArrayGenerator([1, [2, 3, 4], 5])]</pre>
+        <p class="noindent">yields the flattened array <code>[1, 2, 3, 4, 5]</code>.</p>
+        <p class="noindent">However, if the array is deeply nested, the result is still not correct: <code>flatArrayGenerator([1, [2, [3, 4], 5], 6])</code> yields the values <code>1</code>, <code>2</code>, <code>[3, 4]</code>, <code>5</code>, and <code>6</code>.</p>
+        <p class="noindent">The remedy is simple—call <code>flatArrayGenerator</code> recursively:</p>
+        <p class="codelink"><a id="rch12pr26" href="ch12_images.xhtml#ch12pr26">Click here to view code image</a></p>
+        <pre class="pre">function* flatArrayGenerator(arr) {
+          for (const element of arr)
+            if (Array.isArray(element)) {
+              yield* flatArrayGenerator(element)
+            } else {
+              yield element
+            }
+        }</pre>
+        <p class="noindent">The point of this example is that <code>yield*</code> overcomes a limitation of generator functions in JavaScript. Every <code>yield</code> statement must be in the generator function itself. It cannot be in a function that is called from a generator function. The <span epub:type="pagebreak" id="page_257"></span><code>yield*</code> statement takes care of the situation where one generator function calls another, splicing in the yielded values of the invoked generator.</p>
+        <p class="noindent">The <code>yield*</code> statement also splices in the values of an iterable, yielding one value in each call to <code>next</code>. That means we could have simply defined our <code>arrayGenerator</code> as:</p>
+        <p class="codelink"><a id="rch12pr27" href="ch12_images.xhtml#ch12pr27">Click here to view code image</a></p>
+        <pre class="pre">function* arrayGenerator(arr) {
+          yield* arr
+        }</pre>
+        <div class="note">
+        <p class="note-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">A generator function can return a value when it is finished, in addition to yielding values:</p>
+        <p class="codelink"><a id="rch12pr28" href="ch12_images.xhtml#ch12pr28">Click here to view code image</a></p>
+        <pre class="pre">function* arrayGenerator(arr) {
+          for (const element of arr)
+            yield element
+          <strong>return arr.length</strong>
+        }</pre>
+        <p class="noindent">The return value is included with the last iteration result, when the <code>done</code> property is <code>true</code>. When iterating over the yielded values, the return value is ignored. But you can capture it as the value of a <code>yield*</code> expression inside another generator function:</p>
+        <p class="codelink"><a id="rch12pr29" href="ch12_images.xhtml#ch12pr29">Click here to view code image</a></p>
+        <pre class="pre">function* elementsFollowedByLength(arr) {
+          const len = yield* arrayGenerator(arr);
+          yield len;
+        }</pre>
+        </div>
+        </section>
+        <section>
+        <h3 class="h3" id="ch12lev1sec6">12.6 Generators as Consumers</h3>
+        <p class="noindent">Up to this point, we used generators to produce a sequence of values. Generators can also consume values. When calling <code>next</code> with an argument, it becomes the value of the <code>yield</code> expression:</p>
+        <p class="codelink"><a id="rch12pr30" href="ch12_images.xhtml#ch12pr30">Click here to view code image</a></p>
+        <pre class="pre">function* sumGenerator() {
+          let sum = 0
+          while (true) {
+            let nextValue = yield sum
+            sum += nextValue
+          }
+        }</pre>
+        <p class="noindent">Here, the value of the <code>yield sum</code> expression is stored in the <code>nextValue</code> variable and added to the sum. There is a two-way communication:</p>
+        <ul class="bullet">
+        <li><p class="list-item">The generator receives values from the caller of the <code>next</code> method and accumulates them.<span epub:type="pagebreak" id="page_258"></span></p></li>
+        <li><p class="list-item">The generator sends the current sum to the caller of the <code>next</code> method.</p></li>
+        </ul>
+        <div class="caution">
+        <p class="caution-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/caution.jpg" alt="Images" width="36" height="36"></span> Caution</p>
+        <p class="noindent">You need an initial call to <code>next</code> in order to get to the first <code>yield</code> statement. Then you can start calling <code>next</code> with values that are consumed by the generator.</p>
+        </div>
+        <p class="noindent">When calling the method named <code>return</code> (!), the generator is shut down, and further calls to <code>next</code> yield <code>{ value: undefined, done: true }</code>.</p>
+        <p class="noindent">Here is a complete sequence of calls to the iterator:</p>
+        <p class="codelink"><a id="rch12pr31" href="ch12_images.xhtml#ch12pr31">Click here to view code image</a></p>
+        <pre class="pre">const accum = sumGenerator()
+        accum.next() // <span class="cite">Advance to first</span> <code>yield</code>
+        let result = accum.next(3) // <span class="cite">Returns</span> <code>{ value: 3, done: false }</code>
+        result = accum.next(4) // <span class="cite">Returns</span> <code>{ value: 7, done: false }</code>
+        result = accum.next(5) // <span class="cite">Returns</span> <code>{ value: 12, done: false }</code>
+        accum.return() // <span class="cite">Shuts down and returns</span> <code>{ value: undefined, done: true }</code></pre>
+        <p class="noindent">Calling <code>throw(error)</code> on the iterator object causes the error to be thrown in the pending <code>yield</code> expression. If the generator function catches the error and progresses to a <code>yield</code> or <code>return</code> statement, the <code>throw</code> method returns a <code>{ value: . . ., done: . . . }</code> object. If the generator function terminates because the error was not caught, or because another error was thrown, then the <code>throw</code> method throws that error.</p>
+        <p class="noindent">In other words, <code>throw</code> is exactly like <code>next</code>, except that it causes the <code>yield</code> expression to throw an error instead of yielding a value.</p>
+        <p class="noindent">To demonstrate <code>throw</code>, consider the following variation of the sum generator:</p>
+        <p class="codelink"><a id="rch12pr32" href="ch12_images.xhtml#ch12pr32">Click here to view code image</a></p>
+        <pre class="pre">function* sumGenerator() {
+          let sum = 0
+          while (true) {
+            try {
+              let nextValue = yield sum
+              sum += nextValue
+            } catch {
+              sum = 0
+            }
+          }
+        }</pre>
+        <p class="noindent">Calling <code>throw</code> resets the accumulated value:</p>
+        <p class="codelink"><a id="rch12pr33" href="ch12_images.xhtml#ch12pr33">Click here to view code image</a></p>
+        <pre class="pre">const accum = sumGenerator()
+        accum.next() // <span class="cite">Advance to first</span> <code>yield</code>
+        let result = accum.next(3)
+        result = accum.next(4)
+        result = accum.next(5)
+        accum.throw() // <span class="cite">Returns</span> <code>{ value: 0, done; false }</code></pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_259"></span>If you call <code>throw</code> before the first <code>yield</code> expression was reached, the generator is shut down and the error is thrown by the call to the <code>throw</code> method.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch12lev1sec7">12.7 Generators and Asynchronous Processing</h3>
+        <p class="noindent">Having read the preceding section, you may wonder why you would ever want a generator that accumulates values. There are much easier ways of computing a sum. Such generators become far more interesting with asynchronous programming.</p>
+        <p class="noindent">When you read data from a web page, the data is not available instantly. As you saw in <a href="ch09.xhtml#ch09">Chapter 9</a>, a JavaScript program has a single thread of execution. If you wait for something to happen, your program can do nothing else. Therefore, web requests are asynchronous. You receive a callback when the requested data is available. As an example, here we obtain a true random number, using the <code>XMLHttpRequest</code> class that is available in web browsers (but not Node.js):</p>
+        <p class="codelink"><a id="rch12pr34" href="ch12_images.xhtml#ch12pr34">Click here to view code image</a></p>
+        <pre class="pre">const url = 'https://www.random.org/integers/?num=1&amp;min=1&amp;max=1000000000\
+        &amp;col=1&amp;base=10&amp;format=plain&amp;rnd=new'
+        const req = new XMLHttpRequest();
+        req.open('GET', url)
+        req.addEventListener('load', () =&gt; console.log(req.response)) // <span class="cite">Callback</span>
+        req.send()</pre>
+        <p class="noindent">Let’s put this into a function. The function has a handler function as parameter that is invoked when the random number has been received:</p>
+        <p class="codelink"><a id="rch12pr35" href="ch12_images.xhtml#ch12pr35">Click here to view code image</a></p>
+        <pre class="pre">const trueRandom = handler =&gt; {
+          const url = 'https://www.random.org/integers/?num=1&amp;min=1&amp;max=1000000000\
+        &amp;col=1&amp;base=10&amp;format=plain&amp;rnd=new'
+          const req = new XMLHttpRequest();
+          req.open('GET', url)
+          req.addEventListener('load', () =&gt; handler(parseInt(req.response)))
+          req.send()
+        }</pre>
+        <p class="noindent">Now we can get a random integer easily:</p>
+        <p class="codelink"><a id="rch12pr36" href="ch12_images.xhtml#ch12pr36">Click here to view code image</a></p>
+        <pre class="pre">trueRandom(receivedValue =&gt; console.log(receivedValue))</pre>
+        <p class="noindent">But suppose we want to add three such random numbers. Then we need to make three calls and compute the sum when all answers are ready. This is not for the faint of heart:</p>
+        <p class="codelink"><a id="rch12pr37" href="ch12_images.xhtml#ch12pr37">Click here to view code image</a></p>
+        <pre class="pre">trueRandom(first =&gt;
+          trueRandom(second =&gt;
+            trueRandom(third =&gt; console.log(first + second + third))))</pre>
+        <p class="noindent"><span epub:type="pagebreak" id="page_260"></span>Of course, as you have seen in <a href="ch09.xhtml#ch09">Chapter 9</a>, you can use promises and the <code>async</code>/<code>await</code> syntax to deal with this situation. Promises are actually built upon generators. This section gives you a brief outline of how generators can help with asynchronous processing.</p>
+        <p class="noindent">Let us use a generator to provide the illusion of synchronous calls. We will shortly define a function <code>nextTrueRandom</code> that delivers a random integer into a generator. Here is the generator:</p>
+        <p class="codelink"><a id="rch12pr38" href="ch12_images.xhtml#ch12pr38">Click here to view code image</a></p>
+        <pre class="pre">function* main() {
+          const first = yield nextTrueRandom()
+          const second = yield nextTrueRandom()
+          const third = yield nextTrueRandom()
+          console.log(first + second + third)
+        }</pre>
+        <p class="noindent">Launching the generator yields an iterator:</p>
+        <pre class="pre">const iter = main()</pre>
+        <p class="noindent">That is the iterator into which we will feed values as they become available:</p>
+        <p class="codelink"><a id="rch12pr39" href="ch12_images.xhtml#ch12pr39">Click here to view code image</a></p>
+        <pre class="pre">const nextTrueRandom = () =&gt; {
+          trueRandom(receivedValue =&gt; iter.next(receivedValue))
+        }</pre>
+        <p class="noindent">Just one thing remains to be done. The iteration needs to start:</p>
+        <pre class="pre">iter.next() // <span class="cite">Kick it off</span></pre>
+        <p class="noindent">Now the <code>main</code> function starts executing. It calls <code>nextTrueRandom</code> and then suspends in the <code>yield</code> expression until someone calls <code>next</code> on the iterator.</p>
+        <p class="noindent">That call to <code>next</code> doesn’t happen until the asynchronous data is available. And this is where generators get interesting. They allow us to suspend a calculation and continue it later when a value is available. Eventually, the value is obtained, and the <code>nextTrueRandom</code> function calls <code>iter.next(receivedValue)</code>. That value is stored in <code>first</code>.</p>
+        <p class="noindent">Then execution suspends again in the second <code>yield</code> expression, and so on. Eventually we have all three values and can compute their sum.</p>
+        <p class="noindent">For a brief period, after generators were added in ES7, they were touted as a solution for avoiding asynchronous callbacks. However, as you have seen, the setup is not very intuitive. It is much easier to use promises and the <code>async</code>/<code>await</code> syntax of <a href="ch09.xhtml#ch09">Chapter 9</a>. Value-consuming generators were an important stepping stone towards promises, but they are not commonly used by application programmers.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch12lev1sec8"><span epub:type="pagebreak" id="page_261"></span>12.8 Async Generators and Iterators</h3>
+        <p class="noindent">A generator function yields values that you can retrieve with an iterator. Each time you call <code>iter.next()</code>, the generator runs until the next <code>yield</code> statement and then suspends itself.</p>
+        <p class="noindent">An <em>async generator</em> is similar to a generator function, but you are allowed to use the <code>await</code> operator inside the body. Conceptually, an async generator produces a sequence of values in the future.</p>
+        <p class="noindent">To declare an async generator, use both the <code>async</code> keyword and the <code>*</code> that denotes a generator function:</p>
+        <p class="codelink"><a id="rch12pr40" href="ch12_images.xhtml#ch12pr40">Click here to view code image</a></p>
+        <pre class="pre">async function* loadHanafudaImages(month) {
+          for (let i = 1; i &lt;= 4; i++) {
+            const img = await loadImage(`hanafuda/${month}-${i}.png`)
+            yield img
+          }
+        }</pre>
+        <p class="noindent">When you call an async generator, you get an iterator. However, when you call <code>next</code> on the iterator, the next value may not yet be available. It may not even be known whether the iteration still continues. Therefore, <code>next</code> returns a promise for a <code>{ value: . . ., done: . . . }</code> object.</p>
+        <p class="noindent">Of course, you can retrieve the promised values from the iterator, but that is tedious—see <a href="#ch12ex16">Exercise 16</a>. It is easier to use a special form of the <code>for</code> loop, the <code>for await of</code> loop:</p>
+        <p class="codelink"><a id="rch12pr41" href="ch12_images.xhtml#ch12pr41">Click here to view code image</a></p>
+        <pre class="pre">for await (const img of loadHanafudaImages(month)) {
+          imgdiv.appendChild(img)
+        }</pre>
+        <p class="noindent">The <code>for await of</code> loop must be inside an <code>async</code> function because it invokes the <code>await</code> operator on each generated promise.</p>
+        <p class="noindent">If any of the promises is rejected, the <code>for await of</code> loop throws an exception, and the iteration terminates.</p>
+        <p class="noindent">The <code>for await of</code> loop works with any <em>async iterable</em>. An async iterable has a property with key <code>Symbol.asyncIterator</code> whose value is a function yielding an <em>async iterator</em>. An async iterator has a <code>next</code> method yielding promises for <code>{ value: . . ., done: . . . }</code> objects. Async generators are the most convenient mechanism for producing async iterables, but you can also implement them by hand—see <a href="#ch12ex17">Exercise 17</a>.</p>
+        <div class="caution">
+        <p class="caution-caption"><span epub:type="pagebreak" id="page_262"></span><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/caution.jpg" alt="Images" width="36" height="36"></span> Caution</p>
+        <p class="noindent">Async iterables are <em>not iterables</em>. They do not work with the <code>for of</code> loop, spreads, or destructuring. For example, you cannot do this:</p>
+        <p class="codelink"><a id="rch12pr42" href="ch12_images.xhtml#ch12pr42">Click here to view code image</a></p>
+        <pre class="pre">const results = [...loadHanafudaImages(month)]
+          // <span class="cite">Error, not an array of promises</span>
+        for (const p of loadHanafudaImages(month)) p.then(imgdiv.appendChild(img))
+          // <span class="cite">Error, not a loop over the promises</span></pre>
+        </div>
+        <div class="note">
+        <p class="note-caption"><span class="middle"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136502166/files/graphics/note.jpg" alt="Images" width="42" height="42"></span> Note</p>
+        <p class="noindent">On the other hand, the <code>for await of</code> loop works with regular iterables. It simply does the same as the <code>for of</code> loop.</p>
+        </div>
+        <p class="noindent">Here is an example of an async iterable that produces a range of numbers with a delay between them:</p>
+        <p class="codelink"><a id="rch12pr43" href="ch12_images.xhtml#ch12pr43">Click here to view code image</a></p>
+        <pre class="pre">class TimedRange {
+          constructor(start, end, delay) {
+            this.start = start
+            this.end = end
+            this.delay = delay
+          }
+        
+          async *[Symbol.asyncIterator]() {
+            for (let current = this.start; current &lt; this.end; current++) {
+              yield await produceAfterDelay(current, this.delay)
+            }
+          }
+        }</pre>
+        <p class="noindent">The implementation of the iterator function is straightforward, thanks to the <code>await</code> and <code>yield</code> syntax. Simply wait until the next value is available, and then yield it.</p>
+        <p class="noindent">You can consume the results in a <code>for await of</code> loop:</p>
+        <p class="codelink"><a id="rch12pr44" href="ch12_images.xhtml#ch12pr44">Click here to view code image</a></p>
+        <pre class="pre">let r = new TimedRange(1, 10, 1000)
+        for await (const e of r) console.log(e)</pre>
+        <p class="noindent">Let us conclude with a more realistic example. Many APIs have a <code>page</code> parameter that allows fetching of successive pages of data, for example:</p>
+        <p class="codelink"><a id="rch12pr45" href="ch12_images.xhtml#ch12pr45">Click here to view code image</a></p>
+        <pre class="pre">https://chroniclingamerica.loc.gov/search/titles/results/
+          ?terms=michigan&amp;format=json&amp;<strong>page=5</strong></pre>
+        <p class="noindent">Here we page through the results of such a query:<span epub:type="pagebreak" id="page_263"></span></p>
+        <p class="codelink"><a id="rch12pr46" href="ch12_images.xhtml#ch12pr46">Click here to view code image</a></p>
+        <pre class="pre">async function* loadResults(url) {
+          let page = 0
+          try {
+            while (true) {
+              page++
+              const response = await fetch(`${url}&amp;page=${page}`)
+              yield await response.json()
+            }
+          } catch {
+            // <span class="cite">End iteration</span>
+          }
+        }</pre>
+        <p class="noindent">If we call the generator from a <code>for async of</code> loop, we traverse all responses. By itself, that is not so exciting. We could have done that traversal in an <code>async</code> function, without using a generator.</p>
+        <p class="noindent">However, one can use this generator as a building block for other useful functions. Normally, an API uses paging because it is expected that the client will stop after having found a satisfactory result. Here is how to implement such a search, stopping as soon as the callback returns <code>true</code>:</p>
+        <p class="codelink"><a id="rch12pr47" href="ch12_images.xhtml#ch12pr47">Click here to view code image</a></p>
+        <pre class="pre">const findResult = async (queryURL, callback) =&gt; {
+          for await (const result of loadResults(queryURL)) {
+            if (callback(result)) return result
+          }
+          return undefined
+        }</pre>
+        <p class="noindent">Note two things. First, the <code>findResult</code> function is not a generator but merely an <code>async</code> function. By putting the hard part of a computation into an <code>async</code> generator, it can be consumed by any <code>async</code> function. Moreover, crucially, the fetching of the pages is lazy. As soon as a match is found, the <code>findResult</code> function exits, abandoning the generator without fetching further pages.</p>
+        </section>
+        <section>
+        <h3 class="h3" id="ch12lev1sec9">Exercises</h3>
+        <ol class="ol-exe">
+        <li><p class="list" id="ch12ex01">Implement a function that receives an iterable value and prints every other element.</p></li>
+        <li><p class="list" id="ch12ex02">Implement a function that receives an iterable value and returns another iterable value that yields every other element.</p></li>
+        <li><p class="list" id="ch12ex03">Implement an iterable value that yields an infinite number of die tosses, random integers between <code>1</code> and <code>6</code>. Write it in a single line:</p>
+        <pre class="pre">const dieTosses = { . . . }<span epub:type="pagebreak" id="page_264"></span></pre></li>
+        <li><p class="list" id="ch12ex04">Write a function <code>dieTosses(n)</code> that returns an iterable yielding <code>n</code> random integers between <code>1</code> and <code>6</code>.</p></li>
+        <li><p class="list" id="ch12ex05">What is wrong with this implementation of a <code>Range</code> iterator?</p>
+        <p class="codelink"><a id="rch12pr48" href="ch12_images.xhtml#ch12pr48">Click here to view code image</a></p>
+        <pre class="pre">class Range {
+          constructor(start, end) {
+            this.start = start
+            this.end = end
+          }
+          [Symbol.iterator]() {
+            let current = this.start
+            return {
+              next() {
+                current++
+                return current &lt;= this.end ? { value: current - 1 } : { done: true }
+              }
+            }
+          }
+        }</pre></li>
+        <li><p class="list" id="ch12ex06">Complete the implementation of the file iterator in <a href="ch12.xhtml#ch12lev1sec3">Section 12.3</a>, “<a href="ch12.xhtml#ch12lev1sec3">Closeable Iterators</a>” (<a href="ch12.xhtml#page_252">page 252</a>). Use the <code>openSync</code>, <code>readSync</code>, and <code>closeSync</code> methods of the Node.js <code>fs</code> module (<code><a href="https://nodejs.org/api/fs.html">https://nodejs.org/api/fs.html</a></code>). Note that you need to close the file in both the <code>next</code> and the <code>return</code> functions. You can avoid the code duplication by calling <code>return</code> from <code>next</code>.</p></li>
+        <li><p class="list" id="ch12ex07">Change the <code>arrayGenerator</code> function of <a href="ch12.xhtml#ch12lev1sec5">Section 12.5</a>, “<a href="ch12.xhtml#ch12lev1sec5">Nested Yield</a>” (<a href="ch12.xhtml#page_255">page 255</a>), so that for array elements that are strings, each character is yielded separately.</p></li>
+        <li><p class="list" id="ch12ex08">Enhance the preceding exercise so that the values of any iterable array element are yielded separately.</p></li>
+        <li><p class="list" id="ch12ex09">Using a generator, produce a tree iterator that visits the nodes of a tree one at a time. If you are familiar with the DOM API, visit the nodes of a DOM document. Otherwise, make your own tree class.</p></li>
+        <li><p class="list" id="ch12ex10">Using a generator and Heap’s algorithm (<code><a href="https://en.wikipedia.org/wiki/Heap%27s_algorithm">https://en.wikipedia.org/wiki/Heap%27s_algorithm</a></code>), produce an iterator that yields all permutations of an array. For example, if the array has values <code>[1, 2, 3]</code>, your iterator should produce <code>[1, 2, 3]</code>, <code>[1, 3, 2]</code>, <code>[2, 3, 1]</code>, <code>[2, 1, 3]</code>, <code>[3, 1, 2]</code>, and <code>[3, 2, 1]</code> (not necessarily in this order).</p></li>
+        <li><p class="list" id="ch12ex11">How can you make the <code>return</code> method of a generator object return a value? Would you ever want to?</p></li>
+        <li><p class="list" id="ch12ex12"><a href="ch12.xhtml#ch12lev1sec6">Section 12.6</a>, “<a href="ch12.xhtml#ch12lev1sec6">Generators as Consumers</a>” (<a href="ch12.xhtml#page_257">page 257</a>), lists a number of different scenarios for the behavior of the <code>throw</code> method. Make a table that summarizes each scenario and the expected behavior. Provide brief programs to demonstrate the behavior in each scenario.<span epub:type="pagebreak" id="page_265"></span></p></li>
+        <li><p class="list" id="ch12ex13">Write a function <code>trueRandomSum(n, handler)</code> that computes the sum of <code>n</code> random numbers and passes it to the given handler. Use a generator, following <a href="ch12.xhtml#ch12lev1sec6">Section 12.6</a>, “<a href="ch12.xhtml#ch12lev1sec6">Generators as Consumers</a>” (<a href="ch12.xhtml#page_257">page 257</a>).</p></li>
+        <li><p class="list" id="ch12ex14">Repeat the preceding exercise without using a generator.</p></li>
+        <li><p class="list" id="ch12ex15">Consider this <code>async</code> function:</p>
+        <p class="codelink"><a id="rch12pr49" href="ch12_images.xhtml#ch12pr49">Click here to view code image</a></p>
+        <pre class="pre">const putTwoImages = async (url1, url2, element) =&gt; {
+          const img1 = await loadImage(url1)
+          element.appendChild(img1)
+          const img2 = await loadImage(url2)
+          element.appendChild(img2)
+          return element
+        }</pre>
+        <p class="noindent">And now consider this generator function yielding promises:</p>
+        <p class="codelink"><a id="rch12pr50" href="ch12_images.xhtml#ch12pr50">Click here to view code image</a></p>
+        <pre class="pre">function* putTwoImagesGen(url1, url2, element) {
+          const img1 = yield loadImage(url1)
+          element.appendChild(img1)
+          const img2 = yield loadImage(url2)
+          element.appendChild(img2)
+          return element
+        }</pre>
+        <p class="noindent">This is essentially the transformation that the JavaScript compiler does for any <code>async</code> function. Now fill in the <code>___</code> to complete a function <code>genToPromise</code> that takes an arbitrary generator yielding promises and turns it into a <code>Promise</code>:</p>
+        <p class="codelink"><a id="rch12pr51" href="ch12_images.xhtml#ch12pr51">Click here to view code image</a></p>
+        <pre class="pre">const genToPromise = gen =&gt; {
+          const iter = gen()
+          const nextPromise = arg =&gt; {
+            const result = ___
+            if (result.done) {
+              return Promise.resolve(___)
+            } else {
+              return Promise.resolve(___).then(___)
+            }
+          }
+        
+          return nextPromise()
+        }</pre></li>
+        <li><p class="list" id="ch12ex16">Use the iterator returned from the <code>loadHanafudaImages</code> generator function in <a href="ch12.xhtml#ch12lev1sec8">Section 12.8</a>, “<a href="ch12.xhtml#ch12lev1sec8">Async Generators and Iterators</a>” (<a href="ch12.xhtml#page_261">page 261</a>), to add all images to a DOM element. Do not use a <code>for await of</code> loop.<span epub:type="pagebreak" id="page_266"></span></p></li>
+        <li><p class="list" id="ch12ex17">Implement the <code>TimedRange</code> class from <a href="ch12.xhtml#ch12lev1sec8">Section 12.8</a>, “<a href="ch12.xhtml#ch12lev1sec8">Async Generators and Iterators</a>” (<a href="ch12.xhtml#page_261">page 261</a>), without using a generator function. Produce the promise-yielding iterator by hand.</p></li>
+        <li><p class="list" id="ch12ex18">One plausible use of the <code>for await of</code> loop is with <code>Promise.all</code>. Suppose you have an array of image URLs. Turn them into an array of promises:</p>
+        <p class="codelink"><a id="rch12pr52" href="ch12_images.xhtml#ch12pr52">Click here to view code image</a></p>
+        <pre class="pre">const imgPromises = urls.map(loadImage)</pre>
+        <p class="noindent">Run them in parallel, await the resulting promise, and iterate over the responses. Which of the four loops below run without errors? Which one should you use?</p>
+        <p class="codelink"><a id="rch12pr53" href="ch12_images.xhtml#ch12pr53">Click here to view code image</a></p>
+        <pre class="pre">for (const img of Promise.all(imgPromises)) element.appendChild(img)
+        for await (const img of Promise.all(imgPromises)) element.appendChild(img)
+        for (const img of await Promise.all(imgPromises)) element.appendChild(img)
+        for await (const img of await Promise.all(imgPromises)) element.appendChild(img)</pre></li>
+        <li><p class="list" id="ch12ex19">Which of these loops run without errors? For those that do, how does their behavior differ from those of the preceding exercise?</p>
+        <p class="codelink"><a id="rch12pr54" href="ch12_images.xhtml#ch12pr54">Click here to view code image</a></p>
+        <pre class="pre">for (const p of urls.map(loadImage))
+          p.then(img =&gt; element.appendChild(img))
+        for (const p of urls.map(async url =&gt; await loadImage(url)))
+          element.appendChild(await p)
+        for await (const img of urls.map(url =&gt; await loadImage(url)))
+          element.appendChild(img)
+        for (const img of await urls.map(loadImage))
+          element.appendChild(img)
+        for await (const img of await urls.map(loadImage))
+          element.appendChild(img)</pre></li>
+        <li><p class="list" id="ch12ex20">Some APIs (such as the GitHub API described at <code><a href="https://developer.github.com/v3/guides/traversing-with-pagination">https://developer.github.com/v3/guides/traversing-with-pagination</a></code>) yield paged results with a slightly different mechanism than that of the example in <a href="ch12.xhtml#ch12lev1sec8">Section 12.8</a>, “<a href="ch12.xhtml#ch12lev1sec8">Async Generators and Iterators</a>” (<a href="ch12.xhtml#page_261">page 261</a>). The <code>Link</code> header of each response contains a URL to navigate to the next result. You can retrieve it as:</p>
+        <p class="codelink"><a id="rch12pr55" href="ch12_images.xhtml#ch12pr55">Click here to view code image</a></p>
+        <pre class="pre">let nextURL
+          = response.headers.get('Link').match(/&lt;(?&lt;next&gt;.*?)&gt;; rel="next"/).groups.next;</pre>
+        <p class="noindent">Adapt the <code>loadResults</code> generator function to this mechanism.</p>
+        <p class="noindent">Extra credit if you can demystify the regular expression.<span epub:type="pagebreak" id="page_267"></span></p></li>
+        </ol>
+        </section>
+        </section>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780136502166/files/9780136502142.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

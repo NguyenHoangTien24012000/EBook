@@ -1,0 +1,213 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="The Dependency Inversion Principle"><div class="titlepage"><div><div><h1 class="title"><a id="ch11lvl1sec74"></a>The Dependency Inversion Principle</h1></div></div></div><p>The last SOLID principle concerns the dependence among the components of an application and states that:</p><div class="blockquote"><blockquote class="blockquote"><p><span class="emphasis"><em>1. High-level modules should not depend on low-level modules. Both should depend on abstractions.</em></span></p></blockquote></div><div class="blockquote"><blockquote class="blockquote"><p><span class="emphasis"><em>2. Abstractions should not depend upon details. Details should depend on abstractions.</em></span></p></blockquote></div><p>This is the <span class="strong"><strong>Dependency Inversion Principle</strong></span>, and it consists of two recommendations. The first one concerns the classic layered architecture of an application, where in general the components of the high level are strictly dependent on the components at the low level. A possible modification to a low-level component may require a change to one or more high-level components. The first recommendation suggests to reverse this dependency, changing it toward an intermediate abstraction, such as an interface. So, a low-level component must implement an interface used by the components of the higher level.</p><p>The second recommendation says to make sure that the implementation details do not affect an abstraction. An abstraction, such as an interface, must describe a behavior and implementation details must follow the behavior defined by abstraction. The implementation can change without affecting the referred abstraction. In other words, if, for example, we defined an abstraction to access a persistence system, the implementation must comply with the abstraction, but its internal implementation can change at will.</p><p>Let's try to explain this principle with an example. Consider the code for order management:</p><pre class="programlisting">function Order(customerId) { 
+  this.customerId =  customerId; 
+  this.dateTime = new Date(); 
+  this.totalAmount = 0; 
+  this.items = []; 
+} 
+ 
+ 
+var OrderManager = (function () { 
+  var discounters = []; 
+ 
+  function OrderManager() {} 
+ 
+  OrderManager.prototype.createOrder = function (customerId) { 
+    this.order = new Order(customerId); 
+  }; 
+ 
+  OrderManager.prototype.addItem = function (item) { 
+    this.order.items.push(item); 
+    this.order.totalAmount = this.order.totalAmount + item.price; 
+  }; 
+ 
+  OrderManager.prototype.sendOrder = function () { 
+    if (this.isValid(this.order)) { 
+      this.applyDiscount(this.order); 
+      var orderSender = new OrderSender(); 
+      orderSender.send(order); 
+    } 
+    else { 
+      handleError({ message: "Not valid order!" }); 
+    } 
+  }; 
+ 
+  OrderManager.prototype.isValid = function (order) { 
+   return order.items.length &gt; 0; 
+  }; 
+ 
+  OrderManager.prototype.registerDiscounter = function(discounter)    { 
+   discounters.push(discounter); 
+  }; 
+ 
+  OrderManager.prototype.applyDiscount = function (order) { 
+    var i; 
+ 
+    for (i=0; i &lt; discounters.length; i++) { 
+      if (discounters[i].isApplicable(order)) { 
+        discounters[i].apply(order); 
+        break 
+      } 
+    } 
+  }; 
+ 
+   return OrderManager; 
+}()); 
+ 
+var OrderSender = (function() { 
+ 
+  function OrderSender() {} 
+ 
+  OrderSender.prototype.send = function(order) { 
+    var xhr = new XMLHttpRequest(); 
+ 
+    xhr.onreadystatechange = function () { 
+      if (xhr.readyState == 4 &amp;&amp; xhr.status == 200) { 
+        var response = JSON.parse(xhr.responseText); 
+        handleResponse(response); 
+      } 
+    }; 
+ 
+    xhr.open("POST", "/api/orders"); 
+    xhr.setRequestHeader("Content-Type", "application     /json;charset=UTF-8"); 
+    xhr.send(JSON.stringify(order)); 
+  } 
+ 
+  return  OrderSender; 
+})(); 
+</pre><p>In this example, we can see the dependence between the <code class="literal">OrderManager</code> and <code class="literal">OrderSender</code> constructors. We see that the body of the&nbsp;<code class="literal">sendOrder()</code> method creates a new instance of <code class="literal">OrderSender</code>. Any changes to the delivery mode of the order may require a change to <code class="literal">OrderManager</code>. For example, suppose that in addition to sending orders via HTTP we need to send certain types of orders via e-mail, we should change the <code class="literal">sendOrder()</code> method to include this possibility.</p><p>If we want to apply the Dependency Inversion Principle, we must ensure that <code class="literal">OrderManager</code> don't depend on the implementation details of order sending but, on the contrary, establish a common interface, the implementation of order sending must comply with this interface.</p><p>In our case, we implicitly determined that an object for sending an order should implement a <code class="literal">send()</code> method. So, we can solve the dependency problem as shown here:</p><pre class="programlisting">function Order(customerId) { 
+  this.customerId =  customerId; 
+  this.dateTime = new Date(); 
+  this.totalAmount = 0; 
+  this.items = []; 
+} 
+ 
+ 
+var OrderManager = (function () { 
+  var discounters = []; 
+<span class="strong"><strong>  var orderSender;</strong></span>
+<span class="strong"><strong>  function OrderManager(sender) {</strong></span>
+<span class="strong"><strong>    orderSender = sender;</strong></span>
+<span class="strong"><strong>  }</strong></span> 
+ 
+  OrderManager.prototype.createOrder = function (customerId) { 
+    this.order = new Order(customerId); 
+  }; 
+ 
+  OrderManager.prototype.addItem = function (item) { 
+    this.order.items.push(item); 
+    this.order.totalAmount = this.order.totalAmount + item.price; 
+  }; 
+ 
+  OrderManager.prototype.sendOrder = function () { 
+    if (this.isValid(this.order)) { 
+      this.applyDiscount(this.order); 
+      orderSender.send(order); 
+    } 
+    else { 
+      handleError({ message: "Not valid order!" }); 
+    } 
+  }; 
+ 
+  OrderManager.prototype.isValid = function (order) { 
+    return order.items.length &gt; 0; 
+  }; 
+ 
+  OrderManager.prototype.registerDiscounter = function(discounter)    { 
+    discounters.push(discounter); 
+  }; 
+ 
+  OrderManager.prototype.applyDiscount = function (order) { 
+    var i; 
+ 
+    for (i=0; i &lt; discounters.length; i++) { 
+      if (discounters[i].isApplicable(order)) { 
+        discounters[i].apply(order); 
+        break 
+      } 
+    } 
+  }; 
+ 
+  return OrderManager; 
+}()); 
+ 
+ 
+<span class="strong"><strong>var HttpOrderSender = (function() {</strong></span> 
+ 
+  function OrderSender() {} 
+ 
+  OrderSender.prototype.send = function(order) { 
+    var xhr = new XMLHttpRequest(); 
+ 
+    xhr.onreadystatechange = function () { 
+      if (xhr.readyState == 4 &amp;&amp; xhr.status == 200) { 
+        var response = JSON.parse(xhr.responseText); 
+        handleResponse(response); 
+      } 
+    }; 
+ 
+    xhr.open("POST", "/api/orders"); 
+    xhr.setRequestHeader("Content-Type", "application     /json;charset=UTF-8"); 
+    xhr.send(JSON.stringify(order)); 
+  } 
+ 
+  return  OrderSender; 
+})(); 
+</pre><p>As usual, the highlighted code shows the differences compared to the previous solution. In this case, we defined a <code class="literal">orderSender</code> variable representing the component responsible for the order sending, no matter what approach is used for sending. This component is not created within the <code class="literal">sendOrder()</code> method, but it is passed as a parameter to the <code class="literal">OrderManager</code> constructor or, as they say, is injected into the <code class="literal">OrderManager</code> constructor. We then renamed the constructor function that sends orders via HTTP in <code class="literal">HttpOrderSender</code>, just to distinguish it from any other components that implement the same interface <code class="literal">send()</code>. The following instructions explain how to inject the sender component into the <code class="literal">OrderManager</code>:</p><pre class="programlisting">var  httpOrderSender = new  HttpOrderSender(); 
+var orderManager = new OrderManager(httpOrderSender); 
+</pre><p>With this approach, we reversed the dependency between <code class="literal">OrderManager</code> and <code class="literal">OrderSender</code> using a technique called <span class="strong"><strong>dependency injection</strong></span>.</p><div class="section" title="Dependency inversion, inversion of control, and dependency injection"><div class="titlepage"><div><div><h2 class="title"><a id="ch11lvl2sec95"></a>Dependency inversion, inversion of control, and dependency injection</h2></div></div></div><p>Often, there is confusion between dependency inversion, inversion of control, and dependency injection. The three concepts are somehow connected, but they are not exactly the same thing. We will try to make things clearer.</p><p>Dependency inversion is a software design principle, the last principle of the SOLID stack. As we said in this section, it states how two components should depend on each other and suggests that high-level components should not depend on low level components. It does not say how to do it or which technique to use.</p><p>A possible approach to make high-level components independent from low-level components is <span class="strong"><strong>inversion of control</strong></span>, that is a way to apply the Dependency Inversion Principle. Inversion of control is the actual mechanism using which we can use to make the higher level components depend on abstractions rather than concrete implementation of lower level components.</p><div class="note" title="Note" style=""><div class="inner"><h3 class="title"><a id="note21"></a>Note</h3><p>Inversion of control is sometimes jokingly called the <span class="strong"><strong>Hollywood Principle</strong></span>. This name is borrowed from the cinema industry, where, after an auditions for a role in a Hollywood movie, usually the director says, <span class="emphasis"><em>don't call us, we'll call you</em></span>. This sentence embodies the spirit of inversion of control.</p></div></div><p>Dependency injection is a technique to implement inversion of control. It injects the concrete implementation of a low-level component into a high-level component. So, dependency injection concretely applies the Dependency Inversion Principle in the software development by moving the binding of abstraction and concrete implementation out of the dependent component.</p></div><div class="section" title="Dependency injection approaches"><div class="titlepage"><div><div><h2 class="title"><a id="ch11lvl2sec96"></a>Dependency injection approaches</h2></div></div></div><p>Independent of the language used, dependency injection can be done using three approaches:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc">Constructor injection</li><li class="listitem" style="list-style-type: disc">Method injection</li><li class="listitem" style="list-style-type: disc">Property injection</li></ul></div><p>The most common approach is the <span class="strong"><strong>constructor injection</strong></span>. It is based on passing the dependency as a parameter of the constructor function. This is the approach we used in our example:</p><pre class="programlisting">var  httpOrderSender = new  HttpOrderSender(); 
+var orderManager = new OrderManager(httpOrderSender); 
+</pre><p>We created an <code class="literal">httpOrderSender</code> object and injected it into the <code class="literal">orderManager</code> object by passing it to the <code class="literal">OrderManager()</code> constructor function.</p><p>The constructor injection is suitable when the same dependency is valid for all the object's lifetime. In other words, if the <code class="literal">orderManager</code> object will use <code class="literal">httpOrderSender</code> during its life, the constructor injection approach is appropriate.</p><p>If we need to pass different dependencies on every method call, then we use <span class="strong"><strong>method injection</strong></span>. For example, if we want to specify a different way of sending an order when we call the <code class="literal">sendOrder()</code> method, we can use the Method injection:</p><pre class="programlisting">var  httpOrderSender = new  HttpOrderSender(); 
+var orderManager = new OrderManager(); 
+orderManager.sendOrder(httpOrderSender); 
+</pre><p>The <span class="strong"><strong>property injection</strong></span> approach allows us to specify the dependency by assigning it to a property of the object. This gives the flexibility of changing dependency during the lifetime of the object and at the same time avoids having to specify the dependency for each method's call. We could apply this approach in our example as follows:</p><pre class="programlisting">var  httpOrderSender = new  HttpOrderSender(); 
+var orderManager = new OrderManager(); 
+ 
+orderManager.sender =  httpOrderSender; 
+orderManager.sendOrder(); 
+</pre><p>Here, we introduced the <code class="literal">sender</code> property to which we attached the <code class="literal">httpOrderSender</code> object. This object will be taken into account when the <code class="literal">sendOrder()</code> method is called.</p></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

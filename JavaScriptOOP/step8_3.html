@@ -1,0 +1,93 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="The publish/subscribe pattern"><div class="titlepage"><div><div><h1 class="title"><a id="ch08lvl1sec55"></a>The publish/subscribe pattern</h1></div></div></div><p>We will try to overcome the limitations of previous data binding implementations by using a design pattern. We can choose to apply the&nbsp;<span class="strong"><strong>observer pattern</strong></span> or <span class="strong"><strong>publisher/subscriber pattern</strong></span>. Both are intended to manage a scenario where one or more objects are interested in receiving notifications when the state of another object changes. The solutions proposed by the patterns are similar and often the two patterns are confused or considered as two different names for the same pattern. Actually, there are important differences, as we will see in the following sections.</p><div class="section" title="The observer pattern"><div class="titlepage"><div><div><h2 class="title"><a id="ch08lvl2sec59"></a>The observer pattern</h2></div></div></div><p>The observer pattern is maybe widely known because it is included in the patterns proposed by the Gang of Four. In its simplified version for JavaScript, that is, not considering class abstractions, it involves the following actors:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>Subject</strong></span>: This is the object that may change its state; it knows its observer and sends them a notification when its state changes.</li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>Observers</strong></span>: These are the objects that are interested in the subject's state change.</li></ul></div><p>An observer that wants to know when changes of the subject's state occur registers itself with the subject. The subject will notify a change of its state to all registered observers.</p><p>The following diagram describes graphically the interactions between the subject and the observers:</p><div class="mediaobject"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781785889103/files/graphics/image_08_002.jpg" alt="The observer pattern" width="407" height="424"></div><p>Simply put, the observer pattern proposes that the subject directly notifies its observers of its state changes. If we turn back to the data binding implementation we made so far, we can see that they applied an approach similar to this pattern. For example, when we used the <code class="literal">onchange</code> event to be notified if the value of the textbox changed, we were applying the observer pattern. In fact, the textbox was the subject and the <code class="literal">person</code> object was the observer.</p><p>Even when we used the getter and setter methods of a property, somehow, we applied this pattern; but in that case, we did not generate a notification, instead, directly updated the value of the observer's property.</p></div><div class="section" title="The publisher/subscriber pattern"><div class="titlepage"><div><div><h2 class="title"><a id="ch08lvl2sec60"></a>The publisher/subscriber pattern</h2></div></div></div><p>The publisher/subscriber pattern is a variant of the observer pattern, which introduces a third component in order to decouple the subject from the observers—the <span class="strong"><strong>observable</strong></span>.</p><p>While in the observer pattern, the subject itself manages the communication with its observers, in the publisher/subscriber pattern this task is assigned to the observable object. The following diagram shows this new scenario:</p><div class="mediaobject"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781785889103/files/graphics/image_08_003.jpg" alt="The publisher/subscriber pattern" width="387" height="549"></div><p>We will take this pattern as a reference to implement a new approach for data binding.</p></div><div class="section" title="Implementing observables"><div class="titlepage"><div><div><h2 class="title"><a id="ch08lvl2sec61"></a>Implementing observables</h2></div></div></div><p>Different from what we made so far, we will try to implement data binding introducing an intermediary object between the data source object and the data target object, as suggested by the publisher/subscriber pattern. Our intermediary object will be the observable object implemented by the following factory function:</p><pre class="programlisting">  function observable(value) { 
+    var subscribers = []; 
+ 
+    function notify(newValue) { 
+        for (var i = 0; i &lt; subscribers.length; i++) { 
+          subscribers[i](newValue); 
+        } 
+    } 
+ 
+    function accessor(newValue) { 
+      if (arguments.length &amp;&amp; newValue !== value) { 
+        value = newValue; 
+        notify(newValue); 
+      } 
+      return value; 
+    } 
+ 
+    accessor.subscribe = function(subscriber) { 
+      subscribers.push(subscriber); 
+    }; 
+ 
+    return accessor; 
+  } 
+</pre><p>This function takes the subject as an argument, that is, the value to observe, and returns a function that represents its observable. The returned function acts as an accessor to the subject that manages subscriptions in order to notify the subject's changes.</p><p>We can see that the <code class="literal">observable()</code> function has a private array of subscribers, which is populated by the <code class="literal">subscribe()</code> method attached to the <code class="literal">accessor()</code> function. The <code class="literal">subscribers</code> array contains a list of functions to be executed when a change of the subject's status occurs. The <code class="literal">accessor()</code> function works as the specialized getter and setter seen in a previous implementation; when no argument is passed, it returns the current value of the subject, otherwise, it sets the current value of the subject with the passed one and notifies the change to all subscribers.</p><p>Let's rewrite our example using the <code class="literal">observable()</code> function and apply the publisher/subscriber pattern. The code will be as follows:</p><pre class="programlisting">function Person(name, surname) { 
+  this.name = name; 
+  this.surname = surname; 
+} 
+ 
+ 
+var john = observable("John"); 
+var smith = observable("Smith"); 
+var txtName = document.getElementById("txtName"); 
+var txtSurname = document.getElementById("txtSurname"); 
+ 
+person = new Person(john, smith); 
+ 
+txtName.value = person.name(); 
+txtSurname.value = person.surname() 
+ 
+person.name.subscribe( function(value) { txtName.value = value; }); 
+person.surname.subscribe( function(value) { txtSurname.value = value; }); 
+ 
+setTimeout(function() { 
+  person.name("Mario"); 
+  person.surname("Rossi"); 
+}, 5000); 
+</pre><p>Here, we can see that the <code class="literal">Person()</code> constructor is a plain constructor without any reference to its observers. We create two observables bound to the strings <code class="literal">"John"</code> and <code class="literal">"Smith"</code> and then create a <code class="literal">person</code> instance by passing the two observables as values for <code class="literal">name</code> and <code class="literal">surname</code> properties. Then, these observables subscribe a function that updates the associated textbox value when changes occur.</p><p>With this infrastructure, when the properties of the <code class="literal">person</code> object are changed, the observable will create a notification by executing the function associated with each subscriber. In our example, after 5 seconds a new name and surname are assigned to the <code class="literal">person</code> object.</p><div class="note" title="Note" style=""><div class="inner"><h3 class="title"><a id="note14"></a>Note</h3><p>Each library or framework has its own approach in implementing data binding, for example, the implementation of data binding based on observables. Described in this section is the core of the Knockout library.</p></div></div><div class="note" title="Note" style=""><div class="inner"><h3 class="title"><a id="note15"></a>Note</h3><p>AngularJS, another framework supporting advanced data binding, follows a different approach. It uses a global monitoring system based on the concept of watch. In short words, a watch observes a variable, and for each execution cycle, the framework checks if some associated value has changed and possibly updates the depending values.</p></div></div><p>The data binding implementing through the observables makes the data source object independent from the data target object. It is applicable to any type of object, including the DOM elements and is quite generic. In fact, we can execute an arbitrary code when the change occurs by subscribing any function, not just a simple assignment.</p></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

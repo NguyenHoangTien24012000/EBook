@@ -1,0 +1,213 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="The Model-View-Presenter pattern"><div class="titlepage"><div><div><h1 class="title"><a id="ch07lvl1sec49"></a>The Model-View-Presenter pattern</h1></div></div></div><p>The Model-View-Controller pattern gives us a better architecture for presenting data to the user. It assigns a specific task to each component so that possible changes might only concern one component letting the others unchanged. However, the three components of the MVC pattern remain someway interconnected: the View knows its Controller and the Model, and the Controller depends on the View and the Model. For example, a change to the Model may require changes to both the View and the Controller.</p><p>The Model-View-Presenter pattern or <span class="strong"><strong>MVP</strong></span> proposes a layered architecture with fewer dependencies. In this pattern, the View intercepts the user interactions and asks the Presenter for changes to the Model. This means that the View does not directly interact with the Model, but acts on it through the Presenter. This eliminates any dependency between the View and the Model. The following image summarizes the pattern's architecture:</p><div class="mediaobject"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781785889103/files/graphics/image_07_003.jpg" alt="The Model-View-Presenter pattern" width="762" height="489"></div><p>Let's look at how we can implement our reference example according to the MVP pattern.</p><p>The Model implementation remains the same as per the MVC pattern implementation.</p><p>Instead the View implementation is slightly different, as shown by the following code:</p><pre class="programlisting">var View = (function () { 
+        function View(presenter) { 
+          var self = this; 
+          var btnSave = document.getElementById("btnSave"); 
+          var btnReset = document.getElementById("btnReset"); 
+       
+          self.presenter = presenter; 
+       
+          btnSave.onclick = function () { 
+            self.save(); 
+          }; 
+       
+          btnReset.onclick = function () { 
+            self.clear(); 
+          }; 
+        } 
+       
+        View.prototype.clear = function () { 
+          var txtName = document.getElementById("txtName"); 
+          var txtSurname = document.getElementById("txtSurname"); 
+          var divMessage = document.getElementById("divMessage"); 
+       
+          txtName.value = ""; 
+          txtSurname.value = ""; 
+          divMessage.innerHTML = ""; 
+        }; 
+       
+        Object.defineProperty(View.prototype, "message", { 
+          set: function (message) { 
+            var divMessage = document.getElementById("divMessage"); 
+            divMessage.innerHTML = message; 
+          } 
+        }); 
+       
+        Object.defineProperty(View.prototype, "name", { 
+          set: function (value) { 
+            var txtName = document.getElementById("txtName"); 
+            txtName.value = value; 
+          } 
+        }); 
+       
+        Object.defineProperty(View.prototype, "surname", { 
+          set: function (value) { 
+            var txtSurname = document.getElementById("txtSurname"); 
+            txtSurname.value = value; 
+          }, 
+          enumerable: true, 
+          configurable: true 
+        }); 
+        View.prototype.save = function () { 
+          var txtName = document.getElementById("txtName"); 
+          var txtSurname = document.getElementById("txtSurname"); 
+          var data = { 
+            name: txtName.value, 
+            surname: txtSurname.value 
+          }; 
+       
+          this.presenter.save(data); 
+        }; 
+        return View; 
+      }()); 
+      </pre><p>The main difference with respect to the implementation of the MVC View is the definition of the <code class="literal">name</code> and <code class="literal">surname</code> properties. These properties are introduced in order to break the dependency between the View and the Model. Since the View does not know the Model, it exposes those properties which the Presenter will bind to the Model.</p><p>We can implement the View as a class as shown here:</p><pre class="programlisting">class View { 
+        constructor(presenter) { 
+          var self = this; 
+          var btnSave = document.getElementById("btnSave"); 
+          var btnReset = document.getElementById("btnReset"); 
+       
+          self.presenter = presenter; 
+       
+          btnSave.onclick = function() { 
+            self.save(); 
+          }; 
+          btnReset.onclick =  function() { 
+            self.clear(); 
+          }; 
+        } 
+       
+        clear() { 
+          var txtName = document.getElementById("txtName"); 
+          var txtSurname = document.getElementById("txtSurname"); 
+          var divMessage = document.getElementById("divMessage"); 
+       
+          txtName.value = ""; 
+          txtSurname.value = ""; 
+          divMessage.innerHTML = ""; 
+        } 
+       
+        set message(message) { 
+          var divMessage = document.getElementById("divMessage"); 
+          divMessage.innerHTML = message; 
+        } 
+       
+        set name(value) { 
+          var txtName = document.getElementById("txtName"); 
+          txtName.value = value; 
+        } 
+       
+        set surname(value) { 
+          var txtSurname = document.getElementById("txtSurname"); 
+          txtSurname.value = value; 
+        } 
+       
+        save() { 
+          var txtName = document.getElementById("txtName"); 
+          var txtSurname = document.getElementById("txtSurname"); 
+       
+          var data = { 
+            name: txtName.value, 
+            surname: txtSurname.value 
+          }; 
+       
+          this.presenter.save(data); 
+        } 
+      } 
+      </pre><p>The Presenter's implementation is quite similar to the Controller's implementation in MVC pattern. The only difference to the MVC case is the assignments of the Model values to the properties of the View, as highlighted in the following code:</p><pre class="programlisting">var Presenter = (function () { 
+        function Presenter() { 
+        } 
+       
+        Presenter.prototype.initialize = function (model, view) { 
+          this.model = model; 
+          this.view = view; 
+      <span class="strong"><strong>    this.view.name = this.model.name;</strong></span>
+      <span class="strong"><strong>    this.view.surname =
+          this.model.surname;</strong></span> 
+        }; 
+       
+        Presenter.prototype.save = function (data) { 
+          if (data.name &amp;&amp; data.surname) { 
+            this.model.name = data.name; 
+            this.model.surname = data.surname; 
+            this.view.message = "Saved!"; 
+          } 
+          else { 
+            this.view.message = "Please, enter name and surname!"; 
+          } 
+        }; 
+       
+        return Presenter; 
+      }()); 
+      </pre><p>The class version of the Presenter may be implemented as follows:</p><pre class="programlisting">class Presenter { 
+        initialize(model,view) { 
+          this.model = model; 
+          this.view = view; 
+       
+         this.view.name = this.model.name; 
+          this.view.surname = this.model.surname; 
+        } 
+       
+        save(data) { 
+          if (data.name &amp;&amp; data.surname) { 
+            this.model.name = data.name; 
+            this.model.surname = data.surname; 
+       
+            this.view.message = "Saved!"; 
+          } else { 
+            this.view.message = "Please, enter name and surname!"; 
+          } 
+        } 
+      } 
+      </pre><p>Now, we can set up the pattern by creating the instances of the components as in the following code:</p><pre class="programlisting">window.onload = function() { 
+        var model = new Model("John", "Smith"); 
+        var presenter = new Presenter(); 
+        var view = new View(presenter); 
+       
+        presenter.initialize(model, view); 
+      }; 
+      </pre><p>The MVP approach goes a step further in the separation of concerns among the three components of the pattern. Here, only the Presenter knows about the existence of both the Model and the View. This allows changes to the Model that does not require changes to the View. Only the Presenter has the responsibility to maintain the synchronization between the View and the Model.</p><div class="note" title="Note" style=""><div class="inner"><h3 class="title"><a id="note13"></a>Note</h3><p>As for the other presentation patterns, even the MVP pattern has some implementation variants. In the real world, some prefer keeping basic logic still inside the View and taking complex logic in the Presenter, while others prefer keeping the entire logic in the Presenter. This leads to at least two subpatterns: the <span class="strong"><strong>MVP pattern with passive view</strong></span>, where the logic included into the View is reduced to the minimum, and the <span class="strong"><strong>Supervising Controller pattern</strong></span>, where some logic concerning simple declarative behavior is left inside the View.</p></div></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

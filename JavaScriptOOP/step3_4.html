@@ -1,0 +1,185 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="A meta-closure approach"><div class="titlepage"><div><div><h1 class="title"><a id="ch03lvl1sec22"></a>A meta-closure approach</h1></div></div></div><p>The basic idea of the previous approach builds on the nature of closure. The constructor's environment is protected by default and remains accessible from the inside of the constructor itself even after it terminates. However, since the closure is created when the constructor is called, each object instance needs to have both private data and privileged methods defined inside the constructor context. An ideal solution should be one that protects private data letting them be accessible from outside the constructor's closure. This should be a sort of meta-closure that offers an extra level of protection-a closure accessible from outside the object constructor by prototype members still hiding private data of the resulting object. This meta—closure can be built using an <span class="strong"><strong>Immediately Invoked Function Expression</strong></span> (<span class="strong"><strong>IIFE</strong></span>).</p><div class="section" title="Immediately invoked function expressions"><div class="titlepage"><div><div><h2 class="title"><a id="ch03lvl2sec17"></a>Immediately invoked function expressions</h2></div></div></div><p>An IIFE, also called a&nbsp;<span class="strong"><strong>self-executing anonymous function</strong></span>, is a JavaScript expression involving an anonymous function definition immediately executed. The following is a minimal example of such an expression:</p><pre class="programlisting">var value = function() { return 3 + 2; }(); 
+    </pre><p>We can see that it consists of a standard anonymous function definition followed by the invocation operator <code class="literal">()</code>. At first glance, it may seem a weird expression; but if we reason a moment, we find that it is less strange than it seems. In fact, since in JavaScript functions are also object, we can assign them to variables. For example, we can write the following assignment:</p><pre class="programlisting">var aFunction = function() { return 3 + 2; }; 
+    </pre><p>Then, we can call the function by simply attaching the <code class="literal">()</code> operator at the end of the variable:</p><pre class="programlisting">var value = aFunction(); 
+    </pre><p>The IIFE simply composes these two steps into one assignment.</p><p>But, how can an IIFE help us in protecting data privacy allowing privileged methods to be defined outside the constructor? IIFE expressions involve function definitions, and like any function definition, they build closures. If we combine the ability of a JavaScript function to return another function, we create nested closures that bring us closer to our solution.</p></div><div class="section" title="Creating a meta-closure with an IIFE"><div class="titlepage"><div><div><h2 class="title"><a id="ch03lvl2sec18"></a>Creating a meta-closure with an IIFE</h2></div></div></div><p>Let's rewrite our <code class="literal">TheatreSeats()</code> constructor using an IIFE. The following may be an example of such rewriting:</p><pre class="programlisting">var  TheatreSeats = (function() { 
+      var seats = []; 
+     
+      function TheatreSeatsConstructor() { 
+        this.maxSize = 10; 
+      } 
+     
+      TheatreSeatsConstructor.prototype.placePerson = function(person)    { 
+        seats.push(person); 
+      }; 
+     
+      TheatreSeatsConstructor.prototype.countOccupiedSeats =    function() { 
+        return seats.length; 
+      }; 
+     
+      TheatreSeatsConstructor.prototype.isSoldOut = function() { 
+        return seats.length &gt;= this.maxSize; 
+      }; 
+     
+      TheatreSeatsConstructor.prototype.countFreeSeats = function() { 
+        return this.maxSize - seats.length; 
+      }; 
+     
+      return  TheatreSeatsConstructor; 
+     
+    }()); 
+    </pre><p>The code assigns the result of an IIFE to the <code class="literal">TheatreSeats</code> variable. The anonymous function declares in its local scope the <code class="literal">seats</code> array and the <code class="literal">TheatreSeatsConstructor()</code> constructor and attaches all methods to the prototype of the constructor. It then returns the constructor itself. As a result, the <code class="literal">TheatreSeats</code> variable will contain our final constructor.</p><p>With this approach, the methods attached to the constructor's prototype can still access the private array <code class="literal">seats</code>, since it is part of the closure of the anonymous function. This finally allows us to bring privileged methods definition outside the constructor scope, sharing them among the object instances.</p><p>However, this approach still has an annoying problem. Since the <code class="literal">seats</code> array belongs to the anonymous function's closure, it is shared among all object instances created using the <code class="literal">TheatreSeats()</code> constructor. We can verify it by executing the following code:</p><pre class="programlisting">var t1 = new TheatreSeats(); 
+    var t2 = new TheatreSeats(); 
+     
+    t1.placePerson({name: "John", surname: "Smith"}); 
+     
+    console.log(t1.countFreeSeats());    //result: 9 
+    console.log(t2.countFreeSeats());    //result: 9 
+    </pre><p>We created two instances of <code class="literal">TheatreSeats</code> objects and placed one person on the first object. By calling the <code class="literal">countFreeSeats()</code> method of the first instance, we correctly get <code class="literal">9</code> free seats. However, by calling the same method of the second instance, we get the same result as well, even if we did not place a person on it.</p><p>Since the <code class="literal">seat</code> array is shared among all instances, any change to it is available to other instances. Technically, we created a <span class="strong"><strong>static local variable</strong></span>. In some contexts it could be desirable, but not in this one.</p></div><div class="section" title="Managing isolated private members"><div class="titlepage"><div><div><h2 class="title"><a id="ch03lvl2sec19"></a>Managing isolated private members</h2></div></div></div><p>A way to bypass the problem of static private members creation is to identify each object instance and attach to it its private set of data. Consider the following code:</p><pre class="programlisting">var  TheatreSeats = (function() { 
+     <span class="strong"><strong> var priv = {}; 
+      var id = 0;</strong></span> 
+     
+      function TheatreSeatsConstructor() { 
+        <span class="strong"><strong>this.id = id++;</strong></span> 
+        this.maxSize = 10; 
+     
+        <span class="strong"><strong>priv[this.id] = {}; 
+        priv[this.id].seats = [];</strong></span> 
+      } 
+     
+      TheatreSeatsConstructor.prototype.placePerson = function(person)    { 
+        priv[this.id].seats.push(person); 
+      }; 
+     
+      TheatreSeatsConstructor.prototype.countOccupiedSeats =    function() { 
+        return priv[this.id].seats.length; 
+      }; 
+     
+      TheatreSeatsConstructor.prototype.isSoldOut = function() { 
+        return priv[this.id].seats.length &gt;= this.maxSize; 
+      }; 
+     
+      TheatreSeatsConstructor.prototype.countFreeSeats = function() { 
+        return this.maxSize - priv[this.id].seats.length; 
+      }; 
+     
+      return  TheatreSeatsConstructor; 
+     
+    }()); 
+    </pre><p>We highlighted the main differences with the previous version of the code. In this case, we declared two variables in the scope of the anonymous function: <code class="literal">priv</code> and <code class="literal">id</code>. The former is an object that will contain the private members of each object instance, the latter will contain a numeric identifier that will be attached to each object instance. These variables will be available in the closure of the anonymous function so that they will be static variables shared among all object instances.</p><p>When the constructor is called, it creates an extra property <code class="literal">id</code> with the next value of the <code class="literal">id</code> variable. Then, it uses this <code class="literal">id</code> property as the key to create and access the private members attached to the <code class="literal">priv</code> object. This means that wherever we made reference to the <code class="literal">seats</code> array, we will refer to <code class="literal">priv[this.id].seats</code>.</p><p>This technique resolves the static variable problem, but still has a couple of problems.</p><p>The first problem concerns the new <code class="literal">id</code> property. We need this property in order to identify each object instance and to access its private members. However, since it is a publicly accessible number, it represents a potential risk. If we change its value, even if accidentally, we incur unexpected behavior.</p><p>The second problem regards again memory consumption. Since private members exist in the meta-closure, their life will coincide with the closure life. So, if we create an object using our constructor and then destroy the object, its private members will remain alive in the anonymous function's closure, wasting memory. No garbage collector will remove these members since it is not aware that they are not used.</p></div><div class="section" title="A definitive solution with WeakMaps"><div class="titlepage"><div><div><h2 class="title"><a id="ch03lvl2sec20"></a>A definitive solution with WeakMaps</h2></div></div></div><p>Both problems affecting the isolated closure approach can be finally resolved using a new ECMAScript 6 feature—the <span class="strong"><strong>WeakMap</strong></span>. A WeakMap is a collection of key and value pairs where the key must be an object. In the following example, we build a WeakMap with two items:</p><pre class="programlisting">var myMap = new WeakMap(); 
+    var johnSmith = {name: "John", surname: "Smith"}; 
+    var marioRossi = {name: "Mario", surname: "Rossi"}; 
+     
+     
+    myMap.set(johnSmith, "This is John"); 
+    myMap.set(marioRossi, "This is Mario"); 
+     
+    console.log(myMap.get(marioRossi)); 
+    </pre><p>We used the <code class="literal">set()</code> method to define an association between an object and another item (a string in our case). We used the <code class="literal">get()</code> method to retrieve the item associated with an object. The interesting aspect of the WeakMaps is the fact that it holds a <span class="strong"><strong>weak</strong></span> reference to the key inside the map. A weak reference means that if the object is destroyed, the garbage collector will remove the entire entry from the WeakMap, thus freeing up memory.</p><p>Let's use WeakMaps to solve our problems:</p><pre class="programlisting">var  TheatreSeats = (function() { 
+    <span class="strong"><strong>  var priv = new WeakMap();</strong></span> 
+     
+      function TheatreSeatsConstructor() { 
+    <span class="strong"><strong>    var privateMembers = {seats: []};</strong></span>
+    <span class="strong"><strong>   
+        priv.set(this, privateMembers);</strong></span> 
+     
+        this.maxSize = 10; 
+     
+      } 
+     
+      TheatreSeatsConstructor.prototype.placePerson = function(person)    { 
+        priv.get(this).seats.push(person); 
+      }; 
+     
+      TheatreSeatsConstructor.prototype.countOccupiedSeats =    function() { 
+        return priv.get(this).seats.length; 
+      }; 
+     
+      TheatreSeatsConstructor.prototype.isSoldOut = function() { 
+        return priv.get(this).seats.length &gt;= this.maxSize; 
+      }; 
+     
+      TheatreSeatsConstructor.prototype.countFreeSeats = function() { 
+        return this.maxSize - priv.get(this).seats.length; 
+      }; 
+     
+      return  TheatreSeatsConstructor; 
+     
+    }()); 
+    </pre><p>As we can see, we no longer need the <code class="literal">id</code> property in order to identify the current object instance. We simply associate the current instance identified by the <code class="literal">this</code> keyword with the object containing the private members in the <code class="literal">priv</code> WeakMaps. Whenever we need to access our <code class="literal">seats</code> private member, we will refer to <code class="literal">priv.get(this).seats</code>.</p><p>The internal behavior of the WeakMap grants us a correct memory management since when an object instance is destroyed its private entry in the map will be removed by the garbage collector.</p><p>We can add a cosmetic touch to our code in order to make it less verbose by defining a custom function to access private members:</p><pre class="programlisting">var  TheatreSeats = (function() { 
+      var priv = new WeakMap(); 
+    <span class="strong"><strong>  var _= function(instance) {return priv.get(instance);};</strong></span> 
+     
+      function TheatreSeatsConstructor() { 
+        var privateMembers = {seats: []}; 
+     
+        priv.set(this, privateMembers); 
+        this.maxSize = 10; 
+     
+      } 
+     
+      TheatreSeatsConstructor.prototype.placePerson = function(person)    { 
+        _(this).seats.push(person); 
+      }; 
+     
+      TheatreSeatsConstructor.prototype.countOccupiedSeats =    function() { 
+        return _(this).seats.length; 
+      }; 
+     
+      TheatreSeatsConstructor.prototype.isSoldOut = function() { 
+        return _(this).seats.length &gt;= this.maxSize; 
+      }; 
+     
+      TheatreSeatsConstructor.prototype.countFreeSeats = function() { 
+        return this.maxSize - _(this).seats.length; 
+      }; 
+     
+      return  TheatreSeatsConstructor; 
+     
+    }()); 
+    </pre><p>This little change allows us to use a similar syntax when accessing public and private members. In the first case, we will use <code class="literal">this.publicMember</code>; in the second case, we will use <code class="literal">_(this).privateMember</code>, slightly recalling the convention-based approach syntax.</p></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

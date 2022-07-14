@@ -1,0 +1,206 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="Controlling inheritance"><div class="titlepage"><div><div><h1 class="title"><a id="ch04lvl1sec29"></a>Controlling inheritance</h1></div></div></div><p>Inheritance of members between objects is a powerful feature. However, in some situation, we want to control how member are passed from the parent object to the child and what a derived object can do with inherited members. Let's analyze the most common ways to control inheritance in JavaScript.</p><div class="section" title="Overriding methods"><div class="titlepage"><div><div><h2 class="title"><a id="ch04lvl2sec29"></a>Overriding methods</h2></div></div></div><p>When creating a derived object, we usually want to give it a slightly different behavior from parent object. This new behavior can be implemented by adding new methods or properties, but sometimes we need to redefine a method or a property of the parent object. In this case, we are talking about <span class="strong"><strong>overriding</strong></span>.</p><p>Let's consider an example of a&nbsp;<code class="literal">Person</code> definition with a <code class="literal">getFullName()</code> method returning the concatenation of <code class="literal">name</code> and <code class="literal">surname</code>:</p><pre class="programlisting">function Person(name, surname) { 
+        this.name = name; 
+        this.surname = surname; 
+      } 
+       
+      Person.prototype.getFullName = function() { 
+        return this.name + " " + this.surname; 
+      } 
+      </pre><p>Now, we want <code class="literal">Developer</code> inheriting from <code class="literal">Person</code>, but the <code class="literal">getFullName()</code> method should display the <code class="literal">Dev</code> prefix as title, as in <code class="literal">Dev John Smith</code>. We could create a new method, such as <code class="literal">getDevFullName()</code>, but it would be not intuitive and redundant. Instead, we can override the <code class="literal">getFullName()</code> method as shown in the following example:</p><pre class="programlisting">function Developer(name, surname, knownLanguage) { 
+        Person.apply(this, arguments); 
+        this.knownLanguage =  knownLanguage; 
+      } 
+       
+      Developer.prototype = new Person(); 
+      Developer.prototype.constructor = Developer; 
+      <span class="strong"><strong>Developer.prototype.getFullName = function() {
+        return "Dev " + Person.prototype.getFullName.call(this);</strong></span>
+      <span class="strong"><strong>};</strong></span>
+      </pre><p>The highlighted code shows how to override the <code class="literal">getFullName()</code> method of the <code class="literal">Person()</code> constructor. We attach to the <code class="literal">Developer</code>&nbsp;prototype property a method with the same name. In this case, the overriding method internally uses the parent's method, so we have to pay attention to the way we call it. Since, we want that the method refers to the current <code class="literal">Developer</code> instance and not to the <code class="literal">Person</code> instance, we invoke the <code class="literal">Person</code>'s <code class="literal">getFullName()</code> method using the <code class="literal">call()</code> method and passing the <code class="literal">this</code> keyword. This way ensure us that the <code class="literal">Person</code> function's <code class="literal">getFullName()</code> method will act on the <code class="literal">Developer</code> instance's <code class="literal">name</code> and <code class="literal">surname</code> properties.</p><div class="note" title="Note" style=""><div class="inner"><h3 class="title"><a id="note9"></a>Note</h3><p>Any JavaScript function has the <code class="literal">call()</code> and <code class="literal">apply()</code>methods. Both run the function in the context of the first argument, but while <code class="literal">call()</code> accepts a list of values as the function's parameters, <code class="literal">apply()</code> accepts an array of values.</p></div></div><p>So, when we use the <code class="literal">Person</code> function's <code class="literal">getFullName()</code> method, we will obtain the concatenation of <code class="literal">name</code> and <code class="literal">surname</code> properties. When we use the <code class="literal">Developer</code> instance's <code class="literal">getFullName()</code> method, we will get the same result preceded by the title <code class="literal">Dev</code>:</p><pre class="programlisting">var johnSmith = new Person("John", "Smith"); 
+      var marioRossi = new Developer("Mario", "Rossi", "JavaScript"); 
+       
+      console.log(johnSmith.getFullName());     //result: "John Smith" 
+      console.log(marioRossi.getFullName());    //result: "Dev Mario  Rossi"</pre><p>As we would expect, the new ECMAScript 6 syntax allows us to simplify the way we can override a method. In fact, we can simply redefine the overriding method in our derived class and, if necessary, call the parent class using the <code class="literal">super</code> keyword. The following example shows how we can override the <code class="literal">Person</code> function's <code class="literal">getFullName()</code> method obtaining the same result seen earlier:</p><pre class="programlisting">class Developer extends Person { 
+        constructor(name, surname, knownLanguage) { 
+          super(name, surname); 
+         this. knownLanguage = knownLanguage; 
+        } 
+       
+        getFullName() { 
+         return "Dev "+  super.getFullName(); 
+        } 
+      } 
+      </pre></div><div class="section" title="Overriding properties"><div class="titlepage"><div><div><h2 class="title"><a id="ch04lvl2sec30"></a>Overriding properties</h2></div></div></div><p>Property overriding is a common operation in JavaScript. Every time we define a constructor that inherits from some other constructor, we are overriding the parent's properties. Let's consider again the <code class="literal">Developer</code> constructor definition:</p><pre class="programlisting">function Developer(name, surname, knownLanguage) { 
+        Person.apply(this, arguments); 
+        this.knownLanguage =  knownLanguage; 
+      } 
+       
+      Developer.prototype = new Person(); 
+      Developer.prototype.constructor = Developer; 
+      </pre><p>When we call the <code class="literal">Person</code> constructor through the <code class="literal">apply()</code> method, we are asking the parent object to replicate its properties on the <code class="literal">Developer</code> instance, identified by the <code class="literal">this</code> keyword. So, the <code class="literal">Developer</code> instance's <code class="literal">name</code> and <code class="literal">surname</code> properties are overriding the <code class="literal">Person</code> function's properties.</p><p>This makes sense, since we usually do not want to share properties with the parent. Each instance usually should have its own properties. So, the simplest way to override a parent property is redefine it in the child constructor.</p><p>However, there are situations where a property can be conveniently shared among all instances of an object constructor and all object children. By referring to our <code class="literal">Person</code> constructor, when we want to have a <code class="literal">fullName</code> property whose value is dependent on the <code class="literal">name</code> and <code class="literal">surname</code> properties. We are talking about implementing the <code class="literal">getFullName()</code> method functionality as a property. We can do it as follows:</p><pre class="programlisting">function Person(name, surname) { 
+        this.name = name; 
+        this.surname = surname; 
+      } 
+       
+      Object.defineProperty( 
+                  Person.prototype, 
+                  "fullName", { 
+                    get: function() { return this.name + " " +
+                    this.surname; } 
+                  }); 
+      </pre><p>Here we define a read-only property using <code class="literal">Object.defineProperty()</code> and attaching it to the <code class="literal">Person</code> function's prototype. The <code class="literal">fullName</code> property will be available to any instance and will be inherited by derived constructors.</p><p>If we want to change the <code class="literal">fullName</code> property behavior in the <code class="literal">Developer</code> constructor so that it attaches the <code class="literal">Dev</code> title, we can proceed as in the following example:</p><pre class="programlisting">Object.defineProperty( 
+                  Developer.prototype, 
+                  "fullName", { 
+                    get: function() { return "Dev " + this.name + " " +
+                    this.surname; } 
+                  }); 
+      </pre><p>As we can see, we simply redefined the property using <code class="literal">Object.defineProperty()</code>. Here, we attached the <code class="literal">fullName</code> property to the <code class="literal">Developer</code>prototype and changed the output of the <code class="literal">get</code> descriptor.</p><p>This allows us to have different values of the <code class="literal">fullName</code> property depending on the object's prototype:</p><pre class="programlisting">var johnSmith = new Person("John", "Smith"); 
+      var marioRossi = new Developer("Mario", "Rossi", "JavaScript"); 
+       
+      console.log(johnSmith.fullName);     //result: "John Smith" 
+      console.log(marioRossi.fullName);    //result: "Dev Mario Rossi" 
+      </pre></div><div class="section" title="Protected members"><div class="titlepage"><div><div><h2 class="title"><a id="ch04lvl2sec31"></a>Protected members</h2></div></div></div><p>In the previous chapter, we talked about object members, visibility and accessibility. Following Crockford, we classified them in public, private, and privileged. Most of the classical OOP languages provide another category of members that involves inheritance: <span class="strong"><strong>protected</strong></span> members. In general, a protected member is a private member only visible to derived objects. It represents a privacy level that stays between the public and the private: a sort of privacy shared among objects involved in a common inheritance.</p><p>Once again, JavaScript does not does built-in support for protected members, so we need to implement it ourselves. A common pattern to emulate the support of protected members is to ask them expressly to the parent object constructor. Let's explain with an example.</p><p>Suppose that our <code class="literal">Person()</code> constructor has a private utility function that capitalizes the first letter of the values of the <code class="literal">name</code> and <code class="literal">surname</code> properties:</p><pre class="programlisting">var Person = (function() { 
+        function capitalize(string) { 
+          return string.charAt(0).toUpperCase() + string.slice(1); 
+        } 
+       
+        function PersonConstructor(name, surname) { 
+          this.name = capitalize(name); 
+          this.surname = capitalize(surname); 
+        } 
+       
+        return PersonConstructor; 
+      }()); 
+      </pre><p>The <code class="literal">capitalize()</code> function is implemented as a private member and it is not publicly accessible. It allows us to pass a name and surname to the constructor without worry about upper or lower case:</p><pre class="programlisting">var p = new Person("john", "smith"); 
+       
+      console.log(p.name);    //result: "John" 
+      </pre><p>If we want to make this function available to all derived objects, that is, to make it protected, we can implement it as follows:</p><pre class="programlisting">var Person = (function() { 
+      <span class="strong"><strong>  var protectedMembers;</strong></span> 
+       
+        function capitalize(string) { 
+          return string.charAt(0).toUpperCase() + string.slice(1); 
+        } 
+       
+      <span class="strong"><strong>  function PersonConstructor(name, surname, protected) {
+      </strong></span>
+      <span class="strong"><strong>    protectedMembers = protected || {};
+      </strong></span>
+      <span class="strong"><strong>    protectedMembers.capitalize = capitalize;</strong></span> 
+       
+          this.name = capitalize(name); 
+         this.surname = capitalize(surname); 
+        } 
+       
+        return PersonConstructor; 
+      }()); 
+      </pre><p>The highlighted code shows that we have defined a private variable named <code class="literal">protectedMembers</code>. We also added a new parameter to the internal constructor, named <code class="literal">protected</code>. This parameter is the means that allows the derived constructor to ask the parent constructor for the protected members. Inside the <code class="literal">PersonConstructor()</code> function, we ensure that the <code class="literal">protected</code> parameter is not empty and add to it the <code class="literal">capitalize()</code> method.</p><p>Now, we define the <code class="literal">Developer</code> constructor so that it asks its parent constructor for protected members:</p><pre class="programlisting">function Developer(name, surname, knownLanguage) { 
+      <span class="strong"><strong>  var parentProtected = {};
+      </strong></span>
+      <span class="strong"><strong>  Person.call(this, name, surname, parentProtected);</strong></span> 
+       
+        this.knownLanguage = parentProtected.capitalize(knownLanguage); 
+      } 
+      </pre><p>Since the private variable <code class="literal">parentProtected</code> is an object, it is passed by reference to the <code class="literal">Person()</code> function. So, the changes made by the parent constructor to the <code class="literal">parentProtected</code> variable are available inside the <code class="literal">Developer()</code> constructor. This allow us to use the <code class="literal">capitalize()</code> function attached to <code class="literal">parentProtected</code> object.</p></div><div class="section" title="Preventing extensions"><div class="titlepage"><div><div><h2 class="title"><a id="ch04lvl2sec32"></a>Preventing extensions</h2></div></div></div><p>We don't always want derived constructors or classes to customize some or all members of the parent constructor or class. In some circumstances, we want to prevent that certain changes being allowed. In the previous chapter, we have seen how to prevent that a property is written or its configuration changed. But what can we do to prevent property or method addition and removal? Luckily, we have <code class="literal">Object.preventExtensions()</code>, <code class="literal">Object.seal()</code>, and <code class="literal">Object.freeze()</code> methods that help us.</p><p>Let's begin to see in which situations we can use these methods.</p><p>If we want to prevent addition of new members to an object we can use the <code class="literal">Object.preventExtensions()</code> method. Consider the following example:</p><pre class="programlisting">var person = { name: "John", surname: "Smith"}; 
+       
+      Object.preventExtensions(person); 
+       
+      person.age = 32; 
+       
+      console.log(person.age);    //result: undefined 
+      </pre><p>If we try to add the new property,&nbsp;<code class="literal">age,</code>&nbsp;to the <code class="literal">person</code> object, we do not get an error, but the property will not be added to it. If we enable strict mode, the attempt to add the new property will throw an exception. In order to avoid to raise the exception, we should check if the object is extensible using the <code class="literal">Object.isExtensible()</code> method:</p><pre class="programlisting">if (Object.isExtensible(person)) { 
+        person.age = 32; 
+      } 
+      </pre><p>Of course, we can use the <code class="literal">Object.preventExtensions()</code> method in a constructor in order to avoid property addition both to the constructor instances and the derived constructors. For example, we can define the <code class="literal">Person()</code> constructor as follows:</p><pre class="programlisting">function Person(name, surname) { 
+        this.name = name; 
+        this.surname = surname; 
+       
+        Object.preventExtensions(this); 
+      } 
+      </pre><p>With this definition, any derived constructor will not be able to add new properties:</p><pre class="programlisting">function Developer(name, surname, knownLanguage) { 
+        Person.apply(this, arguments); 
+        this.knownLanguage =  knownLanguage; 
+      } 
+      </pre><p>If we create an instance of <code class="literal">Developer</code>, we will find that it has not the <code class="literal">knownLanguage</code> property, even if it is added in the constructor:</p><pre class="programlisting">var dev = new Developer("Mario", "Rossi", "JavaScript"); 
+      console.log(dev.knownLanguage);    //result:    undefined 
+      </pre><p>Although <code class="literal">Object.preventExtensions()</code> prevent members addition, we can still remove them using the <code class="literal">delete</code> statement and change property configuration using <code class="literal">Object.defineProperty()</code>. If we also need to prevent these changes, we have to use the <code class="literal">Object.seal()</code> method:</p><pre class="programlisting">function Person(name, surname) { 
+        this.name = name; 
+        this.surname = surname; 
+       
+      <span class="strong"><strong>  Object.seal(this);</strong></span> 
+      } 
+      </pre><p>Now, any attempt to delete a member or change the configuration of a property will fail:</p><pre class="programlisting">var person = new Person("John", "Smith"); 
+       
+      console.log(delete person.name);    //result:    false 
+      console.log(person.name);           //result:    "John" 
+      </pre><p>Of course, we still will not be able to add new members to the object.</p><p>We can check if an object is sealed using the <code class="literal">Object.isSealed()</code> method:</p><pre class="programlisting">if (!Object.isSealed(person)) { 
+        delete person.name; 
+      } 
+      </pre><p>Even if we cannot add or remove members to a sealed object nor modify their configuration, we can still change its members value.</p><p>If necessary, we can make an object immutable using the <code class="literal">Object.freeze()</code> method. This is&nbsp;an extreme measure when we want that the structure of an object will not change and its members should be read-only:</p><pre class="programlisting">var person = new Person("John", "Smith"); 
+       
+      Object.freeze(person); 
+       
+      person.age = 32; 
+      console.log(person.age);      //result: undefined 
+       
+      person.name = "Mario"; 
+      console.log(person.name);    //result: "John" 
+       
+      delete person.name;          //result:  false 
+      console.log(person.name);    //result: "John" 
+       
+      Object.defineProperty( 
+            person, 
+            "name", 
+            { get: function() { return "Mario"; } 
+            }); 
+                                  //result: exception 
+      </pre><p>We can check if an object is immutable using the <code class="literal">Object.isFrozen()</code> method:</p><pre class="programlisting">if (!Object.isFrozen(person)) { 
+        person.name = "Mario"; 
+      } 
+      </pre></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

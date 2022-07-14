@@ -1,0 +1,100 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="Using Generators"><div class="titlepage"><div><div><h1 class="title"><a id="ch09lvl1sec61"></a>Using Generators</h1></div></div></div><p>The Promise-based approach to manage asynchronous tasks gives us a powerful tool to write a more readable code and have better control over their execution. However, the style we use to write code still needs to be conscious of the asynchronous nature of the tasks. Even if we can do without nesting callbacks using the <code class="literal">then()</code> and <code class="literal">catch()</code> methods and composing Promises using the <code class="literal">all()</code> and <code class="literal">race()</code> methods, we are essentially calling callbacks anyway. An ideal approach should let us write asynchronous code in the same way we write synchronous code. We can make something similar using the new ECMAScript 6 Generators.</p><div class="section" title="Introducing Generators"><div class="titlepage"><div><div><h2 class="title"><a id="ch09lvl2sec78"></a>Introducing Generators</h2></div></div></div><p>The ES6 <span class="strong"><strong>Generators</strong></span> are functions that can be paused. Unlike normal functions that runs until they reach the end or execute a <code class="literal">return</code> statement, a Generator can be suspended and then can be resumed. Let's take a look at a simple Generator like the following:</p><pre class="programlisting">function *counter() { 
+        yield 1; 
+        yield 2; 
+        yield 3; 
+      } 
+      </pre><p>From a syntactic point of view, the first thing we notice is the star by the function name. This simply states that it is a Generator. The other new thing is the <code class="literal">yield</code> keyword. This keyword is a statement that pauses the execution of the Generator, that is, when the <code class="literal">yield</code> statement is reached, the execution of the function is suspended at that point.</p><p>Unlike a normal function, when we call a Generator, we get an object that represents the Generator itself. This object has a <code class="literal">next()</code> method that allows us to start the execution of the Generator or resume it when it has been paused. For example, we can start our <code class="literal">counter()</code> generator with the following code:</p><pre class="programlisting">var myCounter = counter(); 
+       
+      myCounter.next(); 
+      </pre><p>The <code class="literal">next()</code> method makes the body of the Generator run until a <code class="literal">yield</code> statement is reached. In our example, the first <code class="literal">yield</code> statement is executed, and as a result of its execution, an object is returned. The returned object has two properties: the <code class="literal">value</code> property containing the value of the expression to the right of the <code class="literal">yield</code> statement and the <code class="literal">done</code> property whose Boolean value says if the execution of the Generator has terminated (<span class="emphasis"><em>true</em></span>) or it is simply suspended (<span class="emphasis"><em>false</em></span>). Let's consider the following code to understand which values will be returned by our Generator:</p><pre class="programlisting">var myCounter = counter(); 
+       
+      myCounter.next();  //{value: 1, done: false} 
+      myCounter.next();  //{value: 2, done: false} 
+      myCounter.next();  //{value: 3, done: false} 
+      myCounter.next();  //{value: undefined, done: true} 
+      </pre><p>As we can see, each time we call the <code class="literal">next()</code> method, the execution of the body of the Generator resumes from the point it was suspended until it reaches the end of the function.</p></div><div class="section" title="Using Generators for asynchronous tasks"><div class="titlepage"><div><div><h2 class="title"><a id="ch09lvl2sec79"></a>Using Generators for asynchronous tasks</h2></div></div></div><p>After briefly seeing what Generators are, we may ask ourselves what they have to do with asynchronous code. The ability to suspend and resume the execution of standard JavaScript code can help us give the synchronous form to asynchronous tasks. Let's explain with an example. Consider the <code class="literal">httpGet()</code> function we introduced when talking about callbacks:</p><pre class="programlisting">function httpGet(url, callback) { 
+        var httpReq = new XMLHttpRequest(); 
+       
+        httpReq.onreadystatechange = function() { 
+          var data; 
+       
+          if (httpReq.readyState == 4 &amp;&amp; httpReq.status == 200) { 
+            data = JSON.parse(httpReq.responseText); 
+            callback(data); 
+          } else { 
+            throw new Error(httpReq.statusText); 
+          } 
+        }; 
+       
+        httpReq.open("GET", url, true); 
+        httpReq.send(); 
+      } 
+      </pre><p>We can use it in order to define a <code class="literal">request()</code> function as in the following:</p><pre class="programlisting">function request(url) { 
+        httpGet(url, function(response) { 
+          myDataGenerator.next(response); 
+        }); 
+      } 
+      </pre><p>The <code class="literal">request()</code> function may seem a little cryptic. Actually, it calls the <code class="literal">httpGet()</code> function to make the asynchronous call, and when a result comes from the server, it resumes a Generator called <code class="literal">myDataGenerator</code>. Let's see what this Generator looks like:</p><pre class="programlisting">function *dataGenerator() { 
+        var user = yield request("/users/12345"); 
+        var blog = yield request("/blogs/" + user.blogId); 
+       
+        displayPostList(blog.posts); 
+      } 
+      </pre><p>The <code class="literal">dataGenerator()</code> function is the heart of our control over the asynchronous tasks. While keeping a synchronous programming style, we can coordinate the asynchronous Ajax calls in a very simple way. However, the initial step that makes all working is missing:</p><pre class="programlisting">var myDataGenerator = dataGenerator(); 
+       
+      myDataGenerator.next(); 
+      </pre><p>We get the Generator and start its execution by invoking the <code class="literal">next()</code> method.</p><p>Starting the Generator, we submit the request of the user's data to the server and pause its execution. When the server returns the requested data, the callback resumes the Generator's execution by calling the <code class="literal">next()</code> method and passing the response. This response is assigned to the <code class="literal">user</code> variable inside the Generator and then a new request of the user's blog is submitted and again the Generator pauses. Once the blog data is received, the Generator resumes again, assigns the new response to the <code class="literal">blog</code> variable, and finally displays its posts by calling the <code class="literal">displayPostList()</code> function.</p><p>The final result is an asynchronous code written as if it was synchronous. This example, however, is very rudimentary since it does not consider failures. We could combine the Generator approach with the Promise approach in order to get the best of both.</p></div><div class="section" title="ES7 async/await"><div class="titlepage"><div><div><h2 class="title"><a id="ch09lvl2sec80"></a>ES7 async/await</h2></div></div></div><p>The model of code writing using Generators is similar to the pattern proposed by the <code class="literal">async</code> functions in the future ECMAScript 7 specifications. Basically, it follows the style described in our example without using the Generator infrastructure. So, in the near future, we will write the following code to get the same result:</p><pre class="programlisting">async function displayUserPosts() { 
+        var user = await httpGet("/users/12345"); 
+        var blog = await httpGet("/blogs/" + user.blogId); 
+       
+        displayPostList(blog.posts); 
+      } 
+       
+      displayUserPosts(); 
+      </pre><p>Notice the use of the <code class="literal">async</code> keyword that marks the <code class="literal">displayUserPosts()</code> function as asynchronous and the <code class="literal">await</code> keyword that allows us to suspend the function execution waiting to get a result.</p></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

@@ -1,0 +1,103 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="chapter" title="Chapter&nbsp;7.&nbsp;Presenting Data to the User"><div class="titlepage"><div><div><h1 class="title"><a id="ch07"></a>Chapter&nbsp;7.&nbsp;Presenting Data to the User</h1></div></div></div><p>One of the most visible parts of an application is, for obvious reasons, the presentation of data to the user. Whether an application has a graphical interface or it provides a command line interface, the management of interaction between the user and the data managed by the application is always a critical aspect. Allowing the user to change data consistently and providing a feedback and/or a result often involves complex processing that can lead to code not always clear and difficult to maintain.</p><p>Some well-known patterns can help us design a structured code with many benefits in flexibility and maintainability. This chapter will focus on these patterns, known as <span class="strong"><strong>presentation patterns</strong></span>, whose main goal is to separate presentation from data model. In particular, we will explore the three most known presentation patterns:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc">Model-View-Controller pattern</li><li class="listitem" style="list-style-type: disc">Model-View-Presenter pattern</li><li class="listitem" style="list-style-type: disc">Model-View-ViewModel pattern</li></ul></div><div class="section" title="Managing user interfaces"><div class="titlepage"><div><div><h1 class="title"><a id="ch07lvl1sec46"></a>Managing user interfaces</h1></div></div></div><p>One of the biggest problems in the development of any application is the interaction with the user. In whatever way the user interacts with the application, the code almost always ends up being complex and difficult to maintain. This is true for graphical interfaces and for command line consoles.</p><div class="section" title="The user interface problems"><div class="titlepage"><div><div><h2 class="title"><a id="ch07lvl2sec50"></a>The user interface problems</h2></div></div></div><p>The main reason for this complexity lies in the management of three aspects of the interaction between the user and the application: the <span class="strong"><strong>state</strong></span>, the <span class="strong"><strong>logic</strong></span>, and the <span class="strong"><strong>synchronization</strong></span>.</p><p>The <span class="strong"><strong>state</strong></span> is the set of information that represents the current picture of the user interface. It determines what the user sees at a given time and how it can interact with the application.</p><p>The <span class="strong"><strong>logic</strong></span> is the set of operations that can be done on the elements of an interface in order to show or hide data or to make validation. It may be very complex depending on the type of processing to be performed on the data presented to the user.</p><p>The <span class="strong"><strong>synchronization</strong></span> concerns those activities that map data shown to the user with data represented by the business objects managed by the application.</p><p>The combination of these elements creates most of the complexity in the presentation of data to the user and the interaction with the application.</p></div><div class="section" title="User interfaces and JavaScript"><div class="titlepage"><div><div><h2 class="title"><a id="ch07lvl2sec51"></a>User interfaces and JavaScript</h2></div></div></div><p>The user interaction problems are usually independent from the language used to develop the application, so even for JavaScript applications we need to address these issues.</p><p>As we know, usually JavaScript is paired with HTML to create user interfaces. While HTML allows us to describe the graphical interface, JavaScript can manipulate its elements by adding logic, manipulating the state and managing the synchronization. JavaScript can access the HTML elements via the <span class="strong"><strong>Document Object Model</strong></span> (<span class="strong"><strong>DOM</strong></span>), an object-based representation of the user interface's markup.</p><p>Let's take a look at how a simple user interface is managed usually&nbsp;with HTML and JavaScript. Consider the following markup:</p><pre class="programlisting">&lt;label&gt;Name &lt;input type="text" id="txtName"&gt;&lt;/label&gt;&lt;br/&gt; 
+&lt;label&gt;Surname &lt;input type="text" id="txtSurname"&gt;&lt;/label&gt;&lt;br/&gt; 
+&lt;div id="divMessage"&gt;&lt;/div&gt; 
+ 
+&lt;button id="btnSave"&gt;Save&lt;/button&gt; 
+&lt;button id="btnReset"&gt;Reset&lt;/button&gt; 
+</pre><p>It defines a simple form that allows entering the name and surname of a person and a button persist this data to storage. There is also an area intended to display any messages to the user. The graphical result of this HTML code is something similar to the following screenshot:</p><div class="mediaobject"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781785889103/files/graphics/image_07_001.jpg" alt="User interfaces and JavaScript" width="241" height="78"></div><p>The following code is a typical example of how JavaScript can manage the user's interaction:</p><pre class="programlisting">var person; 
+var txtName; 
+var txtSurname; 
+var btnSave; 
+var divMessage; 
+ 
+function Person(name, surname) { 
+  this.name = name; 
+  this.surname = surname; 
+} 
+ 
+function savePerson(person) { 
+  //Persist data or send it to a server 
+  console.log("Saved!"); 
+} 
+ 
+window.onload = function() { 
+  txtName = document.getElementById("txtName"); 
+  txtSurname = document.getElementById("txtSurname"); 
+  btnSave = document.getElementById("btnSave"); 
+  btnReset = document.getElementById("btnReset"); 
+  divMessage = document.getElementById("divMessage"); 
+ 
+ 
+  person = new Person("John", "Smith"); 
+ 
+  txtName.value = person.name; 
+  txtSurname.value = person.surname; 
+ 
+  btnSave.onclick = function() { 
+    if (txtName.value &amp;&amp; txtSurname.value) { 
+      person.name = txtName.value; 
+      person.surname = txtSurname.value; 
+ 
+      savePerson(person); 
+      divMessage.innerHTML = "Saved!"; 
+    } else { 
+      divMessage.innerHTML = "Please, enter name and surname!"; 
+    } 
+  }; 
+ 
+  btnReset.onclick = function() { 
+    txtName.value = ""; 
+    txtSurname.value = ""; 
+    divMessage.innerHTML = ""; 
+ 
+    person.name = ""; 
+    person.surname = ""; 
+  }; 
+}; 
+</pre><p>We defined some global variables, the <code class="literal">Person()</code> constructor function for our business object and a <code class="literal">savePerson()</code> function that will make some processing in order to persist the data. Then, we attached some logic to the load event of the browser's current window. This logic allows displaying in the textboxes the current values of the properties of person object and manages the user's interaction with the <span class="strong"><strong>Save</strong></span> and <span class="strong"><strong>Reset</strong></span> buttons. The <span class="strong"><strong>Save</strong></span> button calls the <code class="literal">savePerson()</code> function if data inserted by the user are valid, otherwise it displays a message requesting the user to enter the missing data. The <span class="strong"><strong>Reset</strong></span> button clears the current content of the textboxes.</p><p>This code is fully functional, but its flexibility and its maintainability are not the best. There is a tight relationship between state, logic, and synchronization, so tight that even a seemingly small change can be a problem. What happens if we need to change the interface elements, for example, if we no longer want to display the message on a div but we want to display it in a textarea? What happens if we want to bring all the business logic and synchronization in another user interface, such as a command line interface?</p><p>Probably a lot of code should be adapted, and it might not be easy, despite the simplicity of the example. In this case, the <span class="strong"><strong>presentation patterns</strong></span> can help us.</p></div></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

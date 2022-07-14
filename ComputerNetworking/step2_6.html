@@ -1,0 +1,522 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 class="h2" id="ch16"><a id="page_429"></a><strong>Chapter 16<br>Link State and Path Vector Control Planes</strong></h2>
+        <div class="sidebar">
+        <p class="sb-noindent"><strong>Learning Objectives</strong></p>
+        <p class="sb-noindent">After reading this chapter, you should understand:</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> OSI Addressing, used with IS-IS</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The basic operation of IS-IS, including topology discovery and flooding</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The basic operation of OSPF, including topology discovery and flooding</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Designated Routers and Designated Intermediate Systems</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The validation of two-way connectivity and link MTU in OSPF and IS-IS</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The basic operation of the Border Gateway Protocol</p>
+        </div>
+        <p class="noindent">This chapter continues the discussion on distributed control planes, addressing three more routing protocols. Two of these are link state protocols, and the third is the only widely deployed path vector protocol, the Border Gateway Protocol (BGP) version 4.</p>
+        <p class="indent">Throughout this chapter, it is important to consider <em>why</em> each of these protocols is implemented the way it is. While it is always easy to become lost in the finer details of protocol operation, it is far more important to remember the problems that these protocols were designed to address and the range of possible solutions. Each protocol you study will be some combination of a moderately restricted set of available solutions; there are very few <em>new</em> solutions available; there are different combinations of solutions implemented in sometimes unique ways to solve specific sets of problems.</p>
+        <p class="indent"><a id="page_430"></a>When reading through these high-level overviews of protocol operation, you should try to pick out the common solutions they implement and then reflect these common solutions back into the set of problems any distributed control plane must solve in order to succeed in real networks.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch16lev1">A Short History of OSPF and IS-IS</h3>
+        <p class="noindent">The Intermediate System to Intermediate System (IS-IS, or IS to IS) protocol is unique among the routing protocols in several ways. The work on IS-IS began in 1978, with the acceptance of the seven-layer networking model proposed by Honeywell Labs to the British Standards Institute, which then proposed the idea of forming a working group within the International Organization for Standardization (ISO) to standardize the communications between computers. The idea was so good that the forerunner of the International Telecommunications Union (the ITU) formed a parallel working group to work with the ISO in building these standards. These committees, their subcommittees, and sub-subcommittees, <em>ad infinitim</em>, created a suite of standard protocols. Among these protocols was IS-IS.</p>
+        </div>
+        <p class="indent">Open Shortest Path First (OSPF) was originally conceived as an alternative to IS-IS, designed specifically to interact with IPv4 networks. In 1989, the first OSPF specification was published by the Internet Engineering Task Force, and OSPFv2, a much improved specification, was published in 1998 as RFC2328. OSPF was certainly the more widely used protocol, with early implementations of IS-IS being barely exercised in the real world. There were some back-and-forth arguments, and many features were “stolen” from one protocol into the other (in both directions).</p>
+        <p class="indent">In 1993, Novell, a heavyweight in the networking world at the time, used IS-IS as the basis for a replacement to the Netware native routing protocol. Novell’s transport layer, Internet Packet Exchange (IPX), ran on a large number of devices at the time, and the ability for a single protocol to route multiple transport protocols was a definitive advantage in the networking market (the Enhanced Interior Gateway Routing Protocol, or EIGRP, can also route IPX). This replacement protocol was based on IS-IS; to implement the Novell’s new protocol, many vendors simply rewrote their implementations of IS-IS, greatly improving them in the process. This rewrite made IS-IS attractive to large-scale Internet service providers, so as they moved off the Routing Information Protocol (RIP), they would often move onto IS-IS instead of OSPF.</p>
+        <a id="page_431"></a>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">Parts of this history rely on Dave Katz’s presentation at the North American Network Operators’ Group (NANOG) in the summer of 2000.<sup><a id="ch16fn1"></a><a href="ch16.xhtml#ch16fn-1">1</a></sup> Other parts rely on the history given in <em>IS-IS: Deployment in IP Networks</em>.<sup><a id="ch16fn2"></a><a href="ch16.xhtml#ch16fn-2">2</a></sup></p>
+        </div>
+        <div class="heading">
+        <h3 class="h3" id="ch16lev2">The Intermediate System to Intermediate System Protocol</h3>
+        <p class="noindent">In the Intermediate System to Intermediate System (IS-IS) protocol, a <em>router</em> is called an Intermediate System (IS), and a host is called an End System (ES). The original design of the suite was for each <em>device</em>, rather than interface, to have a single address. Services and interfaces on a device would then have a Network Service Access Point (NSAP), used to direct traffic to a specific service or interface. From an IP perspective, then, IS-IS was originally designed within a host routing paradigm; Intermediate and End Systems communicated directly using the End System to Intermediate System (ES-IS) protocol, allowing IS-IS to discover the services available on any connected End System, as well as to match lower interface addresses with higher layer device addresses.</p>
+        </div>
+        <p class="indent">Another interesting aspect of the design of IS-IS is it runs at the link layer; it did not make a lot of sense to the designers of the protocol to run the control plane to provide reachability for a transport system over the transport system itself. Routers will not forward IS-IS packets, as they are parallel to IP in the protocol stack and transmitted to link local addresses. When IS-IS was developed, most links were very low speed, so the extra encapsulation was also thought to be wasteful. Links also failed quite often, losing and corrupting packets; hence the protocol was designed to withstand errors in transmission and packet loss.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch16lev3"><strong>OSI Addressing</strong></h4>
+        <p class="noindent">As IS-IS was developed for a different transport protocol suite, it does not use Internet Protocol (IP) addresses to identify devices. Instead, it uses an Open Systems Interconnect (OSI) address to identify both Intermediate and End Systems. The OSI <a id="page_432"></a>addressing scheme is somewhat complex, including identifiers for the authority allocating the address space, a two-part domain identifier, an area identifier, a system identifier, and a service selector (the N Selector); many of these parts of the OSI address are variable length, making the system even more difficult to understand. Within the IP world, however, only three parts of this address space are used.</p>
+        </div>
+        <p class="bullt">• The Authority Format Identifier (AFI), Initial Domain Identifier (IDI), High-Order Domain Specific Part (HO-DSP), and the area are all treated as a single field called the <em>area</em>.</p>
+        <p class="bull">• The System Identifier is still treated as the <em>system identifier</em>.</p>
+        <p class="bullb">• The N Selector, or NSAP, is generally ignored (although there is an interface identifier that is similar to the NSAP used in some specific situations).</p>
+        <p class="indent">Intermediate system addresses, then, normally take the form illustrated in <a href="ch16.xhtml#ch16fig01">Figure 16-1</a>.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/16fig01.jpg" aria-describedby="Al16fig01" alt="Figure represents an overview of the OSI addressing scheme used in IS-IS." width="667" height="390"><aside class="hidden" id="Al16fig01">
+        <p>A dotted arrow pointing downward is labeled Use this for internal network organization (almost always set to the same numbers in real deployments). A dotted arrow to the right is labeled This is normally used to indicate the flooding domain (or the area). A vertical line to the left is labeled Always use 49 here to indicate private addressing. A vertical line to the right is labeled This is set by the intermediate system based on a local physical interface address. A set of router addresses are mentioned below that read: A: 49.0011.2222.0000.0000.000A, B: 49.0011.2222.0000.0000.000B, C: 49.0011.3333.0000.0000.000C, and D: 49.0011.3333.0000.0000.000A. A line at the bottom is labeled Any two devices sharing the same address from here to the left are considered to be in the same flooding domain by intermediate systems.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch16fig01"></a><strong>Figure 16-1</strong> <em>An Overview of the OSI Addressing Scheme Used in IS-IS</em></p>
+        </div>
+        <p class="indent">In <a href="ch16.xhtml#ch16fig01">Figure 16-1</a>:</p>
+        <p class="bullt">• The dividing point between the system identifier and the remainder of the address is at the sixth octet, or twelve hexadecimal digits from the right side; everything to the left of the sixth octet is considered part of the area address.</p>
+        <p class="bull"><a id="page_433"></a>• If the N Selector is included, it is a single octet, or two hexadecimal digits, to the right of the system identifier; for instance, if an N Selector were included for address A, it might be 49.0011.2222.0000.0000.000A.00.</p>
+        <p class="bull">• If an N Selector is included in the address, you need to skip the N Selector when counting over six octets to find the start of the area address.</p>
+        <p class="bull">• A and B are in the same flooding domain because they share the same digits from the seventh octet to the leftmost octet in the address.</p>
+        <p class="bull">• C and D are in the same flooding domain.</p>
+        <p class="bullb">• A and D represent different systems, although their system identifier is the same; this sort of addressing, however, can be very confusing, and so is not used in real IS-IS deployments (at least not by thoughtful system administrators).</p>
+        <p class="indent">You may find this addressing scheme more difficult than IP to work with, even if you work with IS-IS as a routing protocol on a regular basis. There is a major advantage to using an addressing scheme that is different from the one being used at the transport level in a network, however; it is much easier to differentiate between the <em>kinds</em> of devices on the network, and it is much easier to separate nodes from destinations when thinking through Dijkstra’s Shortest Path First (SPF) algorithm.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch16lev4"><strong>Marshalling Data in IS-IS</strong></h4>
+        <p class="noindent">IS-IS uses a fairly interesting mechanism to marshal data for transmission between intermediate systems. Each IS generates three kinds of packets:</p>
+        </div>
+        <p class="bullt">• Hello packets</p>
+        <p class="bull">• Sequence Number Packets (Partial, PSNPs; and Complete, CSNPs)</p>
+        <p class="bullb">• A single Link State Packet (LSP)</p>
+        <p class="indent">The single LSP contains all the information about the IS itself, any reachable intermediate systems, and any reachable destinations attached to the IS. This single LSP is formatted into Type Length Vectors (TLVs), which contain various bits of information. Some of the more common TLVs include the following:</p>
+        <p class="bullt">• <strong>Types 2 and 22:</strong> Reachability to another intermediate system</p>
+        <p class="bull">• <strong>Types 128, 135, and 235:</strong> Reachability to an IPv4 destination</p>
+        <p class="bullb">• <strong>Types 236 and 237:</strong> Reachability to an IPv6 destination</p>
+        <p class="indent"><a id="page_434"></a>There are multiple types because IS-IS originally supported 6-bit metrics (most processors at the time of the protocol’s definition could hold only 8 bits at a time, and two bits were “stolen” from this field size to carry information about whether the route was internal or external as well as other information). Over time, as link speeds increased, various other metric lengths were introduced, including 24- and 32-bit metrics, to support <em>wide metrics</em>.</p>
+        <p class="indent">The single LSP carrying all IS, IPv4, and IPv6 reachability information—as well as, potentially, MPLS tags and other information—will not fit into a single MTU-sized packet. To actually send information over the network, IS-IS breaks up the LSP into fragments. Each fragment is treated as a separate entity in the flooding process. If one fragment changes, just the changed fragment is flooded through the network, rather than the entire LSP. Because of this scheme, IS-IS is very efficient at flooding new topology and reachability information without using more than the minimum amount of bandwidth required.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch16lev5"><strong>Neighbor and Topology Discovery</strong></h4>
+        <p class="noindent">While IS-IS was originally designed to learn about network reachability through the ES-IS protocol, when IS-IS is used to route IP, it “does as the IP protocols do,” and learns about reachable destinations through the local configuration of each device, and through redistribution from other routing protocols. Hence IS-IS is a proactive protocol, learning about and advertising reachability without waiting on packets to be transmitted and forwarded through the network.</p>
+        </div>
+        <p class="indent">Neighbor formation in IS-IS is fairly simple; <a href="ch16.xhtml#ch16fig02">Figure 16-2</a> illustrates the process.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/16fig02.jpg" aria-describedby="Al16fig02" alt="Figure represents IS-IS Neighbor formation process." width="706" height="550"><aside class="hidden" id="Al16fig02">
+        <p>A router labeled A has a line leading to the right to reach a router labeled B. A dotted line labeled 1. Hello leads to the right. Another dotted line labeled 2. Hello leads to the left. 3. B is up and 4. A is up are below, on the left and right. A dotted line labeled 5. CSNP lies below, leading to the left. A dotted line labeled 6. PSNP leads to the right. 7. Set SRM flags is mentioned below. A dotted line labeled 8. Send LSP (fragment) and clear SRM leads to the left. Three dotted lines lie at the bottom right.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch16fig02"></a><strong>Figure 16-2</strong> <em>IS-IS Neighbor Formation Process</em></p>
+        </div>
+        <p class="indentb">In <a href="ch16.xhtml#ch16fig02">Figure 16-2</a>:</p>
+        <p class="indenthangingN">1. IS A transmits a hello toward B. This hello contains a list of neighbors heard from, which will be empty; the hold time setting B should use for A; and it is padded to the local interface Maximum Transmission Unit (MTU) for the link. Hello packets are padded only until the adjacency formation process is complete; not every hello packet is padded to the full MTU of the link.</p>
+        <p class="indenthangingN">2. IS B transmits a hello toward A. This hello contains a list of neighbors heard from, which would include A; the hold time setting A should use for B; and it is padded to the local interface MTU.</p>
+        <p class="indenthangingN">3. Because A is in B’s “heard neighbor” list, A will consider B up and move to the next stage of neighbor formation.</p>
+        <p class="indenthangingN">4. Once A has included B in the “heard neighbor” list in at least one hello, B will consider A up and move to the next stage of neighbor formation.</p>
+        <p class="indenthangingN"><a id="page_435"></a>5. B will send a complete list of all the entries it has in its local topology table (B describes the LSPs it has in its local database). This list is sent in a Complete Sequence Number Packet (CSNP).</p>
+        <p class="indenthangingN">6. A will examine its local topology table, comparing it to the complete list sent by B; any topology table entries (LSPs) it does not have, it will request from B using a Partial Sequence Number Packet (PSNP).</p>
+        <p class="indenthangingN">7. When B receives a PSNP, it will set the Send Route Message (SRM) flag on any entry in its local topology table (LSPs) A has requested.</p>
+        <p class="indenthangingN">8. The flooding process will later walk the local topology table looking for entries with the SRM flag set; it will flood these entries, synchronizing the databases at A and B.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">The process described here includes modifications made by RFC5303, which specifies a three-way handshake, and hello padding, which was added to most implementations around 2005.</p>
+        </div>
+        <p class="indent"><a id="page_436"></a>Setting the SRM flag marks the information for flooding, but how does flooding actually take place?</p>
+        <div class="heading">
+        <h4 class="h4" id="ch16lev6"><strong>Reliable Flooding</strong></h4>
+        <p class="noindent">For Dijkstra’s SPF algorithm (or any other SPF algorithm) to work correctly, every IS in the flooding domain must share a synchronized database. Any inconsistency in the database between two intermediate systems opens the possibility of a permanent routing loop. How does IS-IS ensure connected intermediate systems have synchronized databases? This section describes the process on point-to-point links; the following section will describe the modifications made to the flooding process on multiaccess (such as Ethernet) links.</p>
+        </div>
+        <p class="indent">IS-IS relies on a number of fields in the LSP header to ensure two intermediate systems have synchronized databases; <a href="ch16.xhtml#ch16fig03">Figure 16-3</a> illustrates these fields.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/16fig03.jpg" aria-describedby="Al16fig03" alt="Figure represents the IS-IS LSP header fields." width="701" height="56"><aside class="hidden" id="Al16fig03">
+        <p>A rectangular block is enclosed with seven sections that read: Packet length, remaining lifetime, LSP ID, Sequence number, Checksum, P/ATT/OL/Type bits, and TLVs.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch16fig03"></a><strong>Figure 16-3</strong> <em>IS-IS LSP Header Fields</em></p>
+        </div>
+        <p class="indent">In <a href="ch16.xhtml#ch16fig03">Figure 16-3</a>:</p>
+        <p class="bullt">• The packet length contains the total length of the packet in octets. For instance, if this field contains 15, the packet is 15 octets in length. The packet length field is 2 octets, so it can describe a packet up to 65,536 octets long—longer than even the largest link MTUs.</p>
+        <p class="bull">• The remaining lifetime field is also two octets and contains the number of seconds for which this LSP is valid. This forces the information carried in the LSP to be refreshed occasionally, an important consideration on older transmission technologies, where bits can be flipped, packets can be truncated, or information carried through the link can otherwise be corrupted. The advantage of having a timer that counts down, rather than up, is each IS in the network can determine how long its information should remain valid independently of every other IS. The disadvantage is there is no clear way to disable the functionality described. However, 65,536 seconds is a long time—1,092 minutes, or around 18 hours. Reflooding every LSP fragment in the network every 18 hours or so poses very little burden on the operation of the network.</p>
+        <p class="bull"><a id="page_437"></a>• The LSP ID describes the LSP itself. Actually, this field describes the fragment, as it contains the originating system identifier, the pseudonode identifier (the function of this identifier is described later), and the LSP number, or rather the LSP fragment number. The information contained in a single LSP fragment is treated as “one unit” throughout the entire network; a single LSP fragment is never “refragmented” by some other IS. This field is normally 8 octets.</p>
+        <p class="bull">• The Sequence Number describes the <em>version</em> of this LSP. The sequence number ensures every IS in the network has the same information in its local copy of the topology table. It also ensures an attacker (or broken implementation) cannot replay older information to replace new.</p>
+        <p class="bullb">• The Checksum ensures the information carried in the LSP fragment has not been modified during transmission.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">The term <em>LSP</em> is often used for two different things: the complete LSP describing all the connectivity and other information about a particular IS, and each fragment of the LSP as it is transmitted through the network. Hence, an LSP is split into LSPs, each of which is transmitted through the network. This can be confusing; this book will always call the LSP as it is transmitted the LSP fragment or <em>fragment</em>, and the LSP as generated by the IS, describing its entire connectivity, simply an LSP.</p>
+        </div>
+        <p class="indent">Flooding is described using <a href="ch16.xhtml#ch16fig04">Figure 16-4</a>.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/16fig04.jpg" aria-describedby="Al16fig04" alt="Figure represents IS-IS flooding." width="696" height="498"><aside class="hidden" id="Al16fig04">
+        <p>A vertical line labeled 2001:db8:3e8:100::/64 leads downward to reach a router A. 1. Link connected is mentioned to the right. A line leads to the right from A to reach a router labeled B. A vertical line leads upward from B to reach a router labeled C. A dotted line labeled 2. Set SRM flag leads to the right. A dotted line labeled 3. Flood fragment leads to the left. 4. CSNP with fragment included is mentioned below to the left. 5. Clear SRM flag is mentioned to the left. 6. Determine if this is a new fragment is mentioned at the bottom right.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch16fig04"></a><strong>Figure 16-4</strong> <em>IS-IS Flooding</em></p>
+        </div>
+        <p class="indent">In <a href="ch16.xhtml#ch16fig04">Figure 16-4</a>:</p>
+        <p class="indenthangingN">1. A is connected to 2001:db8:3e8:100::/64. A builds a new fragment describing this newly reachable destination.</p>
+        <p class="indenthangingN">2. A sets the SRM flag on this fragment toward B.</p>
+        <p class="indenthangingN">3. The flooding process, at some point in the future (usually a matter of milli-seconds), will examine the topology table and flood any entries with the SRM flag set.</p>
+        <p class="indenthangingN">4. Once the new entry is placed in its topology table, B will create a CSNP describing its entire database and send this to A.</p>
+        <p class="indenthangingN"><a id="page_438"></a>5. On receiving this CSNP, A clears its SRM flag toward B.</p>
+        <p class="indenthangingN">6. B verifies the checksum and compares the received fragment to existing entries in its topology table. As there is no other entry matching this system and fragment identifier, it will place the new fragment in its local topology table. Given this is a new fragment, B will initiate the flooding process toward C.</p>
+        <p class="indent">What about removing information? There are three ways information can be removed from the IS-IS flooding system:</p>
+        <p class="bullt">• The originating IS can originate a new fragment without the relevant information and with a higher sequence number.</p>
+        <p class="bull">• If the entire fragment no longer contains any valid information, the originating IS can flood the fragment with a remaining lifetime of 0 seconds. This causes each IS in the flooding domain to reflood the zero age fragment and remove it from consideration for future SPF calculations.</p>
+        <p class="bullb"><a id="page_439"></a>• If the remaining lifetime timer in a fragment times out at any IS, the fragment is flooded with a zero age remaining lifetime. Each IS receiving this zero-aged fragment will verify it is the most recent copy of the fragment (based on the sequence number), set the remaining lifetime to its local copy of the fragment to zero seconds, and reflood the fragment. This is called <em>flushing</em> a fragment from the network.</p>
+        <p class="indent">When an IS sends a CNSP in reply to a fragment it has received, it actually verifies the entire database, rather than just the one fragment it received. Each time a fragment is flooded through the network, the entire database is checked between each pair of intermediate systems.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch16lev7"><strong>Concluding Thoughts on IS-IS</strong></h4>
+        <p class="noindent">IS-IS can be described as</p>
+        </div>
+        <p class="bullt">• Using flooding to synchronize the database at every intermediate system in the flooding domain (a link state protocol).</p>
+        <p class="bull">• Calculating loop-free paths using Dijkstra’s SPF algorithm.</p>
+        <p class="bull">• Learning about reachable destinations through configuration and local information (a proactive protocol).</p>
+        <p class="bull">• Validating two-way connectivity in neighbor formation by carrying a list of “neighbors seen” in its hello packets.</p>
+        <p class="bull">• Removing information from the flooding domain through a combination of sequence numbers and remaining lifetime fields in each fragment.</p>
+        <p class="bull">• Verifying the MTU of each link by padding the initially exchanged hello packets.</p>
+        <p class="bullb">• Validating the correctness of the information in the synchronized database through checksums, periodic reflooding, and database descriptions exchanged between intermediate systems.</p>
+        <p class="indent">IS-IS is a widely deployed routing protocol that has proven capable in a wide range of network topologies and operational requirements.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch16lev8"><a id="page_440"></a>The Open Shortest Path First Protocol</h3>
+        <p class="noindent">In 2013, a version of OSPF was published for routing IPv6. Known as OSPFv3, it was originally specified in RFC2740, which was later replaced by RFC5340, and updated by later standards. OSPFv3 is the version assumed for any specific details of OSPF operation in this chapter.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch16lev9">Marshalling Data in OSPF</h4>
+        <p class="noindent">Like many of the other protocols developed in the early days of network engineering, OSPF was designed to minimize the processing power, memory, and bandwidth required to carry routing information for IPv4 through the network. Two specific choices made early on in the OSPF design process reflect this concern with resource utilization:</p>
+        </div>
+        <p class="bullt">• OSPF relies on fixed length fields to marshal data, rather than TLVs. This saves the overhead of carrying the additional metadata in the form of Type Length Value (TLV) headers, reduces processing requirements by allowing fixed sized in memory data structures to be matched with packets as they are received off the wire, and reduces the size of OSPF data on the wire.</p>
+        <p class="bullb">• OSPF breaks the topology database up into multiple kinds of data, rather than relying on a single LSP with TLVs. This means each kind of information— reachability, topology, etc.—is carried in a unique packet format.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">More recent work in OSPFv3 replaces specific fields in the current fixed field LSAs with TLV-based LSAs. See <em>OSPFv3 LSA Extendibility</em> for more information.<sup><a id="ch16fn3"></a><a href="ch16.xhtml#ch16fn-3">3</a></sup></p>
+        </div>
+        <p class="indent">Each type of information OSPF can carry is carried in a different <em>type</em> of Link State Advertisement (LSA). Some of the more notable types of LSAs are as follows:</p>
+        <p class="bullt">• <strong>Type 1:</strong> code 0x2001, Router LSA</p>
+        <p class="bull">• <strong>Type 2:</strong> code 0x2002, Network LSA</p>
+        <p class="bull">• <strong>Type 3:</strong> code 0x2003, Inter-Area Prefix LSA</p>
+        <p class="bull"><a id="page_441"></a>• <strong>Type 4:</strong> code 0x2004, Inter-Area Router LSA</p>
+        <p class="bull">• <strong>Type 5:</strong> code 0x4005, AS-external LSA</p>
+        <p class="bullb">• <strong>Type 7:</strong> code 0x2007, Type-7 (NSSA) LSA</p>
+        <p class="indent">There are a number of other types of LSAs, including opaque data, multicast group membership, and scoped flooding LSAs (such as to a single neighbor, a single link, or a single flooding domain).</p>
+        <p class="indent">Each OSPF router generates precisely one Router LSA (type 1); this LSA describes any neighbors adjacent to the advertising router, as well as any connected reachable destinations. The state of the links to these neighbors and destinations is inferred from the advertisement of the neighbors and destination; in spite of the name “link state,” links are not advertised as a separate “thing” (this is often a point of confusion). If the Router LSA becomes too large to fit within a single IP packet (because of the link MTU), it will be split into multiple IP fragments for transmission router to router. Each router reassembles the entire Router LSA before processing it locally and floods the entire Router LSA if it changes.</p>
+        <p class="indent">OSPF uses a few different packet types, as well—these are not the same as the LSA types. Rather, these can be thought of as different “services” within OSPF or, perhaps, as different “port numbers” running on top of User Datagram Protocol (UDP) or the Transmission Control Protocol (TCP).</p>
+        <p class="bullt">• The hello is a type 1. These are used for neighbor discovery and liveness.</p>
+        <p class="bull1"><span class="pd_ash">•</span> The Database Descriptor (DBD) is a type 2. These are used to describe the local topology table.</p>
+        <p class="bull1"><span class="pd_ash">•</span> The Link State Request (LSR) is a type 3. These are used to request specific Link State Advertisements from an adjacent router.</p>
+        <p class="bull1"><span class="pd_ash">•</span> The Link State Update (LSU) is a type 4. These are used to carry the Link State Advertisements described in this section.</p>
+        <p class="bullb">• The Link State Acknowledgment is a type 5. This is simply a list of LSA headers; any LSA listed in this packet is acknowledged as being received by the transmitting router.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch16lev10"><strong>Neighbor and Topology Discovery</strong></h4>
+        <p class="noindent">As a link state protocol, OSPF must ensure every router within an area (a flooding domain) has the same database to calculate loop-free paths from. Any variation in the shared topology database can result in a routing loop that will last as long as the <a id="page_442"></a>variation in the shared topology database exists. One purpose for OSPF neighbor formation, then, is to ensure the reliable flooding of topology information through the network. A second reason for OSPF neighbor formation is to discover the network topology, by determining which routers are adjacent to the local router. <a href="ch16.xhtml#ch16fig05">Figure 16-5</a> illustrates the OSPF neighbor formation process.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/16fig05.jpg" aria-describedby="Al16fig05" alt="Figure represents OSPF neighbor formation." width="706" height="676"><aside class="hidden" id="Al16fig05">
+        <p>A router labeled A has a line leading to the right, reaching a router labeled B. A dotted arrow labeled 1. Hello leads to the left. A dotted arrow labeled 2. B moved to init state leads to the right. A dotted arrow labeled 3. Hello leads to the left. 4. Hello is mentioned to the right. 5. B moved to 2-way state and 6. DR/BDR election; B moved to exstart state are mentioned to the left. A bidirectional dotted arrow labeled 7. B moved to exchange state lies below. A dotted arrow labeled 8. DBD leads to the right. 9. LS requests is mentioned to the left. A dotted arrow labeled 10. LSA leads to the left. Three dots lie below, followed by 11. B moved to full state mentioned at the bottom left.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch16fig05"></a><strong>Figure 16-5</strong> <em>OSPF Neighbor Formation</em></p>
+        </div>
+        <p class="indentb">In <a href="ch16.xhtml#ch16fig05">Figure 16-5</a>:</p>
+        <p class="indenthangingN">1. B sends a hello packet to A.</p>
+        <p class="indenthangingN">2. Since B’s hello contains an empty <em>neighbors seen</em> list, A places B into init state and adds B to its <em>neighbors seen</em> list.</p>
+        <p class="indenthangingN">3. A sends a hello with B in its <em>neighbors seen</em> list.</p>
+        <p class="indenthangingN">4. B receives A’s hello and sends a hello with A in its <em>neighbors seen</em> list.</p>
+        <p class="indenthangingN">5. A receives this hello; as A itself is in the <em>neighbors seen</em> list, A places B into the two-way state. This means that A has verified two-way connectivity exists between itself and B.</p>
+        <p class="indenthangingN">6. If there are a DR and BDR being elected on this link (the function of the DR and BDR is considered in a moment), the election takes place after step 5. Once the election is completed, the DR and BDR are placed in the exstart state. During this state, the master and slave are elected for the exchange of DBDs and LSAs. Essentially, the master controls the flow of DBDs and LSAs between the newly adjacent routers. Adjacent routers on a point-to-point link technically skip directly to full state at this point.</p>
+        <p class="indenthangingN">7. B is moved to the exchange state.</p>
+        <p class="indenthangingN">8. A sends a set of DBDs describing its database to B; B sends a set of DBDs describing its database to A.</p>
+        <p class="indenthangingN">9. A sends a link state request to B for each LSA B describes, and A does not have a copy of it in its local topology table.</p>
+        <p class="indenthangingN1">10. B sends an LSA for each Link State (LS) request from A.</p>
+        <p class="indenthangingN1">11. Once the databases are synchronized, B is moved to full state.</p>
+        <p class="indentt">The OSPF neighbor formation process verifies the MTUs on both ends of the link match by carrying the MTU of the outbound interface in the hello; if the two hello packets do not match in MTU size, the two OSPF routers will not form an adjacency.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch16lev11"><a id="page_443"></a><strong>Reliable Flooding</strong></h4>
+        <p class="noindent">OSPF must not only ensure the initial exchange of topology information is completed, but it must also ensure ongoing changes in the network topology are flooded to every router in the flooding domain. <a href="ch16.xhtml#ch16fig06">Figure 16-6</a> illustrates the OSPF LSA header; examining this header will yield some important clues about the way OSPF reliably floods topology and reachability information through the network.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/16fig06.jpg" aria-describedby="Al16fig06" alt="Figure represents OSPF LSA header." width="574" height="259"><aside class="hidden" id="Al16fig06">
+        <p>A rectangular box with five columns has its first column divided into three sections labeled LS Age, Options, and LS Type. The second column has Link State Identifier enclosed. The third column has Advertising Router enclosed. The fourth column has LS Sequence Number enclosed. The fifth column has two sections labeled LS Checksum and Length.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch16fig06"></a><strong>Figure 16-6</strong> <em>OSPF LSA header</em></p>
+        </div>
+        <p class="indent">In <a href="ch16.xhtml#ch16fig06">Figure 16-6</a>:</p>
+        <p class="bullt">• The LS Age is (roughly) the number of seconds since this Link State Advertisement was generated. This number counts <em>up</em>, rather than <em>down</em>. When the LS Age reaches the MAXAGE setting (on any router, not just the originating router), the router will increment the sequence number by 1, set the LS Age to the maximum <a id="page_444"></a>age, and reflood the LSA throughout the network. This removes older topology and reachability information that has not been refreshed in a while. The router that originates any particular LSA will refresh its LSAs some number of seconds before this LSA Age field reaches the maximum; this is the <em>LS refresh interval</em>.</p>
+        <p class="bull">• The Link State Identifier is a unique identifier assigned by the originating router to describe this LSA. It is normally the link address, or some local link layer address (such as an Ethernet Media Access Control, or MAC, address).</p>
+        <p class="bull">• The Advertising Router is the router ID of the originating router. This is often confused with an IP address, as it is often derived from a locally configured IP address—but it is <em>not</em> an IP address.</p>
+        <p class="bull">• The Link State Sequence Number indicates the version of the LSA. Generally, higher numbers mean newer versions, although there are earlier versions of OSPF that use a circular number space, rather than an absolutely incrementing one. Implementations that use an absolutely incrementing number space restart the OSPF process if the end of the number space is reached.</p>
+        <p class="bullb">• The Link State Checksum is a checksum computed across the LSA used to catch errors in transmission or storage of the information.</p>
+        <p class="indent"><a href="ch16.xhtml#ch16fig07">Figure 16-7</a> is used to examine the flooding process.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/16fig07.jpg" aria-describedby="Al16fig07" alt="Figure represents OSPF flooding." width="700" height="454"><aside class="hidden" id="Al16fig07">
+        <p>A vertical line labeled 2001:db8:3e8:100::/64 leads downward to reach a router labeled A. 1. Bring link up is mentioned to the right. A line leads rightward from A to reach a router labeled B. A line leads upward from B to reach a router labeled C. A dotted arrow labeled 2. Flood LSA leads to the right. A dotted arrow labeled 3. LS acknowledgment leads to the left. 4. Determine if LSA is new is mentioned at the bottom right.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch16fig07"></a><strong>Figure 16-7</strong> <em>OSPF Flooding</em></p>
+        </div>
+        <p class="indentb">In <a href="ch16.xhtml#ch16fig07">Figure 16-7</a>:</p>
+        <p class="indenthangingN">1. The link to 2001:db8:3e8:100::/64 is configured, brought up, connected, etc., at A.</p>
+        <p class="indenthangingN">2. A rebuilds its Router LSA (type 1) to contain this new reachability information, packages it into an LSU (which may be fragmented while being placed into IP packets), and floods it to B.</p>
+        <p class="indenthangingN">3. B receives this LSA and acknowledges its receipt with a link state acknowledgment. A will resend the LSA if B does not acknowledge it quickly enough.</p>
+        <p class="indenthangingN"><a id="page_445"></a>4. B will now examine its topology table to determine if this LSA is new or a copy of one it already has. B determines this primarily by examining a sequence number included in the LSA itself. If this is a new (or updated) LSA, B will initiate the same process to flood the changed LSA to C.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch16lev12"><strong>Concluding Thoughts on OSPF</strong></h4>
+        <p class="noindent">OSPF can be described as</p>
+        </div>
+        <p class="bullt">• Learning about reachable destinations through configuration and local information (a <em>proactive protocol)</em></p>
+        <p class="bull">• Using flooding to synchronize the database at every intermediate system in the flooding domain (a <em>link state protocol</em> )</p>
+        <p class="bull">• Calculating loop-free paths using <em>Dijkstra’s SPF algorithm</em></p>
+        <p class="bull">• <em>Validating two-way connectivity in neighbor formation</em> by carrying a list of “neighbors seen” in its hello packets</p>
+        <p class="bullb"><a id="page_446"></a>• <em>Validating the MTU</em> at adjacency formation by carrying the MTU in the hello packet</p>
+        <p class="indent">OSPF is widely used in small- and large-scale networks, including retail, service provider, financial, and many other businesses.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch16lev13">Common Elements of OSPF and IS-IS</h3>
+        <p class="noindent">The preceding sections have considered those aspects of OSPF and IS-IS that are different enough to warrant separate explanations. There are, however, a number of things OSPF and IS-IS have implemented in similar enough ways to consider their solutions as simple variants. These include the handling of multiaccess links, the way the Shortest Path Tree is conceptualized, and the way two-way connectivity checks are handled.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch16lev14"><strong>Multiaccess Links</strong></h4>
+        <p class="noindent">Multiaccess links, such as Ethernet, are links where attached devices “share” the available bandwidth, and each device can send packets directly to any other device connected to the same link. Multiaccess links pose special challenges for protocols that synchronize a database across the link; <a href="ch16.xhtml#ch16fig08">Figure 16-8</a> is used to explain.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/16fig08.jpg" aria-describedby="Al16fig08" alt="Figure represents multi-access network to explain IS-IS operation." width="649" height="242"><aside class="hidden" id="Al16fig08">
+        <p>A horizontal line has two vertical lines moving upward and downward, reaching routers, B and D and A and C respectively. 2001:db8:3e8:100::/64 is mentioned to the right of the line.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch16fig08"></a><strong>Figure 16-8</strong> <em>Multiaccess Network to Explain IS-IS Operation</em></p>
+        </div>
+        <p class="indent">One option a protocol could use when running over a multiaccess link is to simply form adjacencies as it normally would over a point-to-point link. For instance, in <a href="ch16.xhtml#ch16fig08">Figure 16-8</a>:</p>
+        <p class="bullt">• A can form an adjacency with B, C, and D.</p>
+        <p class="bull">• B can form an adjacency with A, C, and D.</p>
+        <p class="bull">• C can form an adjacency with A, B, and D.</p>
+        <p class="bullb">• D can form an adjacency with A, B, and C.</p>
+        <p class="indent">If this pattern of adjacency formation is used, when A receives a new LSP fragment (IS-IS) or LSA (OSPF) from some router not connected to the shared link:</p>
+        <p class="bullt">• A will transmit the new fragment or LSA to B, C, and D separately.</p>
+        <p class="bull">• When B receives the fragment or LSA, it will transmit the new fragment or LSA to C and D separately.</p>
+        <p class="bullb">• When C receives the fragment or LSA, it will transmit the new fragment or LSA to D.</p>
+        <p class="indent"><a id="page_447"></a>Given the transmission of each fragment or LSA, and the following CSNP or acknowledgment to ensure the local database is synchronized at each router, a large number of packets must cross the shared link to ensure every device’s database is synchronized. To reduce the flooding on multiaccess links, IS-IS and OSPF elect a single device that is responsible for ensuring every device connected to the link has a synchronized database. In <a href="ch16.xhtml#ch16fig08">Figure 16-8</a>, for IS-IS:</p>
+        <p class="bullt">• A single device is elected to manage flooding on the link. In IS-IS, this device is called the Designated Intermediate System (DIS).</p>
+        <p class="bull">• Each device with new link state information sends the fragment to a multicast address so every device on the shared link will receive it. None of the devices connected to the link send acknowledgments of any kind when they receive the updated fragment.</p>
+        <p class="bull">• The DIS sends out a copy of its CSNP on a regular basis to the same multicast address, so every device on the multiaccess link receives a copy of it.</p>
+        <p class="bull">• If any device on the shared link finds it is missing some specific fragment, based on the description of the DIS’s database in the CSNP, it will send a PSNP onto the link requesting the missing information.</p>
+        <p class="bullb">• If any device on the shared link finds it has information the DIS does not have, based on the description of the DIS’s database in the CSNP, it will flood the missing fragment onto the link.</p>
+        <p class="indent">In this way, new link state information is flooded across the link a minimal number of times. In <a href="ch16.xhtml#ch16fig08">Figure 16-8</a>, for OSPF:</p>
+        <p class="bullt">• A single device is elected to manage flooding on the link, called the Designated Router (DR). A backup device is elected, as well, called the Backup Designated Router (BDR—creative, right?).</p>
+        <p class="bull"><a id="page_448"></a>• Each device with new link state information floods it to a special multicast address monitored by the DR and BDR (all-DR-routers).</p>
+        <p class="bullb">• The DR receives this LSA, examines it to determine if it contains new information, and then refloods it to a multicast address that all the OSPF routers on the link listen to (all-SPF-routers).</p>
+        <p class="indent">The election of a DIS or DR does not, however, just impact the flooding of information on the multiaccess link; it also impacts the way SPF is calculated through the link. <a href="ch16.xhtml#ch16fig09">Figure 16-9</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/16fig09.jpg" aria-describedby="Al16fig09" alt="Figure represents the DIS, DR, and SPF calculation." width="700" height="731"><aside class="hidden" id="Al16fig09">
+        <p>A horizontal line labeled 2001:db8:3e8:100::/64 leads to a router labeled A. A vertical line leads downward to reach a horizontal line labeled 2001:db8:3e8:101::/64. Two lines lead downward to reach routers, B and C. A line labeled 2001:db8:3e8:102::/64 leads to the right, reaching a router labeled D. Dotted lines fall below, followed by a vertical dotted line labeled 101::/64 leading to a circle labeled A. A dotted line leading to the left is labeled 100::/64. A line leads downward to reach a circle labeled p. A dotted line labeled 101::/64 leads downward. Two lines lead from p to reach routers, B and C. A dotted line leads downward from B labeled 101::/64. A dotted line leads downward from C labeled 101::/64. A dotted line leads upward from C labeled 102::/64. A line leads to the right from C to reach a circle labeled D. A dotted line labeled 102::/64 leads upward.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch16fig09"></a><strong>Figure 16-9</strong> <em>The DIS, DR, and SPF Calculation</em></p>
+        </div>
+        <p class="indent"><a id="page_449"></a>In <a href="ch16.xhtml#ch16fig09">Figure 16-9</a>, A is elected as the DIS or DR for the multiaccess circuit. A not only ensures every device on the link has a synchronized database, but it also creates a pseudonode, or p-node, and advertises it as if it were a real device attached to the network. Each of the routers connected to the shared link advertises connectivity to the p-node, rather than to each of the other connected systems.</p>
+        <p class="indent">In IS-IS, A creates an LSP for the p-node; this p-node advertises a zero-cost link back to each device attached to the multiaccess link. In OSPF, A creates a Network LSA (type 2).</p>
+        <p class="indent">Without this p-node, the network looks like a full mesh to the other intermediate systems in the flooding domain, as shown on the left side of <a href="ch16.xhtml#ch16fig09">Figure 16-9</a>. With the p-node, the network appears to be a hub-and-spoke network, with the p-node as the hub. Each device advertises a link toward the p-node, with the link cost being set to the local interface cost onto the shared link. The p-node, in return, advertises a zero-cost link back to each device connected to the shared link. This reduces the complexity of calculating SPF across large-scale multiaccess links.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch16lev15"><strong>Conceptualizing Links, Nodes, and Reachability in Link State Protocols</strong></h4>
+        <p class="noindent">One confusing aspect of link state protocols is how the nodes, links, and reachability interact with one another. <a href="ch16.xhtml#ch16fig10">Figure 16-10</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/16fig10.jpg" aria-describedby="Al16fig10" alt="Figure represents the process of conceptualizing nodes, links, and reachability in Link state protocols." width="699" height="595"><aside class="hidden" id="Al16fig10">
+        <p>A router labeled A has 49.0011.2222.0000.0000.000A mentioned on top with lines connecting to routers, B, C, and D. To the right, A router labeled A has 49.0011.2222.0000.0000.000A mentioned on top with lines connecting to routers, B, C, and D. Another translucent router is at the top with 49.0011.2222.0000.0000.000A.01 mentioned. Lines lead to all routers below. At the bottom left, four circles are intersected by a rectangle with two diagonals. At the bottom right, four circles at the top left, top right, bottom left, and bottom right have lines leading to a circle at the center labeled p.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch16fig10"></a><strong>Figure 16-10</strong> <em>Conceptualizing Nodes, Links, and Reachability in Link State Protocols</em></p>
+        </div>
+        <p class="indent">In both OSPF and IS-IS, the nodes and links are used to be a Shortest Path Tree, as shown in the darker, solid lines. The dashed lines show how reachability information is attached to each node. Every node connected to a particular reachable destination advertises the destination—not just one of the two nodes connected to a point-to-point link, but both of them. Why is this?</p>
+        <p class="indent">The primary reason is this is just the easiest solution to advertising the reachable destinations. If you wanted to build a routing protocol that only advertised each reachable destination as connected to a single device, you would need to find some way to elect which of the connected devices should advertise the reachable destination. Further, if the elected device fails, then some other device must take over advertising the reachable destination, which can take time and impact convergence in a negative way. Finally, by allowing each device to advertise reachability to all connected destinations, you can actually find the shortest path to each destination.</p>
+        <p class="indent">That each device advertises each locally reachable destination is difficult for some engineers to wrap their minds around, however.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch16lev16"><a id="page_450"></a><strong>Validating Two-Way Connectivity in SPF</strong></h4>
+        <p class="noindent">Two-way connectivity is a problem for control planes in two distinct places: between adjacent devices and when calculating loop-free paths through the network. Both IS-IS and OSPF also ensure two-way connectivity is in place when computing loop-free paths.</p>
+        </div>
+        <p class="indent">The essential element is a <em>backlink check</em>. <a href="ch16.xhtml#ch16fig11">Figure 16-11</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/16fig11.jpg" aria-describedby="Al16fig11" alt="Figure represents the process of computing the back link to test for two-way connectivity." width="700" height="237"><aside class="hidden" id="Al16fig11">
+        <p>A router labeled A has an arrow leading to the left labeled 2001:db8:3e8:100::/64. The arrow leads from a router labeled B. Two arrows to the right of B lead left and right and is labeled 2001:db8:3e8:101::/64. A router labeled C is to the right with two lines leading leftward and rightward to a router labeled D.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch16fig11"></a><strong>Figure 16-11</strong> <em>Computing the Back Link to Test for Two-Way Connectivity</em></p>
+        </div>
+        <p class="indent">In <a href="ch16.xhtml#ch16fig11">Figure 16-11</a>, the direction of each link is labeled with an arrow (or set of arrows). The [A,B] link is unidirectional toward A; the remaining links are two-way connected (bidirectional). When computing SPF, D will do the following:</p>
+        <p class="bullt">• When processing C’s link state information, note C claims to be connected to B. D will find B’s link state information and check to make certain B also claims to be connected to C. In this case, B does claim to be connected to C, so D will use the [B,C] link.</p>
+        <p class="bullb"><a id="page_451"></a>• When processing B’s link state information, note B claims to be connected to A. Examining A’s link state information, however, the D cannot find any information from A claiming to be connected to B. Because of this, D will not use the [A,B] link.</p>
+        <p class="indent">This check is normally done either before a link is moved to the TENT or before a link is moved from the TENT onto the PATH.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch16lev17">Border Gateway Protocol</h3>
+        <p class="noindent">In January 1989 at the 12th Internet Engineering Task Force (IETF) meeting in Austin, Texas, Yakov Rekhter and Kirk Lougheed sat down at a table and in a short time a new exterior gateway routing protocol was born, the BGP. The initial BGP design was recorded on a napkin rumored to have been heavily spattered with ketchup. The design on the napkin was expanded to three handwritten sheets of paper from which the first interoperable BGP implementation was quickly developed.</p>
+        </div>
+        <p class="indent">BGP was originally designed to be an Exterior Gateway Protocol (EGP), which means it was intended to connect networks, or Autonomous Systems (ASes), rather than devices. If BGP is an EGP, this must mean that the other routing protocols, like RIP, EIGRP, OSPF, and IS-IS, must be Interior Gateway Protocols (IGPs)—a designation that “stuck.” Clearly defining interior and exterior gateways has proven useful in designing and operating large-scale networks. BGP is unique among the widely deployed protocols in its loop-free path calculation. There are three widely used distance vector protocols (Spanning Tree, RIP, and EIGRP). There are two widely used link state protocols (OSPF and IS-IS). And there are many more examples of these two types of protocols developed and deployed in what might be considered niche markets. BGP, however, is the only widely deployed path vector protocol.</p>
+        <p class="indent"><a id="page_452"></a>What are the most important goals for an EGP? The first is obviously selecting loop-free paths, but this clearly does not mean the <em>shortest</em> path. The reason the shortest path is not as important in an EGP as it is in an IGP is that EGPs are used to connect entities, such as service providers, content providers, and corporate networks. Connecting networks at this level means focusing on <em>policy</em>, rather than efficiency—in complexity terms, increasing state through policy mechanisms while reducing overall network optimization in pure traffic-carrying terms.</p>
+        <p class="indent">BGP policy mechanisms will not be considered here in any depth; some basic policy concepts are considered in <a href="ch17.xhtml#ch17">Chapter 17</a>, “Control Plane Policy.” This section focuses on transport, peering, advertisement, and the BGP decision process.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch16lev18"><strong>BGP Peering</strong></h4>
+        <p class="noindent">BGP does not provide any sort of reliable transport. Instead, BGP relies on TCP to carry information between BGP peers. Using TCP ensures</p>
+        </div>
+        <p class="bullt">• MTU detection is handled, even for connections crossing several hops (or routers).</p>
+        <p class="bull">• Flow control is taken care of by the underlying transport, so BGP does not need flow control directly (although most BGP implementations do interact with the TCP stack on the local host to improve throughput for BGP specifically).</p>
+        <p class="bullb">• Two-way connectivity between peers is ensured by the three-way handshake implemented in TCP.</p>
+        <p class="indent">Even though BGP relies on an underlying TCP connection for many of the functions control planes must solve in building adjacencies, there are still a number of functions TCP cannot provide. Therefore, a fuller look at the BGP peering process is still in order; <a href="ch16.xhtml#ch16fig12">Figure 16-12</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/16fig12.jpg" aria-describedby="Al16fig12" alt="Diagrammatic representation of the BGP Peering process." width="701" height="433"><aside class="hidden" id="Al16fig12">
+        <p>Two figures are shown: the left representing the session establishment and the right representing the session state. The figure has two BGP speakers A and B and has totally 8 steps from start to begin of the establishment. The flow control is as follows. First, both the BGP speakers are in "idle" state. Second, is the "connect" state, where A sends TCP open message on port 179 and B responds to this with an open TCP message on A's ephemeral port. Third, is if the connection fails, then the state is moved to "active." Fourth, A sends a BGP open message to B, changing the state to "opensent." Fifth, B responds to A with a "keep alive", changing its state to "open confirm." Sixth, A, in turn, sends a keep alive message to B and receives back another keep alive from B. Now the state is changed to "established." Seventh, at this point, both A and B keep exchanging routes. Eighth, the final state, where B signals A that the transfer is over by sending an End of Table message. The second diagram shows the flow control between the 6 states of the session. The states idle, connect, opensent, open confirm, and established are placed one below the other and have flowlines connecting them from top to bottom, while the state active is placed to the right of connect state. All states are connected to the "idle state." An arrow flows from connect to active, and opensent to active.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch16fig12"></a><strong>Figure 16-12</strong> <em>The BGP Peering Process</em></p>
+        </div>
+        <p class="indentb">In <a href="ch16.xhtml#ch16fig12">Figure 16-12</a>:</p>
+        <p class="indenthangingN">1. The BGP peering session begins in the idle state.</p>
+        <p class="indenthangingN">2. A sends a TCP open on port 179; B responds to an ephemeral port on A. After the TCP three-way handshake is completed (the TCP session is successful), BGP moves the peering state to connect. If the peering session is being formed across some type of state-based filtering, such as a firewall, it is important that the TCP open be transmitted from the “inside” of the filtering device.</p>
+        <p class="indenthangingN"><a id="page_453"></a>3. If the TCP connection fails, the BGP peering state is moved to active.</p>
+        <p class="indenthangingN">4. A sends a BGP open to B and moves B to the opensent state. At this point, A is waiting on B to send a keepalive. If B does not send a keepalive within a specific period, A will move the session back to the idle state. The open message contains a number of parameters, such as which address families the two BGP speakers support and the hold timer. This is called capabilities negotiation. The lowest (minimum) hold timer of the two advertised is selected as the hold timer for the peering session.</p>
+        <p class="indenthangingN">5. When B sends A a keepalive, A moves B to the openconfirm state.</p>
+        <p class="indenthangingN">6. At this point, A will send B a keepalive to verify the connection. When A and B receive one another’s keepalives, the peering session will move to the established state.</p>
+        <p class="indenthangingN">7. The two BGP speakers exchange routes, so their tables are up to date. A and B only exchange their best paths, unless some form of BGP multipath is supported and configured on the two speakers.</p>
+        <p class="indenthangingN">8. To notify A it has finished sending its entire local table, B sends A an End of Table (EOT) or End of RIB (EOR) signal.</p>
+        <p class="indentt"><a id="page_454"></a>There are two kinds of BGP peering relationships: BGP peers within the same Autonomous System (AS, which generally means the set of routers within a single administrative domain, though this is a rather loose definition) are called internal BGP (iBGP) peers, and BGP peers between autonomous systems are called external (or exterior) BGP (eBGP) peers. While the two kinds of BGP peering relationships are built the same way, they have different advertisement rules.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch16lev19"><strong>The BGP Best Path Decision Process</strong></h4>
+        <p class="noindent">As BGP is designed to interconnect autonomous systems, the best path algorithm is focused primarily on policy, rather than loop free-ness. In fact, if you examine any standard explanation of the BGP best path process, whether or not a particular path is loop free is not included in the decision process at all. How, then, does BGP determine a particular peer is advertising a loop-free route? <a href="ch16.xhtml#ch16fig13">Figure 16-13</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/16fig13.jpg" aria-describedby="Al16fig13" alt="Diagrammatic representation of the BGP peering established with a loop-free route." width="696" height="319"><aside class="hidden" id="Al16fig13">
+        <p>Four BGP speakers A, B, C, and D are placed to form a ring topology, with AS numbers AS65000, AS65001, AS65002, and AS65003 respectively. A is shown to be connected to 2001:db8:3e8:100::/64.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch16fig13"></a><strong>Figure 16-13</strong> <em>BGP and Loop-Free Paths</em></p>
+        </div>
+        <p class="indent">In <a href="ch16.xhtml#ch16fig13">Figure 16-13</a>, each router is in a separate AS, so every pair of BGP speakers will form an eBGP peering session. A, which is connected to 2001:db8:3e8:100::/64, advertises this route toward B and C. BGP route advertisements carry a number of <em>attributes</em>, one of which is the AS Path (others will be discussed later in describing the best path selection process). Before A advertises 100::/64 to B, it adds its AS number into the AS Path attribute. B receives the route and advertises it to D; before advertising the route to D, it adds AS65001 to the AS Path. The AS Path then, tracing from A through C, looks something like this at every hop:</p>
+        <p class="bullt">• As received by B: [AS65000]</p>
+        <p class="bull">• As received by C: [AS65000, AS65001]</p>
+        <p class="bullb">• As received by D: [AS65000, AS65001, AS65003]</p>
+        <p class="indent"><a id="page_455"></a>When D received the route from B, it will advertise it back to C (there is no split horizon in BGP). Assume C, in turn, advertises the route back to A for some reason (it would not in this situation, because the path through A would be a better path to the destination, but just to illustrate loop prevention), A will examine the AS Path and discover its local AS is in the AS Path. This is clearly a loop, so A simply ignores the route. Since this route is ignored, it is never placed in the BGP topology table; hence only loop-free routes are compared using the BGP best path process.</p>
+        <p class="indentb">The BGP best path process consists of 13 steps in most implementations (the first step is not always implemented, as it is a local decision on the part of the BGP speaker):</p>
+        <p class="indenthangingN">1. The route with the highest weight is chosen. Some implementations do not implement a route weight.</p>
+        <p class="indenthangingN">2. The route with the highest local preference (LOCAL PREF) is chosen. The local preference represents the exit policy of the local AS—which exit point out of the available exit points would the owner of <em>this AS</em> like the BGP speaker prefer.</p>
+        <p class="indenthangingN">3. Prefer the locally originated route, which means <em>on this BGP speaker</em>. This step is rarely used in the decision process.</p>
+        <p class="indenthangingN">4. Prefer the path with the shortest AS Path. This step is intended to prefer the most efficient path through the internetwork, by choosing the path that will pass through the smallest number of autonomous systems to reach the destination. Operators often <em>prepend</em> AS Path entries to influence this step in the decision process.</p>
+        <p class="indenthangingN">5. Prefer the path with the lowest origin type. Routes that are redistributed from an IGP are preferred over routes with an unknown origin. This step rarely has any impact on the decision process.</p>
+        <p class="indenthangingN">6. Prefer the path with the lowest multiexit discriminator (MED). The MED represents the <em>entrance policy</em> of the remote AS. As such, the MED is only compared if multiple routes have been received from the same neighboring AS; if the same route is received from two different neighboring autonomous systems, the MED is ignored.</p>
+        <p class="indenthangingN">7. Prefer eBGP routes over iBGP routes.</p>
+        <p class="indenthangingN">8. Prefer the route with the lowest IGP cost to the next hop. If no local exit policy is set (in the form of the local preference), and the neighboring AS has not set an entrance policy (in the form of the MED), then the path with the closest exit from the local router is chosen as the exit point.</p>
+        <p class="indenthangingN">9. Determine if multiple paths should be installed in the routing table (some form of multipath is configured).</p>
+        <p class="indenthangingN1"><a id="page_456"></a>10. If comparing two external routes (learned from an eBGP peer), prefer the oldest route, or the route learned first. This rule prevents route churn just because routes are refreshed.</p>
+        <p class="indenthangingN1">11. Prefer the route learned from the peer with the lowest router ID. This is simply a tiebreaker to prevent churn in the routing table.</p>
+        <p class="indenthangingN1">12. Prefer the route with the shortest cluster length (see the next section for an explanation of the cluster).</p>
+        <p class="indenthangingN1">13. Prefer the route learned from the peer with the lowest peering address. This is, again, simply a tie breaker, chosen arbitrarily to prevent ties and cause churn in the routing table, and would normally be used when two BGP peers are connected over two parallel links.</p>
+        <p class="indentt">While this seems like a long process, almost every best path decision in BGP comes down to four factors: the local preference, the MED, the AS Path length, and the IGP cost.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">If this process isn’t complex enough, BGP has been extended to support almost any best path decision scheme an operator can think of. See <em>BGP Custom Decision Process</em> for more information.<sup><a id="ch16fn4"></a><a href="ch16.xhtml#ch16fn-4">4</a></sup> These custom decision capabilities can determine which path is the best path before, or after, any of the decision points described here.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch16lev20"><strong>BGP Advertisement Rules</strong></h4>
+        <p class="noindent">BGP has two simple rules to determine where to advertise a route:</p>
+        </div>
+        <p class="bullt">• Advertise the best path to every destination to every eBGP peer.</p>
+        <p class="bullb">• Advertise the best path learned from an eBGP peer to every iBGP peer.</p>
+        <p class="indent">Another way to put these two rules is this: never advertise a route learned from an iBGP to another iBGP peer. <a href="ch16.xhtml#ch16fig14">Figure 16-14</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/16fig14.jpg" aria-describedby="Al16fig14" alt="Diagrammatic representation of BGP Advertisement Rules." width="700" height="162"><aside class="hidden" id="Al16fig14">
+        <p>Four BGP speakers A, B, C, and D are placed to form a linear topology. AS number of A is AS65000 and B is AS650001. A is connected to 2001:db8:3e8:100::/64. A and B are shown as eBGP peer, while, B and C and C and D are shown as iBGP peer.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch16fig14"></a><strong>Figure 16-14</strong> <em>BGP Advertisement Rules</em></p>
+        </div>
+        <p class="indent">In <a href="ch16.xhtml#ch16fig14">Figure 16-14</a>, A and B are eBGP peers, while B and C, and C and D, are iBGP peers. Assume A advertises 2001:db8:3e8:100::/64 to B. Since B received this route <a id="page_457"></a>advertisement from an eBGP peer, it will advertise 100::/64 to C, which is an iBGP peer. C, on learning this route, will not advertise the route to D, however, as C received the route from an iBGP peer, and D is also an iBGP peer. In this illustration, then, D will not learn about 100::/64. This does not seem very useful in the real world; however, the restriction is there for a reason.</p>
+        <p class="indent">Consider how BGP prevents routing loops from forming—by carrying a list of the autonomous systems through which the route has passed in the route advertisement itself. When advertising a route from one iBGP speaker to another, there is <em>no change in the AS Path.</em> If iBGP speakers advertised routes learned from iBGP peers to iBGP peers, routing loops can easily be formed. One solution to this problem is simply to build a <em>multihop</em> peering relationship between B and D (remember that BGP runs on top of TCP; so long as there is IP connectivity between two BGP speakers, they can build a peering relationship). Assume that B builds a peering relationship with D across C, and neither B nor D builds a peering relationship with C. What will happen when traffic is switched toward 100::/64 by D toward C? What will happen to packets in this flow at C? C will not have a route to 100::/64, so it will drop the traffic. This can be solved in a number of ways—for instance, B and D could tunnel the traffic across C, so C does not need to have reachability to the external destination. BGP could also be configured to redistribute routes into whatever underlying IGP is running (this is a bad idea!—do not do this).</p>
+        <p class="indent"><em>BGP route reflectors</em> were standardized to resolve this problem. <a href="ch16.xhtml#ch16fig15">Figure 16-15</a> illustrates the operation of route reflectors.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/16fig15.jpg" aria-describedby="Al16fig15" alt="Diagrammatic representation of BGP Route Reflectors." width="700" height="260"><aside class="hidden" id="Al16fig15">
+        <p>Four BGP speakers A, B, C, and D are placed to form a linear topology and another router E is placed above this connection. AS numbers for A and B are AS65000 and AS65001 respectively. A is connected to 2001:db8:3e8:100::/64 and advertises this to B as a eBGP peer. The routers B, C, and D are marked as RRCs while the router E at the top is marked as RR. These router reflector clients are individually connected to their router reflector E as iBGP peers.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch16fig15"></a><strong>Figure 16-15</strong> <em>BGP Route Reflectors</em></p>
+        </div>
+        <p class="indent">In <a href="ch16.xhtml#ch16fig15">Figure 16-15</a>, E is configured as a route reflector; B, C, and D are configured as route reflector clients (specifically, as clients of E). A advertises the 2001:db8:3e8:100::/64 route to B; B advertises this route to E, because it was received from an eBGP peer, and E is an iBGP peer. E adds a new attribute to the route, a <em>cluster list</em>, which indicates the path of the update within the AS through the route reflector clusters. E will then advertise the route to each of its clients. Loop prevention, in this case, is handled by the cluster list.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch16lev21"><a id="page_458"></a><strong>Concluding Thoughts on BGP</strong></h4>
+        <p class="noindent">While BGP was originally designed to interconnect autonomous systems, its use has spread to data center fabrics, network cores, and carrying information about virtual private networks. The uses to which BGP has been put are, in fact, almost limitless; hence, you will encounter BGP in a number of future chapters. Along the way, BGP has become a very complex protocol; this section barely begins to sketch the operation of the protocol.</p>
+        </div>
+        <p class="indentb">BGP can be described as</p>
+        <p class="bullt">• A proactive protocol that learns about reachable destinations through configuration, local information, and other protocols</p>
+        <p class="bull">• A path vector protocol that advertises only the best path to each neighbor and does not prevent loops within an autonomous system (unless route reflectors or some additional feature is deployed)</p>
+        <p class="bull">• Selecting loop-free paths by examining the path through which the destination can be reached</p>
+        <p class="bullb">• Validating two-way connectivity and MTU through its use of TCP as a transport</p>
+        <div class="heading">
+        <h3 class="h3" id="ch16lev22">Final Thoughts</h3>
+        <p class="noindent">It is only possible to scratch the surface of distributed control planes in two short chapters. Hopefully, however, these chapters give you a sense of how complex the problem of calculating loop-free paths really is and how many possible solutions to <a id="page_459"></a>this problem set there are. So long as you remember the basic classifications, however, you can quickly grasp the basic operation of any routing protocol:</p>
+        </div>
+        <p class="bullt">• How does it learn about and advertise information about topology and reachable destinations? Is the protocol reactive or proactive?</p>
+        <p class="bull">• How do devices running the protocol discover other devices running the same protocol? How does it form neighbors?</p>
+        <p class="bull">• How does the protocol detect MTU mismatches?</p>
+        <p class="bull">• How does the protocol distribute routing information reliably through the network?</p>
+        <p class="bull">• How does the protocol marshal data?</p>
+        <p class="bull">• How does the protocol remove topology and reachability information?</p>
+        <p class="bull">• How does the protocol ensure two-way connectivity, both at the neighbor level and when calculating loop-free paths?</p>
+        <p class="bullb">• How does the protocol calculate loop-free paths?</p>
+        <p class="indent">You should consider the resources in the “Further Reading” section if you would like to understand each or any of these protocols in greater depth.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch16lev23">Further Reading</h3>
+        <p class="ref">Chandra, Ravi, and John Scudder. <em>Capabilities Advertisement with BGP-4</em>. Request for Comments 5492. RFC Editor, 2009. <a href="https://rfc-editor.org/rfc/rfc5492.txt">https://rfc-editor.org/rfc/rfc5492.txt</a>.</p>
+        </div>
+        <p class="ref">Chen, Enke, Tony J. Bates, and Ravi Chandra. <em>BGP Route Reflection: An Alternative to Full Mesh Internal BGP (IBGP)</em>. Request for Comments 4456. RFC Editor, 2006. <a href="https://rfc-editor.org/rfc/rfc4456.txt">https://rfc-editor.org/rfc/rfc4456.txt</a>.</p>
+        <p class="ref">Chen, Enke, John Scudder, Alvaro Retana, and Daniel Walton. <em>Advertisement of Multiple Paths in BGP</em>. Request for Comments 7911. RFC Editor, 2016. <a href="https://rfc-editor.org/rfc/rfc7911.txt">https://rfc-editor.org/rfc/rfc7911.txt</a>.</p>
+        <p class="ref">Chen, Enke, and Quaizar Vohra. <em>BGP Support for Four-octet AS Number Space</em>. Request for Comments 4893. RFC Editor, 2007. <a href="https://rfc-editor.org/rfc/rfc4893.txt">https://rfc-editor.org/rfc/rfc4893.txt</a>.</p>
+        <p class="ref">Chunduri, Uma, Wenhu Lu, Albert Tian, and Naiming Shen. <em>IS-IS Extended Sequence Number TLV</em>. Request for Comments 7602. RFC Editor, 2015. <a href="https://rfc-editor.org/rfc/rfc7602.txt">https://rfc-editor.org/rfc/rfc7602.txt</a>.</p>
+        <p class="ref"><a id="page_460"></a>Doyle, Jeff, and Jennifer DeHaven Carroll. <em>Routing TCP/IP, Volume 1</em>. 2nd edition. Indianapolis, IN: Cisco Press, 2005.</p>
+        <p class="ref">Ferguson, Dennis, Acee Lindem, and John Moy. <em>OSPF for IPv6</em>. Request for Comments 5340. RFC Editor, 2008. <a href="https://rfc-editor.org/rfc/rfc5340.txt">https://rfc-editor.org/rfc/rfc5340.txt</a>.</p>
+        <p class="ref">Ginsberg, Les, Stephane Litkowski, and Stefano Previdi. <em>IS-IS Route Preference for Extended IP and IPv6 Reachability</em>. Request for Comments 7775. RFC Editor, 2016. <a href="https://rfc-editor.org/rfc/rfc7775.txt">https://rfc-editor.org/rfc/rfc7775.txt</a>.</p>
+        <p class="ref">Heitz, Jakob, Keyur Patel, Job Snijders, Ignas Bagdonas, and Nick Hilliard. “BGP Large Communities.” Internet-Draft. Internet Engineering Task Force, January 2017. <a href="https://tools.ietf.org/html/draft-ietf-idr-large-community-12">https://tools.ietf.org/html/draft-ietf-idr-large-community-12</a>.</p>
+        <p class="ref">“Intermediate System to Intermediate System Intra-Domain Routing Information Exchange Protocol for Use in Conjunction with the Protocol for Providing the Connectionless-Mode Network Service.” Standard. Geneva, CH: International Organization for Standardization, 2002. <a href="http://standards.iso.org/ittf/PubliclyAvailableStandards/">http://standards.iso.org/ittf/PubliclyAvailableStandards/</a>.</p>
+        <p class="ref">Katz, Dave. “OSPF and IS-IS: A Comparative Anatomy.” Presented at the NANOG19, Albuquerque, NM, June 12, 2000. <a href="https://nanog.org/meetings/abstract?id=1084">https://nanog.org/meetings/abstract?id=1084</a>.</p>
+        <p class="ref">McPherson, Danny R., and Keyur Patel. <em>Experience with the BGP-4 Protocol</em>. Request for Comments 4277. RFC Editor, 2006. <a href="https://rfc-editor.org/rfc/rfc4277.txt">https://rfc-editor.org/rfc/rfc4277.txt</a>.</p>
+        <p class="ref">Meyer, David, and Keyur Patel. <em>BGP-4 Protocol Analysis</em>. Request for Comments 4274. RFC Editor, 2006. <a href="https://rfc-editor.org/rfc/rfc4274.txt">https://rfc-editor.org/rfc/rfc4274.txt</a>.</p>
+        <p class="ref">Mirtorabi, Sina, Abhay Roy, Acee Lindem, and Fred Baker. “OSPFv3 LSA Extendibility.” Internet-Draft. Internet Engineering Task Force, October 2016. <a href="https://tools.ietf.org/html/draft-ietf-ospf-ospfv3-lsa-extend-13">https://tools.ietf.org/html/draft-ietf-ospf-ospfv3-lsa-extend-13</a>.</p>
+        <p class="ref">Moy, John T. <em>OSPF Version 2</em>. Request for Comments 2328. RFC Editor, 1998. <a href="https://rfc-editor.org/rfc/rfc2328.txt">https://rfc-editor.org/rfc/rfc2328.txt</a>.</p>
+        <p class="ref">Parker, Jeff. <em>Recommendations for Interoperable Networks Using Intermediate System to Intermediate System (IS-IS)</em>. Request for Comments 3719. RFC Editor, 2004. <a href="https://rfc-editor.org/rfc/rfc3719.txt">https://rfc-editor.org/rfc/rfc3719.txt</a>.</p>
+        <p class="ref">Przygienda, Dr. Antoni B. <em>Optional Checksums in Intermediate System to Intermediate System (ISIS)</em>. Request for Comments 3358. RFC Editor, 2002. <a href="https://rfc-editor.org/rfc/rfc3358.txt">https://rfc-editor.org/rfc/rfc3358.txt</a>.</p>
+        <p class="ref">Ramachandra, Srihari S., and Yakov Rekhter. <em>BGP Extended Communities Attribute</em>. Request for Comments 4360. RFC Editor, 2006. <a href="https://rfc-editor.org/rfc/rfc4360.txt">https://rfc-editor.org/rfc/rfc4360.txt</a>.</p>
+        <p class="ref"><a id="page_461"></a>Raszuk, Robert, Christian Cassar, Bruno Decraene, Stephane Litkowski, Kevin Wang, and Erik Aman. “BGP Optimal Route Reflection (BGP-ORR).” Internet-Draft. Internet Engineering Task Force, January 2017. <a href="https://tools.ietf.org/html/draft-ietf-idr-bgp-optimal-route-reflection-13">https://tools.ietf.org/html/draft-ietf-idr-bgp-optimal-route-reflection-13</a>.</p>
+        <p class="ref">Rekhter, Yakov, Susan Hares, and Tony Li. <em>A Border Gateway Protocol 4 (BGP-4)</em>. Request for Comments 4271. RFC Editor, 2006. <a href="https://rfc-editor.org/rfc/rfc4271.txt">https://rfc-editor.org/rfc/rfc4271.txt</a>.</p>
+        <p class="ref">Retana, Alvaro, and Russ White. “BGP Custom Decision Process.” Internet-Draft. Internet Engineering Task Force, February 2017. <a href="https://tools.ietf.org/html/draft-ietf-idr-custom-decision-08">https://tools.ietf.org/html/draft-ietf-idr-custom-decision-08</a>.</p>
+        <p class="ref">Roy, Abhay, Yi Yang, and Alvaro Retana. <em>Hiding Transit-Only Networks in OSPF</em>.</p>
+        <p class="ref">Request for Comments 6860. RFC Editor, 2013. <a href="https://rfc-editor.org/rfc/rfc6860.txt">https://rfc-editor.org/rfc/rfc6860.txt</a>.</p>
+        <p class="ref">Shand, Mike, Stefano Previdi, Les Ginsberg, and Danny R. McPherson. <em>Simplified Extension of Link State PDU (LSP) Space for IS-IS</em>. Request for Comments 5311. RFC Editor, 2009. <a href="https://rfc-editor.org/rfc/rfc5311.txt">https://rfc-editor.org/rfc/rfc5311.txt</a>.</p>
+        <p class="ref">Vohra, Quaizar, and Enke Chen. <em>BGP Support for Four-Octet Autonomous System (AS) Number Space</em>. Request for Comments 6793. RFC Editor, 2012. <a href="https://rfc-editor.org/rfc/rfc6793.txt">https://rfc-editor.org/rfc/rfc6793.txt</a>.</p>
+        <p class="ref">Walton, Daniel, Alvaro Retana, Enke Chen, and John Scudder. <em>Solutions for BGP Persistent Route Oscillation</em>. Request for Comments 7964. RFC Editor, 2016. <a href="https://rfc-editor.org/rfc/rfc7964.txt">https://rfc-editor.org/rfc/rfc7964.txt</a>.</p>
+        <p class="ref">Wang, Lili, Zhaohui (Jeffrey) Zhang, and Nischal Sheth. <em>OSPF Hybrid Broadcast and Point-to-Multipoint Interface Type</em>. Request for Comments 6845. RFC Editor, 2013. <a href="https://rfc-editor.org/rfc/rfc6845.txt">https://rfc-editor.org/rfc/rfc6845.txt</a>.</p>
+        <p class="ref">White, Russ. <em>Intermediate System to Intermediate System (IS-IS) Routing Protocol LiveLessons</em>. Video. LiveLessons. Cisco Press, 2016. <a href="http://www.ciscopress.com/store/intermediate-system-to-intermediate-system-is-is-routing-9780134465326?link=text&amp;cmpid=2017_02_02_CP_RussWhiteVideo">http://www.ciscopress.com/store/intermediate-system-to-intermediate-system-is-is-routing-9780134465326?link=text&amp;cmpid=2017_02_02_CP_RussWhiteVideo</a>.</p>
+        <p class="ref">White, Russ, Danny McPherson, and Srihari Sangli. <em>Practical BGP</em>. Boston, MA: Addison-Wesley Professional, 2004.</p>
+        <p class="ref">White, Russ, and Alvaro Retana. <em>IS-IS: Deployment in IP Networks</em>. 1st edition. Boston, MA: Addison-Wesley, 2003.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch16lev24"><a id="page_462"></a>Review Questions</h3>
+        <p class="indenthangingN">1. Why does IS-IS send interface addresses as “neighbors seen” on multiaccess links like Ethernet, and IS identifiers on point-to-point links? What is the reasoning behind the different forms of two-way connectivity checks?</p>
+        </div>
+        <p class="indenthangingN">2. IS-IS carries two kinds of metrics—narrow and wide. Describe the mechanism used to transition between these two metric types. Is it effective? How does it compare to the solution adopted by EIGRP? Does it suffer from the same sorts of failure modes as the EIGRP transition mechanism?</p>
+        <p class="indenthangingN">3. It is possible that an IS-IS LSP might become longer than the maximum size allowed based on the “size of LSP” field in the LSP header. Describe how RFC5311 solves this problem. Are there any other ways you can think of to solve this same problem?</p>
+        <p class="indenthangingN">4. IS-IS and OSPF rely on sequence numbers to indicate which piece of information being flooded through the network is the most recent. Read RFC7602 and RFC5310. Describe the problem caused by this reliance and how IS-IS resolved this problem. Are there problems with the solution standardized in RFC7602?</p>
+        <p class="indenthangingN">5. Compare OSPF and IS-IS data marshalling using the complexity model described earlier in the book (state/optimization/surface). Where do you think these two protocols have traded off state for optimization? Do the multiple LSA types and reliance on IP fragmentation represent an interaction surface that increases the complexity of OSPF?</p>
+        <p class="indenthangingN">6. Describe the security issue created by the link state age-out and reflood behavior of both OSPF and IS-IS. Find and describe the solution proposed in the IETF.</p>
+        <p class="indenthangingN">7. Consider DIS/DR election on a point-to-point link that is considered a broadcast medium (such as a point-to-point Ethernet link). Will electing a DR/DIS and creating a pseudonode reduce overall complexity or increase it? What features have been implemented in commercial implementations of OSPF and IS-IS to mitigate the result?</p>
+        <p class="footnotet"><a id="ch16fn-1"></a><a href="ch16.xhtml#ch16fn1">1</a>. Katz, “OSPF and IS-IS: A Comparative Anatomy.”</p>
+        <p class="footnote"><a id="ch16fn-2"></a><a href="ch16.xhtml#ch16fn2">2</a>. White and Retana, <em>IS-IS: Deployment in IP Networks</em>.</p>
+        <p class="footnote"><a id="ch16fn-3"></a><a href="ch16.xhtml#ch16fn3">3</a>. Mirtorabi et al., “OSPFv3 LSA Extendibility.”</p>
+        <p class="footnote"><a id="ch16fn-4"></a><a href="ch16.xhtml#ch16fn4">4</a>. Retana and White, “BGP Custom Decision Process.”</p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780134762814/files/9780134762852.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

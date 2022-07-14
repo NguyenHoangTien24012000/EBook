@@ -1,0 +1,663 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 3. Modularity"><div class="chapter" id="ch-modularity">
+        <h1><span class="label">Chapter 3. </span>Modularity</h1>
+        
+        
+        <p>First, we want to untangle some common terms used and overused in discussions about architecture surrounding modularity and provide definitions for use throughout the book.<a data-type="indexterm" data-primary="Myers, Glenford J." id="idm45838974642064"></a><a data-type="indexterm" data-primary="modularity" id="ix_mods"></a></p>
+        <blockquote>
+        <p>95% of the words [about software architecture] are spent extolling the benefits of “modularity” and that little, if anything, is said about how to achieve it.</p>
+        <p data-type="attribution">Glenford J. Myers (1978)</p>
+        </blockquote>
+        
+        <p>Different platforms offer different reuse mechanisms for code, but all support some way of grouping related code together into <em>modules</em>. While this concept is universal in software architecture, it has proven slippery to define. A casual internet search yields dozens of definitions, with no consistency (and some contradictions). As you can see from the quote from Myers, this isn’t a new problem. However, because no recognized definition exists, we must jump into the fray and provide our own definitions for the sake of consistency throughout the book.</p>
+        
+        <p>Understanding modularity and its many incarnations in the development platform of choice is critical for architects. Many of the tools we have to analyze architecture (such as metrics, fitness functions, and visualizations) rely on these modularity concepts. Modularity is an organizing principle. If an architect designs a system without paying attention to how the pieces wire together, they end up creating a system that presents myriad difficulties. To use a physics analogy, software systems model complex systems, which tend toward entropy (or disorder). Energy must be added to a physical system to preserve order. The same is true for software systems: architects must constantly expend energy to ensure good structural soundness, which won’t happen by accident.</p>
+        
+        <p class="pagebreak-before">Preserving good modularity exemplifies our definition of an <em>implicit</em> architecture characteristic: virtually no project features a requirement that asks the architect to ensure good modular distinction and communication, yet sustainable code bases require order and consistency.<a data-type="indexterm" data-primary="implicit architecture characteristics" data-secondary="modularity and" id="idm45838980920352"></a></p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Definition"><div class="sect1" id="idm45838980919184">
+        <h1>Definition</h1>
+        
+        <p>The dictionary defines <em>module</em> as “each of a<a data-type="indexterm" data-primary="modularity" data-secondary="about" id="ix_modsabt"></a> set of standardized parts or independent units that can be used to construct a more complex structure.” We use <em>modularity</em> to describe a logical grouping of related code, which could be a group of classes in an object-oriented language or functions in a structured or functional language. Most languages provide mechanisms for modularity (<code>package</code> in Java, <code>namespace</code> in .NET, and so on). Developers typically use modules as a way to group related code together. For example, the <code>com.mycompany.customer</code> package in Java should contain things related to customers.<a data-type="indexterm" data-primary="packages" id="idm45838980913408"></a></p>
+        
+        <p>Languages now feature a wide variety of packaging mechanisms, making a developer’s chore of choosing between them difficult. For example, in many modern languages, developers can define behavior in functions/methods, classes, or packages/namespaces, each with different visibility and scoping rules. Other languages complicate this further by adding programming constructs such as the <a href="https://oreil.ly/9Zw-J">metaobject protocol</a> to provide developers even more extension mechanisms.<a data-type="indexterm" data-primary="Metaobject protocol" id="idm45838980911360"></a></p>
+        
+        <p>Architects must be aware of how developers package things because it has important implications in architecture. For example, if several packages are tightly coupled together, reusing one of them for related work becomes more difficult.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45838980909888">
+        <h5>Modular Reuse Before Classes</h5>
+        <p>Developers who predate object-oriented languages may puzzle over why so many different separation schemes commonly exist. Much of the reason has to do with backward compatibility, not of code but rather for how developers think about things. In March of 1968, Edsger Dijkstra published a letter in the <em>Communications of the ACM</em> entitled “Go To Statement Considered Harmful.” He denigrated the common use of the <code>GOTO</code> statement common in programming languages at the time that allowed non-linear leaping around within code, making reasoning and debugging difficult.</p>
+        
+        <p>This paper helped usher in the era of <em>structured</em> programming languages, exemplified by Pascal and C, which encouraged deeper thinking about how things fit together. <a data-type="indexterm" data-primary="structured programming languages" id="idm45838980905968"></a>Developers quickly realized that most of the languages had no good way to group like things together logically.<a data-type="indexterm" data-primary="modular programming languages" id="idm45838980904944"></a> Thus, the short era of <em>modular</em> languages was born, such as Modula (Pascal creator Niklaus Wirth’s next language) and Ada. These languages had the programming construct of a <em>module</em>, much as we think about packages or namespaces today (but without the classes).</p>
+        
+        <p>The modular programming era was short-lived. Object-oriented languages became popular because they offered new ways to encapsulate and reuse code. Still, language designers realized the utility of modules, retaining them in the form of packages, namespaces, etc. Many odd compatibility features exist in languages to support these different paradigms. For example, Java supports modular (via packages and package-level initialization using static initializers), object-oriented, and functional paradigms, each programming style with its own scoping rules and quirks.</p>
+        </div></aside>
+        
+        <p>For discussions about architecture, we use modularity as a general term to denote a related grouping of code: classes, functions, or any other grouping. This doesn’t imply a physical separation, merely a logical one; the difference is sometimes important. For example, lumping a large number of classes together in a monolithic application may make sense from a convenience standpoint. However, when it comes time to restructure the architecture, the coupling encouraged by loose partitioning becomes an impediment to breaking the monolith apart. Thus, it is useful to talk about modularity as a concept separate from the physical separation forced or implied by a particular platform.</p>
+        
+        <p>It is worth noting the general concept of <em>namespace</em>, separate from the technical implementation in the .NET platform.<a data-type="indexterm" data-primary="namespaces" id="idm45838980900224"></a> Developers often need precise, fully qualified names for software assets to separate different software assets (components, classes, and so on) from each other. The most obvious example that people use every day is the internet: unique, global identifiers tied to IP addresses. Most languages have some modularity mechanism that doubles as a namespace to organize things: variables, functions, and/or methods. Sometimes the module structure is reflected physically. For example, Java requires that its package structure must reflect the directory structure of the physical class files.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45838980898576">
+        <h5>A Language with No Name Conflicts: Java 1.0</h5>
+        <p>The original designers of Java had extensive experience dealing with name conflicts and clashes in the various programming platforms at the time.<a data-type="indexterm" data-primary="name conflicts in programming platforms" id="idm45838980896864"></a><a data-type="indexterm" data-primary="Java" data-secondary="no name conflicts in Java 1.0" id="idm45838980896192"></a> The original design of Java used a clever hack to avoid the possibility of ambiguity between two classes that had the same name. For example, what if your problem domain included a catalog <em>order</em> and an installation <em>order</em>: both named <em>order</em> but with very different connotations (and classes). The solution in Java was to create the <code>package</code> namespace mechanism, along with the requirement that the physical directory structure just match the package name. Because filesystems won’t allow the same named file to reside in the same directory, they leveraged the inherent features of the operating system to avoid the possibility of ambiguity. Thus, the original <code>classpath</code> in Java contained only directories, disallowing the possibility of name conflicts.</p>
+        
+        <p>However, as the language designers discovered, forcing every project to have a fully formed directory structure was cumbersome, especially as projects became larger. Plus, building reusable assets was difficult: frameworks and libraries must be “exploded” into the directory structure. In the second major release of Java (1.2, called Java 2), designers added the <code>jar</code> mechanism, allowing an archive file to act as a directory structure on a classpath. For the next decade, Java developers struggled with getting the <code>classpath</code> exactly right, as a combination of directories and JAR files.<a data-type="indexterm" data-primary="classpath (Java)" id="idm45838980890576"></a> And, of course, the original intent was broken: now two JAR files could create conflicting names on a classpath, leading to numerous war stories of debugging class loaders.<a data-type="indexterm" data-primary="modularity" data-secondary="about" data-startref="ix_modsabt" id="idm45838980889472"></a></p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Measuring Modularity"><div class="sect1" id="idm45838980888000">
+        <h1>Measuring Modularity</h1>
+        
+        <p>Given the importance of modularity to architects, they need tools to understand it. <a data-type="indexterm" data-primary="modularity" data-secondary="measuring" id="ix_modsmeas"></a>Fortunately, researchers created a variety of language-agnostic metrics to help architects understand modularity. We focus on three key concepts: <em>cohesion</em>, <em>coupling</em>, and <em>connascence</em>.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Cohesion"><div class="sect2" id="idm45838980883520">
+        <h2>Cohesion</h2>
+        
+        <p><em>Cohesion</em> refers to what extent the parts of a module should be contained within the same module. In other words, it is a measure of how related the parts are to one another. Ideally, a cohesive module is one where all the parts should be packaged together, because breaking them into smaller pieces would require coupling the parts together via calls between modules to achieve useful results.</p>
+        <blockquote>
+        <p>Attempting to divide a cohesive module would only result in increased coupling and decreased readability.</p>
+        <p data-type="attribution">Larry Constantine</p>
+        </blockquote>
+        
+        <p>Computer scientists have defined a range of cohesion measures, listed here from best to worst:</p>
+        <dl>
+        <dt>Functional cohesion</dt>
+        <dd>
+        <p>Every part of the module is related to the other, and the module contains everything essential to function.</p>
+        </dd>
+        <dt>Sequential cohesion</dt>
+        <dd>
+        <p>Two modules interact, where one outputs data that becomes the input for the other.</p>
+        </dd>
+        <dt>Communicational cohesion</dt>
+        <dd>
+        <p>Two modules form a communication chain, where each operates on information and/or contributes to some output. For example, add a record to the database and generate an email based on that information.</p>
+        </dd>
+        <dt>Procedural cohesion</dt>
+        <dd>
+        <p>Two modules must execute code in a particular order.</p>
+        </dd>
+        <dt>Temporal cohesion</dt>
+        <dd>
+        <p>Modules are related based on timing dependencies.<a data-type="indexterm" data-primary="dependencies" data-secondary="timing, modules and" id="idm45838980870960"></a> For example, many systems have a list of seemingly unrelated things that must be initialized at system startup; these different tasks are temporally cohesive.</p>
+        </dd>
+        <dt>Logical cohesion</dt>
+        <dd>
+        <p>The data within modules is related logically but not functionally. For example, consider a module that converts information from text, serialized objects, or streams. Operations are related, but the functions are quite different. A common example of this type of cohesion exists in virtually every Java project in the form of the <code>StringUtils</code> package: a group of static methods that operate on <code>String</code> but are otherwise unrelated.</p>
+        </dd>
+        <dt>Coincidental cohesion</dt>
+        <dd>
+        <p>Elements in a module are not related other than being in the same source file; this represents the most negative form of cohesion.</p>
+        </dd>
+        </dl>
+        
+        <p>Despite having seven variants listed, <em>cohesion</em> is a less precise metric than <em>coupling</em>. Often, the degree of cohesiveness of a particular module is at the discretion of a particular architect. For example, consider this module definition:</p>
+        <dl>
+        <dt><code>Customer Maintenance</code></dt>
+        <dd>
+        
+        <ul>
+        <li>
+        <p><code>add customer</code></p>
+        </li>
+        <li>
+        <p><code>update customer</code></p>
+        </li>
+        <li>
+        <p><code>get customer</code></p>
+        </li>
+        <li>
+        <p><code>notify customer</code></p>
+        </li>
+        <li>
+        <p><code>get customer orders</code></p>
+        </li>
+        <li>
+        <p><code>cancel customer orders</code></p>
+        </li>
+        </ul>
+        </dd>
+        </dl>
+        
+        <p>Should the last two entries reside in this module or should the developer create two separate modules, such as:</p>
+        <dl>
+        <dt><code>Customer Maintenance</code></dt>
+        <dd>
+        
+        <ul>
+        <li>
+        <p><code>add customer</code></p>
+        </li>
+        <li>
+        <p><code>update customer</code></p>
+        </li>
+        <li>
+        <p><code>get customer</code></p>
+        </li>
+        <li>
+        <p><code>notify customer</code></p>
+        </li>
+        </ul>
+        </dd>
+        </dl>
+        <dl class="pagebreak-before">
+        <dt><code>Order Maintenance</code></dt>
+        <dd>
+        
+        <ul>
+        <li>
+        <p><code>get customer orders</code></p>
+        </li>
+        <li>
+        <p><code>cancel customer orders</code></p>
+        </li>
+        </ul>
+        </dd>
+        </dl>
+        
+        <p>Which is the correct structure? As always, it depends:</p>
+        
+        <ul>
+        <li>
+        <p>Are those the only two operations for <code>Order Maintenance</code>? If so, it may make sense to collapse those operations back into <code>Customer Maintenance</code>.</p>
+        </li>
+        <li>
+        <p>Is <code>Customer Maintenance</code> expected to grow much larger, encouraging developers to look for opportunities to extract behavior?</p>
+        </li>
+        <li>
+        <p>Does <code>Order Maintenance</code> require so much knowledge of <code>Customer</code> information that separating the two modules would require a high degree of coupling to make it functional? This relates back to the Larry Constantine quote.</p>
+        </li>
+        </ul>
+        
+        <p>These questions represent the kind of trade-off analysis at the heart of the job of a software architect.</p>
+        
+        <p>Surprisingly, given the subjectiveness of cohesion, computer scientists have developed a good structural metric to determine cohesion (or, more specifically, the lack of cohesion). A well-known set of metrics named the <a href="https://oreil.ly/-1lMh">Chidamber and Kemerer Object-oriented metrics suite</a> was developed by the eponymous authors to measure particular aspects of object-oriented software systems. The suite includes many common code metrics, such as cyclomatic complexity (see <a data-type="xref" href="ch06.html#sidebar_cc">“Cyclomatic Complexity”</a>) and several important coupling metrics discussed in <a data-type="xref" href="#sec-coupling">“Coupling”</a>.</p>
+        
+        <p>The Chidamber and Kemerer Lack of Cohesion in Methods (LCOM) metric measures the structural cohesion of a module, typically a component. The initial version appears in <a data-type="xref" href="#eq_lcom">Equation 3-1</a>.</p>
+        <div id="eq_lcom" data-type="equation">
+        <h5><span class="label">Equation 3-1. </span>LCOM, version 1</h5>
+        <mjx-container class="MathJax CtxtMenu_Attached_0" jax="SVG" display="true" tabindex="0" ctxtmenu_counter="0" style="position: relative;"><svg xmlns="http://www.w3.org/2000/svg" width="34.535ex" height="5.5ex" role="img" focusable="false" viewBox="0 -1465.5 15264.6 2431" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" style="vertical-align: -2.184ex;"><defs><path id="MJX-1-TEX-I-1D43F" d="M228 637Q194 637 192 641Q191 643 191 649Q191 673 202 682Q204 683 217 683Q271 680 344 680Q485 680 506 683H518Q524 677 524 674T522 656Q517 641 513 637H475Q406 636 394 628Q387 624 380 600T313 336Q297 271 279 198T252 88L243 52Q243 48 252 48T311 46H328Q360 46 379 47T428 54T478 72T522 106T564 161Q580 191 594 228T611 270Q616 273 628 273H641Q647 264 647 262T627 203T583 83T557 9Q555 4 553 3T537 0T494 -1Q483 -1 418 -1T294 0H116Q32 0 32 10Q32 17 34 24Q39 43 44 45Q48 46 59 46H65Q92 46 125 49Q139 52 144 61Q147 65 216 339T285 628Q285 635 228 637Z"></path><path id="MJX-1-TEX-I-1D436" d="M50 252Q50 367 117 473T286 641T490 704Q580 704 633 653Q642 643 648 636T656 626L657 623Q660 623 684 649Q691 655 699 663T715 679T725 690L740 705H746Q760 705 760 698Q760 694 728 561Q692 422 692 421Q690 416 687 415T669 413H653Q647 419 647 422Q647 423 648 429T650 449T651 481Q651 552 619 605T510 659Q484 659 454 652T382 628T299 572T226 479Q194 422 175 346T156 222Q156 108 232 58Q280 24 350 24Q441 24 512 92T606 240Q610 253 612 255T628 257Q648 257 648 248Q648 243 647 239Q618 132 523 55T319 -22Q206 -22 128 53T50 252Z"></path><path id="MJX-1-TEX-I-1D442" d="M740 435Q740 320 676 213T511 42T304 -22Q207 -22 138 35T51 201Q50 209 50 244Q50 346 98 438T227 601Q351 704 476 704Q514 704 524 703Q621 689 680 617T740 435ZM637 476Q637 565 591 615T476 665Q396 665 322 605Q242 542 200 428T157 216Q157 126 200 73T314 19Q404 19 485 98T608 313Q637 408 637 476Z"></path><path id="MJX-1-TEX-I-1D440" d="M289 629Q289 635 232 637Q208 637 201 638T194 648Q194 649 196 659Q197 662 198 666T199 671T201 676T203 679T207 681T212 683T220 683T232 684Q238 684 262 684T307 683Q386 683 398 683T414 678Q415 674 451 396L487 117L510 154Q534 190 574 254T662 394Q837 673 839 675Q840 676 842 678T846 681L852 683H948Q965 683 988 683T1017 684Q1051 684 1051 673Q1051 668 1048 656T1045 643Q1041 637 1008 637Q968 636 957 634T939 623Q936 618 867 340T797 59Q797 55 798 54T805 50T822 48T855 46H886Q892 37 892 35Q892 19 885 5Q880 0 869 0Q864 0 828 1T736 2Q675 2 644 2T609 1Q592 1 592 11Q592 13 594 25Q598 41 602 43T625 46Q652 46 685 49Q699 52 704 61Q706 65 742 207T813 490T848 631L654 322Q458 10 453 5Q451 4 449 3Q444 0 433 0Q418 0 415 7Q413 11 374 317L335 624L267 354Q200 88 200 79Q206 46 272 46H282Q288 41 289 37T286 19Q282 3 278 1Q274 0 267 0Q265 0 255 0T221 1T157 2Q127 2 95 1T58 0Q43 0 39 2T35 11Q35 13 38 25T43 40Q45 46 65 46Q135 46 154 86Q158 92 223 354T289 629Z"></path><path id="MJX-1-TEX-N-3D" d="M56 347Q56 360 70 367H707Q722 359 722 347Q722 336 708 328L390 327H72Q56 332 56 347ZM56 153Q56 168 72 173H708Q722 163 722 153Q722 140 707 133H70Q56 140 56 153Z"></path><path id="MJX-1-TEX-S3-7B" d="M618 -943L612 -949H582L568 -943Q472 -903 411 -841T332 -703Q327 -682 327 -653T325 -350Q324 -28 323 -18Q317 24 301 61T264 124T221 171T179 205T147 225T132 234Q130 238 130 250Q130 255 130 258T131 264T132 267T134 269T139 272T144 275Q207 308 256 367Q310 436 323 519Q324 529 325 851Q326 1124 326 1154T332 1205Q369 1358 566 1443L582 1450H612L618 1444V1429Q618 1413 616 1411L608 1406Q599 1402 585 1393T552 1372T515 1343T479 1305T449 1257T429 1200Q425 1180 425 1152T423 851Q422 579 422 549T416 498Q407 459 388 424T346 364T297 318T250 284T214 264T197 254L188 251L205 242Q290 200 345 138T416 3Q421 -18 421 -48T423 -349Q423 -397 423 -472Q424 -677 428 -694Q429 -697 429 -699Q434 -722 443 -743T465 -782T491 -816T519 -845T548 -868T574 -886T595 -899T610 -908L616 -910Q618 -912 618 -928V-943Z"></path><path id="MJX-1-TEX-N-7C" d="M139 -249H137Q125 -249 119 -235V251L120 737Q130 750 139 750Q152 750 159 735V-235Q151 -249 141 -249H139Z"></path><path id="MJX-1-TEX-I-1D443" d="M287 628Q287 635 230 637Q206 637 199 638T192 648Q192 649 194 659Q200 679 203 681T397 683Q587 682 600 680Q664 669 707 631T751 530Q751 453 685 389Q616 321 507 303Q500 302 402 301H307L277 182Q247 66 247 59Q247 55 248 54T255 50T272 48T305 46H336Q342 37 342 35Q342 19 335 5Q330 0 319 0Q316 0 282 1T182 2Q120 2 87 2T51 1Q33 1 33 11Q33 13 36 25Q40 41 44 43T67 46Q94 46 127 49Q141 52 146 61Q149 65 218 339T287 628ZM645 554Q645 567 643 575T634 597T609 619T560 635Q553 636 480 637Q463 637 445 637T416 636T404 636Q391 635 386 627Q384 621 367 550T332 412T314 344Q314 342 395 342H407H430Q542 342 590 392Q617 419 631 471T645 554Z"></path><path id="MJX-1-TEX-N-2212" d="M84 237T84 250T98 270H679Q694 262 694 250T679 230H98Q84 237 84 250Z"></path><path id="MJX-1-TEX-I-1D444" d="M399 -80Q399 -47 400 -30T402 -11V-7L387 -11Q341 -22 303 -22Q208 -22 138 35T51 201Q50 209 50 244Q50 346 98 438T227 601Q351 704 476 704Q514 704 524 703Q621 689 680 617T740 435Q740 255 592 107Q529 47 461 16L444 8V3Q444 2 449 -24T470 -66T516 -82Q551 -82 583 -60T625 -3Q631 11 638 11Q647 11 649 2Q649 -6 639 -34T611 -100T557 -165T481 -194Q399 -194 399 -87V-80ZM636 468Q636 523 621 564T580 625T530 655T477 665Q429 665 379 640Q277 591 215 464T153 216Q153 110 207 59Q231 38 236 38V46Q236 86 269 120T347 155Q372 155 390 144T417 114T429 82T435 55L448 64Q512 108 557 185T619 334T636 468ZM314 18Q362 18 404 39L403 49Q399 104 366 115Q354 117 347 117Q344 117 341 117T337 118Q317 118 296 98T274 52Q274 18 314 18Z"></path><path id="MJX-1-TEX-N-2C" d="M78 35T78 60T94 103T137 121Q165 121 187 96T210 8Q210 -27 201 -60T180 -117T154 -158T130 -185T117 -194Q113 -194 104 -185T95 -172Q95 -168 106 -156T131 -126T157 -76T173 -3V9L172 8Q170 7 167 6T161 3T152 1T140 0Q113 0 96 17Z"></path><path id="MJX-1-TEX-N-69" d="M69 609Q69 637 87 653T131 669Q154 667 171 652T188 609Q188 579 171 564T129 549Q104 549 87 564T69 609ZM247 0Q232 3 143 3Q132 3 106 3T56 1L34 0H26V46H42Q70 46 91 49Q100 53 102 60T104 102V205V293Q104 345 102 359T88 378Q74 385 41 385H30V408Q30 431 32 431L42 432Q52 433 70 434T106 436Q123 437 142 438T171 441T182 442H185V62Q190 52 197 50T232 46H255V0H247Z"></path><path id="MJX-1-TEX-N-66" d="M273 0Q255 3 146 3Q43 3 34 0H26V46H42Q70 46 91 49Q99 52 103 60Q104 62 104 224V385H33V431H104V497L105 564L107 574Q126 639 171 668T266 704Q267 704 275 704T289 705Q330 702 351 679T372 627Q372 604 358 590T321 576T284 590T270 627Q270 647 288 667H284Q280 668 273 668Q245 668 223 647T189 592Q183 572 182 497V431H293V385H185V225Q185 63 186 61T189 57T194 54T199 51T206 49T213 48T222 47T231 47T241 46T251 46H282V0H273Z"></path><path id="MJX-1-TEX-N-3E" d="M84 520Q84 528 88 533T96 539L99 540Q106 540 253 471T544 334L687 265Q694 260 694 250T687 235Q685 233 395 96L107 -40H101Q83 -38 83 -20Q83 -19 83 -17Q82 -10 98 -1Q117 9 248 71Q326 108 378 132L626 250L378 368Q90 504 86 509Q84 513 84 520Z"></path><path id="MJX-1-TEX-N-30" d="M96 585Q152 666 249 666Q297 666 345 640T423 548Q460 465 460 320Q460 165 417 83Q397 41 362 16T301 -15T250 -22Q224 -22 198 -16T137 16T82 83Q39 165 39 320Q39 494 96 585ZM321 597Q291 629 250 629Q208 629 178 597Q153 571 145 525T137 333Q137 175 145 125T181 46Q209 16 250 16Q290 16 318 46Q347 76 354 130T362 333Q362 478 354 524T321 597Z"></path><path id="MJX-1-TEX-N-6F" d="M28 214Q28 309 93 378T250 448Q340 448 405 380T471 215Q471 120 407 55T250 -10Q153 -10 91 57T28 214ZM250 30Q372 30 372 193V225V250Q372 272 371 288T364 326T348 362T317 390T268 410Q263 411 252 411Q222 411 195 399Q152 377 139 338T126 246V226Q126 130 145 91Q177 30 250 30Z"></path><path id="MJX-1-TEX-N-74" d="M27 422Q80 426 109 478T141 600V615H181V431H316V385H181V241Q182 116 182 100T189 68Q203 29 238 29Q282 29 292 100Q293 108 293 146V181H333V146V134Q333 57 291 17Q264 -10 221 -10Q187 -10 162 2T124 33T105 68T98 100Q97 107 97 248V385H18V422H27Z"></path><path id="MJX-1-TEX-N-68" d="M41 46H55Q94 46 102 60V68Q102 77 102 91T102 124T102 167T103 217T103 272T103 329Q103 366 103 407T103 482T102 542T102 586T102 603Q99 622 88 628T43 637H25V660Q25 683 27 683L37 684Q47 685 66 686T103 688Q120 689 140 690T170 693T181 694H184V367Q244 442 328 442Q451 442 463 329Q464 322 464 190V104Q464 66 466 59T477 49Q498 46 526 46H542V0H534L510 1Q487 2 460 2T422 3Q319 3 310 0H302V46H318Q379 46 379 62Q380 64 380 200Q379 335 378 343Q372 371 358 385T334 402T308 404Q263 404 229 370Q202 343 195 315T187 232V168V108Q187 78 188 68T191 55T200 49Q221 46 249 46H265V0H257L234 1Q210 2 183 2T145 3Q42 3 33 0H25V46H41Z"></path><path id="MJX-1-TEX-N-65" d="M28 218Q28 273 48 318T98 391T163 433T229 448Q282 448 320 430T378 380T406 316T415 245Q415 238 408 231H126V216Q126 68 226 36Q246 30 270 30Q312 30 342 62Q359 79 369 104L379 128Q382 131 395 131H398Q415 131 415 121Q415 117 412 108Q393 53 349 21T250 -11Q155 -11 92 58T28 218ZM333 275Q322 403 238 411H236Q228 411 220 410T195 402T166 381T143 340T127 274V267H333V275Z"></path><path id="MJX-1-TEX-N-72" d="M36 46H50Q89 46 97 60V68Q97 77 97 91T98 122T98 161T98 203Q98 234 98 269T98 328L97 351Q94 370 83 376T38 385H20V408Q20 431 22 431L32 432Q42 433 60 434T96 436Q112 437 131 438T160 441T171 442H174V373Q213 441 271 441H277Q322 441 343 419T364 373Q364 352 351 337T313 322Q288 322 276 338T263 372Q263 381 265 388T270 400T273 405Q271 407 250 401Q234 393 226 386Q179 341 179 207V154Q179 141 179 127T179 101T180 81T180 66V61Q181 59 183 57T188 54T193 51T200 49T207 48T216 47T225 47T235 46T245 46H276V0H267Q249 3 140 3Q37 3 28 0H20V46H36Z"></path><path id="MJX-1-TEX-N-77" d="M90 368Q84 378 76 380T40 385H18V431H24L43 430Q62 430 84 429T116 428Q206 428 221 431H229V385H215Q177 383 177 368Q177 367 221 239L265 113L339 328L333 345Q323 374 316 379Q308 384 278 385H258V431H264Q270 428 348 428Q439 428 454 431H461V385H452Q404 385 404 369Q404 366 418 324T449 234T481 143L496 100L537 219Q579 341 579 347Q579 363 564 373T530 385H522V431H529Q541 428 624 428Q692 428 698 431H703V385H697Q696 385 691 385T682 384Q635 377 619 334L559 161Q546 124 528 71Q508 12 503 1T487 -11H479Q460 -11 456 -4Q455 -3 407 133L361 267Q359 263 266 -4Q261 -11 243 -11H238Q225 -11 220 -3L90 368Z"></path><path id="MJX-1-TEX-N-73" d="M295 316Q295 356 268 385T190 414Q154 414 128 401Q98 382 98 349Q97 344 98 336T114 312T157 287Q175 282 201 278T245 269T277 256Q294 248 310 236T342 195T359 133Q359 71 321 31T198 -10H190Q138 -10 94 26L86 19L77 10Q71 4 65 -1L54 -11H46H42Q39 -11 33 -5V74V132Q33 153 35 157T45 162H54Q66 162 70 158T75 146T82 119T101 77Q136 26 198 26Q295 26 295 104Q295 133 277 151Q257 175 194 187T111 210Q75 227 54 256T33 318Q33 357 50 384T93 424T143 442T187 447H198Q238 447 268 432L283 424L292 431Q302 440 314 448H322H326Q329 448 335 442V310L329 304H301Q295 310 295 316Z"></path></defs><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mrow"><g data-mml-node="mi"><use data-c="1D43F" xlink:href="#MJX-1-TEX-I-1D43F"></use></g><g data-mml-node="mi" transform="translate(681,0)"><use data-c="1D436" xlink:href="#MJX-1-TEX-I-1D436"></use></g><g data-mml-node="mi" transform="translate(1441,0)"><use data-c="1D442" xlink:href="#MJX-1-TEX-I-1D442"></use></g><g data-mml-node="mi" transform="translate(2204,0)"><use data-c="1D440" xlink:href="#MJX-1-TEX-I-1D440"></use></g><g data-mml-node="mo" transform="translate(3532.8,0)"><use data-c="3D" xlink:href="#MJX-1-TEX-N-3D"></use></g><g data-mml-node="mfenced" transform="translate(4588.6,0)"><g data-mml-node="mo" transform="translate(0 -0.5)"><use data-c="7B" xlink:href="#MJX-1-TEX-S3-7B"></use></g><g data-mml-node="mtable" transform="translate(750,0)"><g data-mml-node="mtr" transform="translate(0,715.5)"><g data-mml-node="mtd"><g data-mml-node="mrow"><g data-mml-node="mo" transform="translate(0 -0.5)"><use data-c="7C" xlink:href="#MJX-1-TEX-N-7C"></use></g><g data-mml-node="mi" transform="translate(278,0)"><use data-c="1D443" xlink:href="#MJX-1-TEX-I-1D443"></use></g><g data-mml-node="mo" transform="translate(1029,0) translate(0 -0.5)"><use data-c="7C" xlink:href="#MJX-1-TEX-N-7C"></use></g><g data-mml-node="mo" transform="translate(1529.2,0)"><use data-c="2212" xlink:href="#MJX-1-TEX-N-2212"></use></g><g data-mml-node="mo" transform="translate(2529.4,0) translate(0 -0.5)"><use data-c="7C" xlink:href="#MJX-1-TEX-N-7C"></use></g><g data-mml-node="mi" transform="translate(2807.4,0)"><use data-c="1D444" xlink:href="#MJX-1-TEX-I-1D444"></use></g><g data-mml-node="mo" transform="translate(3598.4,0) translate(0 -0.5)"><use data-c="7C" xlink:href="#MJX-1-TEX-N-7C"></use></g><g data-mml-node="mo" transform="translate(3876.4,0)"><use data-c="2C" xlink:href="#MJX-1-TEX-N-2C"></use></g></g></g><g data-mml-node="mtd" transform="translate(4954.4,0)"><g data-mml-node="mrow"><g data-mml-node="mtext"><use data-c="69" xlink:href="#MJX-1-TEX-N-69"></use><use data-c="66" xlink:href="#MJX-1-TEX-N-66" transform="translate(278,0)"></use></g><g data-mml-node="mspace" transform="translate(584,0)"></g><g data-mml-node="mo" transform="translate(984,0) translate(0 -0.5)"><use data-c="7C" xlink:href="#MJX-1-TEX-N-7C"></use></g><g data-mml-node="mi" transform="translate(1262,0)"><use data-c="1D443" xlink:href="#MJX-1-TEX-I-1D443"></use></g><g data-mml-node="mo" transform="translate(2013,0) translate(0 -0.5)"><use data-c="7C" xlink:href="#MJX-1-TEX-N-7C"></use></g><g data-mml-node="mo" transform="translate(2568.8,0)"><use data-c="3E" xlink:href="#MJX-1-TEX-N-3E"></use></g><g data-mml-node="mo" transform="translate(3624.6,0) translate(0 -0.5)"><use data-c="7C" xlink:href="#MJX-1-TEX-N-7C"></use></g><g data-mml-node="mi" transform="translate(3902.6,0)"><use data-c="1D444" xlink:href="#MJX-1-TEX-I-1D444"></use></g><g data-mml-node="mo" transform="translate(4693.6,0) translate(0 -0.5)"><use data-c="7C" xlink:href="#MJX-1-TEX-N-7C"></use></g></g></g></g><g data-mml-node="mtr" transform="translate(0,-715.5)"><g data-mml-node="mtd"><g data-mml-node="mrow"><g data-mml-node="mn"><use data-c="30" xlink:href="#MJX-1-TEX-N-30"></use></g><g data-mml-node="mo" transform="translate(500,0)"><use data-c="2C" xlink:href="#MJX-1-TEX-N-2C"></use></g></g></g><g data-mml-node="mtd" transform="translate(4954.4,0)"><g data-mml-node="mtext"><use data-c="6F" xlink:href="#MJX-1-TEX-N-6F"></use><use data-c="74" xlink:href="#MJX-1-TEX-N-74" transform="translate(500,0)"></use><use data-c="68" xlink:href="#MJX-1-TEX-N-68" transform="translate(889,0)"></use><use data-c="65" xlink:href="#MJX-1-TEX-N-65" transform="translate(1445,0)"></use><use data-c="72" xlink:href="#MJX-1-TEX-N-72" transform="translate(1889,0)"></use><use data-c="77" xlink:href="#MJX-1-TEX-N-77" transform="translate(2281,0)"></use><use data-c="69" xlink:href="#MJX-1-TEX-N-69" transform="translate(3003,0)"></use><use data-c="73" xlink:href="#MJX-1-TEX-N-73" transform="translate(3281,0)"></use><use data-c="65" xlink:href="#MJX-1-TEX-N-65" transform="translate(3675,0)"></use></g></g></g></g></g></g></g></g></svg><mjx-assistive-mml unselectable="on" display="block"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="upper L upper C upper O upper M equals StartLayout Enlarged left-brace 1st Row 1st Column StartAbsoluteValue upper P EndAbsoluteValue minus StartAbsoluteValue upper Q EndAbsoluteValue comma 2nd Column if StartAbsoluteValue upper P EndAbsoluteValue greater-than StartAbsoluteValue upper Q EndAbsoluteValue 2nd Row 1st Column 0 comma 2nd Column otherwise EndLayout" display="block"><mrow><mi>L</mi><mi>C</mi><mi>O</mi><mi>M</mi><mo>=</mo><mfenced separators="" open="{" close=""><mtable><mtr><mtd columnalign="left"><mrow><mo>|</mo><mi>P</mi><mo>|</mo><mo>-</mo><mo>|</mo><mi>Q</mi><mo>|</mo><mo>,</mo></mrow></mtd><mtd columnalign="left"><mrow><mtext>if</mtext><mspace width="4pt"></mspace><mo>|</mo><mi>P</mi><mo>|</mo><mo>&gt;</mo><mo>|</mo><mi>Q</mi><mo>|</mo></mrow></mtd></mtr><mtr><mtd columnalign="left"><mrow><mn>0</mn><mo>,</mo></mrow></mtd><mtd columnalign="left"><mtext>otherwise</mtext></mtd></mtr></mtable></mfenced></mrow></math></mjx-assistive-mml></mjx-container>
+        </div>
+        
+        <p><em>P</em> increases by one for any method that doesn’t access a particular shared field and <em>Q</em> decreases by one for methods that do share a particular shared field. The authors sympathize with those who don’t understand this formulation. Worse, it has gradually gotten more elaborate over time. The second variation introduced in 1996 (thus the name <em>LCOM96B</em>) appears in <a data-type="xref" href="#eq-lcom96">Equation 3-2</a>.</p>
+        <div id="eq-lcom96" data-type="equation" class="pagebreak-before">
+        <h5><span class="label">Equation 3-2. </span>LCOM 96b</h5>
+        <mjx-container class="MathJax CtxtMenu_Attached_0" jax="SVG" display="true" tabindex="0" ctxtmenu_counter="1" style="position: relative;"><svg xmlns="http://www.w3.org/2000/svg" width="31.329ex" height="6.548ex" role="img" focusable="false" viewBox="0 -1561.8 13847.3 2894" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" style="vertical-align: -3.014ex;"><defs><path id="MJX-2-TEX-I-1D43F" d="M228 637Q194 637 192 641Q191 643 191 649Q191 673 202 682Q204 683 217 683Q271 680 344 680Q485 680 506 683H518Q524 677 524 674T522 656Q517 641 513 637H475Q406 636 394 628Q387 624 380 600T313 336Q297 271 279 198T252 88L243 52Q243 48 252 48T311 46H328Q360 46 379 47T428 54T478 72T522 106T564 161Q580 191 594 228T611 270Q616 273 628 273H641Q647 264 647 262T627 203T583 83T557 9Q555 4 553 3T537 0T494 -1Q483 -1 418 -1T294 0H116Q32 0 32 10Q32 17 34 24Q39 43 44 45Q48 46 59 46H65Q92 46 125 49Q139 52 144 61Q147 65 216 339T285 628Q285 635 228 637Z"></path><path id="MJX-2-TEX-I-1D436" d="M50 252Q50 367 117 473T286 641T490 704Q580 704 633 653Q642 643 648 636T656 626L657 623Q660 623 684 649Q691 655 699 663T715 679T725 690L740 705H746Q760 705 760 698Q760 694 728 561Q692 422 692 421Q690 416 687 415T669 413H653Q647 419 647 422Q647 423 648 429T650 449T651 481Q651 552 619 605T510 659Q484 659 454 652T382 628T299 572T226 479Q194 422 175 346T156 222Q156 108 232 58Q280 24 350 24Q441 24 512 92T606 240Q610 253 612 255T628 257Q648 257 648 248Q648 243 647 239Q618 132 523 55T319 -22Q206 -22 128 53T50 252Z"></path><path id="MJX-2-TEX-I-1D442" d="M740 435Q740 320 676 213T511 42T304 -22Q207 -22 138 35T51 201Q50 209 50 244Q50 346 98 438T227 601Q351 704 476 704Q514 704 524 703Q621 689 680 617T740 435ZM637 476Q637 565 591 615T476 665Q396 665 322 605Q242 542 200 428T157 216Q157 126 200 73T314 19Q404 19 485 98T608 313Q637 408 637 476Z"></path><path id="MJX-2-TEX-I-1D440" d="M289 629Q289 635 232 637Q208 637 201 638T194 648Q194 649 196 659Q197 662 198 666T199 671T201 676T203 679T207 681T212 683T220 683T232 684Q238 684 262 684T307 683Q386 683 398 683T414 678Q415 674 451 396L487 117L510 154Q534 190 574 254T662 394Q837 673 839 675Q840 676 842 678T846 681L852 683H948Q965 683 988 683T1017 684Q1051 684 1051 673Q1051 668 1048 656T1045 643Q1041 637 1008 637Q968 636 957 634T939 623Q936 618 867 340T797 59Q797 55 798 54T805 50T822 48T855 46H886Q892 37 892 35Q892 19 885 5Q880 0 869 0Q864 0 828 1T736 2Q675 2 644 2T609 1Q592 1 592 11Q592 13 594 25Q598 41 602 43T625 46Q652 46 685 49Q699 52 704 61Q706 65 742 207T813 490T848 631L654 322Q458 10 453 5Q451 4 449 3Q444 0 433 0Q418 0 415 7Q413 11 374 317L335 624L267 354Q200 88 200 79Q206 46 272 46H282Q288 41 289 37T286 19Q282 3 278 1Q274 0 267 0Q265 0 255 0T221 1T157 2Q127 2 95 1T58 0Q43 0 39 2T35 11Q35 13 38 25T43 40Q45 46 65 46Q135 46 154 86Q158 92 223 354T289 629Z"></path><path id="MJX-2-TEX-N-39" d="M352 287Q304 211 232 211Q154 211 104 270T44 396Q42 412 42 436V444Q42 537 111 606Q171 666 243 666Q245 666 249 666T257 665H261Q273 665 286 663T323 651T370 619T413 560Q456 472 456 334Q456 194 396 97Q361 41 312 10T208 -22Q147 -22 108 7T68 93T121 149Q143 149 158 135T173 96Q173 78 164 65T148 49T135 44L131 43Q131 41 138 37T164 27T206 22H212Q272 22 313 86Q352 142 352 280V287ZM244 248Q292 248 321 297T351 430Q351 508 343 542Q341 552 337 562T323 588T293 615T246 625Q208 625 181 598Q160 576 154 546T147 441Q147 358 152 329T172 282Q197 248 244 248Z"></path><path id="MJX-2-TEX-N-36" d="M42 313Q42 476 123 571T303 666Q372 666 402 630T432 550Q432 525 418 510T379 495Q356 495 341 509T326 548Q326 592 373 601Q351 623 311 626Q240 626 194 566Q147 500 147 364L148 360Q153 366 156 373Q197 433 263 433H267Q313 433 348 414Q372 400 396 374T435 317Q456 268 456 210V192Q456 169 451 149Q440 90 387 34T253 -22Q225 -22 199 -14T143 16T92 75T56 172T42 313ZM257 397Q227 397 205 380T171 335T154 278T148 216Q148 133 160 97T198 39Q222 21 251 21Q302 21 329 59Q342 77 347 104T352 209Q352 289 347 316T329 361Q302 397 257 397Z"></path><path id="MJX-2-TEX-I-1D44F" d="M73 647Q73 657 77 670T89 683Q90 683 161 688T234 694Q246 694 246 685T212 542Q204 508 195 472T180 418L176 399Q176 396 182 402Q231 442 283 442Q345 442 383 396T422 280Q422 169 343 79T173 -11Q123 -11 82 27T40 150V159Q40 180 48 217T97 414Q147 611 147 623T109 637Q104 637 101 637H96Q86 637 83 637T76 640T73 647ZM336 325V331Q336 405 275 405Q258 405 240 397T207 376T181 352T163 330L157 322L136 236Q114 150 114 114Q114 66 138 42Q154 26 178 26Q211 26 245 58Q270 81 285 114T318 219Q336 291 336 325Z"></path><path id="MJX-2-TEX-N-3D" d="M56 347Q56 360 70 367H707Q722 359 722 347Q722 336 708 328L390 327H72Q56 332 56 347ZM56 153Q56 168 72 173H708Q722 163 722 153Q722 140 707 133H70Q56 140 56 153Z"></path><path id="MJX-2-TEX-N-31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path><path id="MJX-2-TEX-I-1D44E" d="M33 157Q33 258 109 349T280 441Q331 441 370 392Q386 422 416 422Q429 422 439 414T449 394Q449 381 412 234T374 68Q374 43 381 35T402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487Q506 153 506 144Q506 138 501 117T481 63T449 13Q436 0 417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157ZM351 328Q351 334 346 350T323 385T277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q217 26 254 59T298 110Q300 114 325 217T351 328Z"></path><path id="MJX-2-TEX-LO-2211" d="M60 948Q63 950 665 950H1267L1325 815Q1384 677 1388 669H1348L1341 683Q1320 724 1285 761Q1235 809 1174 838T1033 881T882 898T699 902H574H543H251L259 891Q722 258 724 252Q725 250 724 246Q721 243 460 -56L196 -356Q196 -357 407 -357Q459 -357 548 -357T676 -358Q812 -358 896 -353T1063 -332T1204 -283T1307 -196Q1328 -170 1348 -124H1388Q1388 -125 1381 -145T1356 -210T1325 -294L1267 -449L666 -450Q64 -450 61 -448Q55 -446 55 -439Q55 -437 57 -433L590 177Q590 178 557 222T452 366T322 544L56 909L55 924Q55 945 60 948Z"></path><path id="MJX-2-TEX-I-1D457" d="M297 596Q297 627 318 644T361 661Q378 661 389 651T403 623Q403 595 384 576T340 557Q322 557 310 567T297 596ZM288 376Q288 405 262 405Q240 405 220 393T185 362T161 325T144 293L137 279Q135 278 121 278H107Q101 284 101 286T105 299Q126 348 164 391T252 441Q253 441 260 441T272 442Q296 441 316 432Q341 418 354 401T367 348V332L318 133Q267 -67 264 -75Q246 -125 194 -164T75 -204Q25 -204 7 -183T-12 -137Q-12 -110 7 -91T53 -71Q70 -71 82 -81T95 -112Q95 -148 63 -167Q69 -168 77 -168Q111 -168 139 -140T182 -74L193 -32Q204 11 219 72T251 197T278 308T289 365Q289 372 288 376Z"></path><path id="MJX-2-TEX-I-1D45A" d="M21 287Q22 293 24 303T36 341T56 388T88 425T132 442T175 435T205 417T221 395T229 376L231 369Q231 367 232 367L243 378Q303 442 384 442Q401 442 415 440T441 433T460 423T475 411T485 398T493 385T497 373T500 364T502 357L510 367Q573 442 659 442Q713 442 746 415T780 336Q780 285 742 178T704 50Q705 36 709 31T724 26Q752 26 776 56T815 138Q818 149 821 151T837 153Q857 153 857 145Q857 144 853 130Q845 101 831 73T785 17T716 -10Q669 -10 648 17T627 73Q627 92 663 193T700 345Q700 404 656 404H651Q565 404 506 303L499 291L466 157Q433 26 428 16Q415 -11 385 -11Q372 -11 364 -4T353 8T350 18Q350 29 384 161L420 307Q423 322 423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 181Q151 335 151 342Q154 357 154 369Q154 405 129 405Q107 405 92 377T69 316T57 280Q55 278 41 278H27Q21 284 21 287Z"></path><path id="MJX-2-TEX-N-2212" d="M84 237T84 250T98 270H679Q694 262 694 250T679 230H98Q84 237 84 250Z"></path><path id="MJX-2-TEX-I-1D707" d="M58 -216Q44 -216 34 -208T23 -186Q23 -176 96 116T173 414Q186 442 219 442Q231 441 239 435T249 423T251 413Q251 401 220 279T187 142Q185 131 185 107V99Q185 26 252 26Q261 26 270 27T287 31T302 38T315 45T327 55T338 65T348 77T356 88T365 100L372 110L408 253Q444 395 448 404Q461 431 491 431Q504 431 512 424T523 412T525 402L449 84Q448 79 448 68Q448 43 455 35T476 26Q485 27 496 35Q517 55 537 131Q543 151 547 152Q549 153 557 153H561Q580 153 580 144Q580 138 575 117T555 63T523 13Q510 0 491 -8Q483 -10 467 -10Q446 -10 429 -4T402 11T385 29T376 44T374 51L368 45Q362 39 350 30T324 12T288 -4T246 -11Q199 -11 153 12L129 -85Q108 -167 104 -180T92 -202Q76 -216 58 -216Z"></path><path id="MJX-2-TEX-N-28" d="M94 250Q94 319 104 381T127 488T164 576T202 643T244 695T277 729T302 750H315H319Q333 750 333 741Q333 738 316 720T275 667T226 581T184 443T167 250T184 58T225 -81T274 -167T316 -220T333 -241Q333 -250 318 -250H315H302L274 -226Q180 -141 137 -14T94 250Z"></path><path id="MJX-2-TEX-I-1D434" d="M208 74Q208 50 254 46Q272 46 272 35Q272 34 270 22Q267 8 264 4T251 0Q249 0 239 0T205 1T141 2Q70 2 50 0H42Q35 7 35 11Q37 38 48 46H62Q132 49 164 96Q170 102 345 401T523 704Q530 716 547 716H555H572Q578 707 578 706L606 383Q634 60 636 57Q641 46 701 46Q726 46 726 36Q726 34 723 22Q720 7 718 4T704 0Q701 0 690 0T651 1T578 2Q484 2 455 0H443Q437 6 437 9T439 27Q443 40 445 43L449 46H469Q523 49 533 63L521 213H283L249 155Q208 86 208 74ZM516 260Q516 271 504 416T490 562L463 519Q447 492 400 412L310 260L413 259Q516 259 516 260Z"></path><path id="MJX-2-TEX-N-29" d="M60 749L64 750Q69 750 74 750H86L114 726Q208 641 251 514T294 250Q294 182 284 119T261 12T224 -76T186 -143T145 -194T113 -227T90 -246Q87 -249 86 -250H74Q66 -250 63 -250T58 -247T55 -238Q56 -237 66 -225Q221 -64 221 250T66 725Q56 737 55 738Q55 746 60 749Z"></path></defs><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mrow"><g data-mml-node="mi"><use data-c="1D43F" xlink:href="#MJX-2-TEX-I-1D43F"></use></g><g data-mml-node="mi" transform="translate(681,0)"><use data-c="1D436" xlink:href="#MJX-2-TEX-I-1D436"></use></g><g data-mml-node="mi" transform="translate(1441,0)"><use data-c="1D442" xlink:href="#MJX-2-TEX-I-1D442"></use></g><g data-mml-node="mi" transform="translate(2204,0)"><use data-c="1D440" xlink:href="#MJX-2-TEX-I-1D440"></use></g><g data-mml-node="mn" transform="translate(3255,0)"><use data-c="39" xlink:href="#MJX-2-TEX-N-39"></use><use data-c="36" xlink:href="#MJX-2-TEX-N-36" transform="translate(500,0)"></use></g><g data-mml-node="mi" transform="translate(4255,0)"><use data-c="1D44F" xlink:href="#MJX-2-TEX-I-1D44F"></use></g><g data-mml-node="mo" transform="translate(4961.8,0)"><use data-c="3D" xlink:href="#MJX-2-TEX-N-3D"></use></g><g data-mml-node="mfrac" transform="translate(6017.6,0)"><g data-mml-node="mn" transform="translate(234.5,676)"><use data-c="31" xlink:href="#MJX-2-TEX-N-31"></use></g><g data-mml-node="mi" transform="translate(220,-686)"><use data-c="1D44E" xlink:href="#MJX-2-TEX-I-1D44E"></use></g><rect width="729" height="60" x="120" y="220"></rect></g><g data-mml-node="munderover" transform="translate(7153.2,0)"><g data-mml-node="mo"><use data-c="2211" xlink:href="#MJX-2-TEX-LO-2211"></use></g><g data-mml-node="mrow" transform="translate(124.5,-1087.9) scale(0.707)"><g data-mml-node="mi"><use data-c="1D457" xlink:href="#MJX-2-TEX-I-1D457"></use></g><g data-mml-node="mo" transform="translate(412,0)"><use data-c="3D" xlink:href="#MJX-2-TEX-N-3D"></use></g><g data-mml-node="mn" transform="translate(1190,0)"><use data-c="31" xlink:href="#MJX-2-TEX-N-31"></use></g></g><g data-mml-node="mi" transform="translate(535,1150) scale(0.707)"><use data-c="1D44E" xlink:href="#MJX-2-TEX-I-1D44E"></use></g></g><g data-mml-node="mfrac" transform="translate(8763.9,0)"><g data-mml-node="mrow" transform="translate(220,710)"><g data-mml-node="mi"><use data-c="1D45A" xlink:href="#MJX-2-TEX-I-1D45A"></use></g><g data-mml-node="mo" transform="translate(1100.2,0)"><use data-c="2212" xlink:href="#MJX-2-TEX-N-2212"></use></g><g data-mml-node="mi" transform="translate(2100.4,0)"><use data-c="1D707" xlink:href="#MJX-2-TEX-I-1D707"></use></g><g data-mml-node="mo" transform="translate(2703.4,0)"><use data-c="28" xlink:href="#MJX-2-TEX-N-28"></use></g><g data-mml-node="mi" transform="translate(3092.4,0)"><use data-c="1D434" xlink:href="#MJX-2-TEX-I-1D434"></use></g><g data-mml-node="mi" transform="translate(3842.4,0)"><use data-c="1D457" xlink:href="#MJX-2-TEX-I-1D457"></use></g><g data-mml-node="mo" transform="translate(4254.4,0)"><use data-c="29" xlink:href="#MJX-2-TEX-N-29"></use></g></g><g data-mml-node="mi" transform="translate(2102.7,-686)"><use data-c="1D45A" xlink:href="#MJX-2-TEX-I-1D45A"></use></g><rect width="4843.4" height="60" x="120" y="220"></rect></g></g></g></g></svg><mjx-assistive-mml unselectable="on" display="block"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="upper L upper C upper O upper M Baseline 96 b equals StartFraction 1 Over a EndFraction sigma-summation Underscript j equals 1 Overscript a Endscripts StartFraction m minus mu left-parenthesis upper A j right-parenthesis Over m EndFraction" display="block"><mrow><mi>L</mi><mi>C</mi><mi>O</mi><mi>M</mi><mn>96</mn><mi>b</mi><mo>=</mo><mfrac><mn>1</mn><mi>a</mi></mfrac><munderover><mo>∑</mo><mrow><mi>j</mi><mo>=</mo><mn>1</mn></mrow><mi>a</mi></munderover><mfrac><mrow><mi>m</mi><mo>-</mo><mi>μ</mi><mo>(</mo><mi>A</mi><mi>j</mi><mo>)</mo></mrow><mi>m</mi></mfrac></mrow></math></mjx-assistive-mml></mjx-container>
+        </div>
+        
+        <p>We wont bother untangling the variables and operators in <a data-type="xref" href="#eq-lcom96">Equation 3-2</a> because the following written explanation is clearer. Basically, the LCOM metric exposes incidental coupling within classes. Here’s a better definition of LCOM:</p>
+        <dl>
+        <dt>LCOM</dt>
+        <dd>
+        <p>The sum of sets of methods not shared via sharing fields</p>
+        </dd>
+        </dl>
+        
+        <p>Consider a class with private fields <code>a</code> and <code>b</code>. Many of the methods only access <code>a</code>, and many other methods only access <code>b</code>. The <em>sum</em> of the sets of methods not shared via sharing fields (<code>a</code> and <code>b</code>) is high; therefore, this class reports a high LCOM score, indicating that it scores high in <em>lack of cohesion in methods</em>. Consider the three classes shown in <a data-type="xref" href="#ch-modularity-LCOM">Figure&nbsp;3-1</a>.</p>
+        
+        <figure><div id="ch-modularity-LCOM" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_0301.png" alt="LCOM Modularity" width="1434" height="656">
+        <h6><span class="label">Figure 3-1. </span>Illustration of the LCOM metric, where fields are octagons and methods are squares</h6>
+        </div></figure>
+        
+        <p>In <a data-type="xref" href="#ch-modularity-LCOM">Figure&nbsp;3-1</a>, fields appear as single letters and methods appear as blocks. In <code>Class X</code>, the LCOM score is low, indicating good structural cohesion. <code>Class Y</code>, however, lacks cohesion; each of the field/method pairs in <code>Class Y</code> could appear in its own class without affecting behavior. <code>Class Z</code> shows mixed cohesion, where developers could refactor the last field/method combination into its own class.</p>
+        
+        <p class="pagebreak-before">The LCOM metric is useful to architects who are analyzing code bases in order to move from one architectural style to another. One of the common headaches when moving architectures are shared utility classes. Using the LCOM metric can help architects find classes that are incidentally coupled and should never have been a single class to begin with.</p>
+        
+        <p>Many software metrics have serious deficiencies, and LCOM is not immune. All this metric can find is <em>structural</em> lack of cohesion; it has no way to determine logically if particular pieces fit together. This reflects back on our Second Law of Software Architecture: prefer <em>why</em> over <em>how</em>.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Coupling"><div class="sect2" id="sec-coupling">
+        <h2>Coupling</h2>
+        
+        <p>Fortunately, we have better tools to analyze coupling in code bases, based in part on graph theory: because the method calls and returns form a call graph, analysis based on mathematics becomes possible. In 1979, Edward Yourdon and Larry Constantine published <em>Structured Design: Fundamentals of a Discipline of Computer Program and Systems Design</em> (Prentice-Hall), defining many core concepts, including the metrics <em>afferent</em> and <em>efferent</em> coupling. <em>Afferent</em> coupling measures the number of <em>incoming</em> connections to a code artifact (component, class, function, and so on). <em>Efferent</em> coupling measures the <em>outgoing</em> connections to other code artifacts. For virtually every platform tools exist that allow architects to analyze the coupling characteristics of code in order to assist in restructuring, migrating, or understanding a code base.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45838976018480">
+        <h5>Why Such Similar Names for Coupling Metrics?</h5>
+        <p>Why are two critical metrics in the architecture world that represent opposite concepts named virtually the same thing, differing in only the vowels that sound the most alike? These terms originate from Yourdon and Constantine’s <em>Structured Design</em>. Borrowing concepts from mathematics, they coined the now-common afferent and efferent coupling terms, which should have been called incoming and outgoing coupling. However, because the original authors leaned toward mathematical symmetry rather than clarity, developers came up with several mnemonics to help out: <em>a</em> appears before <em>e</em> in the English alphabet, corresponding to <em>incoming</em> being before <em>outgoing</em>, or the observation that the letter <em>e</em> in efferent matches the initial letter in <em>exit</em>, corresponding to outgoing connections.</p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Abstractness, Instability, and Distance from the Main Sequence"><div class="sect2" id="sec-abstractness-instability-and-distance-from-the-main-sequence">
+        <h2>Abstractness, Instability, and Distance from the Main Sequence</h2>
+        
+        <p>While the raw value of component coupling has value to architects, several other derived metrics allow a deeper evaluation. These metrics were created by Robert Martin for a C++ book, but are widely applicable to other object-oriented languages.</p>
+        
+        <p class="pagebreak-before"><em>Abstractness</em> is the ratio of abstract artifacts (abstract classes, interfaces, and so on) to concrete artifacts (implementation). It represents a measure of abstractness versus implementation. For example, consider a code base with no abstractions, just a huge, single function of code (as in a single <code>main()</code> method). The flip side is a code base with too many abstractions, making it difficult for developers to understand how things wire together (for example, it takes developers a while to figure out what to do with an <code>AbstractSingletonProxyFactoryBean</code>).</p>
+        
+        <p>The formula for abstractness appears in <a data-type="xref" href="#eq_abstractness">Equation 3-3</a>.</p>
+        <div id="eq_abstractness" data-type="equation">
+        <h5><span class="label">Equation 3-3. </span>Abstractness</h5>
+        <mjx-container class="MathJax CtxtMenu_Attached_0" jax="SVG" display="true" tabindex="0" ctxtmenu_counter="2" style="position: relative;"><svg xmlns="http://www.w3.org/2000/svg" width="19.895ex" height="5.475ex" role="img" focusable="false" viewBox="0 -1460 8793.6 2420" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" style="vertical-align: -2.172ex;"><defs><path id="MJX-3-TEX-I-1D434" d="M208 74Q208 50 254 46Q272 46 272 35Q272 34 270 22Q267 8 264 4T251 0Q249 0 239 0T205 1T141 2Q70 2 50 0H42Q35 7 35 11Q37 38 48 46H62Q132 49 164 96Q170 102 345 401T523 704Q530 716 547 716H555H572Q578 707 578 706L606 383Q634 60 636 57Q641 46 701 46Q726 46 726 36Q726 34 723 22Q720 7 718 4T704 0Q701 0 690 0T651 1T578 2Q484 2 455 0H443Q437 6 437 9T439 27Q443 40 445 43L449 46H469Q523 49 533 63L521 213H283L249 155Q208 86 208 74ZM516 260Q516 271 504 416T490 562L463 519Q447 492 400 412L310 260L413 259Q516 259 516 260Z"></path><path id="MJX-3-TEX-N-3D" d="M56 347Q56 360 70 367H707Q722 359 722 347Q722 336 708 328L390 327H72Q56 332 56 347ZM56 153Q56 168 72 173H708Q722 163 722 153Q722 140 707 133H70Q56 140 56 153Z"></path><path id="MJX-3-TEX-SO-2211" d="M61 748Q64 750 489 750H913L954 640Q965 609 976 579T993 533T999 516H979L959 517Q936 579 886 621T777 682Q724 700 655 705T436 710H319Q183 710 183 709Q186 706 348 484T511 259Q517 250 513 244L490 216Q466 188 420 134T330 27L149 -187Q149 -188 362 -188Q388 -188 436 -188T506 -189Q679 -189 778 -162T936 -43Q946 -27 959 6H999L913 -249L489 -250Q65 -250 62 -248Q56 -246 56 -239Q56 -234 118 -161Q186 -81 245 -11L428 206Q428 207 242 462L57 717L56 728Q56 744 61 748Z"></path><path id="MJX-3-TEX-I-1D45A" d="M21 287Q22 293 24 303T36 341T56 388T88 425T132 442T175 435T205 417T221 395T229 376L231 369Q231 367 232 367L243 378Q303 442 384 442Q401 442 415 440T441 433T460 423T475 411T485 398T493 385T497 373T500 364T502 357L510 367Q573 442 659 442Q713 442 746 415T780 336Q780 285 742 178T704 50Q705 36 709 31T724 26Q752 26 776 56T815 138Q818 149 821 151T837 153Q857 153 857 145Q857 144 853 130Q845 101 831 73T785 17T716 -10Q669 -10 648 17T627 73Q627 92 663 193T700 345Q700 404 656 404H651Q565 404 506 303L499 291L466 157Q433 26 428 16Q415 -11 385 -11Q372 -11 364 -4T353 8T350 18Q350 29 384 161L420 307Q423 322 423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 181Q151 335 151 342Q154 357 154 369Q154 405 129 405Q107 405 92 377T69 316T57 280Q55 278 41 278H27Q21 284 21 287Z"></path><path id="MJX-3-TEX-I-1D44E" d="M33 157Q33 258 109 349T280 441Q331 441 370 392Q386 422 416 422Q429 422 439 414T449 394Q449 381 412 234T374 68Q374 43 381 35T402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487Q506 153 506 144Q506 138 501 117T481 63T449 13Q436 0 417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157ZM351 328Q351 334 346 350T323 385T277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q217 26 254 59T298 110Q300 114 325 217T351 328Z"></path><path id="MJX-3-TEX-I-1D450" d="M34 159Q34 268 120 355T306 442Q362 442 394 418T427 355Q427 326 408 306T360 285Q341 285 330 295T319 325T330 359T352 380T366 386H367Q367 388 361 392T340 400T306 404Q276 404 249 390Q228 381 206 359Q162 315 142 235T121 119Q121 73 147 50Q169 26 205 26H209Q321 26 394 111Q403 121 406 121Q410 121 419 112T429 98T420 83T391 55T346 25T282 0T202 -11Q127 -11 81 37T34 159Z"></path><path id="MJX-3-TEX-N-2B" d="M56 237T56 250T70 270H369V420L370 570Q380 583 389 583Q402 583 409 568V270H707Q722 262 722 250T707 230H409V-68Q401 -82 391 -82H389H387Q375 -82 369 -68V230H70Q56 237 56 250Z"></path></defs><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mrow"><g data-mml-node="mi"><use data-c="1D434" xlink:href="#MJX-3-TEX-I-1D434"></use></g><g data-mml-node="mo" transform="translate(1027.8,0)"><use data-c="3D" xlink:href="#MJX-3-TEX-N-3D"></use></g><g data-mml-node="mfrac" transform="translate(2083.6,0)"><g data-mml-node="mrow" transform="translate(2076.1,710)"><g data-mml-node="mo"><use data-c="2211" xlink:href="#MJX-3-TEX-SO-2211"></use></g><g data-mml-node="msup" transform="translate(1222.7,0)"><g data-mml-node="mi"><use data-c="1D45A" xlink:href="#MJX-3-TEX-I-1D45A"></use></g><g data-mml-node="mi" transform="translate(911,363) scale(0.707)"><use data-c="1D44E" xlink:href="#MJX-3-TEX-I-1D44E"></use></g></g></g><g data-mml-node="mrow" transform="translate(220,-710)"><g data-mml-node="mo"><use data-c="2211" xlink:href="#MJX-3-TEX-SO-2211"></use></g><g data-mml-node="msup" transform="translate(1222.7,0)"><g data-mml-node="mi"><use data-c="1D45A" xlink:href="#MJX-3-TEX-I-1D45A"></use></g><g data-mml-node="mi" transform="translate(911,289) scale(0.707)"><use data-c="1D450" xlink:href="#MJX-3-TEX-I-1D450"></use></g></g><g data-mml-node="mo" transform="translate(2712.1,0)"><use data-c="2B" xlink:href="#MJX-3-TEX-N-2B"></use></g><g data-mml-node="mo" transform="translate(3712.3,0)"><use data-c="2211" xlink:href="#MJX-3-TEX-SO-2211"></use></g><g data-mml-node="msup" transform="translate(4935,0)"><g data-mml-node="mi"><use data-c="1D45A" xlink:href="#MJX-3-TEX-I-1D45A"></use></g><g data-mml-node="mi" transform="translate(911,289) scale(0.707)"><use data-c="1D44E" xlink:href="#MJX-3-TEX-I-1D44E"></use></g></g></g><rect width="6470" height="60" x="120" y="220"></rect></g></g></g></g></svg><mjx-assistive-mml unselectable="on" display="block"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="upper A equals StartFraction sigma-summation m Superscript a Baseline Over sigma-summation m Superscript c Baseline plus sigma-summation m Superscript a Baseline EndFraction" display="block"><mrow><mi>A</mi><mo>=</mo><mfrac><mrow><mo>∑</mo><msup><mi>m</mi><mi>a</mi></msup></mrow><mrow><mo>∑</mo><msup><mi>m</mi><mi>c</mi></msup><mo>+</mo><mo>∑</mo><msup><mi>m</mi><mi>a</mi></msup></mrow></mfrac></mrow></math></mjx-assistive-mml></mjx-container>
+        </div>
+        
+        <p>In the equation, <mjx-container class="MathJax CtxtMenu_Attached_0" jax="SVG" tabindex="0" ctxtmenu_counter="3" style="position: relative;"><svg xmlns="http://www.w3.org/2000/svg" width="3.02ex" height="1.552ex" role="img" focusable="false" viewBox="0 -674.8 1335.1 685.8" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" style="vertical-align: -0.025ex;"><defs><path id="MJX-4-TEX-I-1D45A" d="M21 287Q22 293 24 303T36 341T56 388T88 425T132 442T175 435T205 417T221 395T229 376L231 369Q231 367 232 367L243 378Q303 442 384 442Q401 442 415 440T441 433T460 423T475 411T485 398T493 385T497 373T500 364T502 357L510 367Q573 442 659 442Q713 442 746 415T780 336Q780 285 742 178T704 50Q705 36 709 31T724 26Q752 26 776 56T815 138Q818 149 821 151T837 153Q857 153 857 145Q857 144 853 130Q845 101 831 73T785 17T716 -10Q669 -10 648 17T627 73Q627 92 663 193T700 345Q700 404 656 404H651Q565 404 506 303L499 291L466 157Q433 26 428 16Q415 -11 385 -11Q372 -11 364 -4T353 8T350 18Q350 29 384 161L420 307Q423 322 423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 181Q151 335 151 342Q154 357 154 369Q154 405 129 405Q107 405 92 377T69 316T57 280Q55 278 41 278H27Q21 284 21 287Z"></path><path id="MJX-4-TEX-I-1D44E" d="M33 157Q33 258 109 349T280 441Q331 441 370 392Q386 422 416 422Q429 422 439 414T449 394Q449 381 412 234T374 68Q374 43 381 35T402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487Q506 153 506 144Q506 138 501 117T481 63T449 13Q436 0 417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157ZM351 328Q351 334 346 350T323 385T277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q217 26 254 59T298 110Q300 114 325 217T351 328Z"></path></defs><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msup"><g data-mml-node="mi"><use data-c="1D45A" xlink:href="#MJX-4-TEX-I-1D45A"></use></g><g data-mml-node="mi" transform="translate(911,363) scale(0.707)"><use data-c="1D44E" xlink:href="#MJX-4-TEX-I-1D44E"></use></g></g></g></g></svg><mjx-assistive-mml unselectable="on" display="inline"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="m Superscript a"><msup><mi>m</mi><mi>a</mi></msup></math></mjx-assistive-mml></mjx-container> represents <em>abstract</em> elements (interfaces or abstract classes) with the module, and <mjx-container class="MathJax CtxtMenu_Attached_0" jax="SVG" tabindex="0" ctxtmenu_counter="4" style="position: relative;"><svg xmlns="http://www.w3.org/2000/svg" width="2.867ex" height="1.553ex" role="img" focusable="false" viewBox="0 -675.5 1267.2 686.5" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" style="vertical-align: -0.025ex;"><defs><path id="MJX-5-TEX-I-1D45A" d="M21 287Q22 293 24 303T36 341T56 388T88 425T132 442T175 435T205 417T221 395T229 376L231 369Q231 367 232 367L243 378Q303 442 384 442Q401 442 415 440T441 433T460 423T475 411T485 398T493 385T497 373T500 364T502 357L510 367Q573 442 659 442Q713 442 746 415T780 336Q780 285 742 178T704 50Q705 36 709 31T724 26Q752 26 776 56T815 138Q818 149 821 151T837 153Q857 153 857 145Q857 144 853 130Q845 101 831 73T785 17T716 -10Q669 -10 648 17T627 73Q627 92 663 193T700 345Q700 404 656 404H651Q565 404 506 303L499 291L466 157Q433 26 428 16Q415 -11 385 -11Q372 -11 364 -4T353 8T350 18Q350 29 384 161L420 307Q423 322 423 345Q423 404 379 404H374Q288 404 229 303L222 291L189 157Q156 26 151 16Q138 -11 108 -11Q95 -11 87 -5T76 7T74 17Q74 30 112 181Q151 335 151 342Q154 357 154 369Q154 405 129 405Q107 405 92 377T69 316T57 280Q55 278 41 278H27Q21 284 21 287Z"></path><path id="MJX-5-TEX-I-1D450" d="M34 159Q34 268 120 355T306 442Q362 442 394 418T427 355Q427 326 408 306T360 285Q341 285 330 295T319 325T330 359T352 380T366 386H367Q367 388 361 392T340 400T306 404Q276 404 249 390Q228 381 206 359Q162 315 142 235T121 119Q121 73 147 50Q169 26 205 26H209Q321 26 394 111Q403 121 406 121Q410 121 419 112T429 98T420 83T391 55T346 25T282 0T202 -11Q127 -11 81 37T34 159Z"></path></defs><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msup"><g data-mml-node="mi"><use data-c="1D45A" xlink:href="#MJX-5-TEX-I-1D45A"></use></g><g data-mml-node="mi" transform="translate(911,363) scale(0.707)"><use data-c="1D450" xlink:href="#MJX-5-TEX-I-1D450"></use></g></g></g></g></svg><mjx-assistive-mml unselectable="on" display="inline"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="m Superscript c"><msup><mi>m</mi><mi>c</mi></msup></math></mjx-assistive-mml></mjx-container> represents <em>concrete</em> elements (nonabstract classes). This metric looks for the same criteria. The easiest way to visualize this metric: consider an application with 5,000 lines of code, all in one <code>main()</code> method. The abstractness numerator is 1, while the denominator is 5,000, yielding an abstractness of almost 0. Thus, this metric measures the ratio of abstractions in your code.</p>
+        
+        <p>Architects calculate <em>abstractness</em> by calculating the ratio of the sum of abstract artifacts to the sum of the concrete and abstract ones.</p>
+        
+        <p>Another derived metric, <em>instability</em>, is defined as the ratio of efferent coupling to the sum of both efferent and afferent coupling, shown in <a data-type="xref" href="#eq_instability">Equation 3-4</a>.</p>
+        <div id="eq_instability" data-type="equation">
+        <h5><span class="label">Equation 3-4. </span>Instability</h5>
+        <mjx-container class="MathJax CtxtMenu_Attached_0" jax="SVG" display="true" tabindex="0" ctxtmenu_counter="5" style="position: relative;"><svg xmlns="http://www.w3.org/2000/svg" width="13.561ex" height="4.862ex" role="img" focusable="false" viewBox="0 -1381 5994.1 2149" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" style="vertical-align: -1.738ex;"><defs><path id="MJX-6-TEX-I-1D43C" d="M43 1Q26 1 26 10Q26 12 29 24Q34 43 39 45Q42 46 54 46H60Q120 46 136 53Q137 53 138 54Q143 56 149 77T198 273Q210 318 216 344Q286 624 286 626Q284 630 284 631Q274 637 213 637H193Q184 643 189 662Q193 677 195 680T209 683H213Q285 681 359 681Q481 681 487 683H497Q504 676 504 672T501 655T494 639Q491 637 471 637Q440 637 407 634Q393 631 388 623Q381 609 337 432Q326 385 315 341Q245 65 245 59Q245 52 255 50T307 46H339Q345 38 345 37T342 19Q338 6 332 0H316Q279 2 179 2Q143 2 113 2T65 2T43 1Z"></path><path id="MJX-6-TEX-N-3D" d="M56 347Q56 360 70 367H707Q722 359 722 347Q722 336 708 328L390 327H72Q56 332 56 347ZM56 153Q56 168 72 173H708Q722 163 722 153Q722 140 707 133H70Q56 140 56 153Z"></path><path id="MJX-6-TEX-I-1D436" d="M50 252Q50 367 117 473T286 641T490 704Q580 704 633 653Q642 643 648 636T656 626L657 623Q660 623 684 649Q691 655 699 663T715 679T725 690L740 705H746Q760 705 760 698Q760 694 728 561Q692 422 692 421Q690 416 687 415T669 413H653Q647 419 647 422Q647 423 648 429T650 449T651 481Q651 552 619 605T510 659Q484 659 454 652T382 628T299 572T226 479Q194 422 175 346T156 222Q156 108 232 58Q280 24 350 24Q441 24 512 92T606 240Q610 253 612 255T628 257Q648 257 648 248Q648 243 647 239Q618 132 523 55T319 -22Q206 -22 128 53T50 252Z"></path><path id="MJX-6-TEX-I-1D452" d="M39 168Q39 225 58 272T107 350T174 402T244 433T307 442H310Q355 442 388 420T421 355Q421 265 310 237Q261 224 176 223Q139 223 138 221Q138 219 132 186T125 128Q125 81 146 54T209 26T302 45T394 111Q403 121 406 121Q410 121 419 112T429 98T420 82T390 55T344 24T281 -1T205 -11Q126 -11 83 42T39 168ZM373 353Q367 405 305 405Q272 405 244 391T199 357T170 316T154 280T149 261Q149 260 169 260Q282 260 327 284T373 353Z"></path><path id="MJX-6-TEX-N-2B" d="M56 237T56 250T70 270H369V420L370 570Q380 583 389 583Q402 583 409 568V270H707Q722 262 722 250T707 230H409V-68Q401 -82 391 -82H389H387Q375 -82 369 -68V230H70Q56 237 56 250Z"></path><path id="MJX-6-TEX-I-1D44E" d="M33 157Q33 258 109 349T280 441Q331 441 370 392Q386 422 416 422Q429 422 439 414T449 394Q449 381 412 234T374 68Q374 43 381 35T402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487Q506 153 506 144Q506 138 501 117T481 63T449 13Q436 0 417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157ZM351 328Q351 334 346 350T323 385T277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q217 26 254 59T298 110Q300 114 325 217T351 328Z"></path></defs><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mrow"><g data-mml-node="mi"><use data-c="1D43C" xlink:href="#MJX-6-TEX-I-1D43C"></use></g><g data-mml-node="mo" transform="translate(781.8,0)"><use data-c="3D" xlink:href="#MJX-6-TEX-N-3D"></use></g><g data-mml-node="mfrac" transform="translate(1837.6,0)"><g data-mml-node="msup" transform="translate(1465.9,676)"><g data-mml-node="mi"><use data-c="1D436" xlink:href="#MJX-6-TEX-I-1D436"></use></g><g data-mml-node="mi" transform="translate(845.3,363) scale(0.707)"><use data-c="1D452" xlink:href="#MJX-6-TEX-I-1D452"></use></g></g><g data-mml-node="mrow" transform="translate(220,-686)"><g data-mml-node="msup"><g data-mml-node="mi"><use data-c="1D436" xlink:href="#MJX-6-TEX-I-1D436"></use></g><g data-mml-node="mi" transform="translate(845.3,289) scale(0.707)"><use data-c="1D452" xlink:href="#MJX-6-TEX-I-1D452"></use></g></g><g data-mml-node="mo" transform="translate(1447,0)"><use data-c="2B" xlink:href="#MJX-6-TEX-N-2B"></use></g><g data-mml-node="msup" transform="translate(2447.2,0)"><g data-mml-node="mi"><use data-c="1D436" xlink:href="#MJX-6-TEX-I-1D436"></use></g><g data-mml-node="mi" transform="translate(845.3,289) scale(0.707)"><use data-c="1D44E" xlink:href="#MJX-6-TEX-I-1D44E"></use></g></g></g><rect width="3916.5" height="60" x="120" y="220"></rect></g></g></g></g></svg><mjx-assistive-mml unselectable="on" display="block"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="upper I equals StartFraction upper C Superscript e Baseline Over upper C Superscript e Baseline plus upper C Superscript a Baseline EndFraction" display="block"><mrow><mi>I</mi><mo>=</mo><mfrac><msup><mi>C</mi><mi>e</mi></msup><mrow><msup><mi>C</mi><mi>e</mi></msup><mo>+</mo><msup><mi>C</mi><mi>a</mi></msup></mrow></mfrac></mrow></math></mjx-assistive-mml></mjx-container>
+        </div>
+        
+        <p>In the equation, <mjx-container class="MathJax CtxtMenu_Attached_0" jax="SVG" tabindex="0" ctxtmenu_counter="6" style="position: relative;"><svg xmlns="http://www.w3.org/2000/svg" width="1.913ex" height="1.553ex" role="img" focusable="false" viewBox="0 -675.5 845.5 686.5" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" style="vertical-align: -0.025ex;"><defs><path id="MJX-7-TEX-I-1D450" d="M34 159Q34 268 120 355T306 442Q362 442 394 418T427 355Q427 326 408 306T360 285Q341 285 330 295T319 325T330 359T352 380T366 386H367Q367 388 361 392T340 400T306 404Q276 404 249 390Q228 381 206 359Q162 315 142 235T121 119Q121 73 147 50Q169 26 205 26H209Q321 26 394 111Q403 121 406 121Q410 121 419 112T429 98T420 83T391 55T346 25T282 0T202 -11Q127 -11 81 37T34 159Z"></path><path id="MJX-7-TEX-I-1D452" d="M39 168Q39 225 58 272T107 350T174 402T244 433T307 442H310Q355 442 388 420T421 355Q421 265 310 237Q261 224 176 223Q139 223 138 221Q138 219 132 186T125 128Q125 81 146 54T209 26T302 45T394 111Q403 121 406 121Q410 121 419 112T429 98T420 82T390 55T344 24T281 -1T205 -11Q126 -11 83 42T39 168ZM373 353Q367 405 305 405Q272 405 244 391T199 357T170 316T154 280T149 261Q149 260 169 260Q282 260 327 284T373 353Z"></path></defs><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msup"><g data-mml-node="mi"><use data-c="1D450" xlink:href="#MJX-7-TEX-I-1D450"></use></g><g data-mml-node="mi" transform="translate(466,363) scale(0.707)"><use data-c="1D452" xlink:href="#MJX-7-TEX-I-1D452"></use></g></g></g></g></svg><mjx-assistive-mml unselectable="on" display="inline"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="c Superscript e"><msup><mi>c</mi><mi>e</mi></msup></math></mjx-assistive-mml></mjx-container> represents <em>efferent</em> (or outgoing) coupling, and <mjx-container class="MathJax CtxtMenu_Attached_0" jax="SVG" tabindex="0" ctxtmenu_counter="7" style="position: relative;"><svg xmlns="http://www.w3.org/2000/svg" width="2.014ex" height="1.552ex" role="img" focusable="false" viewBox="0 -674.8 890.1 685.8" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" style="vertical-align: -0.025ex;"><defs><path id="MJX-8-TEX-I-1D450" d="M34 159Q34 268 120 355T306 442Q362 442 394 418T427 355Q427 326 408 306T360 285Q341 285 330 295T319 325T330 359T352 380T366 386H367Q367 388 361 392T340 400T306 404Q276 404 249 390Q228 381 206 359Q162 315 142 235T121 119Q121 73 147 50Q169 26 205 26H209Q321 26 394 111Q403 121 406 121Q410 121 419 112T429 98T420 83T391 55T346 25T282 0T202 -11Q127 -11 81 37T34 159Z"></path><path id="MJX-8-TEX-I-1D44E" d="M33 157Q33 258 109 349T280 441Q331 441 370 392Q386 422 416 422Q429 422 439 414T449 394Q449 381 412 234T374 68Q374 43 381 35T402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487Q506 153 506 144Q506 138 501 117T481 63T449 13Q436 0 417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157ZM351 328Q351 334 346 350T323 385T277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q217 26 254 59T298 110Q300 114 325 217T351 328Z"></path></defs><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="msup"><g data-mml-node="mi"><use data-c="1D450" xlink:href="#MJX-8-TEX-I-1D450"></use></g><g data-mml-node="mi" transform="translate(466,363) scale(0.707)"><use data-c="1D44E" xlink:href="#MJX-8-TEX-I-1D44E"></use></g></g></g></g></svg><mjx-assistive-mml unselectable="on" display="inline"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="c Superscript a"><msup><mi>c</mi><mi>a</mi></msup></math></mjx-assistive-mml></mjx-container> represents <em>afferent</em> (or incoming) coupling.</p>
+        
+        <p>The <em>instability</em> metric determines the volatility of a code base. A code base that exhibits high degrees of instability breaks more easily when changed because of high coupling. For example, if a class calls to many other classes to delegate work, the calling class shows high susceptibility to breakage if one or more of the called methods change.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Distance from the Main Sequence"><div class="sect2" id="idm45838976012336">
+        <h2>Distance from the Main Sequence</h2>
+        
+        <p>One of the few holistic metrics architects have for architectural structure is <em>distance from the main sequence</em>, a derived metric based on <em>instability</em> and <em>abstractness</em>, shown in <a data-type="xref" href="#eq_distance">Equation 3-5</a>.</p>
+        <div id="eq_distance" data-type="equation">
+        <h5><span class="label">Equation 3-5. </span>Distance from the main sequence</h5>
+        <mjx-container class="MathJax CtxtMenu_Attached_0" jax="SVG" display="true" tabindex="0" ctxtmenu_counter="8" style="position: relative;"><svg xmlns="http://www.w3.org/2000/svg" width="15.648ex" height="2.26ex" role="img" focusable="false" viewBox="0 -749.5 6916.4 999" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" style="vertical-align: -0.564ex;"><defs><path id="MJX-9-TEX-I-1D437" d="M287 628Q287 635 230 637Q207 637 200 638T193 647Q193 655 197 667T204 682Q206 683 403 683Q570 682 590 682T630 676Q702 659 752 597T803 431Q803 275 696 151T444 3L430 1L236 0H125H72Q48 0 41 2T33 11Q33 13 36 25Q40 41 44 43T67 46Q94 46 127 49Q141 52 146 61Q149 65 218 339T287 628ZM703 469Q703 507 692 537T666 584T629 613T590 629T555 636Q553 636 541 636T512 636T479 637H436Q392 637 386 627Q384 623 313 339T242 52Q242 48 253 48T330 47Q335 47 349 47T373 46Q499 46 581 128Q617 164 640 212T683 339T703 469Z"></path><path id="MJX-9-TEX-N-3D" d="M56 347Q56 360 70 367H707Q722 359 722 347Q722 336 708 328L390 327H72Q56 332 56 347ZM56 153Q56 168 72 173H708Q722 163 722 153Q722 140 707 133H70Q56 140 56 153Z"></path><path id="MJX-9-TEX-N-7C" d="M139 -249H137Q125 -249 119 -235V251L120 737Q130 750 139 750Q152 750 159 735V-235Q151 -249 141 -249H139Z"></path><path id="MJX-9-TEX-I-1D434" d="M208 74Q208 50 254 46Q272 46 272 35Q272 34 270 22Q267 8 264 4T251 0Q249 0 239 0T205 1T141 2Q70 2 50 0H42Q35 7 35 11Q37 38 48 46H62Q132 49 164 96Q170 102 345 401T523 704Q530 716 547 716H555H572Q578 707 578 706L606 383Q634 60 636 57Q641 46 701 46Q726 46 726 36Q726 34 723 22Q720 7 718 4T704 0Q701 0 690 0T651 1T578 2Q484 2 455 0H443Q437 6 437 9T439 27Q443 40 445 43L449 46H469Q523 49 533 63L521 213H283L249 155Q208 86 208 74ZM516 260Q516 271 504 416T490 562L463 519Q447 492 400 412L310 260L413 259Q516 259 516 260Z"></path><path id="MJX-9-TEX-N-2B" d="M56 237T56 250T70 270H369V420L370 570Q380 583 389 583Q402 583 409 568V270H707Q722 262 722 250T707 230H409V-68Q401 -82 391 -82H389H387Q375 -82 369 -68V230H70Q56 237 56 250Z"></path><path id="MJX-9-TEX-I-1D43C" d="M43 1Q26 1 26 10Q26 12 29 24Q34 43 39 45Q42 46 54 46H60Q120 46 136 53Q137 53 138 54Q143 56 149 77T198 273Q210 318 216 344Q286 624 286 626Q284 630 284 631Q274 637 213 637H193Q184 643 189 662Q193 677 195 680T209 683H213Q285 681 359 681Q481 681 487 683H497Q504 676 504 672T501 655T494 639Q491 637 471 637Q440 637 407 634Q393 631 388 623Q381 609 337 432Q326 385 315 341Q245 65 245 59Q245 52 255 50T307 46H339Q345 38 345 37T342 19Q338 6 332 0H316Q279 2 179 2Q143 2 113 2T65 2T43 1Z"></path><path id="MJX-9-TEX-N-2212" d="M84 237T84 250T98 270H679Q694 262 694 250T679 230H98Q84 237 84 250Z"></path><path id="MJX-9-TEX-N-31" d="M213 578L200 573Q186 568 160 563T102 556H83V602H102Q149 604 189 617T245 641T273 663Q275 666 285 666Q294 666 302 660V361L303 61Q310 54 315 52T339 48T401 46H427V0H416Q395 3 257 3Q121 3 100 0H88V46H114Q136 46 152 46T177 47T193 50T201 52T207 57T213 61V578Z"></path></defs><g stroke="currentColor" fill="currentColor" stroke-width="0" transform="scale(1,-1)"><g data-mml-node="math"><g data-mml-node="mrow"><g data-mml-node="mi"><use data-c="1D437" xlink:href="#MJX-9-TEX-I-1D437"></use></g><g data-mml-node="mo" transform="translate(1105.8,0)"><use data-c="3D" xlink:href="#MJX-9-TEX-N-3D"></use></g><g data-mml-node="mo" transform="translate(2161.6,0) translate(0 -0.5)"><use data-c="7C" xlink:href="#MJX-9-TEX-N-7C"></use></g><g data-mml-node="mi" transform="translate(2439.6,0)"><use data-c="1D434" xlink:href="#MJX-9-TEX-I-1D434"></use></g><g data-mml-node="mo" transform="translate(3411.8,0)"><use data-c="2B" xlink:href="#MJX-9-TEX-N-2B"></use></g><g data-mml-node="mi" transform="translate(4412,0)"><use data-c="1D43C" xlink:href="#MJX-9-TEX-I-1D43C"></use></g><g data-mml-node="mo" transform="translate(5138.2,0)"><use data-c="2212" xlink:href="#MJX-9-TEX-N-2212"></use></g><g data-mml-node="mn" transform="translate(6138.4,0)"><use data-c="31" xlink:href="#MJX-9-TEX-N-31"></use></g><g data-mml-node="mo" transform="translate(6638.4,0) translate(0 -0.5)"><use data-c="7C" xlink:href="#MJX-9-TEX-N-7C"></use></g></g></g></g></svg><mjx-assistive-mml unselectable="on" display="block"><math xmlns="http://www.w3.org/1998/Math/MathML" alttext="upper D equals StartAbsoluteValue upper A plus upper I minus 1 EndAbsoluteValue" display="block"><mrow><mi>D</mi><mo>=</mo><mo>|</mo><mi>A</mi><mo>+</mo><mi>I</mi><mo>-</mo><mn>1</mn><mo>|</mo></mrow></math></mjx-assistive-mml></mjx-container>
+        </div>
+        
+        <p>In the equation, <code>A</code> = <em>abstractness</em> and I = <em>instability</em>.</p>
+        
+        <p>Note that both <em>abstractness</em> and <em>instability</em> are fractions whose results will always fall between 0 and 1 (except in extreme cases of abstractness that wouldn’t be practical). Thus, when graphing the relationship, we see the graph in <a data-type="xref" href="#fig_distance">Figure&nbsp;3-2</a>.</p>
+        
+        <figure class="width-50"><div id="fig_distance" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_0302.png" alt="" width="883" height="815">
+        <h6><span class="label">Figure 3-2. </span>The main sequence defines the ideal relationship between abstractness and instability</h6>
+        </div></figure>
+        
+        <p>The <em>distance</em> metric imagines an ideal relationship between abstractness and instability; classes that fall near this idealized line exhibit a healthy mixture of these two competing concerns. For example, graphing a particular class allows developers to calculate the <em>distance from the main sequence</em> metric, illustrated in <a data-type="xref" href="#ch-measuring-normalized">Figure&nbsp;3-3</a>.</p>
+        
+        <figure class="width-50"><div id="ch-measuring-normalized" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_0303.png" alt="" width="883" height="819">
+        <h6><span class="label">Figure 3-3. </span>Normalized distance from the main sequence for a particular class</h6>
+        </div></figure>
+        
+        <p>In <a data-type="xref" href="#ch-measuring-normalized">Figure&nbsp;3-3</a>, developers graph the candidate class, then measure the distance from the idealized line. The closer to the line, the better balanced the class. Classes that fall too far into the upper-righthand corner enter into what architects call the <em>zone of uselessness</em>: code that is too abstract becomes difficult to use. Conversely, code that falls into the lower-lefthand corner enter the <em>zone of pain</em>: code with too much implementation and not enough abstraction becomes brittle and hard to maintain, illustrated in <a data-type="xref" href="#ch-measuring-zones">Figure&nbsp;3-4</a>.</p>
+        
+        <figure class="width-50"><div id="ch-measuring-zones" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_0304.png" alt="" width="786" height="738">
+        <h6><span class="label">Figure 3-4. </span>Zones of Uselessness and Pain</h6>
+        </div></figure>
+        
+        <p>Tools exist in many platforms to provide these measures, which assist architects when analyzing code bases because of unfamiliarity, migration, or technical debt <span class="keep-together">assessment.</span></p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45838975945280">
+        <h5>Limitations of Metrics</h5>
+        <p>While the industry has a few code-level metrics that provide valuable insight into code bases, our tools are extremely blunt compared to analysis tools from other engineering disciplines. Even metrics derived directly from the structure of code require interpretation. For example, cyclomatic complexity (see <a data-type="xref" href="ch06.html#sidebar_cc">“Cyclomatic Complexity”</a>) measures complexity in code bases but cannot distinguish from <em>essential</em> complexity (because the underlying problem is complex) or <em>accidental complexity</em> (the code is more complex than it should be). Virtually all code-level metrics require interpretation, but it is still useful to establish baselines for critical metrics such as cyclomatic complexity so that architects can assess which type they exhibit. We discuss setting up just such tests in <a data-type="xref" href="ch06.html#sec-ff">“Governance and Fitness Functions”</a>.</p>
+        </div></aside>
+        
+        <p>Notice that the previously mentioned book by Edward Yourdon and and Larry Constantine (<em>Structured Design: Fundamentals of a Discipline of Computer Program and Systems Design</em>) predates the popularity of object-oriented languages, focusing instead on structured programming constructs, such as functions (not methods). It also defined other types of coupling that we do not cover here because they have been supplanted by <em>connascence</em>.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Connascence"><div class="sect2" id="idm45838975973792">
+        <h2>Connascence</h2>
+        
+        <p>In 1996, Meilir Page-Jones published <em>What Every Programmer Should Know About Object-Oriented Design</em> (Dorset House), refining the afferent and efferent coupling metrics and recasting them to object-oriented languages with a concept he named <em>connascence</em>. Here’s how he defined the term:</p>
+        <blockquote>
+        <p>Two components are connascent if a change in one would require the other to be modified in order to maintain the overall correctness of the system.</p>
+        <p data-type="attribution">Meilir Page-Jones</p>
+        </blockquote>
+        
+        <p>He developed two types of connascence: <em>static</em> and <em>dynamic</em>.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Static connascence"><div class="sect3" id="idm45838975933264">
+        <h3>Static connascence</h3>
+        
+        <p><em>Static connascence</em> refers to source-code-level coupling (as opposed to execution-time coupling, covered in <a data-type="xref" href="#sec-dyn-con">“Dynamic connascence”</a>); it is a refinement of the afferent and efferent couplings defined by <em>Structured Design</em>. In other words, architects view the following types of static connascence as the <em>degree</em> to which something is coupled, either afferently or efferently:</p>
+        <dl>
+        <dt>Connascence of Name (CoN)</dt>
+        <dd>
+        <p>Multiple components must agree on the name of an entity.</p>
+        
+        <p>Names of methods represents the most common way that code bases are coupled and the most desirable, especially in light of modern refactoring tools that make system-wide name changes trivial.</p>
+        </dd>
+        <dt>Connascence of Type (CoT)</dt>
+        <dd>
+        <p>Multiple components must agree on the type of an entity.</p>
+        
+        <p>This type of connascence refers to the common facility in many statically typed languages to limit variables and parameters to specific types. However, this capability isn’t purely a language feature—some dynamically typed languages offer selective typing, notably <a href="https://clojure.org">Clojure</a> and <a href="https://clojure.org/about/spec">Clojure Spec</a>.</p>
+        </dd>
+        <dt>Connascence of Meaning (CoM) or Connascence of Convention (CoC)</dt>
+        <dd>
+        <p>Multiple components must agree on the meaning of particular values.</p>
+        
+        <p>The most common obvious case for this type of connascence in code bases is hard-coded numbers rather than constants. For example, it is common in some languages to consider defining somewhere <code>int TRUE = 1; int FALSE = 0</code>. Imagine the problems if someone flips those values.</p>
+        </dd>
+        <dt>Connascence of Position (CoP)</dt>
+        <dd>
+        <p>Multiple components must agree on the order of values.</p>
+        
+        <p>This is an issue with parameter values for method and function calls even in languages that feature static typing. For example, if a developer creates a method <code>void updateSeat(String name, String seatLocation)</code> and calls it with the values <code>updateSeat("14D", "Ford, N")</code>, the semantics aren’t correct even if the types are.</p>
+        </dd>
+        <dt>Connascence of Algorithm (CoA)</dt>
+        <dd>
+        <p>Multiple components must agree on a particular algorithm.</p>
+        
+        <p>A common case for this type of connascence occurs when a developer defines a security hashing algorithm that must run on both the server and client and produce identical results to authenticate the user. Obviously, this represents a high form of coupling—if either algorithm changes any details, the handshake will no longer work.</p>
+        </dd>
+        </dl>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" class="pagebreak-before less_space" data-pdf-bookmark="Dynamic connascence"><div class="sect3" id="sec-dyn-con">
+        <h3>Dynamic connascence</h3>
+        
+        <p>The other type of connascence Page-Jones defined was <em>dynamic connascence</em>, which analyzes calls at runtime. The following is a description of the different types of dynamic connascence:</p>
+        <dl>
+        <dt>Connascence of Execution (CoE)</dt>
+        <dd>
+        <p>The order of execution of multiple components is important.</p>
+        
+        <p>Consider this code:</p>
+        
+        <pre data-type="programlisting" data-code-language="java"><code class="n">email</code> <code class="o">=</code> <code class="k">new</code> <code class="n">Email</code><code class="o">();</code>
+        <code class="n">email</code><code class="o">.</code><code class="na">setRecipient</code><code class="o">(</code><code class="s">"foo@example.com"</code><code class="o">);</code>
+        <code class="n">email</code><code class="o">.</code><code class="na">setSender</code><code class="o">(</code><code class="s">"me@me.com"</code><code class="o">);</code>
+        <code class="n">email</code><code class="o">.</code><code class="na">send</code><code class="o">();</code>
+        <code class="n">email</code><code class="o">.</code><code class="na">setSubject</code><code class="o">(</code><code class="s">"whoops"</code><code class="o">);</code></pre>
+        
+        <p>It won’t work correctly because certain properties must be set in order.</p>
+        </dd>
+        <dt>Connascence of Timing (CoT)</dt>
+        <dd>
+        <p>The timing of the execution of multiple components is important.</p>
+        
+        <p>The common case for this type of connascence is a race condition caused by two threads executing at the same time, affecting the outcome of the joint operation.</p>
+        </dd>
+        <dt>Connascence of Values (CoV)</dt>
+        <dd>
+        <p>Occurs when several values relate on one another and must change together.</p>
+        
+        <p>Consider the case where a developer has defined a rectangle as four points, representing the corners. To maintain the integrity of the data structure, the developer cannot randomly change one of points without considering the impact on the other points.</p>
+        
+        <p>The more common and problematic case involves transactions, especially in distributed systems. When an architect designs a system with separate databases, yet needs to update a single value across all of the databases, all the values must change together or not at all.</p>
+        </dd>
+        <dt>Connascence of Identity (CoI)</dt>
+        <dd>
+        <p>Occurs  when multiple components must reference the same entity.</p>
+        </dd>
+        </dl>
+        
+        <p>The common example of this type of connascence involves two independent components that must share and update a common data structure, such as a distributed queue.</p>
+        
+        <p>Architects have a harder time determining dynamic connascence because we lack tools to analyze runtime calls as effectively as we can analyze the call graph.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" class="pagebreak-before less_space" data-pdf-bookmark="Connascence properties"><div class="sect3" id="idm45838980624496">
+        <h3>Connascence properties</h3>
+        
+        <p>Connascence is an analysis tool for architect and developers, and some properties of connascence help developers use it wisely. The following is a description of each of these connascence properties:</p>
+        <dl>
+        <dt>Strength</dt>
+        <dd>
+        <p>Architects determine the <em>strength</em> of connascence by the ease with which a developer can refactor that type of coupling; different types of connascence are demonstrably more desirable, as shown in <a data-type="xref" href="#ch-modularity-conn-strength">Figure&nbsp;3-5</a>. Architects and developers can improve the coupling characteristics of their code base by refactoring toward better types of connascence.</p>
+        
+        <p>Architects should prefer static connascence to dynamic because developers can determine it by simple source code analysis, and modern tools make it trivial to improve static connascence. For example, consider the case of <em>connascence of meaning</em>, which developers can improve by refactoring to <em>connascence of name</em> by creating a named constant rather than a magic value.</p>
+        </dd>
+        </dl>
+        
+        <figure class="width-75"><div id="ch-modularity-conn-strength" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_0305.png" alt="" width="933" height="756">
+        <h6><span class="label">Figure 3-5. </span>The <em>strength</em> on connascence provides a good refactoring guide</h6>
+        </div></figure>
+        <dl>
+        <dt>Locality</dt>
+        <dd>
+        <p>The <em>locality</em> of connascence measures how proximal the modules are to each other in the code base. Proximal code (in the same module) typically has more and higher forms of connascence than more separated code (in separate modules or code bases). In other words, forms of connascence that indicate poor coupling when far apart are fine when closer together. For example, if two classes in the same component have connascence of meaning, it is less damaging to the code base than if two components have the same form of connascence.</p>
+        
+        <p>Developers must consider strength and locality together. Stronger forms of connascence found within the same module represent less code smell than the same connascence spread apart.</p>
+        </dd>
+        <dt>Degree</dt>
+        <dd>
+        <p>The <em>degree</em> of connascence relates to the size of its impact—does it impact a few classes or many? Lesser degrees of connascence damage code bases less. In other words, having high dynamic connascence isn’t terrible if you only have a few modules. However, code bases tend to grow, making a small problem correspondingly bigger.</p>
+        </dd>
+        </dl>
+        
+        <p>Page-Jones offers three guidelines for using connascence to improve systems 
+        <span class="keep-together">modularity</span>:</p>
+        <ol>
+        <li>
+        <p>Minimize overall connascence by breaking the system into encapsulated <span class="keep-together">elements</span></p>
+        </li>
+        <li>
+        <p>Minimize any remaining connascence that crosses encapsulation boundaries</p>
+        </li>
+        <li>
+        <p>Maximize the connascence within encapsulation boundaries</p>
+        </li>
+        
+        </ol>
+        
+        <p>The legendary software architecture innovator Jim Weirich repopularized the concept of connascence and offers two great pieces of advice:</p>
+        <blockquote>
+        <p>Rule of Degree: convert strong forms of connascence into weaker forms of <span class="keep-together">connascence</span></p>
+        
+        <p>Rule of Locality: as the distance between software elements increases, use weaker forms of connascence</p></blockquote>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Unifying Coupling and Connascence Metrics"><div class="sect2" id="idm45838980624032">
+        <h2>Unifying Coupling and Connascence Metrics</h2>
+        
+        <p>So far, we’ve discussed both coupling and connascence, measures from different eras and with different targets. However, from an architect’s point of view, these two views overlap. What Page-Jones identifies as static connascence represents degrees of either incoming or outgoing coupling. Structured programming only cares about in or out, whereas connascence cares about how things are coupled together.</p>
+        
+        <p>To help visualize the overlap in concepts, consider <a data-type="xref" href="#ch-modularity-coupling-conn-preq">Figure&nbsp;3-6</a>. The structured programming coupling concepts appear on the left, while the connascence characteristics appear on the right. What structured programming called <em>data coupling</em> (method calls), connascence provides advice for how that coupling should manifest. Structured programming didn’t really address the areas covered by dynamic connascence; we encapsulate that concept shortly in <a data-type="xref" href="ch07.html#sec-quantum-def">“Architectural Quanta and Granularity”</a>.</p>
+        
+        <figure><div id="ch-modularity-coupling-conn-preq" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_0306.png" alt="" width="1420" height="565">
+        <h6><span class="label">Figure 3-6. </span>Unifying coupling and connascence</h6>
+        </div></figure>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="The problems with 1990s connascence"><div class="sect3" id="idm45838980569840">
+        <h3>The problems with 1990s connascence</h3>
+        
+        <p>Several problems exist for architects when applying these useful metrics for analyzing and designing systems. First, these measures look at details at a low level of code, focusing on code quality and hygiene than necessarily architectural structure. Architects tend to care more about <em>how</em> modules are coupled rather than the <em>degree</em> of coupling. For example, an architect cares about synchronous versus asynchronous communication, and doesn’t care so much about how that’s implemented.</p>
+        
+        <p>The second problem with connascence lies with the fact that it doesn’t really address a fundamental decision that many modern architects must make—synchronous or asynchronous communication in distributed architectures like microservices? Referring back to the First Law of Software Architecture, everything is a trade-off. After we discuss the scope of architecture characteristics in <a data-type="xref" href="ch07.html#ch-scope">Chapter&nbsp;7</a>, we’ll introduce new ways to think about modern connascence.<a data-type="indexterm" data-primary="modularity" data-secondary="measuring" data-startref="ix_modsmeas" id="idm45838980565488"></a></p>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="From Modules to Components"><div class="sect1" id="idm45838980564016">
+        <h1>From Modules to Components</h1>
+        
+        <p>We use the term <em>module</em> throughout as a generic name for a bundling of related code. However, most platforms support some form of <em>component</em>, one of the key building blocks for software architects. The concept and corresponding analysis of the logical or physical separation has existed since the earliest days of computer science. Yet, with all the writing and thinking about components and separation, developers and architects still struggle with achieving good outcomes.</p>
+        
+        <p>We’ll discuss deriving components from problem domains in <a data-type="xref" href="ch08.html#ch-component-based-thinking">Chapter&nbsp;8</a>, but we must first discuss another fundamental aspect of software architecture: architecture characteristics and their scope.<a data-type="indexterm" data-primary="modularity" data-startref="ix_mods" id="idm45838980560000"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        </div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492043447/files/epub.css" crossorigin="anonymous"><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/mml-svg.js"></script></div></div></section>
+</div>
+
+https://learning.oreilly.com

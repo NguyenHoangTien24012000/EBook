@@ -1,0 +1,210 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="The Model-View-Controller pattern"><div class="titlepage"><div><div><h1 class="title"><a id="ch07lvl1sec48"></a>The Model-View-Controller pattern</h1></div></div></div><p>The Model-View-Controller pattern or <span class="strong"><strong>MVC</strong></span> is one of the first presentation patterns designed in the 70s for the development of graphical user interfaces. Over the years, there have been several variants of the pattern, also due to the evolution of technology, but its basic structure remained virtually the same. As its name suggests, in addition to the Model and the View, the distinguishing feature is given by the Controller.</p><p>The Model, View, and Controller each have their own role and all together manage the user interaction, as depicted in the following image:</p><div class="mediaobject"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781785889103/files/graphics/image_07_002.jpg" alt="The Model-View-Controller pattern" width="749" height="513"></div><p>The View's role is to dealing with user's interaction. It displays the data provided by the Model and gets the user's input. The Controller interacts with the Model as the result of responding to the user input. When the user enters data through the view, the Controller intercepts the user's input and updates the Model. The distribution of tasks between the three components of the pattern promotes the creation of a more flexible and maintainable code.</p><p>To make the pattern's description more concrete, let's rewrite the code of the previous section by following the MVC architecture. As first step let's define the model:</p><pre class="programlisting">var Model = (function () { 
+        function Model(name, surname) { 
+          this.name = name; 
+          this.surname = surname; 
+        } 
+        return Model; 
+      }()); 
+      </pre><p>This constructor defines a person as Model with <code class="literal">name</code> and <code class="literal">surname</code> properties. Of course the Model can be defined as a class, as in the following:</p><pre class="programlisting">class Model { 
+        constructor(name, surname) { 
+          this.name = name; 
+          this.surname = surname; 
+        } 
+      } 
+      </pre><p>Our View will manage the interaction with the user and the visualization of the Model data. The following code shows its implementation:</p><pre class="programlisting">var View = (function () { 
+        function View(model, controller) { 
+          var self = this; 
+          var txtName = document.getElementById("txtName"); 
+          var txtSurname = document.getElementById("txtSurname"); 
+          var btnSave = document.getElementById("btnSave"); 
+          var btnReset = document.getElementById("btnReset"); 
+       
+          self.controller = controller; 
+          txtName.value = model.name; 
+          txtSurname.value = model.surname; 
+       
+          btnSave.onclick = function () { 
+            self.save(); 
+          }; 
+       
+          btnReset.onclick = function () { 
+            self.clear(); 
+          }; 
+        } 
+       
+        View.prototype.clear = function () { 
+          var txtName = document.getElementById("txtName"); 
+          var txtSurname = document.getElementById("txtSurname"); 
+          var divMessage = document.getElementById("divMessage"); 
+       
+          txtName.value = ""; 
+          txtSurname.value = ""; 
+          divMessage.innerHTML = ""; 
+        }; 
+       
+        View.prototype.save = function () { 
+          var txtName = document.getElementById("txtName"); 
+          var txtSurname = document.getElementById("txtSurname"); 
+          var data = { 
+            name: txtName.value, 
+            surname: txtSurname.value 
+          }; 
+       
+          this.controller.save(data); 
+        }; 
+       
+        Object.defineProperty(View.prototype, "message", { 
+          set: function (message) { 
+            var divMessage = document.getElementById("divMessage"); 
+            divMessage.innerHTML = message; 
+          }, 
+          enumerable: true, 
+          configurable: true 
+        }); 
+       
+        return View; 
+      }()); 
+      </pre><p>As we can see, the constructor takes the <code class="literal">Model</code> and the <code class="literal">constructor</code> as arguments. It accesses the web page's elements through the DOM and maps the Model's values to them. The <code class="literal">clear()</code> and <code class="literal">save()</code>methods are attached to the constructor and are bound to the click event of the two buttons. The <code class="literal">clear()</code> method resets the textboxes of the web interfaces and the <code class="literal">save()</code> method gets the current values of the textboxes and passes them to the <code class="literal">save()</code> method of the Controller. Finally, the <code class="literal">message</code> property is attached to the View; it is mapped to the div reserved to display messages.</p><p>Again, we can define the View using the class syntax:</p><pre class="programlisting">class View { 
+        constructor(model, controller) { 
+          var self = this; 
+          var txtName = document.getElementById("txtName"); 
+          var txtSurname = document.getElementById("txtSurname"); 
+          var btnSave = document.getElementById("btnSave"); 
+          var btnReset = document.getElementById("btnReset"); 
+       
+          self.controller = controller; 
+       
+          txtName.value = model.name; 
+          txtSurname.value = model.surname; 
+       
+          btnSave.onclick = function() { 
+            self.save(); 
+          }; 
+       
+          btnReset.onclick =  function() { 
+            self.clear(); 
+          }; 
+        } 
+       
+        clear() { 
+          var txtName = document.getElementById("txtName"); 
+          var txtSurname = document.getElementById("txtSurname"); 
+          var divMessage = document.getElementById("divMessage"); 
+       
+       
+          txtName.value = ""; 
+          txtSurname.value = ""; 
+          divMessage.innerHTML = ""; 
+        } 
+       
+        set message(message) { 
+          var divMessage = document.getElementById("divMessage"); 
+       
+          divMessage.innerHTML = message; 
+        } 
+       
+        save() { 
+          var txtName = document.getElementById("txtName"); 
+          var txtSurname = document.getElementById("txtSurname"); 
+       
+          var data = { 
+            name: txtName.value, 
+            surname: txtSurname.value 
+          }; 
+       
+          this.controller.save(data); 
+        } 
+      } 
+      </pre><p>The <code class="literal">Controller()</code> constructor defines the <code class="literal">initialize()</code> method that sets a reference to the Model and the View. It also defines the <code class="literal">save()</code> method that makes a simple validation and updates the Model. The <code class="literal">save()</code> method also updates the View with an appropriate message:</p><pre class="programlisting">var Controller = (function () { 
+        function Controller() { 
+        } 
+       
+        Controller.prototype.initialize = function (model, view) { 
+          this.model = model; 
+          this.view = view; 
+        }; 
+       
+        Controller.prototype.save = function (data) { 
+          if (data.name &amp;&amp; data.surname) { 
+            this.model.name = data.name; 
+            this.model.surname = data.surname; 
+       
+            this.view.message = "Saved!"; 
+          } else { 
+            this.view.message = "Please, enter name and surname!"; 
+          } 
+        }; 
+       
+        return Controller; 
+      }()); 
+      </pre><p>The following is the corresponding definition of the Controller as a class:</p><pre class="programlisting">class Controller { 
+        initialize(model, view) { 
+          this.model = model; 
+          this.view = view; 
+        } 
+       
+        save(data) { 
+          if (data.name &amp;&amp; data.surname) { 
+            this.model.name = data.name; 
+            this.model.surname = data.surname; 
+       
+            this.view.message = "Saved!"; 
+          } else { 
+            this.view.message = "Please, enter name and surname!"; 
+          } 
+        } 
+      } 
+      </pre><p>Once the three components of the Model-View-Controller pattern are defined, we have to compose them and start their cooperation. With this goal, we attach the following function to the load event of the browser's window:</p><pre class="programlisting">window.onload = function() { 
+        var model = new Model("John", "Smith"); 
+        var controller = new Controller(); 
+        var view = new View(model, controller); 
+       
+        controller.initialize(model, view); 
+      }; 
+      </pre><p>The function creates a new Model and a new Controller. Then, it creates a View with the Model and Controller, passes it to the constructor, and finally calls the <code class="literal">initialize()</code> method of the Controller.</p><p>The code rewriting of this example maintains the same behavior seen earlier, but it reorganizes the code so that it can be easier to change it ad adapt it to new scenarios.</p><p>For example, if we decide to substitute the div displaying the message with a textarea, the only component that needs to be changed is the view. The other components remain unchanged and are unaware of the change. The same happens if we completely change the user interface, for instance, if we change the web page with a command line interface. In this case, we have to write a new View, but we do not need to change anything in the Model and in the Controller.</p><p>If we need to change the validation criteria of the user's input, we have to only change the Controller's code.</p><p>The code structuring provided by the MVC pattern allows us to easily locate the component to be modified based on the type of change.</p></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

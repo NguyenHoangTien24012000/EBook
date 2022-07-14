@@ -1,0 +1,230 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 class="h2" id="ch23"><a id="page_615"></a><strong>Chapter 23<br>Redundant and Resilient</strong></h2>
+        <div class="sidebar">
+        <p class="sb-noindent"><strong>Learning Objectives</strong></p>
+        <p class="sb-noindent">When you are finished reading this chapter, you should understand:</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> What control plane failures and convergence look like to applications</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The different ways in which you can measure network availability</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Graceful restart and in-service software upgrades as tools to provide network resilience</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The interaction between modularization and resilience</p>
+        </div>
+        <p class="noindent">Networks are designed to support applications, which in turn support specific business needs (or perhaps the application itself is the business). When the network is down, it obviously cannot support applications, but “down” is a rather ambiguous term. There are more kinds of “down” than “not forwarding packets at all.” The question this chapter asks is</p>
+        <p class="blockquote"><strong>What does network resilience mean?</strong></p>
+        <p class="indent">There are a number of tools network engineers can use to create a resilient network. Fast Reroute, Exponential Backoff, and other fast convergence technologies can make a large difference in the speed at which the network converges. Graceful restart is another set of tools engineers can use, but they are not covered in this book (see the “Further Reading” section at the end of this chapter for pointers to more <a id="page_616"></a>information on this topic). Redundancy, however, has always been one of the primary tools engineers of every kind have turned to, to build in resilience.</p>
+        <p class="indent">The first part of this chapter, then, will describe resilience; the second part will consider the use of redundancy to create resilience in a network.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch23lev1">The Problem Space: What Failures Look Like to Applications</h3>
+        <p class="noindent">Slow performance and complete failure are the two most common application problems associated with network failures of any kind. How does the operation of the network relate to application problems of these kinds? <a href="ch23.xhtml#ch23fig01">Figure 23-1</a> will be used to consider the answers to this question.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/23fig01.jpg" aria-describedby="Al23fig01" alt="The figure depicts the impacts of network failures." width="492" height="173"><aside class="hidden" id="Al23fig01">
+        <p>The figure shows a server A, computer F, and four routers B, C, D, and E. The server A is connected to router B. Router B is connected to router C at the bottom and router D on the right. The router C is connected to router E on the right. The router E is connected to router D on the top. The router D is connected to computer F.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch23fig01"></a><strong>Figure 23-1</strong> <em>Application Impacts of Network Failures</em></p>
+        </div>
+        <p class="indent">In <a href="ch23.xhtml#ch23fig01">Figure 23-1</a>, assume there is a long-standing flow between A and F flowing across the [B,D] link. If the [B,D] link fails, the application driving the flow could see several results:</p>
+        <p class="bullt">• <strong>The flow could fail entirely.</strong> If some form of packet or route filtering is configured at any of the four routers illustrated, a [B,D] link failure may result in a complete loss of connectivity between A and F. In this case, traffic between A and F will stop flowing, and the application will fail.</p>
+        <p class="bull">• <strong>The end-to-end delay could change.</strong> Once the routing protocol converges on the only other available path, [B,C,E,D], there will be two more queues, two more switches, and two more deserialization/serialization delays added to the path. The application will see this as a sudden change in the amount of delay across the network.</p>
+        <p class="bull">• <strong>Jitter could increase.</strong> The additional queues, serialization, and deserialization could also increase jitter through the network. Some packets will variably be delayed while the routing protocol converges, particularly if there is a microloop formed during the convergence process. The total impact will likely look like a short burst of high jitter, followed by a general increase in jitter across the path.</p>
+        <p class="bull"><a id="page_617"></a>• <strong>Packets could be dropped.</strong> Whatever packet is transmitted by B toward D just at the moment the link fails will likely be dropped.</p>
+        <p class="bull">• <strong>Duplicate packets could be delivered.</strong> It is possible, particularly if a microloop is formed during convergence, for one or two packets to be transmitted through the network twice. One simple example of this is if the retransmission timer at A is set very short before the failure, so packets are delayed longer than this timer during convergence, A could retransmit a packet while another copy of the same packet is already “in flight,” resulting in two copies of the same packet being received at F.</p>
+        <p class="bullb">• <strong>Packets could be delivered out of order.</strong> Consider what happens if a micro-loop forms between B and C during convergence. It is possible a packet is being forwarded from C toward B just at the moment the microloop resolves. If this happens, a packet transmitted by A and received by B, before the packet looping between B and C, will be forwarded by B before the packet caught in the microloop is. The earlier packet will be delivered after the later packet.</p>
+        <p class="indent">It is virtually impossible to resolve these problems in a packet switched network. In fact, while many networking technologies have been developed over the years seeking to prevent these failures from ever occurring, most of these technologies end up adding so much complexity to the network that they have an overall negative impact on network performance. Tradeoffs are the hard-and-fast rule in engineering of all kinds; network engineering is no exception.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch23lev2">Resilience Defined</h3>
+        <p class="noindent">Resilience is easy enough to understand: the network does not fail nor produce the kinds of effects in applications discussed in the previous section. Resilience needs to be measured, as well as understood, however. This section will consider several ways in which resilience is measured. Three specific measures will be considered in this section:</p>
+        </div>
+        <p class="bullt">• The Mean Time Between Failures (MTBF)</p>
+        <p class="bull">• The Mean Time to Repair (MTTR)</p>
+        <p class="bullb">• Availability</p>
+        <p class="indent"><a href="ch23.xhtml#ch23fig02">Figure 23-2</a> is used to illustrate these concepts.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/23fig02.jpg" aria-describedby="Al23fig02" alt="The figure illustrates the different measures of resilience." width="650" height="226"><aside class="hidden" id="Al23fig02">
+        <p>The figure shows a rightward facing arrow. The arrow is divided into three parts with a small spacing in between them. The parts are first failure, first repair second failure, and second repair. The spacing between the parts is marked MTTR. The time between the first and second failure is marked MTBF. The time between the center of the first failure and the center of the second failure is marked availability. The time between the center of the second failure and the center of the second repair is marked availability.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch23fig02"></a><strong>Figure 23-2</strong> <em>Measuring Resilience</em></p>
+        </div>
+        <p class="indent">Three different measures of resilience are shown in <a href="ch23.xhtml#ch23fig02">Figure 23–2</a>.</p>
+        <p class="indent">MTBF is the amount of time between failures in a system. Just divide the number of failures in any slice of time into the total amount of time, and you have the MTBF for the system (during this time slice). In <a href="ch23.xhtml#ch23fig02">Figure 23-2</a>, the MTBF is the amount of <a id="page_618"></a>time between the first and second failures. The longer the time slice (without changes in the system) you use, the more accurate the MTBF will be.</p>
+        <p class="indent">MTTR is the amount of time it takes to bring the system back up after it has failed. To find the MTTR, divide the total length of all outages by the total number of outages. To find the MTTR in <a href="ch23.xhtml#ch23fig02">Figure 23-2</a>:</p>
+        <p class="bullt">• Find the length of time between the first failure and the first repair.</p>
+        <p class="bull">• Find the length of time between the second failure and the second repair.</p>
+        <p class="bull">• Sum (or add) these two lengths of time.</p>
+        <p class="bullb">• Divide this total by the number of outages—in this case, two.</p>
+        <p class="indent">Availability is the total time the system should have been operational (without counting outages) divided by the amount of time the system was not operational. To get to availability from MTBF and MTTR, you can take the MTBF as a single operational period and divide it by the MTTR, like this:</p>
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/e0618-01.jpg" alt="Image" width="247" height="44"></div>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">Most of the time, you’ll see availability calculated by adding the uptime to the downtime, and then dividing the result by the downtime. This arrives at the same number, however, because the total uptime added to the total downtime should (in the case of networks) be the total amount of time the network should have been operational. You might also see this expressed using the idea of Mean Time to Failure (MTTF), which is just the MTBF minus the MTTR—so adding the MTTF and the MTTR should result in the same number as the MTBF.</p>
+        </div>
+        <p class="indent"><a id="page_619"></a>Availability is often expressed as a number of nines; for instance, one network may have four 9s of availability, while another may have five 9s of availability. This is shorthand for the fraction of time the network is available:</p>
+        <p class="bullt">• Four 9s of availability means the network is available 99.99% of the time, or is not operational for about an hour a year.</p>
+        <p class="bullb">• Five 9s of availability means the network is available 99.999% of the time, or is not operational for about 5.2 minutes each year.</p>
+        <p class="indent">The concept of availability needs to be considered in light of the meaning of availability for a particular network. Does the entire network need to be down to be considered unavailable? Or perhaps service needs be unavailable to a particular set of applications of users? Or perhaps the network can be considered inoperable when some particular application (or set of applications, or set of users, etc.) suffers degraded performance. Answering these kinds of questions is very important in defining network availability.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch23lev3"><strong>Other “Measures”</strong></h4>
+        <p class="noindent">There are other measures of network resilience for which no number can be produced, but are often just as important as the more commonly used measures. There is a good bit of humor in these measures, but the humor is backed by a good deal of serious experience.</p>
+        </div>
+        <p class="indent">The <em>Mean Time Between Mistakes</em> (MTBM) which measures how long, on average, it is between mistakes causing an application performance problem or network failure of any size. The MTBM is related to the complexity of configurations in the network, including how the configurations of widely dispersed forwarding devices interact. A widely used rule of thumb is called the 2 a.m. rule: if you cannot explain the configuration at 2 a.m. to a technical support engineer whose primary language is not the same as yours, it might be worth reconsidering the configuration.</p>
+        <p class="indent">The <em>Mean Time to Innocence</em> (MTTI) is the amount of time required to prove the network is not at fault for a particular application problem. Proving this often requires a lot of “before” and “after” network measurements to show none of the changes in the network could cause the observed problem. It is important to pay close attention to the various ways an application can “see” a failure in the network considered in the preceding section.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch23lev4">Redundancy as a Tool to Create Resilience</h3>
+        <p class="noindent">Perhaps the primary tool used by network engineers use to create resilience in a network design is adding redundancy. One of the primary concepts to understand when considering adding redundancy to increase resilience is the single point of failure. <a href="ch23.xhtml#ch23fig03">Figure 23-3</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/23fig03.jpg" aria-describedby="Al23fig03" alt="The figure depicts adding redundancy to increase resilience is the single point of failure." width="478" height="162"><aside class="hidden" id="Al23fig03">
+        <p>The figure shows a server A, a computer G, and five routers B, C, D, E, and F. A is connected to B and C on the right. D is connected to B and C on the left and E and F on the right. G is connected to E and F on the left.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch23fig03"></a><strong>Figure 23-3</strong> <em>A Single Point of Failure</em></p>
+        </div>
+        <p class="indent"><a id="page_620"></a>In <a href="ch23.xhtml#ch23fig03">Figure 23-3</a>, from the perspective of A and G, the network has two redundant paths. But the redundancy is a deception; there is a single point of failure at D in the center of the network. If D itself fails, no traffic can flow between A and G. <a href="ch23.xhtml#ch23fig04">Figure 23-4</a> illustrates how adding a second (redundant) link would improve resilience.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/23fig04.jpg" aria-describedby="Al23fig04" alt="The figure depicts that the addition of reduntant paths increases resilience." width="480" height="310"><aside class="hidden" id="Al23fig04">
+        <p>The figure shows a server A, a computer G, and four routers B, C, E, and F. A is connected to B and C on the right. B is connected to E on the right. C is connected to F on the right. G is connected to E and F on the left.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch23fig04"></a><strong>Figure 23-4</strong> <em>Increasing Resilience Through Redundant Paths</em></p>
+        </div>
+        <p class="indent">In <a href="ch23.xhtml#ch23fig04">Figure 23-4</a>, there are now two parallel paths through the network, one through [B,E], and a second through [C,F]. If both links fail on a fairly regular basis (they have similar availability), the odds are low that both links will fail at the same time. While there may be a small chance of both links failing at the same time, there is <em>some</em> chance this will happen. You can calculate the chance of both links failing at the same time, if you know the availability for each link, by calculating the combined availability of both links, using this formula:</p>
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/e0620-01.jpg" alt="Image" width="147" height="76"></div>
+        <p class="indent"><a id="page_621"></a>Substitute each parallel item in the network into a<sub>1</sub>, a<sub>2</sub>, etc., and you can calculate the availability of the entire system, a<sub>t</sub>. This will tell you how often, over the course of a year, both links are likely to be down.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">This is called the availability calculation for parallel links of devices; it is also possible to calculate the total availability of devices or links connected in series, but this discussion is beyond the scope of this book.</p>
+        </div>
+        <p class="indent">There is a rule of thumb that works pretty well here without working through all of the math; it is called the halving rule. If you have two paths connected in parallel, each with a total downtime each year of 1 second, then the combined total downtime is likely to be half of the probable downtime of either link. The combined downtime of both links, then, should be around 500ms. Adding a third link will halve this number again to around 250ms. Although availability is essentially the opposite of downtime, increasing redundancy quickly produces very little increased availability. If you begin with a single link with four 9s of availability—so it would be unavailable, or down about 5 minutes in each year—adding a second link in parallel will mean the pair of links is now unavailable about 2.5 minutes each year. Adding a third link reduces the unavailable time to 1.25 minutes per year, and a fourth reduces the unavailable time to about 37 seconds.</p>
+        <p class="indent">Each link added in parallel also increases the complexity of the network from the perspective of the control plane; more adjacencies must be formed, there are more paths to calculate through, there are more sets of databases to synchronize, etc. Each of these will slow down the convergence of the control plane at least some small amount. There is no clear point where decreasing downtime by increasing parallel links will be completely offset by increasing convergence time. Experience shows two links is often optimal, three links is good in exceptional situations, and four needs a careful look at the math to ensure the additional links are not decreasing overall availability, rather than increasing it. There are some exceptions, of course, in the case of tuned protocol deployments in fabrics (such as in a data center).</p>
+        <p class="indent">Because of diminishing returns, <em>you simply cannot build a truly resilient system through redundancy alone</em>. Real resilience must be built into the entire network, and the entire stack, with each part of the system playing its own role, from applications to control planes to redundant links.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch23lev5"><strong>Shared Risk Link Groups</strong></h4>
+        <p class="noindent">Links are one crucial place to look for single points of failure—and one place where redundancy is often introduced to increase resilience. Adding parallel links does not always increase resilience, however; <a href="ch23.xhtml#ch23fig05">Figure 23-5</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/23fig05.jpg" aria-describedby="Al23fig05" alt="The figure depicts shared link risk group." width="508" height="214"><aside class="hidden" id="Al23fig05">
+        <p>The figure shows a computer A, a server H, and six routers B, C, D, E, F, and G. A is connected to B and C. B and D are enclosed in a cloud. C and D are enclosed in another cloud. Both the clouds are seen to be merging. E and F are enclosed in a cloud. E and G are enclosed in another cloud. Both the clouds are seen to be merging. D is connected to B and C on the left using dotted lines and connected to E on the right. D is connected to F via E using dotted lines. D is connected to G via E using dotted lines. H is connected to F and G on the left.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch23fig05"></a><strong>Figure 23-5</strong> <em>Shared Risk Link Group (SRLG)</em></p>
+        </div>
+        <p class="indent"><a id="page_622"></a>In <a href="ch23.xhtml#ch23fig05">Figure 23-5</a>, the network operator has purchased links from two different providers to provide connectivity between A and H. From the outside, these two links appear completely unrelated; they terminate in different locations, are managed by two different providers, etc. However, someplace in the transit path, both providers have leased virtual circuits over a single fiber, and both links pass through this single optical link. A backhoe pulling this single fiber out of the ground—a backhoe fade—will take both circuits down.</p>
+        <p class="indent">Any time virtual circuits are laid over a physical infrastructure, there are Shared Risk Link Groups (SRLGs). Further, SRLGs are surprisingly difficult to discover and plan around, particularly in dynamically routed packet switched networks. There are systems for calculating SRLGs within a single operator’s network, which can be very useful for preventing SRLGs from causing a problem in data center fabrics or corporate networks, but they are outside the scope of this book.</p>
+        <p class="indent">Network engineers should be aware of SRLGs, and careful to plan around them where possible, particularly in relation to redundancy added to increase resilience.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch23lev6"><strong>In-Service Software Upgrade and Graceful Restart</strong></h4>
+        <p class="noindent">Many times links are not the problem, but the rather complex network devices the links connect to. There are several solutions available to resolve problems with network devices, including</p>
+        </div>
+        <p class="bullt">• Running multiple devices in parallel and allowing the control plane to route around failures. This essentially transfers any complexity from the device software into the network and applications running on top of the network—a valid design choice in many situations.</p>
+        <p class="bull">• Using Graceful Restart (see the “Further Reading” section at the end of the chapter for more information on graceful restart) to reduce the amount of time <a id="page_623"></a>required to reconverge the control plane in the case of a device reboot or some other short-lived failure. In the case of graceful restart, each device maintains its forwarding state, resynchronizing and recalculating the set of loop-free paths through the network once the control plane processes have restarted.</p>
+        <p class="bullb">• Using In-Service Software Upgrades (ISSU), or hitless restarts to restart the control plane without impacting packet forwarding at all.</p>
+        <p class="indent">Graceful Restart (GR) and ISSU rely on the device being able to forward traffic in hardware while the control plane is restarting; the hardware must be able to hold a forwarding table, and forward packets, without the control plane feeding new routing information into the forwarding table. There is some amount of risk in forwarding without the control plane, as the network topology can change while the control plane is restarting, causing a loop until the control plane reconverges. This is another instance of a microloop occurring because of topology unsynchronized databases.</p>
+        <p class="indent">Each of these solutions has advantages and disadvantages—each one is applicable in some situations and not in others—but engineers should be aware of these tools and their application to the problem of building a resilient network.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch23lev7"><strong>Dual and Multiplanar Cores</strong></h4>
+        <p class="noindent">While they are rarely used, dual plane and multiplanar cores are sometimes deployed to ensure the highest levels of availability. <a href="ch23.xhtml#ch23fig06">Figure 23-6</a> illustrates these two types of cores.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/23fig06.jpg" aria-describedby="Al23fig06" alt="Two figures on the left and right depict the two types of cores." width="635" height="354"><aside class="hidden" id="Al23fig06">
+        <p>Figure on the left is labeled dual plane and it shows three clouds. Each cloud has two routers. The cloud at the top has routers A and B. A router on each of the clouds is connected to form a triangle, such that two triangles are formed. Figure on the right is labeled multiplane and it shows three clouds. Each cloud has two routers. The cloud at the top has routers C and D. A router on each of the clouds is connected to form a triangle, such that two triangles are formed. The routers on each of the cloud are interconnected.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch23fig06"></a><strong>Figure 23-6</strong> <em>Dual and Multiplanar Cores</em></p>
+        </div>
+        <p class="indent">In <a href="ch23.xhtml#ch23fig06">Figure 23-6</a>, each core is represented with a different kind of dashed line to make it easier to see both of the cores. In both of these core types, <em>everything</em> is different:</p>
+        <p class="bullt"><a id="page_624"></a>• Equipment from two different vendors, or at least two different hardware lines using two different protocol implementations, is used to prevent a single bug or kind of failure from impacting the entire network.</p>
+        <p class="bull">• Two different interior gateway protocols, such as Open Shortest Path First (OSPF) and Intermediate System to Intermediate System (IS-IS), are used, one for each core, so a problem in a single protocol cannot impact the entire network.</p>
+        <p class="bullb">• Two different providers, one for each core, are contracted to supply the links between the sites.</p>
+        <p class="indent">By creating two completely separate cores, you can avoid the problems associated with monocultures, or a bug that allows a problem to propagate throughout the network.</p>
+        <p class="indent">The primary difference between these two core types is shunt links, which are represented as dash-dot in the multiplanar core illustration on the right in <a href="ch23.xhtml#ch23fig06">Figure 23-6</a>, such as the curved link between C and D. These shunt links are set to a very high metric, so they are used to forward traffic only if there is no other path available. An exterior gateway protocol, such as the Border Gateway Protocol (BGP), is used to tie the entire network together; each site edge router, such as A, would have two routes to any given destination in the network. One would be learned through BGP over one core, and the second through BGP over the second core.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch23lev8">Modularity and Resilience</h3>
+        <p class="noindent">MTTR can be broken down into two pieces:</p>
+        </div>
+        <p class="bullt">• The time it takes for the network to resume forwarding traffic between all reachable destinations</p>
+        <p class="bullb">• The time it takes to restore the network to its original design and operation</p>
+        <p class="indent">The first definition relates to machine-level information overload; the less information there is in the control plane, the faster the network is going to converge. The second relates to operator information overload; the more consistent configurations are, and the easier it is to understand what the network should look like, the faster operators are going to be able to track down and find any network problems. The relationship between MTTR and modularization can be charted as shown in <a href="ch23.xhtml#ch23fig07">Figure 23-7</a>.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/23fig07.jpg" aria-describedby="Al23fig07" alt="A line graph depicts the relationship between MTTR and modularization." width="432" height="271"><aside class="hidden" id="Al23fig07">
+        <p>The horizontal axis of the graph is labeled increasing modularization and the vertical axis of the graph is labeled increasing MTTR. The graph shows an inverted bell curve. The midpoint of the graph is labeled optimal modularization.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch23fig07"></a><strong>Figure 23-7</strong> <em>Modularization Tradeoff with MTTR</em></p>
+        </div>
+        <p class="indent">Moving from a single flat failure domain into a more modularized design, the time it takes to find and repair problems in the network decreases rapidly, driving <a id="page_625"></a>the MTTR down. However, there is a point at which additional modularity starts increasing MTTR, where breaking the network into smaller domains causes the network to become more complex. To understand this phenomenon, consider the case of a network where every network device, such as a router or switch, has become its own failure domain (think of a network configured completely with static routes and no dynamic routing protocol). It is easy to see there is no difference between this case and the case of a single large flat failure domain. How do you find the right point along the MTTR curve? The answer is always going to be, “it depends,” but it is important to develop some general rules.</p>
+        <p class="indent"><em>First and foremost</em>, the right size for any given failure domain is never going to be the entire network (unless the network is really and truly very small). Almost any size network can, and should, be broken into more than one failure domain.</p>
+        <p class="indent"><em>Second</em>, the right size for a given failure domain is always going to depend on advances in control plane protocols, advances in processing power, and other factors. There were long and hard arguments over the optimal size of an OSPF area within the network world for years. How many LSAs could a single router handle? How fast would SPF run across a database of a given size? After years of work optimizing the way OSPF runs, and increases in processing power in the average router, this argument has generally been overcome by events.</p>
+        <p class="indent">Over time, as technology improves, the optimal size for a single failure domain will increase. Over time, as networks increase in size, the optimal number of failure domains within a single network will tend to remain constant. These two trends tend to offset one another, so most networks end up with about the same number of failure domains throughout their life, even as they grow and expand to meet the ever-increasing demands of the business.</p>
+        <p class="indent">So how big is too big? Start with the basic rules: building modules around policy requirements and separating complexity from complexity. After you get the lines <a id="page_626"></a>drawn around these two things, and you’ve added natural boundaries based on business units, geographic locations, and other factors, you have a solid starting point for determining where failure domain boundaries should go.</p>
+        <p class="indent">From this point, consider which services need to be more isolated than others, simply so they will have a better survivability rate, and look to measure the network’s performance to determine if there are any failure domains that are too large.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch23lev9">Final Thoughts on Resilience</h3>
+        <p class="noindent">While redundancy is the “go-to tool” for engineers building resilience into a network, redundancy has as many negative aspects that must be managed as it does positive aspects. Resilience requires much more than redundant links and devices; it must include many other techniques that involve the entire network stack from the physical links, through the control plane, and into the application itself.</p>
+        </div>
+        <p class="indent">Resilience, as with security, must be built into the network, rather than bolted on at the very end.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch23lev10">Further Reading</h3>
+        <p class="ref">Papadimitriou, Dimitri. “Inference of Shared Risk Link Groups.” Internet-Draft. Internet Engineering Task Force, November 2001. <a href="https://datatracker.ietf.org/doc/html/draft-many-inference-srlg-02">https://datatracker.ietf.org/doc/html/draft-many-inference-srlg-02</a>.</p>
+        </div>
+        <p class="ref">Pillay-Esnault, Padma, and John Moy. <em>Graceful OSPF Restart</em>. Request for Comments 3623. RFC Editor, 2003. <a href="https://rfc-editor.org/rfc/rfc3623.txt">https://rfc-editor.org/rfc/rfc3623.txt</a>.</p>
+        <p class="ref">Rekhter, Yakov, and Rahul Aggarwal. <em>Graceful Restart Mechanism for BGP with MPLS</em>. Request for Comments 4781. RFC Editor, 2007. <a href="https://rfc-editor.org/rfc/rfc4781.txt">https://rfc-editor.org/rfc/rfc4781.txt</a>.</p>
+        <p class="ref">Rekhter, Yakov, John Scudder, Srihari S. Ramachandra, Enke Chen, and Rex Fernando. <em>Graceful Restart Mechanism for BGP</em>. Request for Comments 4724. RFC Editor, 2007. <a href="https://rfc-editor.org/rfc/rfc4724.txt">https://rfc-editor.org/rfc/rfc4724.txt</a>.</p>
+        <p class="ref">Torrell, Wendy, and Victor Avelar. “Mean Time Between Failure: Explanation and</p>
+        <p class="ref">Standards.” White Paper. APC. Accessed May 13, 2017. <a href="http://www.apc.com/salestools/VAVR-5WGTSB/VAVR-5WGTSB_R1_EN.pdf">http://www.apc.com/salestools/VAVR-5WGTSB/VAVR-5WGTSB_R1_EN.pdf</a>.</p>
+        <p class="ref">———. “Performing Effective MTBF Comparisons for Data Center Infrastructure.” White Paper. APC. Accessed May 13, 2017. <a href="http://www.apc.com/salestools/ASTE-5ZYQF2/ASTE-5ZYQF2_R1_EN.pdf">http://www.apc.com/salestools/ASTE-5ZYQF2/ASTE-5ZYQF2_R1_EN.pdf</a>.</p>
+        <p class="ref">White, Russ, and Denise Donohue. <em>The Art of Network Architecture: Business-Driven Design</em>. 1st edition. Indianapolis, IN: Cisco Press, 2014.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch23lev11"><a id="page_627"></a>Review Questions</h3>
+        <p class="indenthangingN">1. Find or create a chart showing how much time per year three, four, and five 9s of availability translates to. Do you think these are realistic numbers? Is there anything interesting in the amount of downtime allowed at each point, or in how much the amount of allowable downtime changes?</p>
+        </div>
+        <p class="indenthangingN">2. Increased delay is not listed among the effects of a link failure in <a href="ch23.xhtml#ch23fig01">Figure 23-1</a>. If you changed the network so the original link was a local circuit, and the backup path traveled over a much longer distance, would delay be something to look for in the case of the described failure?</p>
+        <p class="indenthangingN">3. Find the calculation for links or devices connected in series. What is the difference between this calculation and the calculation for devices or links in parallel?</p>
+        <p class="indenthangingN">4. Will running multiple devices in parallel, and allowing the control plane to route around failures, eliminate the need for graceful restart or ISSU in all networks? Why or why not?</p>
+        <p class="indenthangingN">5. Consider a multiplanar core with shunt links in light of the State/Optimization/Surface (SOS) model. What are the tradeoffs when deciding whether or not to include shunt links?<a id="page_628"></a></p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780134762814/files/9780134762852.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

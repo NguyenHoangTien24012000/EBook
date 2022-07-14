@@ -1,0 +1,340 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 class="h2" id="ch04"><a id="page_91"></a><strong>Chapter 4<br>Lower Layer Transports</strong></h2>
+        <div class="sidebar">
+        <p class="sb-noindent"><strong>Learning Objectives</strong></p>
+        <p class="sb-noindent">After reading this chapter, you should be able to:</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Understand the mechanism Ethernet uses to prevent collisions among multiple transmitters on a single physical wire</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Understand how physical addresses are assigned in an Ethernet network</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Understand half and full duplex modes of operation in Ethernet networks</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Understand the mechanism 802.11 WiFi uses to prevent collisions among multiple transmitters</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Understand the basic concepts of modulation, spatial multiplexing, and beamforming</p>
+        </div>
+        <p class="noindent">Data transport protocols are often layered, with lower layers providing services along a single hop, a middle set of layers providing services end to end between two devices, and, potentially, a set of layers providing services end to end between two applications, or two instances of a single application. <a href="ch04.xhtml#ch04fig01">Figure 4-1</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/04fig01.jpg" aria-describedby="Al04fig01" alt="Figure represents transport layers." width="611" height="266"><aside class="hidden" id="Al04fig01">
+        <p>Two computers with a cloud intersecting each computer are to the left and right with a line leading downward to meet a router. The layer is labeled layer 1/2: single link. The line leads to the right, meeting another router. The line leads upward to reach the computer at the right. The layer is labeled layer 1/2: single link. The computers are directly linked with a straight line to the left and dotted lines to the right. The layer is labeled layer 3/4: single link. Dotted lines intersect the two clouds and are labeled layer 5/6: application to application.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch04fig01"></a><strong>Figure 4-1</strong> <em>Transport Layers</em></p>
+        </div>
+        <p class="indent">Each set of protocols is shown as a pair of protocols, because—as shown in the Recursive Internet Architecture (RINA) model in the previous chapter—transport protocols normally come in pairs, with each protocol in the pair taking on specific functions. This chapter will consider the physical and datalink protocols, as shown in <a href="ch04.xhtml#ch04fig01">Figure 4-1</a>. Specifically, this chapter will consider two widely used protocols for point-to-point transport in networks: Ethernet and WiFi (802.11).</p>
+        <div class="heading">
+        <h3 class="h3" id="ch04lev1"><a id="page_92"></a>Ethernet</h3>
+        <p class="noindent">Many of the early mechanisms designed to allow multiple computers to share a single wire were based on designs adopted from more telephone-oriented technologies. They generally focused on token passing and other more deterministic schemes for ensuring two devices did not try to use the single shared electrical medium at the same time. Ethernet, invented in the early 1970s by Bob Metcalf (who was working at Xerox at the time), resolved overlapping talkers in a different way—through a very simple set of rules to prevent the majority of overlapping transmissions, and then resolving any overlapping transmissions through detection and backoff.</p>
+        </div>
+        <p class="indent">The initial focus of any protocol that interacts with a physical medium is going to be in the area of multiplexing, as few other problems can be addressed until this first problem is solved. Therefore, this section will begin with a description of the multiplexing components of Ethernet and then move to other operational aspects.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch04lev2"><strong>Multiplexing</strong></h4>
+        <p class="noindent">To understand the multiplexing problem Ethernet faced when it was first invented, consider the following problem: In a shared medium network, the entire shared medium is a single electrical circuit (or wire).</p>
+        </div>
+        <p class="indent">When one host transmits a packet, every other host on the network receives the signal. This is much like a conversation held in an open air environment; a sound <a id="page_93"></a>transmitted over the common medium (the air) is heard by every listener. There is no physical way to restrict the set of listeners during the transmission process.</p>
+        <div class="heading">
+        <h5 class="h5" id="ch04level1"><em><strong>CSMA/CD</strong></em></h5>
+        <p class="noindent">The resulting system, called Carrier Sense Multiple Access with Collision Detection (CSMA/CD), operates using a set of steps:</p>
+        </div>
+        <p class="indenthangingN">1. The host <em>listens</em> on the medium to see if there are any existing transmissions in progress; this is the carrier sense part of the process.</p>
+        <p class="indenthangingN">2. On hearing there is no other transmission in progress, the host will begin serializing the bits in the frame onto the wire.</p>
+        <p class="indentt">This part is simple—just listen before transmitting. It is possible, of course, for the transmissions of two (or more) hosts to collide as <a href="ch04.xhtml#ch04fig02">Figure 4-2</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/04fig02.jpg" aria-describedby="Al04fig02" alt="Figure represents collisions in a shared medium." width="650" height="391"><aside class="hidden" id="Al04fig02">
+        <p>T1 is at the top with three computers A, B, and C connected to each other. A dotted line moves from A and starts leading to the right. T2 has three computers A, B, and C connected to each other. A dotted line starts from A and leads rightward. A dotted line starts from C and leads leftward. T3 has three computers, A, B, and C connected to each other with dotted lines leading from A and C that never meet each other.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch04fig02"></a><strong>Figure 4-2</strong> <em>Collisions in a Shared Medium</em></p>
+        </div>
+        <p class="indentb">In <a href="ch04.xhtml#ch04fig02">Figure 4-2</a>:</p>
+        <p class="indenthangingN">1. At time 1 (T1), A begins transmitting a frame onto the shared medium. It takes some amount of time for the signal to travel from one end of the wire to the other; this is called the propagation delay.</p>
+        <p class="indenthangingN"><a id="page_94"></a>2. At time 2 (T2), C listens for a signal on the wire, and, detecting none, begins transmitting a frame onto the shared medium. A collision has already occurred at this point, as both A and C are transmitting a frame at the same moment, but neither of them has yet detected the collision.</p>
+        <p class="indenthangingN">3. At time 3 (T3), the two signals actually collide on the wire, causing them both to be malformed, and hence unreadable.</p>
+        <p class="indentt">A collision can be detected at A at the moment the signal from C reaches A by having A listen to its own signal as it is transmitted onto the wire. When the signal from C reaches A, A will receive the malformed signal caused by the combination of the two signals (the result of the collision). This is the <em>collision detection</em> portion (the CD portion) of CSMA/CD operation.</p>
+        <p class="indent">What should a host do when it detects a collision? In the original Ethernet design, the host will send a jam signal long enough to force any other host connected to the wire to sense the collision and stop transmitting. The length of the jam signal was originally set so the jam signal would consume at least the amount of time required to transmit a maximum-sized frame on the wire across the entire length of the wire. Why this specific amount of time?</p>
+        <p class="bullt">• If a shorter than maximum frame was used in determining the amount of time the jam signal is transmitted, then a host with older interfaces (which cannot send and receive at the same time) may actually miss the entire jam signal while transmitting a single large frame, making the jam signal ineffective.</p>
+        <p class="bullb">• It is important to allow enough time for the hosts connected at the very end of the wires to receive the jam signal, so they will sense the collision and take the following steps.</p>
+        <p class="indent">Once the jam signal is received, each host connected to the wire will set a back-off timer so they will each wait some random amount of time before attempting to transmit again. Because these timers are set to a random number, when the two hosts with frames waiting to be transmitted attempt their next transmission, the collision should not occur again.</p>
+        <p class="indent">If every host connected to the single wire receives the same signal at roughly the same time (given propagation delay through the wire), how does any particular host know whether it should actually receive a particular frame (or rather, copy the information within a frame from the wire to local memory)? This is the job of Media Access Control (MAC) addresses.</p>
+        <p class="indent">Each physical interface is assigned (at least) one MAC address. Each Ethernet frame contains a source and destination MAC address; the frame is formatted so <a id="page_95"></a>the destination MAC address is received before any data. Once the entire destination MAC address has been received, a host can decide whether it should continue receiving the packet or not. If the destination address matches the interface address, the host continues copying information off the wire and into memory. If the destination address does not match the local interface address, the host simply stops receiving the packet.</p>
+        <div class="sidebar1">
+        <p class="title1"><strong>Ethernet Chipsets, Broadcast, Multicast, and Promiscuous Mode</strong></p>
+        <p class="noindent">The basic functionality of Ethernet requires Ethernet chipsets not only be able to receive traffic to the local MAC address, but also the ability for an Ethernet chipset to receive traffic to other MAC addresses. For instance, an Ethernet chipset should also accept any packets transmitted to a broadcast address, as frames transmitted to the broadcast address are intended for <em>every device connected to the physical medium</em>. A second class of addresses Ethernet chipsets must be able to accept are multicast addresses. A specific range of MAC addresses are set aside for use as multicast addresses; each address in this range is called a group, because it can be used to send a single frame to a group of <em>listeners</em>.</p>
+        <p class="indent">Each Ethernet chipset, then, is designed with a programmable set of addresses the chipset can be instructed to listen to. If the set of addresses the chipset must listen to is larger than the space set aside to hold this table of addresses, the Ethernet chipset can be set to promiscuous mode, which means it will copy every Ethernet frame off the wire and into memory.</p>
+        <p class="indent">Why not just set all Ethernet chipsets to promiscuous mode, so every frame is received on every host? Because this transfers the problem of deter-mining which frames need to be locally processed from the Ethernet chipset (in hardware) to the software that processes these frames once the frame is completely copied into memory. Copying every frame off the wire, and pushing the matching job to software, has several negative side effects:</p>
+        <p class="bullt">• The matching software must run someplace; this someplace is almost always the general processor that is also running all the rest of the software on the system. Determining which frames need to be processed locally or not on the main processor takes away cycles from other processes, slowing down the entire operation of the system and software.</p>
+        <p class="bull"><a id="page_96"></a>• Frames copied off the wire must be stored someplace while they are waiting to be processed; this will generally be some kind of memory. Memory used to store packets waiting to be processed will not be available for use by other applications. Again, this can have a negative performance impact on the overall system.</p>
+        <p class="bullb">• Determining which frames need to be processed locally in software is much slower than making this determination in hardware. Because of this, the rate at which a system that copies every frame into memory can process packets will be much lower than a system that does even some of this matching in hardware. Matching packets in software will also reduce the efficiency of the network interface on the host.</p>
+        <p class="indent">Given these disadvantages, does it ever make sense for a device to configure the Ethernet chipset in promiscuous mode? There are at least two cases where it does make sense:</p>
+        <p class="bullt">• When a device is a router, which means it must receive most of the traffic transmitted on a particular interface to determine if each received packet needs to be forwarded. The operation of routers will be considered more fully in <a href="ch07.xhtml#ch07">Chapter 7</a>, “<a href="ch07.xhtml#ch07">Packet Switching</a>.”</p>
+        <p class="bullb">• When a device is monitoring the network. In this case, every packet must be captured to see all the traffic flowing across the wire. These kinds of devices are often used to troubleshoot network operation, protocol operation, or monitor network performance.</p>
+        </div>
+        <p class="indent">What about duplicate MAC addresses? If multiple hosts connected to the same medium have the same physical address, they would each receive, and potentially process, the same frames. There are ways to detect duplicate MAC addresses, but these are implemented as part of interlayer discovery rather than Ethernet itself; these will be considered in <a href="ch06.xhtml#ch06">Chapter 6</a>, “<a href="ch06.xhtml#ch06">Interlayer Discovery</a>.” Ethernet itself assumes either</p>
+        <p class="bullt">• MAC addresses will be properly assigned by the system administrator, if they are manually assigned.</p>
+        <p class="bullb">• MAC addresses will be assigned by the device manufacturer so duplicate MAC addresses never occur, no matter how many hosts are connected to one another.</p>
+        <div class="note">
+        <p class="title"><a id="page_97"></a><strong>Note</strong></p>
+        <p class="notepara">Because MAC addresses are normally rewritten at every router (see <a href="ch07.xhtml#ch07">Chapter 7</a> for more information), they only need to be unique within the segment or broadcast domain. While many older systems strove to ensure per segment or broadcast domain uniqueness, this must normally be enforced through manual configuration, and hence has largely been abandoned in favor of attempting to provide each device with a globally unique MAC address “baked into” the Ethernet chipset when it is created.</p>
+        </div>
+        <p class="indent">The first solution is difficult to implement in most large-scale networks; manual configuration of MAC addresses is extremely rare in the real world to the point of nonexistence. The second option essentially means MAC addresses must be assigned to individual devices so no two devices in the world share the same MAC address. How is this possible? By assigning MAC addresses out of a central repository managed through a standards organization. <a href="ch04.xhtml#ch04fig03">Figure 4-3</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/04fig03.jpg" aria-describedby="Al04fig03" alt="Figure represents the MAC-48/EUI-48 Address Format." width="702" height="358"><aside class="hidden" id="Al04fig03">
+        <p>The top portion has a rectangular bar divided into six blocks labeled 1st octet, 2nd octet, 3rd octet, 4th octet, 5th octet, and 6th octet. Three blocks on the left are labeled organizationally unique identifier. Three blocks on the right are labeled network interface controller specific. A dotted line moves from the extreme left and from the 2nd octet to reach a rectangular box with eight blocks, 7, 6, 5, 4, 3, 2, 1, and 0. A dotted line moves from 0 labeled 0: unicast 1: multicast. A dotted line moves from 1 labeled 0: globally unique 1: locally assigned.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch04fig03"></a><strong>Figure 4-3</strong> <em>MAC-48/EUI-48 Address Format</em></p>
+        </div>
+        <p class="indent">The MAC address is broken up into two sections: an Organizationally Unique Identifier (OUI) and a <em>network interface identifier</em>. The network interface identifier is assigned by the manufacturer of the Ethernet chipset. Companies producing Ethernet chipsets, in turn, are assigned the organizational identifiers by the Institute of Electrical and Electronic Engineers (the IEEE). So long as an organization (or manufacturer) always assigns addresses to a chipset with its OUI in the first three octets of the MAC address, and does not assign any two devices the same network interface identifier in the last three octets of the MAC address, <em>no two MAC addresses should be the same for any Ethernet chipset</em>.</p>
+        <p class="indent"><a id="page_98"></a>Two bits within the OUI space are set aside to signal whether the MAC address has been locally assigned (which means the manufacturer’s assigned MAC address has been overridden by the device’s configuration), and whether the MAC address is intended as one of the following:</p>
+        <p class="bullt">• Unicast address, which means it describes a single interface</p>
+        <p class="bullb">• Multicast address, which means it describes a group of receivers</p>
+        <p class="indent">The MAC address consists of 48 bits; with these two bits removed, the MAC address space is 46 bits, which means it can describe 2<sup>46</sup>—or 70,368,744,177,664— addressable interfaces. Because this is (potentially) not enough to account for the rapid number of new addressable devices, such as Bluetooth headsets and sensors, the length of a MAC address was increased to 64 bits to create the EUI-64 MAC address, which is constructed in the same way as the shorter 48-bit MAC address. These addresses can support 2<sup>62</sup>—or 4,611,686,018,427,387,904—addressable interfaces.</p>
+        <div class="heading">
+        <h5 class="h5" id="ch04level2"><em><strong>The End of CSMA/CD</strong></em></h5>
+        <p class="noindent">The shared medium model of Ethernet deployment has largely (though not completely!) been replaced in most networks. Rather than a shared medium, most Ethernet deployments now are switched, which means the single electrical circuit, or the single wire, is broken up into multiple circuits by connecting each device to a port on a switch. <a href="ch04.xhtml#ch04fig04">Figure 4-4</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/04fig04.jpg" aria-describedby="Al04fig04" alt="Figure represents switched Ethernet network operation." width="584" height="349"><aside class="hidden" id="Al04fig04">
+        <p>Computers, A, B, and C are to the left, right, and bottom, respectively. Lines lead from the computers to the center, reaching three electrical circuit nodes and then terminates at the bottom left. A circle connects three nodes with dashed lines connecting the nodes, labeled internal fabric. The circle is labeled switch.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch04fig04"></a><strong>Figure 4-4</strong> <em>Switched Ethernet Network Operation</em></p>
+        </div>
+        <p class="indent">In <a href="ch04.xhtml#ch04fig04">Figure 4-4</a>, each device is connected to a different set of wires, all of which terminate in a single switch. If the network interfaces at the three hosts (A, B, and C), and the switch network interfaces, can send or receive at any moment in time, rather than being able to do both, it is possible for A to send while the switch is also sending. In this case, the CSMA/CD process must still be followed in order to prevent collisions, even on networks where only two transmitters are connected to the same wire. This mode of operation is called half duplex.</p>
+        <p class="indent">If the Ethernet chipsets can both listen and transmit at the same time in order to detect collisions, however, this situation can be changed. The easiest way to manage this is to place the receive and transmit signals on <em>different physical wires</em> within the set of wires used in the Ethernet cable. Using different wires means there is no way for the transmissions from the two connected systems to collide, so the chipset can both transmit and receive at the same time. To enable this mode of operation, called full duplex, twisted pair Ethernet carries the signal in one direction on one pair of wires, and the signal in the opposite direction on another set of wires. In this case, CSMA/CD is no longer needed.</p>
+        <div class="note">
+        <p class="title"><a id="page_99"></a><strong>Note</strong></p>
+        <p class="notepara">The switch must learn which device (host) is connected to each port for this system to work; learning about the reachable destinations in a switched network is considered in <a href="ch15.xhtml#ch15">Chapter 15</a>, “<a href="ch15.xhtml#ch15">Distance Vector Control Planes</a>.”</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch04lev3"><strong>Error Control</strong></h4>
+        <p class="noindent">CSMA/CD is designed to prevent one kind of detectable error in Ethernet: when collisions cause a frame to be malformed. Other kinds of errors can slip into a signal, however, as with any other electrical or optical system. For instance, in a twisted pair cabling system, if the twisted wires are “unwound” too much in installing a connector, one wire can transfer its signal to another wire through magnetic interference, causing cross talk. As a signal travels down a wire, it can reach the other end of the wire and reflect back along the length of the wire, as well.</p>
+        </div>
+        <p class="indent">How does Ethernet control for these errors? The original Ethernet standard included a 32-bit Cyclic Redundancy Check (CRC) in each frame, which can detect a large array of errors in transmission, as noted in <a href="ch02.xhtml#ch02">Chapter 2</a>, “<a href="ch02.xhtml#ch02">Data Transport Problems and Solutions</a>.” At higher speeds, and on optical (rather than electrical) transport mechanisms, however, CRC can fail to detect enough errors to impact the operation of the protocol. To provide better error control, later (and faster) Ethernet standards have included more robust error control mechanisms.</p>
+        <p class="indent">For instance, Gigabit Ethernet specifies an 8B10B encoding scheme designed to ensure the correct synchronization of sender and receiver clocks; this scheme also detects some bit errors, as well. Ten-gigabit Ethernet is often implemented in <a id="page_100"></a>hardware with a Reed-Solomon code Error Correction (EC) system and a 16B18B encoding system, which provides good Forward Error Correction (FEC) and clock synchronization with 18% overhead.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">The 8B10B encoding scheme attempts to ensure there are approximately the same number of 0 and 1 bits in a data stream, which allows for efficient laser utilization and provides for clock synchronization to be embedded in the signal. The scheme works by encoding 8 bits of data (8B) into 10 transmitted bits on the wire (10B), which means there is about 25% overhead for each character transmitted. Single bit parity errors can be detected and corrected because the receiver knows how many 0s and 1s should have been received.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch04lev4"><strong>Data Marshaling</strong></h4>
+        <p class="noindent">Ethernet transmits data in <em>packets</em> and <em>frames;</em> the packet is made up of the preamble information, the frame, and any trailing information. The frame contains a header, which is made up of fixed length fields, and the data being carried. <a href="ch04.xhtml#ch04fig05">Figure 4-5</a> illustrates an Ethernet packet; the frame is marked out as well.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/04fig05.jpg" aria-describedby="Al04fig05" alt="Figure represents an Ethernet packet and frame." width="701" height="195"><aside class="hidden" id="Al04fig05">
+        <p>A rectangular bar has preamble (64 bits) to the left with dest add (48 bits) next to it. src add (48 bits) is adjacent to it with type (16 bits) to the right. The type field is followed by carried data field with several truncated fields in between. A block to the right has FEC (e.g. CRC) enclosed. The whole box is labeled packet and the portion between dest add (48 bits) and carried data is labeled frame.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch04fig05"></a><strong>Figure 4-5</strong> <em>An Ethernet Packet and Frame</em></p>
+        </div>
+        <p class="indent">In <a href="ch04.xhtml#ch04fig05">Figure 4-5</a>, the preamble contains a beginning of frame marker, information the receiver can use to synchronize its clock to synchronize to the incoming packet, and other information. The destination address is received immediately after the preamble, so the receiver can quickly decide whether to copy this packet into memory or not. The addresses, protocol type, and carried data are all part of the frame. Finally, any FEC information and other trailers are added onto the frame to make up the final section(s) of the packet.</p>
+        <p class="indent">The type field is of particular interest, as this provides the information for the next layer up—the protocol providing the information carried in the data <a id="page_101"></a>field—to identify the protocol. This information is opaque to Ethernet—the Ethernet chipset does not know how to interpret this information (only where it is), and how to carry it. Without this field there would be no consistent way for the carried data to be dispatched to the correct upper-layer protocol, or rather, for multiple upper-layer protocols to be properly multiplexed into Ethernet frames, and then properly demultiplexed.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch04lev5"><strong>Flow Control</strong></h4>
+        <p class="noindent">In the original CSMA/CD implementation of Ethernet, the shared medium itself provided a sort of basic flow control mechanism. Assuming no two hosts can transmit at the same time, and information transmitted by some upper-layer protocol must be acknowledged or answered at least occasionally, the transmitter must periodically take a break to receive any acknowledgment or reply. There are sometimes situations where this rather rough form of flow control does not work; the Ethernet specification assumes some higher layer protocol will control the flow of information to prevent failures in this case.</p>
+        </div>
+        <p class="indent">In switched full duplex Ethernet, there is no CSMA/CD, as there is no shared medium. The two hosts connected to the pair of transmission channels can send data as quickly as the wires permit. This can, in fact, result in a situation where a host receives more data than it can process. To resolve this, a pause frame was developed for Ethernet. When a receiver sends the pause frame, the sender is supposed to stop sending traffic for a specified period of time.</p>
+        <p class="indent">Pause frames are not widely deployed.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">Many protocols do not contain all four of the functions described as part of the Recursive Internet Architecture (RINA) model described in <a href="ch03.xhtml#ch03">Chapter 3</a>, “<a href="ch03.xhtml#ch03">Modeling Network Transport</a>”: error control, flow control, transport, and multiplexing. Even among those protocols implementing all four functions, all four are not always deployed. Normally, in this situation, the protocol and/or network designer is handing the function off to a lower or higher layer in the stack. This does work in some cases, but you should always be careful about assuming it is the correct thing to do. For instance, there is a difference between hop-by-hop encryption and end-to-end encryption. End-to-end is good for applications and protocols that do encrypt, but not every application does, in fact, encrypt data being transferred, nor does every host have an encrypted transport configured. In these cases, hop-by-hop encryption can be useful across less than secure links, such as wireless connections.</p>
+        </div>
+        <div class="heading">
+        <h3 class="h3" id="ch04lev6"><a id="page_102"></a>Wireless 802.11</h3>
+        <p class="noindent">Commonly called and marketed as <em>WiFi</em>, 802.11, which is widely deployed for carrying data over wireless in the unlicensed (in the United States) 2.4 and 5GHz radio spectrums. Microwave ovens, RADAR systems, Bluetooth, some amateur radio systems, and even baby monitors also use the 2.4GHz radio spectrums, so WiFi can both interfere with and be interfered with by these other systems.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch04lev7">Multiplexing</h4>
+        <p class="noindent">The 802.11 specifications generally use a form of frequency multiplexing to carry a large amount of information across a single channel, or set of frequencies. The frequency of a signal is simply the rate at which the signal switches polarity within a single second; hence a 2.4GHz signal is an electrical signal, carried across either a wire, an optical fiber, or the air, that switches polarity, from positive to negative (or negative to positive) 2.4 × 10<sup>9</sup> times per second.</p>
+        </div>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">These are bare minimum descriptions; there is an entire field of radio and wave propagation you can study if you are so inclined; the goal here is to give you enough information to understand the basic concepts without overwhelming.</p>
+        </div>
+        <p class="indent">To understand the concept of wireless signaling, it is best to begin with the idea of carrier and modulation; <a href="ch04.xhtml#ch04fig06">Figure 4-6</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/04fig06.jpg" aria-describedby="Al04fig06" alt="Figure represents orthogonal channels using Frequency Modulation." width="700" height="240"><aside class="hidden" id="Al04fig06">
+        <p>A single center frequency labeled channel center on the left. Two dotted lines labeled OSF1 and OSF2 point upward and downward to reach two frequencies at the top and bottom. A dotted line leads to the right from both frequencies, labeled modulation. The line reaches two frequencies at the top and bottom, with 0, 1, 0, and 1 dividing it into four sections.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch04fig06"></a><strong>Figure 4-6</strong> <em>Orthogonal Channels Using Frequency Modulation</em></p>
+        </div>
+        <p class="indent">In <a href="ch04.xhtml#ch04fig06">Figure 4-6</a>, a single center frequency is chosen; the channel will be a range of frequencies on either side of this center frequency. Within the resulting channel, two carrier frequencies are chosen so they are orthogonal to one another—which means <a id="page_103"></a>signals carried on these two carrier frequencies will not interfere with one another. These are marked as <em>OSF 1</em> and <em>OSF 2</em> in the figure. Each of these carrier frequencies is, in turn, actually a narrower channel, allowing the actual signal of 0s and 1s to be modulated onto the channel. Modulation, in this case, means varying the actual frequency of the signal around each OSF frequency.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">Modulation simply means somehow modifying the carrier in a way that allows a signal to be carried so a receiver can reliably decoded it.</p>
+        </div>
+        <p class="indent">Thus, the 802.11 specification uses an Orthogonal Frequency Division Multiplexing (OFDM) scheme, and encodes the actual data using Frequency Modulation (FM).</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">One of the confusing points about multiplexing is it has two meanings, rather than one. Either it means to place multiple bits on the same medium at once, or it means allowing multiple hosts to communicate using the same medium at once. Which of these two meanings is intended can only be understood in a specific context. In this section, the meaning is the first, breaking a single medium up into channels to allow multiple bits to be transmitted at once. In most of the rest of this book, it means the second, allowing multiple hosts to transfer data over the same medium.</p>
+        </div>
+        <p class="indent">The speed at which data can be transmitted on such a system (the bandwidth) depends directly on the width of each channel and the ability of the transmitter to select orthogonal frequencies. To increase the speed of 802.11, then, two different techniques have been applied. The first is simply to increase the channel width, so more carrier frequencies can be used to carry data. The second is to find more efficient ways to pack data into a single channel by using more complex modulation methods. For instance, 802.11b can use a 40MHz wide channel in the 2.4GHz range, while 802.11ac can use either an 80 or 160MHz wide channel in the 5GHz range.</p>
+        <div class="heading">
+        <h5 class="h5" id="ch04level3"><em><strong>Spatial Multiplexing</strong></em></h5>
+        <p class="noindent">Other forms of multiplexing to gain more bandwidth between two devices are also used in the 802.11 specification series. The 802.11n specification introduced Multiple Input Multiple Output (MIMO) antenna arrays, which allow the signal to follow different paths through the single medium (air). This might seem impossible, as there is only one “air” in a room, but wireless signals actually bounce off different objects within a room, which causes them to take multiple paths through the space. <a href="ch04.xhtml#ch04fig07">Figure 4-7</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/04fig07.jpg" aria-describedby="Al04fig07" alt="Multiple paths in a room are shown." width="504" height="209"><aside class="hidden" id="Al04fig07">
+        <p>Figure shows a rectangular box with transmitter to the left and receiver to the right. Two circles are enclosed to the left and right of the box. A dotted line reaches the top and goes downward to reach the receiver circle, labeled path 1. A straight line reaches the circle, labeled path 2. A dotted line moves downward and turns upward once it touches the sides to reach the circle, labeled path 3.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch04fig07"></a><strong>Figure 4-7</strong> <em>Multiple Paths within a Single Room</em></p>
+        </div>
+        <p class="indent"><a id="page_104"></a>In <a href="ch04.xhtml#ch04fig07">Figure 4-7</a>, assuming the transmitter is using an antenna that will transmit in all directions (an omnidirectional antenna), there are three paths through the single space, labeled 1, 2, and 3. The transmitter and receiver cannot “see” the three separate paths, but they can measure the strength of signal between each pair of antennas, and try sending different signals between apparently separated pairs until they find multiple paths over which different sets of data can be sent.</p>
+        <p class="indent">A second way multiple antennas can be used is in beamforming. Normally, a wireless signal transmitted from an antenna covers a circle (a ball in three dimensions, but this is difficult to meaningfully illustrate). In beamforming, the beam is shaped using one of various techniques to make it more oblong. <a href="ch04.xhtml#ch04fig08">Figure 4-8</a> illustrates these concepts.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/04fig08.jpg" aria-describedby="Al04fig08" alt="Beam formation is illustrated." width="492" height="203"><aside class="hidden" id="Al04fig08">
+        <p>Figure shows a dot enclosed in a circle, labeled unformed signal pattern. A dot is enclosed to the right of an oval, representing formed beam, with a curve to the right labeled reflector.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch04fig08"></a><strong>Figure 4-8</strong> <em>Beam Formation</em></p>
+        </div>
+        <p class="indent">In the unformed pattern, the signal is roughly a ball or globe around the tip of the antenna; drawn from the top, it looks much like a simple circle extending to the farthest point in the ball shape. By using a reflector, the beam can be shaped, or formed, into a more oblong shape. The space behind the reflector, and to the sides of the beam, will receive less (or even none, for very tight beams) of the transmission power. How can such a reflector be built? The simplest way is with a physical barrier tuned to repel the signal’s power, much like a mirror reflects light, or a wall reflects sound. The key is the point in the transmission’s signal the physical barrier is placed. <a href="ch04.xhtml#ch04fig09">Figure 4-9</a> will be used to explain the key points in the waveform, reflection, and cancellation.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/04fig09.jpg" aria-describedby="Al04fig09" alt="A single waveform is shown." width="473" height="221"><aside class="hidden" id="Al04fig09">
+        <p>Figure shows a wave moving upward and downward with portions labeled, 1/4 wave, 1/2 wave, and wavelength across its left, center, and right respectively.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch04fig09"></a><strong>Figure 4-9</strong> <em>A Signal Waveform</em></p>
+        </div>
+        <p class="indent"><a id="page_105"></a>A typical waveform follows a sine wave, which begins at zero power, increases to its maximum positive power, then moves back to zero power, and then through a positive negative power cycle. Each of these is a cycle; the frequency refers to the number of times this cycle repeats per second. The entire length of the wave in space, along a wire, or an optical fiber, is called the wavelength. The wavelength is inversely proportional to the frequency; the higher the frequency, the shorter the wavelength.</p>
+        <p class="indent">The key point to note in this diagram is the state of the signal at the quarter and half wavelength points. At the quarter wave point, the signal is at its highest power; if an object, or another signal, interferes at this point, the signal will either be absorbed or reflected. At the half wave point, the signal is at the minimum power; if there is no offset, or constant voltage on the signal, the signal will reach zero power. To reflect a signal, then, you can position a physical object so it reflects the power just at the quarter wave point. The physical distance required to do this will, of course, depends on the frequency, just as the wavelength depends on the frequency.</p>
+        <p class="indent">Physical reflectors are easy; what if you want to be able to dynamically form the beam without using a physical reflector? <a href="ch04.xhtml#ch04fig10">Figure 4-10</a> illustrates the principles you can use here.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/04fig10.jpg" aria-describedby="Al04fig10" alt="Figure shows combinations of signals." width="558" height="428"><aside class="hidden" id="Al04fig10">
+        <p>The multiply/mix portion has a dotted line on top with a frequency moving over it, labeled original. Another frequency below is identical and labeled add. To the right, mix/reflect has a dotted line on top with a frequency moving over it, labeled original. The frequency below moves a little rightward, with the ends touching the dotted line, labeled add. To the right, cancellation has a dotted line on top with a frequency moving over it, labeled original. The frequency below is in inverse form, labeled add.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch04fig10"></a><strong>Figure 4-10</strong> <em>Combinations of signals</em></p>
+        </div>
+        <p class="indent">The light gray dotted lines in <a href="ch04.xhtml#ch04fig10">Figure 4-10</a> provide a phase marker; two signals are in phase if their peaks are aligned, as shown on the left. The two signals shown in the middle are a quarter out of phase, as the peak of one signal is aligned with the zero point, or minimum, of the second signal. The third pair of signals, shown on the far right, are complementary, or 180 degrees out of phase, as the positive peak of one signal aligns with the negative peak of the second signal. The first pair of signals will add together; the third pair of signals will cancel out. The second pair may, if correctly crafted, reflect off one another. These three effects allow a beam to be formed, as shown in <a href="ch04.xhtml#ch04fig11">Figure 4-11</a>.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/04fig11.jpg" aria-describedby="Al04fig11" alt="Figure represents the process of beamforming." width="606" height="278"><aside class="hidden" id="Al04fig11">
+        <p>Illustration shows an oval enclosed in another oval to the left. A dot in the larger oval is labeled original antenna. A dot enclosed in the oval enclosed is labeled multiplying signal draws the beam. To the right, a shrunk oval has a dot enclosed and labeled reflector signal reflects the beam. An oval to the right has a dot enclosed and labeled cancellation signal cancels remaining beam power.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch04fig11"></a><strong>Figure 4-11</strong> <em>Beamforming</em></p>
+        </div>
+        <p class="indent"><a id="page_106"></a>A single beamforming system may, or may not, use all of these components, but the general idea is to restrict the beam within a physical space within the medium— generally free air propagation. Beamforming allows the shared physical medium to be used as several different communication channels, as shown in <a href="ch04.xhtml#ch04fig12">Figure 4-12</a>.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/04fig12.jpg" aria-describedby="Al04fig12" alt="Beamforming and Spatial Multiplexing is illustrated." width="420" height="312"><aside class="hidden" id="Al04fig12">
+        <p>Figure represents three computers, A, B, and C connected to a router with three beams labeled formed beam 1, formed beam 2, and formed beam 3.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch04fig12"></a><strong>Figure 4-12</strong> <em>Beamforming and Spatial Multiplexing</em></p>
+        </div>
+        <p class="indent">In <a href="ch04.xhtml#ch04fig12">Figure 4-12</a>, the wireless router has used its beamforming capabilities to form three different beams, each directed at a different host. The router can now send traffic on all three of these formed beams at a higher rate than if it treated the entire space as a single shared medium, because the signals to A will not interfere or overlap with the information transmitted to B or C.</p>
+        <div class="note">
+        <p class="title"><a id="page_107"></a><strong>Note</strong></p>
+        <p class="notepara">Directional methods such as beamforming only improve the traffic transmitted in one direction. For instance, if a wireless access point is capable of beamforming, and the host it is communicating with is not, the distance the two devices will be able to communicate across will be constrained by the host, as it cannot send a directional signal. However, the physical distance is not always the important point in beamforming technologies. The amount of information a wireless signal can carry is related to the power as well as other factors; the more power received at the receiver (not transmitted, received), the more information that can be transmitted. So if the access point can form a beam so it has twice as much power to the host as the host has connecting back to the access point, it will increase the speed at which the host can download data across the wireless link. It may, then, be worthwhile to have beamforming on one end of the wireless connection (and not the other). The answer to whether or not it is, is, as always, “it depends”—on the application, traffic pattern, and many other factors.</p>
+        </div>
+        <div class="heading">
+        <h5 class="h5" id="ch04level4"><em><strong>Channel Sharing</strong></em></h5>
+        <p class="noindent">The multiplexing problem in wireless signals involves sharing a single channel, much like in wired network systems. Two specific problems dominate the solutions designed to share a single wireless medium: the hidden node problem and the transmission/reception power problem (which is also sometimes called receiver swamping). <a href="ch04.xhtml#ch04fig13">Figure 4-13</a> illustrates the hidden node problem.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/04fig13.jpg" aria-describedby="Al04fig13" alt="Hidden Node Problem in Wireless Networks is illustrated." width="574" height="305"><aside class="hidden" id="Al04fig13">
+        <p>Figure represents three interlinked dotted circles that has three dots, A, B, and C at each circles center.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch04fig13"></a><strong>Figure 4-13</strong> <em>The Hidden Node Problem in Wireless Networks</em></p>
+        </div>
+        <p class="indent"><a id="page_108"></a>The three circles in <a href="ch04.xhtml#ch04fig13">Figure 4-13</a> represent the three overlapping ranges of the wireless transmitters at A, B, and C. If A transmits toward B, C cannot hear the transmission. Even if C listens for a clear channel, it is possible for A and C to transmit at the same time, causing a collision at B.</p>
+        <p class="indent">The hidden node problem is made worse because of the power of transmission versus the power of the received signal, and the reality of air as a medium. A good rule of thumb for radio signal strength in air is the signal loses half of its power every wavelength of space it travels. At high frequencies, signals lose their strength very quickly, which means the transmitter must send a signal at a power orders of a magnitude larger than its receiver is capable of receiving.</p>
+        <p class="indent">It is very difficult to build a receiver able to “listen to” the local transmit signal at full strength without destroying the receive circuitry while also being able to “hear” the very low power signals required to extend device range. The transmitter, in other words, swamps the receiver with enough power to destroy the receiver in many situations. This makes it impossible, in a wireless network, for a transmitter to listen to the signal as it is being transmitted, and hence makes the collision detection mechanism used in Ethernet (for instance) impossible to implement.</p>
+        <p class="indentb">The mechanism used by 802.11 to share a single channel among multiple transmitters must avoid the hidden channel and receiver swamping problems. 802.11 WiFi uses Carrier Sense Multiple Access/Collision Avoidance (CSMA/CA) to negotiate channel usage. CSMA/CA is similar to CSMA/CD:</p>
+        <p class="indenthangingN">1. Before transmitting, the sender listens to determine if another device is transmitting.</p>
+        <p class="indenthangingN"><a id="page_109"></a>2. If another transmission is heard, the sender backs off for some random period of time before attempting again; this random backoff is designed to prevent several devices from hearing the same transmission, and all trying to transmit again at the same time at some point in the future.</p>
+        <p class="indenthangingN">3. If no other transmission is heard, the sender transmits the entire frame; it is impossible for the sender to receive the signal it is transmitting, so there is no way to detect a collision at this point.</p>
+        <p class="indenthangingN">4. The receiver sends an acknowledgment for the frame on receipt; if the sender does not receive an acknowledgment, it will assume a collision has occurred, back off for a random amount of time, and resend the frame.</p>
+        <p class="indent1">Some WiFi systems can also use a Request to Send/Clear to Send (RTS/CTS) system. In this case:</p>
+        <p class="indenthangingN">1. The sender transmits an RTS.</p>
+        <p class="indenthangingN">2. When the channel is clear, and no other transmission is scheduled, the receiver sends a CTS.</p>
+        <p class="indenthangingN">3. On receiving the CTS, the sender transmits the data.</p>
+        <p class="indentt">Which system will produce higher bandwidth depends on the number of senders and receivers using the channel, the length of the frames, and other factors.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch04lev8"><strong>Data Marshaling, Error Control, and Flow Control</strong></h4>
+        <p class="noindent">Data marshaling in 802.11 is similar to Ethernet; there is a set of fixed length header fields in each packet, followed by the transported data, and finally a four-octet Frame Check Sequence (FCS), which contains a CRC over the contents of the packet. If the receiver can correct an error based on the CRC information, it will do so; otherwise, the receiver simply does not acknowledge receipt of the frame, which will lead to the frame being retransmitted by the sender.</p>
+        </div>
+        <p class="indent">A sequence number is included in each frame, as well, to ensure packets are received and processed in the order in which they were transmitted. Flow control is provided in the RTS/CTS system by the receiver waiting to send a CTS until it has enough clear buffer space to receive a new packet.</p>
+        <div class="sidebar1">
+        <p class="title1"><a id="page_110"></a><strong>Goodput versus Throughput</strong></p>
+        <p class="noindent">The capacity of most links is measured in bandwidth, but bandwidth is only one determinant of the amount of data that can be pushed through a link. A second tier of factors to consider is flow control and channel efficiency. For instance, in Ethernet, if a collision takes place, the channel efficiency will be decreased slightly, and hence the total amount of transmitted data will be lower than the available theoretical bandwidth. This second measure, the total amount of data that can actually be transmitted on a particular link or channel, is often called the throughput. It is measured, like bandwidth, in a number of bits per second. There is a third set of variables to consider in actual data transmitted through a channel: the amount of throughput any headers, including error correction codes, take up. The amount of user data actually transmitted across a link is called the goodput, and is generally a good bit lower than the bandwidth. For instance, for a 54Gb/s 802.11 link, the actual goodput may in the 22Gb/s range. This goodput is the number you need to pay attention to when designing speeds and feeds in a network; the bandwidth will give you a theoretical maximum, but if you plan a 54Gb/s link to handle a stream containing 50Gb/s of data, you might be disappointed in the results.</p>
+        </div>
+        <div class="heading">
+        <h3 class="h3" id="ch04lev9">Final Thoughts on Lower Layer Transmission Protocols</h3>
+        <p class="noindent">Lower layer transmission protocols tend to be dominated by physical concerns, such as how can a host know when to access the channel, and how can the channel be most efficiently used? The four elements are still important to consider. Multiplexing, for instance, still requires addresses to determine which host a particular frame is being transmitted to. In other words, multiplexing contains addressing <em>and</em> other solutions designed to solve problems found only when interacting with physical channels.</p>
+        </div>
+        <p class="indent">Many of the solutions in these lower layer protocols are also assumed to be a “first line of defense,” rather than “the only line of defense.” Error control in the physical layer tends to be simpler than mechanisms implemented in higher layers, which means these mechanisms are faster to check, but may also allow through <a id="page_111"></a>some number of errors that need to be detected and corrected at some higher layer. Flow control, in these layers, is focused on controlling traffic across a single link, and is often a side effect of channel access, rather than an explicit control mechanism.</p>
+        <p class="indent">Overall, the physical layer is the farthest from the application, and often gains the least amount of attention of the network designer; yet these protocols are still important, and they still follow the same problem and solution patterns that higher level protocols employ.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch04lev10">Further Reading</h3>
+        <p class="ref">Correa, Colt, Charles M. Kozierok, Robert B. Boatright, Jeffrey Quesnelle, and Bob Metcalfe. <em>Automotive Ethernet—The Definitive Guide</em>. Intrepid Control Systems, 2014.</p>
+        </div>
+        <p class="ref">Gast, Matthew S. <em>802.11 Wireless Networks: The Definitive Guide</em>. 2nd edition. Beijing; Farnham: O’Reilly Media, 2005.</p>
+        <p class="ref">———. <em>802.11n: A Survival Guide: Wi-Fi Above 100 Mbps</em>. 1st edition. Sebastopol, CA: O’Reilly Media, 2012.</p>
+        <p class="ref">Geier, Jim. <em>Designing and Deploying 802.11 Wireless Networks: A Practical Guide to Implementing 802.11n and 802.11ac Wireless Networks for Enterprise-Based Applications</em>. 2nd edition. Indianapolis, IN: Cisco Press, 2015.</p>
+        <p class="ref">McLaughlin, Steven W., and David Warland. “Error Control Coding and Ethernet.” presented at the IEEE 802.3 EFM Study Group, Portland, OR, July 10, 2017. <a href="http://www.ieee802.org/3/efm/public/jul01/presentations/mclaughlin_1_0701.pdf">http://www.ieee802.org/3/efm/public/jul01/presentations/mclaughlin_1_0701.pdf</a>.</p>
+        <p class="ref">Metcalfe, Robert M., and David R. Boggs. “Ethernet: Distributed Packet Switching for Local Computer Networks.” <em>Communications of the ACM</em> 19, no. 7 (July 1976): 395–404.</p>
+        <p class="ref">Perahia, Eldad, and Robert Stacey. <em>Next Generation Wireless LANs: 802.11n and 802.11ac</em>. 2nd edition. Cambridge, UK: Cambridge University Press, 2013.</p>
+        <p class="ref">Potter, Bruce, and Bob Fleck. <em>802.11 Security</em>. 1st edition. Sebastopol, CA: O’Reilly Media, 2002.</p>
+        <p class="ref">Rouzic, Jean-Pierre Le. <em>IEEE 802.11ac: An Analysis of the Standard</em>. CreateSpace Independent Publishing Platform, 2013.</p>
+        <p class="ref"><a id="page_112"></a>Spurgeon, Charles E., and Joann Zimmerman. <em>Ethernet Switches: An Introduction to Network Design with Switches</em>. 1st edition. Beijing: O’Reilly Media, 2013.</p>
+        <p class="ref">———. <em>Ethernet: The Definitive Guide: Designing and Managing Local Area Networks</em>. 2nd edition. Beijing: O’Reilly Media, 2014.</p>
+        <p class="ref">Tropper, Carl. <em>Local Computer Network Technologies</em>. Elsevier, 2014.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch04lev11">Review Questions</h3>
+        <p class="indenthangingN">1. How is optical modulation different from, or similar to, the electrical modulation described in the chapter?</p>
+        </div>
+        <p class="indenthangingN">2. On radio waves, you would normally use different channels at different frequencies to carry multiple signals over a single medium (such as the air in wireless networks, and even over wires in some wired networks). What mechanism is used to “channelize” an optical transmission media, and how does it work?</p>
+        <p class="indenthangingN">3. The chapter states multiplexing must often be solved before other problems in data transmission can be addressed. Why might this be?</p>
+        <p class="indenthangingN">4. Ethernet was originally designed to operate over thin and thick coax cable (10BASE5 and 10BASE2). Is it possible to enable full duplex operation over coax? Why or why not?</p>
+        <p class="indenthangingN">5. The chapter notes the pause frame is not widely deployed for Ethernet. Under what conditions would a pause frame be needed, and why would it not be widely deployed any longer?</p>
+        <p class="indenthangingN">6. Given audio is also a wave passing through air, it would make sense that the mix, multiply, and cancel interactions between signals in a different phase might also apply to audio engineering in a similar way. Find a site that explains the impacts of these same problems in audio design, and describe some solutions audio engineers use to solve these problems.</p>
+        <p class="indenthangingN">7. There are many ways to build directional signals. For instance, how does a dish-type antenna shape a wireless signal? A commonly used beamforming antenna type is the Log Periodic Dipole (LPD). How does this kind of antenna work? Would these kinds of antennas ever be useful in wireless networking?</p>
+        <p class="indenthangingN"><a id="page_113"></a>8. Find the goodput for some wired and wireless link types. Are they radically different? Can you explain why?</p>
+        <p class="indenthangingN">9. The Ethernet specifications are designed to allow every device manufactured, worldwide, to have different MAC addresses. The chapter mentions older versions, and equipment, that required the network operator to configure Ethernet equipment with addresses manually. Can you describe, in terms of state, optimization, and surfaces, the tradeoffs between these two options? Try to find both positive and negative aspects of each possible way of solving the problem.</p>
+        <p class="indenthangingN1">10. The chapter states an Ethernet chipset will be assigned at least one address, implying some chipsets may be assigned more than one. Describe at least two use cases where a single chip would need to have more than one MAC address. <a id="page_114"></a></p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780134762814/files/9780134762852.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

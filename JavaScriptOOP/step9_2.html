@@ -1,0 +1,187 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="Writing asynchronous code"><div class="titlepage"><div><div><h1 class="title"><a id="ch09lvl1sec59"></a>Writing asynchronous code</h1></div></div></div><p>Most of us have surely written asynchronous code without paying much attention. Actually, in simple situations we do not need to make great assumptions and our code follows the simplicity of the context. But when the complexity grows, writing, managing, and understanding the asynchronous code may become a messy business. Let's take a look at how we usually write asynchronous code and which issues may come out.</p><div class="section" title="Using events properties"><div class="titlepage"><div><div><h2 class="title"><a id="ch09lvl2sec66"></a>Using events properties</h2></div></div></div><p>The most common situation where we write asynchronous code is when we need to manage events. Consider the interaction of the user with the GUI—a click on a button activates the execution of a handler that we attached to it.</p><p>One of the ways to attach a handler to an event is using the event property. For example, an HTML button has an <code class="literal">onclick</code> property, we can attach our handler to:</p><pre class="programlisting">var btn = document.getElementById("myBtn"); 
+        btn.onclick = function() { 
+          console.log("The button was clicked!"); 
+        }; 
+        </pre><p>When the click event occurs, the function attached to the <code class="literal">onclick</code> property is executed and the message appears on the console.</p><p>Another common example is when using Ajax to make HTTP requests to a remote server, as in the following example:</p><pre class="programlisting">var httpReq = new XMLHttpRequest(); 
+         
+        httpReq.onreadystatechange = function() { 
+          if (httpReq.readyState == 4 &amp;&amp; httpReq.status == 200) { 
+            console.log(httpReq.responseText); 
+          } 
+        }; 
+         
+        httpReq.open("GET", "/myServerPage", true); 
+        httpReq.send(); 
+        </pre><p>Here, we attached the event handler to the <code class="literal">onreadystatechange</code> property of the <code class="literal">XMLHttpRequest</code> object. Each time the <code class="literal">readyState</code> property of the <code class="literal">XMLHttpRequest</code> object changes, that is on each phase of client-server communication, the handler is executed. Just when a complete response is obtained from the server, we will show it on the console.</p><p>In both cases, the code is quite simple and it seems that no particular trouble may arise. We write code to be executed asynchronously by attaching it to specific properties that are hooks for events. The only difference in comparison to the usual coding is that the event handler is not explicitly called by our code, but it is called by the JavaScript runtime. So the execution flow of our code is not sequential, but it can have different flows based on the events that occur.</p></div><div class="section" title="Using callbacks"><div class="titlepage"><div><div><h2 class="title"><a id="ch09lvl2sec67"></a>Using callbacks</h2></div></div></div><p>Another and more common way to write asynchronous code is based on callback functions. A <span class="strong"><strong>callback function</strong></span> or simply <span class="strong"><strong>callback</strong></span> is a function passed as an argument to another function so that it will be invoked inside the latter. Usually, the callback function is executed when a specific event occurs, as in the following example:</p><pre class="programlisting">var btn = document.getElementById("myBtn"); 
+         
+        btn.addEventListener("click", function() { 
+          console.log("The button was clicked!"); 
+        }); 
+        </pre><p>This code has the same effect as the previous one, where we attached the event handler to the <code class="literal">onclick</code> property of the button. Here, we use the <code class="literal">addEventListener()</code> method of the button to attach a handler for the <code class="literal">click</code> event. Again, the only apparent effect in writing asynchronous code as a callback is a non-sequential execution flow, as in the previous case:</p></div><div class="section" title="Callbacks and this"><div class="titlepage"><div><div><h2 class="title"><a id="ch09lvl2sec68"></a>Callbacks and this</h2></div></div></div><p>Attaching code to events properties or passing callbacks to be executed asynchronously seems to have no major impact on the overall code. However, it may give rise to some subtle issues. Consider the following code:</p><pre class="programlisting">function myButton(id, standardText, clickedText) { 
+          this.id = id; 
+          this.standardText = standardText; 
+          this.clickedText = clickedText; 
+         
+          var btn = document.getElementById(this.id); 
+          btn.innerHTML = this.standardText; 
+         
+          btn.addEventListener("click", function(){ 
+            btn.innerHTML= this.clickedText; 
+          }); 
+        } 
+        </pre><p>It is a constructor function that transforms an HTML button into a custom button. The button has an initial text on it, and when the user clicks it, then the text changes. The code stores the parameters in properties and attaches a handler for the click event. We can use the constructor as in the following example:</p><pre class="programlisting">var myBtn = new myButton("btn", "Click me!", "Clicked!"); 
+        </pre><p>At first glance it seems quite correct, but if we run the code we do not get the expected result. Instead of getting the <code class="literal">Clicked!</code> text on the button when we click it, we will get the <code class="literal">undefined</code> text. What happens here?</p><p>The unexpected behavior depends on the use of the <code class="literal">this</code> keyword within the click event handler:</p><pre class="programlisting">btn.addEventListener("click", function(){ 
+          btn.innerHTML= this.clickedText; 
+        }); 
+        </pre><p>In fact, the value of the <code class="literal">this</code> keyword within a function only depends on how the function is called, not on how it is defined.</p><p>Since the handler runs asynchronously, the execution context will be different from the one of the main execution flow. So, the <code class="literal">this</code> keyword is not bound to the instance of the constructor, but to the current context. In our example, it will be bound to the window object of the browser, which has not a <code class="literal">clickedText</code> property.</p><p>We have a few ways to correctly manage the use of the <code class="literal">this</code> keyword inside asynchronous functions.</p><p>The first and most common approach is not using <code class="literal">this</code>. In most cases, we don't want to access the current context represented by the <code class="literal">this</code> key, but the object it refers to. So, we can catch it in a variable and use the variable instead of directly accessing <code class="literal">this</code>. Usually, the variable is named <code class="literal">self</code> or <code class="literal">that</code>, but of course it can have any name. The following code shows how to use this approach using the variable <code class="literal">self</code> instead of <code class="literal">this</code>:</p><pre class="programlisting">function myButton(id, standardText, clickedText) { 
+          var self = this; 
+         
+          self.id = id; 
+          self.standardText = standardText; 
+          self.clickedText = clickedText; 
+         
+          var btn = document.getElementById(self.id); 
+          btn.innerHTML = self.standardText; 
+         
+          btn.addEventListener("click", function(){ 
+            btn.innerHTML= self.clickedText; 
+          }); 
+        } 
+        </pre><p>In this case, the reference to <code class="literal">this</code> is already resolved when the asynchronous code of the event handler is executed and no ambiguity arises.</p><p>An alternative approach is to explicitly set the value of <code class="literal">this</code> keyword to the event handler. In fact, any function has the <code class="literal">bind()</code> method that allows to specify the value to assign to the <code class="literal">this</code> keyword when the function will be executed. The <code class="literal">bind()</code> method takes the value to assign to <code class="literal">this</code> and returns a function with the requested binding. If we want to apply this approach to our example, we will define our event handler as follows:</p><pre class="programlisting">  var clickHandler = (function(){ 
+            btn.innerHTML= this.clickedText; 
+          }).bind(this); 
+         
+          btn.addEventListener("click", clickHandler); 
+        </pre><p>When the handler will be executed, the value of <code class="literal">this</code> will refer to the value it had during the function definition, that is, the constructor instance.</p><p>A third way to avoid ambiguity when using the <code class="literal">this</code> keyword in an asynchronous context is the use of arrow functions. ECMAScript 6 introduced <span class="strong"><strong>arrow functions</strong></span> as anonymous functions with a more concise syntax and a lexical scope for the <code class="literal">this</code> keyword. In its basic form, an arrow function is an expression with a list of parameters in parentheses, a <span class="emphasis"><em>fat arrow</em></span> symbol (<code class="literal">=&gt;</code>) and a function body or an expression. For example, the following arrow function sets a value into a textbox:</p><pre class="programlisting">(value) =&gt; { document.getElementById("txtText").value = value; } 
+        </pre><p>The following example returns the sum of two numbers:</p><pre class="programlisting">(a, b) =&gt; {return a + b;} 
+        </pre><p>It is equivalent to the following expression:</p><pre class="programlisting">(a, b) =&gt; a + b; 
+        </pre><p>Using an arrow function, we can define our event handler as in the following:</p><pre class="programlisting">function myButton(id, standardText, clickedText) { 
+          this.id = id; 
+          this.standardText = standardText; 
+          this.clickedText = clickedText; 
+         
+          var btn = document.getElementById(this.id); 
+          btn.innerHTML = this.standardText; 
+         
+          btn.addEventListener("click", 
+            () =&gt; { btn.innerHTML= this.clickedText; }); 
+        } 
+        </pre><p>By design, the arrow function keeps the <code class="literal">this</code> keyword bound to the value it has at function definition time. So, we do not need to use the <code class="literal">bind()</code> method as in the previous example.</p></div><div class="section" title="The callback hell"><div class="titlepage"><div><div><h2 class="title"><a id="ch09lvl2sec69"></a>The callback hell</h2></div></div></div><p>We have just seen how a quite simple code as an event handler may affect the meaning of the <code class="literal">this</code> keyword due to its asynchronous nature. A few measures can help us overcome the issue, but it is not the only potential problem with asynchronous code.</p><p>Let's introduce an example involving asynchronous HTTP calls submitted to a server. The following is the definition of a function that uses the <code class="literal">XMLHttpRequest</code> object to make an HTTP request and execute a callback function on data returned by the server:</p><pre class="programlisting">function httpGet(url, callback) { 
+         var httpReq = new XMLHttpRequest(); 
+         
+          httpReq.onreadystatechange = function() { 
+            var data; 
+         
+            if (httpReq.readyState == 4 &amp;&amp; httpReq.status == 200) { 
+              data = JSON.parse(httpReq.responseText); 
+              callback(data); 
+            } else { 
+              throw new Error(httpReq.statusText); 
+            } 
+          }; 
+         
+          httpReq.open("GET", url, true); 
+          httpReq.send(); 
+        } 
+        </pre><p>The function takes the URL of the web resource to the get and the callback function to execute when data are returned by the server. The code inside the body of the function is the standard HTTP request via <code class="literal">XMLHttpRequest </code>the asynchronous call made by the <code class="literal">send()</code> method is resumed when the <code class="literal">onreadystatechange</code> event occurs.</p><p>Let's consider the usage of this function in the following code:</p><pre class="programlisting">httpGet("/users/12345", 
+          function(user) { 
+            httpGet("/blogs/" + user.blogId, 
+            function(blog) { 
+              displayPostList(blog.posts); 
+            }); 
+         
+            httpGet("/photos/" + user.albumId, 
+              function(album) { 
+                displayPhotoList(album.photos); 
+              } 
+            ); 
+          } 
+        ); 
+        </pre><p>It uses the <code class="literal">httpGet()</code> function to get a user's data. Once the data are received, the callback function makes two new requests to the server to get the user's blog and the user's photos. Again, when the server returns the requested data, they are displayed on the screen using the <code class="literal">displayPostList()</code> and <code class="literal">displayPhotoList()</code> functions.</p><p>Here, we have a single function call with some nested callbacks that make the code not very readable. The callback functions need to be nested since each call depends on the outcome of the &nbsp;previous nesting level. The requests of user's blog and photos cannot be made before getting the user's data. However, once we receive the user's data, we can request the user's blog and photos at the same time.</p><p>Displaying user's posts and photos is asynchronous and the photos will not necessarily be displayed after the posts. If we want to constrain the display order or make some processing based on both results before displaying them (for example, show only photos related to the posts), we should find a way to synchronize the callback functions, a task whose complexity we can easily guess.</p><p>Using callbacks in this way creates some issues both in code readability and asynchronous tasks synchronization. This is what the <span class="strong"><strong>callback hell</strong></span> is commonly called.</p></div><div class="section" title="Organizing callbacks"><div class="titlepage"><div><div><h2 class="title"><a id="ch09lvl2sec70"></a>Organizing callbacks</h2></div></div></div><p>A first attempt to bring order to the code is to use named functions instead of anonymous functions. Let's rewrite the previous code as in the following example:</p><pre class="programlisting">function getUserBlogAndPhoto(user) { 
+          getBlog(user.blogId); 
+          getPhotos(user.albumId); 
+        } 
+         
+        function getBlog(blogId) { 
+          httpGet("/blogs/" + blogId, displayBlog); 
+        } 
+         
+        function displayBlog(blog) { 
+          displayPostList(blog.posts); 
+        } 
+         
+        function getPhotos(albumId) { 
+          httpGet("/photos/" + user.albumId,  displayAlbum); 
+        } 
+         
+        function displayAlbum(album) { 
+          displayPhotoList(album.photos); 
+        } 
+         
+        httpGet("/users/12345",  getUserBlogAndPhoto); 
+        </pre><p>The code now appears less confused, but not clear enough. To understand what the code means we need to figure out the execution flow by following the callback function names passed to the <code class="literal">httpGet()</code> function. Anyway, even if using named functions as callbacks can help us make code a bit more readable, it does not solve the synchronization problem.</p></div><div class="section" title="The issues of asynchronous code"><div class="titlepage"><div><div><h2 class="title"><a id="ch09lvl2sec71"></a>The issues of asynchronous code</h2></div></div></div><p>Using callback functions can be quite intuitive in simple cases, but it can quickly turn into a nightmare when the code complexity increases.</p><p>The major flaws of the intensive use of callbacks include:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc">Poor readability of the code, which soon may become affected by the so-called <span class="strong"><strong>pyramid of doom</strong></span>; the expansion to the right due to the indiscriminate callback nesting and related indentation.</li><li class="listitem" style="list-style-type: disc">Difficult composition of callbacks and synchronization of the processing flow; to try composition and synchronization it is often necessary to invent artifices that make the code even more unreadable and sometimes inefficient.</li><li class="listitem" style="list-style-type: disc">Difficult error handling and debugging, especially in the presence of anonymous callback.</li></ul></div><p>Let's consider the last point. What happens when an error occurs within a callback? Suppose we try to catch error as in the following example:</p><pre class="programlisting">try { 
+          httpGet("/users/12345", 
+          function(user) { 
+            httpGet("/blogs/" + user.blogId, 
+            function(blog) { 
+              displayPostList(blog.posts); 
+            }); 
+         
+            httpGet("/photos/" + user.albumId, 
+              function(album) { 
+                displayPhotoList(album.photos); 
+              } 
+             ); 
+           } 
+          ); 
+         
+        } catch(e) { 
+          console.log("An error occurred: " e.message); 
+        } 
+        </pre><p>Although it may seem like a possible solution to the untrained eye, the <code class="literal">try</code>/<code class="literal">catch</code> statements are completely useless in an asynchronous context. Since <code class="literal">httpGet()</code> calls involve asynchronous code, the <code class="literal">try</code> block is executed before any actual request is submitted to the server. So, the possible exception in the callbacks is&nbsp;out of the scope of the <code class="literal">try</code> statement.</p><p>In conclusion, unlike the synchronous calls to functions whose execution returns a value or exception, in the case of asynchronous calls, we do not have none of the two things. As a result there is less possibility of function composition and any exception handling. In short, with an asynchronous approach, we lose some of the typical features of the functional programming model that inspires JavaScript.</p></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

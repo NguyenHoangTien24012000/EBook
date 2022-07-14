@@ -1,0 +1,313 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 12. Microkernel Architecture Style"><div class="chapter" id="ch-style-microkernel">
+        <h1><span class="label">Chapter 12. </span>Microkernel Architecture Style</h1>
+        
+        
+        <p>The <em>microkernel</em> architecture style (also referred to as the <em>plug-in</em> architecture) was coined several <a data-type="indexterm" data-primary="microkernel architecture" id="ix_mcrok"></a>decades ago and is still widely used today. This architecture style is a natural fit for product-based applications (packaged and made available for download and installation as a single, monolithic deployment, typically installed on the customer’s site as a third-party product) but is widely used in many nonproduct custom business applications as well.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Topology"><div class="sect1" id="idm45838976865216">
+        <h1>Topology</h1>
+        
+        <p>The microkernel architecture style is a relatively simple monolithic architecture consisting of two architecture components: a core system and plug-in components.<a data-type="indexterm" data-primary="microkernel architecture" data-secondary="topology" id="idm45838972907792"></a> Application logic is divided between independent plug-in components and the basic core system, providing extensibility, adaptability, and isolation of application features and custom processing logic. <a data-type="xref" href="#fig-style-microkernel-topology">Figure&nbsp;12-1</a> illustrates the basic topology of the microkernel architecture style.</p>
+        
+        <figure class="width-75"><div id="fig-style-microkernel-topology" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1201.png" alt="Microkernel architecture components" width="1340" height="765">
+        <h6><span class="label">Figure 12-1. </span>Basic components of the microkernel architecture style</h6>
+        </div></figure>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Core System"><div class="sect2" id="idm45838977255712">
+        <h2>Core System</h2>
+        
+        <p>The <em>core system</em> is formally defined as the minimal functionality required to run the system.<a data-type="indexterm" data-primary="core system in microkernel architecture" id="ix_core"></a><a data-type="indexterm" data-primary="microkernel architecture" data-secondary="core system" id="ix_mcrikcore"></a><a data-type="indexterm" data-primary="Eclipse IDE" id="idm45838981064224"></a> The Eclipse IDE is a good example of this. The core system of Eclipse is just a basic text editor: open a file, change some text, and save the file. It’s not until you add plug-ins that Eclipse starts becoming a usable product. However, another definition of the core system is the happy path (general processing flow) through the application, with little or no custom processing.<a data-type="indexterm" data-primary="cyclomatic complexity" data-secondary="removal from core system of microkernel architecture" id="idm45838979310784"></a> Removing the cyclomatic complexity of the core system and placing it into separate plug-in components allows for better extensibility and maintainability, as well as increased testability. For example, suppose an electronic device recycling application must perform specific custom assessment rules for each electronic device received. The Java code for this sort of processing might look as follows:</p>
+        
+        <pre data-type="programlisting" data-code-language="java"><code class="kd">public</code> <code class="kt">void</code> <code class="nf">assessDevice</code><code class="o">(</code><code class="n">String</code> <code class="n">deviceID</code><code class="o">)</code> <code class="o">{</code>
+           <code class="k">if</code> <code class="o">(</code><code class="n">deviceID</code><code class="o">.</code><code class="na">equals</code><code class="o">(</code><code class="s">"iPhone6s"</code><code class="o">))</code> <code class="o">{</code>
+              <code class="n">assessiPhone6s</code><code class="o">();</code>
+           <code class="o">}</code> <code class="k">else</code> <code class="k">if</code> <code class="o">(</code><code class="n">deviceID</code><code class="o">.</code><code class="na">equals</code><code class="o">(</code><code class="s">"iPad1"</code><code class="o">))</code>
+              <code class="n">assessiPad1</code><code class="o">();</code>
+           <code class="o">}</code> <code class="k">else</code> <code class="k">if</code> <code class="o">(</code><code class="n">deviceID</code><code class="o">.</code><code class="na">equals</code><code class="o">(</code><code class="s">"Galaxy5"</code><code class="o">))</code>
+              <code class="n">assessGalaxy5</code><code class="o">();</code>
+           <code class="o">}</code> <code class="k">else</code> <code class="o">...</code>
+              <code class="o">...</code>
+           <code class="o">}</code>
+        <code class="o">}</code></pre>
+        
+        <p class="pagebreak-before">Rather than placing all this client-specific customization in the core system with lots of cyclomatic complexity, it is much better to create a separate plug-in component for each electronic device being assessed. Not only do specific client plug-in components isolate independent device logic from the rest of the processing flow, but they also allow for expandability. Adding a new electronic device to assess is simply a matter of adding a new plug-in component and updating the registry. With the microkernel architecture style, assessing an electronic device only requires the core system to locate and invoke the corresponding device plug-ins as illustrated in this revised source code:</p>
+        
+        <pre data-type="programlisting" data-code-language="java"><code class="kd">public</code> <code class="kt">void</code> <code class="nf">assessDevice</code><code class="o">(</code><code class="n">String</code> <code class="n">deviceID</code><code class="o">)</code> <code class="o">{</code>
+            <code class="n">String</code> <code class="n">plugin</code> <code class="o">=</code> <code class="n">pluginRegistry</code><code class="o">.</code><code class="na">get</code><code class="o">(</code><code class="n">deviceID</code><code class="o">);</code>
+            <code class="n">Class</code><code class="o">&lt;?&gt;</code> <code class="n">theClass</code> <code class="o">=</code> <code class="n">Class</code><code class="o">.</code><code class="na">forName</code><code class="o">(</code><code class="n">plugin</code><code class="o">);</code>
+            <code class="n">Constructor</code><code class="o">&lt;?&gt;</code> <code class="n">constructor</code> <code class="o">=</code> <code class="n">theClass</code><code class="o">.</code><code class="na">getConstructor</code><code class="o">();</code>
+            <code class="n">DevicePlugin</code> <code class="n">devicePlugin</code> <code class="o">=</code>
+                <code class="o">(</code><code class="n">DevicePlugin</code><code class="o">)</code><code class="n">constructor</code><code class="o">.</code><code class="na">newInstance</code><code class="o">();</code>
+            <code class="n">DevicePlugin</code><code class="o">.</code><code class="na">assess</code><code class="o">();</code>
+        <code class="o">}</code></pre>
+        
+        <p>In this example all of the complex rules and instructions for assessing a particular electronic device are self-contained in a standalone, independent plug-in component that can be generically executed from the core system.</p>
+        
+        <p>Depending on the size and complexity, the core system can be implemented as a layered architecture or a modular monolith (as illustrated in <a data-type="xref" href="#fig-style-microkernel-core-system">Figure&nbsp;12-2</a>). In some cases, the core system can be split into separately deployed domain services, with each domain service containing specific plug-in components specific to that domain.<a data-type="indexterm" data-primary="services" data-secondary="in microkernel architecture core system" id="idm45838971905040"></a><a data-type="indexterm" data-primary="databases" data-secondary="in microkernel architecture core system" data-secondary-sortas="microkernel" id="idm45838971904144"></a> For example, suppose <code>Payment Processing</code> is the domain service representing the core system. Each payment method (credit card, PayPal, store credit, gift card, and purchase order) would be separate plug-in components specific to the payment domain. In all of these cases, it is typical for the entire monolithic application to share a single database.</p>
+        
+        <figure class="width-75"><div id="fig-style-microkernel-core-system" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1202.png" alt="Microkernel architecture core system variants" width="1340" height="1749">
+        <h6><span class="label">Figure 12-2. </span>Variations of the microkernel architecture core system</h6>
+        </div></figure>
+        
+        <p>The presentation layer of the core system can be embedded within the core system or implemented as a<a data-type="indexterm" data-primary="presentation layer in core system of microkernel architecture" id="idm45838971899168"></a> separate user interface, with the core system providing backend services.<a data-type="indexterm" data-primary="user interfaces (UIs)" data-secondary="separate UI in microkernel architecture" id="idm45838971898368"></a> As a matter of fact, a separate user interface can also be implemented as a microkernel architecture style. <a data-type="xref" href="#fig-style-microkernel-ui-variants">Figure&nbsp;12-3</a> illustrates these presentation layer variants in relation to the core system.</p>
+        
+        <figure class="width-75"><div id="fig-style-microkernel-ui-variants" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1203.png" alt="User Interface Variants" width="1349" height="2092">
+        <h6><span class="label">Figure 12-3. </span>User interface variants</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Plug-In Components"><div class="sect2" id="idm45838986155040">
+        <h2>Plug-In Components</h2>
+        
+        <p>Plug-in components are<a data-type="indexterm" data-primary="core system in microkernel architecture" data-startref="ix_core" id="idm45838971892448"></a><a data-type="indexterm" data-primary="microkernel architecture" data-secondary="core system" data-startref="ix_mcrikcore" id="idm45838971891472"></a><a data-type="indexterm" data-primary="microkernel architecture" data-secondary="plug-in components" id="ix_mcrokpl"></a><a data-type="indexterm" data-primary="plug-in components, microkernel architecture" id="ix_plg"></a> standalone, independent components that contain specialized processing, additional features, and custom code meant to enhance or extend the core system. Additionally, they can be used to isolate highly volatile code, creating better maintainability and testability within the application. Ideally, plug-in components should be independent of each other and have no dependencies between them.</p>
+        
+        <p>The communication between the plug-in components and the core system is generally point-to-point, meaning the “pipe” that connects the plug-in to the core system is usually a method invocation or function call to the entry-point class of the plug-in component. In addition, the plug-in component can be either compile-based or runtime-based. Runtime plug-in components can be added or removed at runtime without having to redeploy the core system or other plug-ins, and they are usually managed through frameworks such as <a href="https://www.osgi.org">Open Service Gateway Initiative (OSGi) for Java</a>, <a href="https://oreil.ly/J5XZw">Penrose (Java)</a>, <a href="https://oreil.ly/wv9bW">Jigsaw (Java)</a>, or <a href="https://oreil.ly/xmrtY">Prism (.NET)</a>. Compile-based plug-in components are much simpler to manage but require the entire monolithic application to be redeployed when modified, added, or removed.<a data-type="indexterm" data-primary="point-to-point plug-in components in microkernel architecture" id="idm45838971883280"></a><a data-type="indexterm" data-primary="libraries" data-secondary="shared library plug-in implementation in microkernel architecture" id="idm45838971882608"></a></p>
+        
+        <p>Point-to-point plug-in components can be implemented as shared libraries (such as a JAR, DLL, or Gem), package names in Java, or namespaces in C#. Continuing with the electronics recycling assessment application example, each electronic device plug-in can be written and implemented as a JAR, DLL, or Ruby Gem (or any other shared library), with the name of the device matching the name of the independent shared library, as illustrated in <a data-type="xref" href="#fig-style-microkernel-jar">Figure&nbsp;12-4</a>.</p>
+        
+        <figure class="width-75"><div id="fig-style-microkernel-jar" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1204.png" alt="Shared library plug-in implementation" width="1340" height="792">
+        <h6><span class="label">Figure 12-4. </span>Shared library plug-in implementation</h6>
+        </div></figure>
+        
+        <p>Alternatively, an easier approach shown in <a data-type="xref" href="#fig-style-microkernel-package">Figure&nbsp;12-5</a> is to implement each plug-in component as a separate namespace or package name within the same code base or IDE project.<a data-type="indexterm" data-primary="namespaces" data-secondary="separate, for plug-in components of microkernel architecture" id="idm45838971876256"></a><a data-type="indexterm" data-primary="packages" data-secondary="plug-in components of microkernel architecture implemented as" id="idm45838971875344"></a> When creating the namespace, we recommend the following semantics: <code>app.plug-in.&lt;domain&gt;.&lt;context&gt;</code>. For example, consider the namespace <code>app.plugin.assessment.iphone6s</code>. The second node (<code>plugin</code>) makes it clear this component is a plug-in and therefore should strictly adhere to the basic rules 
+        <span class="keep-together">regarding</span> plug-in components (namely, that they are self-contained and separate from other plug-ins). The third node describes the domain (in this case, <code>assessment</code>), thereby allowing plug-in components to be organized and grouped by a common purpose. The fourth node (<code>iphone6s</code>) describes the specific context for the plug-in, making it easy to locate the specific device plug-in for modification or testing.</p>
+        
+        <figure class="width-75"><div id="fig-style-microkernel-package" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1205.png" alt="Package or namespace plug-in implementation" width="1340" height="779">
+        <h6><span class="label">Figure 12-5. </span>Package or namespace plug-in implementation</h6>
+        </div></figure>
+        
+        <p>Plug-in components do not always have to be point-to-point communication with the core system. Other alternatives exist, including using REST or messaging as a means to invoke plug-in functionality, with each plug-in being a standalone service (or maybe even a microservice implemented using a container).<a data-type="indexterm" data-primary="REST" data-secondary="remote plug-in access via" id="idm45838971868000"></a><a data-type="indexterm" data-primary="remote access" data-secondary="plug-ins in microkernel architecture" id="idm45838971867008"></a> Although this may sound like a good way to increase overall scalability, note that this topology (illustrated in <a data-type="xref" href="#fig-style-microkernel-remote">Figure&nbsp;12-6</a>) is still only a single architecture quantum due to the monolithic core system. Every request must first go through the core system to get to the plug-in service.</p>
+        
+        <figure class="width-75"><div id="fig-style-microkernel-remote" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1206.png" alt="Remote Plug-in Access" width="1435" height="599">
+        <h6><span class="label">Figure 12-6. </span>Remote plug-in access using REST</h6>
+        </div></figure>
+        
+        <p>The benefits of the remote access approach to accessing plug-in components implemented as individual services is that it provides better overall component decoupling, allows for better scalability and throughput, and allows for runtime changes without any special frameworks like OSGi, Jigsaw, or Prism. It also allows for asynchronous communications to plug-ins, which, depending on the scenario, could significantly improve overall user responsiveness. Using the electronics recycling example, rather than having to wait for the electronic device assessment to run, the core system could make an asynchronous <em>request</em> to kick off an assessment for a particular device. When the assessment completes, the plug-in can notify the core system through another asynchronous messaging channel, which in turn would notify the user that the assessment is complete.</p>
+        
+        <p>With these benefits comes trade-offs. Remote plug-in access turns the microkernel architecture into a distributed architecture rather than a monolithic one, making it difficult to implement and deploy for most third-party on-prem products.<a data-type="indexterm" data-primary="distributed architectures" data-secondary="microkernel architecture with remote access plug-ins" id="idm45838971860224"></a> Furthermore, it creates more overall complexity and cost and complicates the overall deployment topology. If a plug-in becomes unresponsive or is not running, particularly when using REST, the request cannot be completed. This would not be the case with a monolithic deployment. The choice of whether to make the communication to plug-in components from the core system point-to-point or remote should be based on specific requirements and thus requires a careful trade-off analysis of the benefits and drawbacks of such an approach.</p>
+        
+        <p>It is not a common practice for plug-in components to connect directly to a centrally shared database. <a data-type="indexterm" data-primary="databases" data-secondary="in microkernel architecture plug-ins" data-secondary-sortas="microkernel" id="idm45838971857952"></a>Rather, the core system takes on this responsibility, passing whatever data is needed into each plug-in. The primary reason for this practice is decoupling. Making a database change should only impact the core system, not the plug-in components. That said, plug-ins can have their own separate data stores only accessible to that plug-in. For example, each electronic device assessment plug-in in the electronic recycling system example can have its own simple database or rules engine containing all of the specific assessment rules for each product. The data store owned by the plug-in component can be external (as shown in <a data-type="xref" href="#fig-style-microkernel-database">Figure&nbsp;12-7</a>), or it could be embedded as part of the plug-in component or monolithic deployment (as in the case of an in-memory or embedded database).</p>
+        
+        <figure class="width-75"><div id="fig-style-microkernel-database" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1207.png" alt="Plug-in Data Store" width="1394" height="745">
+        <h6><span class="label">Figure 12-7. </span>Plug-in components can own their own data store</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Registry"><div class="sect1" id="idm45838971893520">
+        <h1>Registry</h1>
+        
+        <p>The core system needs to know about which plug-in modules are available and how to get to them. <a data-type="indexterm" data-primary="plug-in components, microkernel architecture" data-startref="ix_plg" id="idm45838971851376"></a><a data-type="indexterm" data-primary="microkernel architecture" data-secondary="plug-in components" data-startref="ix_mcrokpl" id="idm45838971850304"></a><a data-type="indexterm" data-primary="microkernel architecture" data-secondary="registry" id="idm45838971849120"></a><a data-type="indexterm" data-primary="registry for plug-ins in microkernel architecture" id="idm45838971848160"></a>One common way of implementing this is through a plug-in registry. This registry contains information about each plug-in module, including things like its name, data contract, and remote access protocol details (depending on how the plug-in is connected to the core system). For example, a plug-in for tax software that flags high-risk tax audit items might have a registry entry that contains the name of the service (AuditChecker), the data contract (input data and output data), and the contract format (XML).</p>
+        
+        <p>The registry can be as simple as an internal map structure owned by the core system containing a key and the plug-in component reference, or it can be as complex as a registry and discovery tool either embedded within the core system or deployed externally (such as <a href="https://zookeeper.apache.org">Apache ZooKeeper</a> or <a href="https://www.consul.io">Consul</a>).<a data-type="indexterm" data-primary="Apache Zookeeper" id="idm45838971844608"></a><a data-type="indexterm" data-primary="Consul" id="idm45838971843872"></a> Using the electronics recycling example, the following Java code implements a simple registry within the core system, showing a point-to-point entry, a messaging entry, and a RESTful entry example for assessing an iPhone 6S device:</p>
+        
+        <pre data-type="programlisting" data-code-language="java"><code class="n">Map</code><code class="o">&lt;</code><code class="n">String</code><code class="o">,</code> <code class="n">String</code><code class="o">&gt;</code> <code class="n">registry</code> <code class="o">=</code> <code class="k">new</code> <code class="n">HashMap</code><code class="o">&lt;</code><code class="n">String</code><code class="o">,</code> <code class="n">String</code><code class="o">&gt;();</code>
+        <code class="kd">static</code> <code class="o">{</code>
+          <code class="c1">//point-to-point access example</code>
+          <code class="n">registry</code><code class="o">.</code><code class="na">put</code><code class="o">(</code><code class="s">"iPhone6s"</code><code class="o">,</code> <code class="s">"Iphone6sPlugin"</code><code class="o">);</code>
+        
+          <code class="c1">//messaging example</code>
+          <code class="n">registry</code><code class="o">.</code><code class="na">put</code><code class="o">(</code><code class="s">"iPhone6s"</code><code class="o">,</code> <code class="s">"iphone6s.queue"</code><code class="o">);</code>
+        
+          <code class="c1">//restful example</code>
+          <code class="n">registry</code><code class="o">.</code><code class="na">put</code><code class="o">(</code><code class="s">"iPhone6s"</code><code class="o">,</code> <code class="s">"https://atlas:443/assess/iphone6s"</code><code class="o">);</code>
+        <code class="o">}</code></pre>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Contracts"><div class="sect1" id="idm45838971837168">
+        <h1>Contracts</h1>
+        
+        <p>The contracts between the plug-in components and the core system are usually standard across a domain of plug-in components and include behavior, input data, and output data returned from the plug-in component.<a data-type="indexterm" data-primary="contracts" data-secondary="in microkernel architecture" data-secondary-sortas="microkernel" id="idm45838971763664"></a><a data-type="indexterm" data-primary="microkernel architecture" data-secondary="contracts between plug-ins and core system" id="idm45838971762464"></a> Custom contracts are typically found in situations where plug-in components are developed by a third party where you have no control over the contract used by the plug-in. In such cases, it is common to create an adapter between the plug-in contract and your standard contract so that the core system doesn’t need specialized code for each plug-in.</p>
+        
+        <p>Plug-in contracts can be implemented in XML, JSON, or even objects passed back and forth between the plug-in and the core system. In keeping with the electronics recycling application, the following contract (implemented as a standard Java interface named <code>AssessmentPlugin</code>) defines the overall behavior (<code>assess()</code>, <code>register()</code>, and <code>deregister()</code>), along with the corresponding output data expected from the plug-in component (<code>AssessmentOutput</code>):</p>
+        
+        <pre data-type="programlisting" data-code-language="java"><code class="kd">public</code> <code class="kd">interface</code> <code class="nc">AssessmentPlugin</code> <code class="o">{</code>
+            <code class="kd">public</code> <code class="n">AssessmentOutput</code> <code class="nf">assess</code><code class="o">();</code>
+            <code class="kd">public</code> <code class="n">String</code> <code class="nf">register</code><code class="o">();</code>
+            <code class="kd">public</code> <code class="n">String</code> <code class="nf">deregister</code><code class="o">();</code>
+        <code class="o">}</code>
+        
+        <code class="kd">public</code> <code class="kd">class</code> <code class="nc">AssessmentOutput</code> <code class="o">{</code>
+            <code class="kd">public</code> <code class="n">String</code> <code class="n">assessmentReport</code><code class="o">;</code>
+            <code class="kd">public</code> <code class="n">Boolean</code> <code class="n">resell</code><code class="o">;</code>
+            <code class="kd">public</code> <code class="n">Double</code> <code class="n">value</code><code class="o">;</code>
+            <code class="kd">public</code> <code class="n">Double</code> <code class="n">resellPrice</code><code class="o">;</code>
+        <code class="o">}</code></pre>
+        
+        <p>In this contract example, the device assessment plug-in is expected to return the assessment report as a formatted string; a resell flag (true or false) indicating whether this device can be resold on a third-party market or safely disposed of; and finally, if it can be resold (another form of recycling), what the calculated value is of the item and what the recommended resell price should be.</p>
+        
+        <p>Notice the roles and responsibility model between the core system and the plug-in component in this example, specifically with the <code>assessmentReport</code> field. It is not the responsibility of the core system to format and understand the details of the assessment report, only to either print it out or display it to the user.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Examples and Use Cases"><div class="sect1" id="idm45838971684576">
+        <h1>Examples and Use Cases</h1>
+        
+        <p>Most of the tools used for developing and releasing software are implemented using the microkernel architecture.<a data-type="indexterm" data-primary="microkernel architecture" data-secondary="examples and use cases" id="idm45838971682816"></a><a data-type="indexterm" data-primary="Eclipse IDE" id="idm45838971681872"></a><a data-type="indexterm" data-primary="IntelliJ IDEA IDE" id="idm45838971681200"></a><a data-type="indexterm" data-primary="PMD" id="idm45838971680528"></a><a data-type="indexterm" data-primary="Jira" id="idm45838971679856"></a><a data-type="indexterm" data-primary="Jenkins" id="idm45838971679184"></a> Some examples include the <a href="https://www.eclipse.org/ide">Eclipse IDE</a>, <a href="https://pmd.github.io">PMD</a>, <a href="https://www.atlassian.com/software/jira">Jira</a>, and <a href="https://jenkins.io">Jenkins</a>, to name a few).<a data-type="indexterm" data-primary="web browsers, using microkernel architecture" id="idm45838971675536"></a> Internet web browsers such as Chrome and Firefox are another common product example using the microkernel architecture: viewers and other plug-ins add additional capabilities that are not otherwise found in the basic browser representing the core system. The examples are endless for product-based software, but what about large business applications? The microkernel architecture applies to these situations as well. To illustrate this point, consider an insurance company example involving insurance claims processing.</p>
+        
+        <p>Claims processing is a very complicated process. Each jurisdiction has different rules and regulations for what is and isn’t allowed in an insurance claim. For example, some jurisdictions (e.g., states) allow free windshield replacement if your windshield is damaged by a rock, whereas other states do not. This creates an almost infinite set of conditions for a standard claims process.</p>
+        
+        <p>Most insurance claims applications leverage large and complex rules engines to handle much of this complexity. However, these rules engines can grow into a complex big ball of mud where changing one rule impacts other rules, or making a simple rule change requires an army of analysts, developers, and testers to make sure nothing is broken by a simple change. Using the microkernel architecture pattern can solve many of these issues.</p>
+        
+        <p>The claims rules for each jurisdiction can be contained in separate standalone plug-in components (implemented as source code or a specific rules engine instance accessed by the plug-in component). This way, rules can be added, removed, or changed for a particular jurisdiction without impacting any other part of the system. Furthermore, new jurisdictions can be added and removed without impacting other parts of the system. The core system in this example would be the standard process for filing and processing a claim, something that doesn’t change often.</p>
+        
+        <p>Another example of a large and complex business application that can leverage the microkernel architecture is tax preparation software. For example, the United States has a basic two-page tax form called the 1040 form that contains a summary of all the information needed to calculate a person’s tax liability. Each line in the 1040 tax form has a single number that requires many other forms and worksheets to arrive at that single number (such as gross income). Each of these additional forms and worksheets can be implemented as a plug-in component, with the 1040 summary tax form being the core system (the driver). This way, changes to tax law can be isolated to an independent plug-in component, making changes easier and less risky.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" class="pagebreak-before less_space" data-pdf-bookmark="Architecture Characteristics Ratings"><div class="sect1" id="idm45838971670224">
+        <h1>Architecture Characteristics Ratings</h1>
+        
+        <p>A one-star rating in the characteristics ratings in <a data-type="xref" href="#fig-style-microkernel-ratings">Figure&nbsp;12-8</a> means<a data-type="indexterm" data-primary="architecture characteristics" data-secondary="ratings in microkernel architecture" id="idm45838971667664"></a><a data-type="indexterm" data-primary="microkernel architecture" data-secondary="architecture characteristics ratings" id="idm45838971666656"></a> the specific architecture characteristic isn’t well supported in the architecture, whereas a five-star rating means the architecture characteristic is one of the strongest features in the architecture style. The definition for each characteristic identified in the scorecard can be found in <a data-type="xref" href="ch04.html#ch-architecture-characteristics-defined">Chapter&nbsp;4</a>.</p>
+        
+        <figure class="width-75"><div id="fig-style-microkernel-ratings" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492043447/files/assets/fosa_1208.png" alt="Microkernel Ratings" width="1240" height="1401">
+        <h6><span class="label">Figure 12-8. </span>Microkernel architecture characteristics ratings</h6>
+        </div></figure>
+        
+        <p>Similar to the layered architecture style, simplicity and overall cost are the main strengths of the microkernel architecture style, and scalability, fault tolerance, and elasticity its main weaknesses.<a data-type="indexterm" data-primary="fault tolerance" data-secondary="microkernel architecture and" id="idm45838971661456"></a><a data-type="indexterm" data-primary="simplicity" data-secondary="in microkernel architecture" id="idm45838971660464"></a><a data-type="indexterm" data-primary="cost" data-secondary="overall cost in microkernel architecture" id="idm45838971659504"></a><a data-type="indexterm" data-primary="overall costs" data-secondary="in microkernel architecture" id="idm45838971658464"></a><a data-type="indexterm" data-primary="scalability" data-secondary="low rating in microkenel architecture" id="idm45838971657504"></a> These weaknesses are due to the typical monolithic deployments found with the microkernel architecture. Also, like the layered architecture style, the number of quanta is always singular (one) because all requests must go through the core system to get to independent plug-in components. That’s where the similarities end.</p>
+        
+        <p>The microkernel architecture style is unique in that it is the only architecture style that can be both domain partitioned <em>and</em> technically partitioned.<a data-type="indexterm" data-primary="partitioning of components" data-secondary="in microkernel architecture" id="idm45838971655136"></a><a data-type="indexterm" data-primary="domain partitioning (components)" data-secondary="in microkernel architecture" id="idm45838971654080"></a><a data-type="indexterm" data-primary="technical partitioning (components)" data-secondary="in microkernel architecture" id="idm45838971653104"></a> While most microkernel architectures are technically partitioned, the domain partitioning aspect comes about mostly through a strong domain-to-architecture isomorphism. For example, problems that require different configurations for each location or client match extremely well with this architecture style. Another example is a product or application that places a strong emphasis on user customization and feature extensibility (such as Jira or an IDE like Eclipse).</p>
+        
+        <p>Testability, deployability, and reliability rate a little above average (three stars), primarily because functionality can be isolated to independent plug-in components.<a data-type="indexterm" data-primary="testability" data-secondary="rating in microkernel architecture" id="idm45838971650944"></a><a data-type="indexterm" data-primary="deployability" data-secondary="rating in microkernel architecture" id="idm45838971649952"></a><a data-type="indexterm" data-primary="reliability" data-secondary="rating in microkernel architecture" id="idm45838971648992"></a> If done right, this reduces the overall testing scope of changes and also reduces overall risk of deployment, particularly if plug-in components are deployed in a runtime fashion.</p>
+        
+        <p>Modularity and evolvability also rate a little above average (three stars).<a data-type="indexterm" data-primary="extensibility" data-secondary="rating in microkenel architecture" id="idm45838971647328"></a><a data-type="indexterm" data-primary="modularity" data-secondary="rating in microkernel architecture" id="idm45838971646336"></a> With the microkernel architecture style, additional functionality can be added, removed, and changed through independent, self-contained plug-in components, thereby making it relatively easy to extend and enhance applications created using this architecture style and allowing teams to respond to changes much faster. Consider the tax preparation software example from the previous section. If the US tax law changes (which it does all the time), requiring a new tax form, that new tax form can be created as a plug-in component and added to the application without much effort. Similarly, if a tax form or worksheet is no longer needed, that plug-in can simply be removed from the <span class="keep-together">application.</span></p>
+        
+        <p>Performance is always an interesting characteristic to rate with the microkernel architecture style.<a data-type="indexterm" data-primary="performance" data-secondary="rating in microkernel architecture" id="idm45838971643264"></a> We gave it three stars (a little above average) mostly because microkernel applications are generally small and don’t grow as big as most layered architectures.<a data-type="indexterm" data-primary="architecture sinkhole anti-pattern" data-secondary="microkernel architecture and" id="idm45838971642016"></a> Also, they don’t suffer as much from the architecture sinkhole anti-pattern discussed in <a data-type="xref" href="ch10.html#ch-style-layered">Chapter&nbsp;10</a>. Finally, microkernel architectures can be streamlined by unplugging unneeded functionality, therefore making the application run faster. A good example of this is <a href="https://wildfly.org">Wildfly</a> (previously the JBoss Application Server). By unplugging unnecessary functionality like clustering, caching, and messaging, the application server performs much faster than with these features in place.<a data-type="indexterm" data-primary="Wildfly application server" id="idm45838971638944"></a><a data-type="indexterm" data-primary="microkernel architecture" data-startref="ix_mcrok" id="idm45838971638224"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        </div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492043447/files/epub.css" crossorigin="anonymous"><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/mml-svg.js"></script></div></div></section>
+</div>
+
+https://learning.oreilly.com

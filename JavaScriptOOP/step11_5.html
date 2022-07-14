@@ -1,0 +1,109 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="The Interface Segregation Principle"><div class="titlepage"><div><div><h1 class="title"><a id="ch11lvl1sec73"></a>The Interface Segregation Principle</h1></div></div></div><p>When designing the interface of an object, we should limit to define what is strictly necessary, avoiding carrying around stuff that is not used. This is, in a nutshell, the <span class="strong"><strong>Interface Segregation Principle</strong></span>, whose official version says:</p><div class="blockquote"><blockquote class="blockquote"><p><span class="emphasis"><em>Clients should not be forced to depend on methods they do not use.</em></span></p></blockquote></div><p>Although JavaScript does not support interfaces as abstract types to define contracts through a typing system, as we saw in <span><a class="link" href="ch05.html" title="Chapter&nbsp;5.&nbsp;Defining Contracts with Duck Typing">Chapter 5</a></span>, <span class="emphasis"><em>Defining Contracts with Duck Typing</em></span>, it may somehow be emulated through Duck Typing. In any case, this principle does not refer to the interfaces as a pure syntactic element, but to the whole set of public properties and methods of an object.</p><p>In the definition of our object interfaces, therefore, we should be careful to only define what actually is necessary. This avoids the exposure of members that could create ambiguity and confusion.</p><p>Let's consider the following code:</p><pre class="programlisting">function Discounter(min, max, discountPercentage, gadget) { 
+        this.min = min; 
+        this.max = max; 
+        this.discountPercentage = discountPercentage; 
+        this.gadget = gadget; 
+      } 
+       
+      Discounter.prototype.isApplicable = function(order) { 
+        var itemsCount = order.items.length; 
+       
+        return (itemsCount &gt;= this.min &amp;&amp; itemsCount &lt; this.max) 
+      }; 
+       
+      Discounter.prototype.apply = function(order) { 
+        order.totalAmount = order.totalAmount - order.totalAmount *    discountPercentage / 100; 
+      }; 
+       
+      Discounter.prototype.addGadget = function(order) { 
+        order.items.push(this.gadget); 
+      } 
+      </pre><p>We defined the <code class="literal">Discounter</code> constructor adding the gadget management. Using this definition all object instances will have the <code class="literal">gadgets</code> property and the <code class="literal">addGadget()</code> method, even if most of these objects will not use them. To comply with the Interface Segregation Principle, it would be appropriate to establish a special constructor for discounters that manage gadgets:</p><pre class="programlisting">function GadgetDiscounter(min, max, gadget) { 
+        this.min = min; 
+        this.max = max; 
+        this.gadget = gadget; 
+      } 
+       
+      GadgetDiscounter.prototype.isApplicable = function(order) { 
+        var itemsCount = order.items.length; 
+       
+        return (itemsCount &gt;= this.min &amp;&amp; itemsCount &lt; this.max) 
+      }; 
+       
+      GadgetDiscounter.prototype.addGadget = function(order) { 
+        order.items.push(this.gadget); 
+      } 
+      </pre><p>In this case, we defined a new constructor function <code class="literal">GadgetDiscounter</code> that has the <code class="literal">gadget</code> property and the <code class="literal">addGadget()</code> method. So, the discounters that add gadgets to the order are instances of this constructor.</p><p>A better solution is based on a mixin approach that allows us to augment the standard discounter interface, as shown here:</p><pre class="programlisting">function Discounter(min, max, discountPercentage) { 
+        this.min = min; 
+        this.max = max; 
+        this.discountPercentage = discountPercentage; 
+      } 
+       
+      Discounter.prototype.isApplicable = function(order) { 
+        var itemsCount = order.items.length; 
+       
+        return (itemsCount &gt;= this.min &amp;&amp; itemsCount &lt; this.max) 
+      }; 
+       
+      Discounter.prototype.apply = function(order) { 
+        order.totalAmount = order.totalAmount - order.totalAmount *    discountPercentage / 100; 
+      }; 
+       
+      var gadgetMixin = { 
+        gadget: {}, 
+        addGadget: function(order) { 
+          order.items.push(this.gadget); 
+        } 
+      }; 
+       
+      var discounter = new Discounter(10, 20, 0); 
+      var gadgetDiscounter = augment(discounter, gadgetMixin); 
+       
+      gadgetDiscounter.gadget = {name: "A nice gadget!"} 
+      </pre><p>We defined the <code class="literal">gadgetMixin</code> object literal and used it to augment an instance of <code class="literal">Discounter</code>. <code class="literal">augment()</code>, the function we defined in <span><a class="link" href="ch04.html" title="Chapter&nbsp;4.&nbsp;Inheriting and Creating Mixins">Chapter 4</a></span>, <span class="emphasis"><em>Inheriting and Creating Mixins</em></span>, during the mixin discussion. This approach allows us to extend just the objects that really need the interface to work with gadgets.</p><p>As we have seen, the Interface Segregation Principle is quite similar to the Single Responsibility Principle. Both promote simplification and cohesion of the components; but while the Single Responsibility Principle refers to the component as a whole, the Interface Segregation Principle only requires simplification at the public interface level.</p></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

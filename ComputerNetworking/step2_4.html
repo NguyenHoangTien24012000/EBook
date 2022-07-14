@@ -1,0 +1,365 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 class="h2" id="ch14"><a id="page_373"></a><strong>Chapter 14<br>Reacting to Topology Changes</strong></h2>
+        <div class="sidebar">
+        <p class="sb-noindent"><strong>Learning Objectives</strong></p>
+        <p class="sb-noindent">After reading this chapter, you should be able to understand:</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The four steps of the convergence process</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Using polling and event-driven mechanisms for topology change detection</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Bidirectional Forwarding Detection</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Record-level replication and flooding</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Microloops</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> Hop-by-hop control plane state distribution</p>
+        <p class="sb-indenthangingB"><img class="middle" src="/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/bull.jpg" alt="Image" width="12" height="12"> The CAP theorem and its interaction with control planes</p>
+        </div>
+        <p class="noindent">You might have noticed that very few of the mechanisms described in <a href="ch12.xhtml#ch12">Chapter 12</a> “<a href="ch12.xhtml#ch12">Unicast Loop-Free Paths (1)</a>,” and <a href="ch13.xhtml#ch13">Chapter 13</a>, “<a href="ch13.xhtml#ch13">Unicast Loop-Free Paths (2)</a>,” considered changes in the topology. Most of these solutions are focused on computing loop-free paths through an apparently stable network, as discovered by the mechanisms described in <a href="ch11.xhtml#ch11">Chapter 11</a>, “<a href="ch11.xhtml#ch11">Topology Discovery</a>.” But what happens when the topology changes? Returning to the introduction of <a href="part2.xhtml#part2">Part II</a>:</p>
+        <p class="blockquote"><strong>How do network devices build the tables needed to forward packets along loop-free paths through the network?</strong></p>
+        <p class="indent"><a id="page_374"></a>Now it is time to consider one more of the subproblems of this overarching problem:</p>
+        <p class="blockquote"><strong>How do control planes detect and react to changes in the network?</strong></p>
+        <p class="indent">This question will be answered by examining two components of the convergence process in a control plane. The convergence process in a network can be described in four stages. <a href="ch14.xhtml#ch14fig01">Figure 14-1</a> is used for reference in describing these four stages.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/14fig01.jpg" aria-describedby="Al14fig01" alt="Figure explains the convergence process." width="628" height="249"><aside class="hidden" id="Al14fig01">
+        <p>A router labeled A has a line leading to the right, reaching a router labeled B. Two lines lead upward and downward to reach routers C and D. A line leads from D to reach a router labeled E. Two lines emerge from routers, C and E but are left unconnected.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch14fig01"></a><strong>Figure 14-1</strong> <em>The Convergence Process</em></p>
+        </div>
+        <p class="indentb">Once the [C,E] link fails, the four stages that must occur are <em>detection, distribution, computation</em>, and <em>installation.</em></p>
+        <p class="indenthangingN">1. <strong>Detecting the change:</strong> Whether the inclusion of a new device or link, or the removal of a device or link, regardless of the reason, the change must be detected by any connected devices. In <a href="ch14.xhtml#ch14fig01">Figure 14-1</a>, devices C and E must detect the failure of the [C,E] link; when the link is brought back up, they must also detect the inclusion of this (apparently new) link in the topology.</p>
+        <p class="indenthangingN">2. <strong>Distributing information about the change:</strong> Each device participating in the control plane must learn about the topology change in some way. In <a href="ch14.xhtml#ch14fig01">Figure 14-1</a>, devices A, B, and D must somehow be notified of the failure of the [C,E] link; when the link is brought back up, they must again be notified of the inclusion of this (apparently new) link in the topology.</p>
+        <p class="indenthangingN">3. <strong>Computing a new loop-free path to the destination:</strong> These algorithms are discussed in <a href="ch12.xhtml#ch12">Chapters 12</a> and <a href="ch13.xhtml#ch13">13</a>. In <a href="ch14.xhtml#ch14fig01">Figure 14-1</a>, B and C must compute some alternate path to reach destinations behind E (or perhaps E itself).</p>
+        <p class="indenthangingN">4. <strong>Installing the new forwarding information into the relevant local tables:</strong> In <a href="ch14.xhtml#ch14fig01">Figure 14-1</a>, B and C must install the newly computed loop-free paths to destinations beyond E into their local forwarding tables, so traffic can be switched along the new path.</p>
+        <p class="indentt"><a id="page_375"></a>The following sections will focus on the first two of the four steps described in the preceding list, beginning with some thoughts on detecting topology changes. Some examples of protocols specializing in detecting topology changes will be considered. The distribution of topology and reachability information will take up the final half of this chapter. As this problem is, essentially, a distributed database problem, it will be addressed from that perspective.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch14lev1">Detecting Topology Changes</h3>
+        <p class="noindent">The first step in reacting to a change in the network topology is to detect the change. Returning to <a href="ch14.xhtml#ch14fig01">Figure 14-1</a>, how should the two devices connected to the link, C and E, detect the link has failed? The solution to this problem is not as simple as it might first appear for two reasons: information overload and false positives.</p>
+        </div>
+        <p class="indent">Information overload occurs when the control plane receives so much information it simply cannot distribute information about topology changes, and/or compute and install alternate paths into the relevant tables at each device, fast enough to keep the state of the network consistent. In the case of quick, persistently occurring changes, such as a link disconnecting and connecting every few milliseconds, the control plane can be overwhelmed with information, causing the control plane itself to consume enough network resources to cause the network to fail. It is also possible for a series of failures to trigger a positive feedback loop, in which case the control plane “folds in” on itself, either reacting very slowly or failing altogether. The solution to information overload is to hide the true state of the topology from the control plane until the rate of change is within the bounds the control plane can support.</p>
+        <p class="indent">False positives are the second sort of problem; if a link drops one packet out of every 100, and the single packet dropped each time just happens to be a control plane packet used to monitor the link’s state, the link will appear to go down and come back up (flap) quite frequently—even though other traffic is being forwarded across the link without problem.</p>
+        <p class="indent">There are two broad classes of solutions to the event detection problem:</p>
+        <p class="bullt">• Implementations can send packets periodically to determine the state of a link, device, or system. This is <em>polling</em>.</p>
+        <p class="bullb">• Implementations can trigger a reaction to a change in the state of a link or device off some physical or logical state within the system. This is <em>event driven.</em></p>
+        <p class="indent">There are, as always, different tradeoffs with these two solutions, and subcategories of each one.</p>
+        <a id="page_376"></a>
+        <div class="heading">
+        <h4 class="h4" id="ch14lev2"><strong>Polling to Detect Failures</strong></h4>
+        <p class="noindent">Polling can be performed <em>remotely</em>, or <em>out of band;</em> or <em>locally,</em> or <em>in band;</em> <a href="ch14.xhtml#ch14fig02">Figure 14-2</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/14fig02.jpg" aria-describedby="Al14fig02" alt="Figure represents In band and Out of band polling." width="510" height="408"><aside class="hidden" id="Al14fig02">
+        <p>A router labeled A has a line leading to a router labeled B. Two lines lead from A and B to reach a router labeled C. A line leads upward from C to reach a computer labeled D. Two dotted lines labeled out of band lead downward from D to reach routers A and B. A dotted, bidirectional line labeled in band lies between A and B.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch14fig02"></a><strong>Figure 14-2</strong> <em>In Band and Out of Band Polling</em></p>
+        </div>
+        <p class="indent">In <a href="ch14.xhtml#ch14fig02">Figure 14-2</a>, A and B are sending a <em>hello</em>, or some other form of polling packet, periodically across the same link they are connected through, and the same link across which they are forwarding traffic. This is <em>in band polling</em>, which has the advantage of tracking the state of the link over which traffic is being forwarded, reachability information is being carried, etc. On the other hand, D is polling A and B for some information about the state of the [A,B] link from another location in the network. For instance, D could be checking the state of the two interfaces on the [A,B] link on a periodic basis, or perhaps sending a packet along the [C,A,B,C] path on a periodic basis, etc. The advantage here is information about the state of a large number of links can be centralized, making network management and troubleshooting easier. Both kinds of polling are often used in real-world network deployments.</p>
+        <p class="indent">Polling mechanisms often use two separate timers to operate:</p>
+        <p class="bullt">• A timer to determine how often the poll is transmitted; this is often called the polling interval in the case of out of band polling, and is often called the hello timer in the case of in band polling</p>
+        <p class="bullb">• A timer to determine how long to wait before declaring a link or device down, or to raise some sort of alarm; this is often called a dead interval or dead timer in the case of in band polling</p>
+        <p class="indent"><a id="page_377"></a>The objective of in and out of band polling is often different. Out of band polling to discover changes in network state is often (but not always—specifically in the case of a centralized control plane) used to monitor the network state, and allows for centralized reactions to changes in state. In band polling is most often used (as you might expect) to detect changes in state locally, to drive the reaction of distributed control planes.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch14lev3"><strong>Event-Driven Failure Detection</strong></h4>
+        <p class="noindent">Event-driven failure detection relies on some local, measurable event to determine the status of a particular link or device. <a href="ch14.xhtml#ch14fig03">Figure 14-3</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/14fig03.jpg" aria-describedby="Al14fig03" alt="Figure shows an example for an event-driven detection." width="701" height="85"><aside class="hidden" id="Al14fig03">
+        <p>A box labeled "phy chip(1)" has an arrow labeled "1" leading to a box labeled "phy chip(2)." An arrow labeled "2" leads from "phy chip(2)" to reach a "RIB process." An arrow labeled "3" leads from "RIB process" to reach "routing protocol." An arrow labeled "4" leads from "routing protocol" to reach a circle labeled "take neighbor down."</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch14fig03"></a><strong>Figure 14-3</strong> <em>Event-Driven Detection Example</em></p>
+        </div>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">This is just an example; not all router implementations follow this model.</p>
+        </div>
+        <p class="indentb">In <a href="ch14.xhtml#ch14fig03">Figure 14-3</a>, which shows one possible implementation of the architecture elements between the physical interface and the routing protocol, there are four steps:</p>
+        <p class="indenthangingN">1. The link between the two physical interface (<em>phy</em>) chips located at either end of the link fails. Physical interface chips are normally optical to electrical hand-offs. Most physical interface chips also perform some level of decoding on the inbound information, converting the individual bits on the wire to packets (deserialization), and packets into bits (serialization). Information is encoded by the physical interface onto a carrier, which is supplied by the two physical chips connected to the physical media. If the link fails, or one of the two interfaces is disconnected for any reason, the physical interface chip on the other end of the link will see the carrier drop in near real time—usually based on the speed of light and the length of the physical media. This condition is called loss of carrier.</p>
+        <p class="indenthangingN">2. The physical interface chip will, on detecting loss of carrier, send a notification toward the routing table (RIB) on the local device. This notification normally starts life as an interrupt, which is then translated into some form of Application Programming Interface (API) call into the RIB code, which results in the <a id="page_378"></a>routes reachable through the interface, and any next hop information through the interface, being marked stale or being removed from the routing table. This signal may, or may not, pass through the Forwarding Information Base (FIB) along the way, depending on the implementation.</p>
+        <p class="indenthangingN">3. The RIB will notify the routing protocol about the routes it just removed from the local table based on the interface down event.</p>
+        <p class="indenthangingN">4. The routing protocol can then remove any neighbors reachable through the indicated interfaces (or rather through the connected routes).</p>
+        <p class="indentt">There is no point in <a href="ch14.xhtml#ch14fig03">Figure 14-3</a> in which there is a periodic process checking the state of anything, nor are there any packets moving across the wire. The entire process is based on the physical interface chip losing carrier on the connected media; hence this process is event driven.</p>
+        <p class="indent">It is often the case that event-driven and polled status are combined. For instance, in <a href="ch14.xhtml#ch14fig03">Figure 14-3</a>, if there were a management station polling the status of the interface in the local RIB on a periodic basis, the process from the physical interface chipset to the RIB would be event driven, while the process from the RIB to the management station would be driven by polling.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch14lev4"><strong>Comparing Event-Driven and Polling-Based Detection</strong></h4>
+        <p class="noindent"><a href="ch14.xhtml#ch14tab01">Table 14-1</a> summarizes the advantages and disadvantages of each event detection mechanism.</p>
+        </div>
+        <div class="tab-heading">
+        <p class="tab-caption"><a id="ch14tab01"></a><strong>Table 14-1</strong> <em>Comparison of Polling and Event-Driven Detection</em></p>
+        <table class="tablewidth">
+        <tbody>
+        <tr>
+        <td class="bg1"><p class="thead">&nbsp;</p></td>
+        <td class="bg1"><p class="thead"><strong>Out of Band Polling</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>In Band Polling</strong></p></td>
+        <td class="bg1"><p class="thead"><strong>Event Driven</strong></p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent"><strong>Status Distribution</strong></p></td>
+        <td class="tbody_first"><p class="noindent">Status is driven from a centralized system; the centralized system has a <em>bigger picture</em> view of the overall network state</p></td>
+        <td class="tbody_first"><p class="noindent">Status is driven by local devices; gathering a <em>bigger picture</em> view of the state of the entire network requires gathering information from each individual network device</p></td>
+        <td class="tbody_first"><p class="noindent">Status is driven by local devices; gathering a <em>bigger picture</em> view of the state of the entire network requires gathering information from each individual network device</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent"><a id="page_379"></a><strong>Ties forwarding state to link or device state</strong></p></td>
+        <td class="tbody_first"><p class="noindent">Link and/or device state can be falsely reported; does not directly test forwarding capability</p></td>
+        <td class="tbody_first"><p class="noindent">Link and/or device state can be directly tied to forwarding capability (barring failures within the state checking mechanism)</p></td>
+        <td class="tbody_first"><p class="noindent">Link and/or device state can be directly tied to forwarding capability (barring failures within the state checking mechanism)</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent"><strong>Speed of Detection</strong></p></td>
+        <td class="tbody_first"><p class="noindent">Must have some waiting interval before declaring a link or device failed to prevent false positives; slows reporting of network changes</p></td>
+        <td class="tbody_first"><p class="noindent">Must have some waiting interval before declaring a link or device failed to prevent false positives; slows reporting of network changes</p></td>
+        <td class="tbody_first"><p class="noindent">Some timer before reporting failures might be desirable to reduce the reporting of false positives, but this timer can be very short, and backed with a double-check of the state of the system itself; generally much faster at reporting network changes</p></td>
+        </tr>
+        <tr>
+        <td class="tbody_first"><p class="noindent"><strong>Scaling</strong></p></td>
+        <td class="tbody_first"><p class="noindent">Must transmit periodic polls, consuming bandwidth, memory, and processing cycles; scales within these limits</p></td>
+        <td class="tbody_first"><p class="noindent">Must transmit periodic polls, consuming bandwidth, memory, and processing cycles; scales within these limits</p></td>
+        <td class="tbody_first"><p class="noindent">Small amounts of current local state; tends to scale better than polling mechanisms</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div>
+        <p class="indent">While it may appear event-driven detection should always be favored, there are some specific situations where polling can solve problems that event-driven mechanisms cannot. For instance, one of the main advantages of polling-based systems, particularly when deployed in band, is to “see” the state of otherwise invisible boxes. For instance, in <a href="ch14.xhtml#ch14fig04">Figure 14-4</a>, there are two routers connected through a third device, identified as a repeater in the illustration.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/14fig04.jpg" aria-describedby="Al14fig04" alt="Figure represents signal repeaters and loss of carrier." width="479" height="99"><aside class="hidden" id="Al14fig04">
+        <p>A router A has a line leading to the right, reaching a physical repeater labeled B. A line leads from B to reach a router labeled C.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch14fig04"></a><strong>Figure 14-4</strong> <em>Signal Repeaters and Loss of Carrier</em></p>
+        </div>
+        <p class="indent">In <a href="ch14.xhtml#ch14fig04">Figure 14-4</a>, device B is a simple physical repeater; whatever it receives on the [A,B] link it retransmits, just as it received it, on the [B,C] link. There is no control plane of any sort running on this device (at least not that A and C are aware of). Neither A nor C can detect this device, as it does not change the signal in any way A or C could measure.</p>
+        <p class="indent"><a id="page_380"></a>What happens if the [A,B] link fails if A and B are using an event-driven mechanism to determine link state? A will lose carrier, of course, because the physical interface at B will no longer be reachable. However, C will continue to receive carrier and hence will not detect the link failure at all. If it is possible for A and C to somehow communicate with B, this situation can be resolved. For instance, if B tracks all the Address Resolution Protocol (ARP) requests it receives, it can, when the [A,B] link fails, somehow send an “inverse ARP” notifying B that A is no longer reachable. The other solution available in this situation is some sort of polling between A and C that verifies reachability across the entire link, including the state of B (even though A and C are not aware that B exists).</p>
+        <p class="indent">From a complexity perspective, event-driven detection increases the interaction surfaces between the systems in a network, while polling tends to keep state within a system. In <a href="ch14.xhtml#ch14fig03">Figure 14-3</a>, there must be some sort of interface between the physical interface chipset, the RIB, and the routing protocol implementation. Each of these interfaces represents a place where information that might be better hidden through an abstraction is transferred between systems, and an interface that must be maintained and managed. Polling, on the other hand, can often be contained within a single system, completely ignoring the underlying mechanisms and technologies in place.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch14lev5"><strong>An Example: Bidirectional Forwarding Detection</strong></h4>
+        <p class="noindent">It will be useful, at this point, to spend a few pages examining an example of a protocol designed specifically to detect link state in a network. Neither of these protocols is part of a larger system (such as a routing protocol), but rather interact with other protocols through programming interfaces and status indicators.</p>
+        </div>
+        <p class="indent">Bidirectional Forwarding Detection (BFD) is grounded in a single observation: there are many control planes running on a typical network device, each with its own failure detection mechanism. It would be more efficient to run a single shared detection mechanism among all the different control planes. In most applications, BFD does not replace existing hello protocols used in each control plane, but rather augments them. <a href="ch14.xhtml#ch14fig05">Figure 14-5</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/14fig05.jpg" aria-describedby="Al14fig05" alt="Figure represents bidirectional forwarding detection." width="700" height="311"><aside class="hidden" id="Al14fig05">
+        <p>A rectangular box labeled routing protocol is at the left with a line leading downward to reach a box labeled BFD. Another line leads downward from both boxes, reaching a box labeled forwarding. It is enclosed in a box filled with dotted lines with a router labeled A at the bottom left. The same arrangement is to the right, with router C at the bottom right. Both are connected with a dotted line labeled Control plane connection. A line connects both routers with a physical repeater labeled B at the center.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch14fig05"></a><strong>Figure 14-5</strong> <em>Bidirectional Forwarding Detection</em></p>
+        </div>
+        <p class="indent">In the BFD model, there are likely to be <em>at least</em> two different polling processes running over the same logical link (there could be more, if there are logical links layered on top of other logical links, as BFD can be used across various network <a id="page_381"></a>virtualization technologies, as well). Control plane polling will use hellos to discover adjacent devices running the same control plane process, to exchange capabilities, determine the Maximum Transmission Unit (MTU), and, finally, to make certain the control plane process on the adjacent device is still running. These hellos are run across the <em>control plane connection</em> in <a href="ch14.xhtml#ch14fig05">Figure 14-5</a>, which can be seen as a sort of “virtual link” passing through the physical link.</p>
+        <p class="indent">BFD polling will run <em>underneath</em> the control plane connection, as shown, verifying the operation of the physical connection and forwarding planes on the two connected devices. This two-layered approach allows BFD to operate much more quickly, even as a polling mechanism, than any routing protocol-based detection mechanism.</p>
+        <p class="indent">BFD can operate in four distinct modes:</p>
+        <p class="bullt">• <strong>Asynchronous mode:</strong> In this mode, BFD acts like a lightweight hello protocol. The BFD process at A, potentially running on a distributed process (or even in an Application-Specific Integrated Circuit [ASIC]), sends hello packets to C; the BFD process at C acknowledges these hello packets. This is a fairly traditional use of polling through hellos.</p>
+        <p class="bull">• <strong>Asynchronous mode with echo:</strong> In this mode, the BFD process in A will send hello packets to C so the hello packets will be processed only through the forwarding path, hence allowing only the forwarding path to be polled. To accomplish this, A sends hello packets to C formed in such a way that they will be forwarded back to A. For instance, A can send a packet to C with A’s own address as the destination; C can pick this packet up and forward it back to A. In this mode, the hellos transmitted by A are completely different from the hellos transmitted by C; there is no acknowledgment, just the two systems sending independent hellos that test the link bidirectionally from each end.</p>
+        <p class="bull"><a id="page_382"></a>• <strong>Demand mode:</strong> In this mode, the two BFD peers agree to send hellos just when connectivity needs to be validated, rather than periodically. This is useful in the case where there is some other way to determine link status—for instance, if the [A,C] link is an Ethernet link, which means carrier detect is available to detect link failure—but when the alternate method is not necessarily trusted to provide accurate connectivity status in all situations. For instance, in the case of “switch in the middle,” where B is disconnected from A but not C, C could send a BFD hello on noting any problem with the connectivity to verify its connection with A is still good. In demand mode, some event, such as a lost packet, can cause a local process to trigger a BFD detection event.</p>
+        <p class="bullb">• <strong>Demand mode with echo:</strong> This mode is like demand mode—regular hellos are not transmitted between the two devices running BFD. When a packet is transmitted, it is sent in such a way as to cause the other device to forward the hello packet back to the sender. This reduces the amount of processor load on both devices, allowing much faster timers to be used for BFD hellos.</p>
+        <p class="indent">Regardless of the mode of operation, BFD calculates different polling (hello) and detection (dead) timers separately across the link. The best way to explain the process is through an example. Assume A sends a BFD control packet with a proposed polling interval of 500ms, and C sends a BFD control packet with a proposed polling interval of 700ms. The higher number, or rather the slower polling interval, is chosen for the relationship; the rationale for this is the slower system must be able to keep up with the polling interval to prevent false positives.</p>
+        <p class="indent">The polling rate is modified in actual use to prevent synchronization of hello packets across multiple systems on the same wire. If there were four or five systems deploying the Border Gateway Protocol (BGP) on a single multiaccess link, and every system sets its timer to send the next hello packet based on the receipt of the last packet, it is possible for all five systems to synchronize their hello transmission so all the hellos on the wire are transmitted at precisely the same moment. Since BFD normally operates with timers less than one second in length, this could result in a device receiving hellos from multiple devices at the same time, and not being able to process them quickly enough to prevent a false positive.</p>
+        <p class="indent">The specific modification used is to jitter the packets; each transmitter must take the base polling timer and subtract some random amount of time that is between 0% and 25% of the polling timer. For instance, if the polling timer is 700ms, as in the example given, A and C would transmit each hello packet sometime between around 562 and 750ms after the transmission of the last hello.</p>
+        <p class="indent">The final point to consider is the amount of time A and C will wait before declaring the link (or neighbor) down. In BFD, each device can calculate its own dead timer, normally expressed as a multiple of the polling timer. For instance, A could choose to consider the link (or C) down after two BFD hellos are missed, while C might decide to wait for three BFD hellos to be missed.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch14lev6"><a id="page_383"></a>Change Distribution</h3>
+        <p class="noindent">Once a change in the network topology has been detected, it must be distributed in some way to all the devices participating in the control plane. Each item in a network topology can be described as either</p>
+        </div>
+        <p class="bullt">• A link, or edge, including the nodes or reachable destinations attached to this link</p>
+        <p class="bullb">• A device, or node, including the nodes, links, and reachable destinations connected to this device</p>
+        <p class="indent">This rather restricted set of terms lends itself to being held in a table, or database, often called the <em>topology table</em> or <em>topology database</em>. The question of distributing changes in the network topology to all the devices participating in the control plane, then, can be described as the process of distributing changes to specific rows in this table or database throughout the network.</p>
+        <p class="indent">The way in which information is distributed through a network depends on the design of the protocol, of course, but there are three commonly used kinds of distribution: hop-by-hop distribution, flooded distribution, and a centralized store of some sort.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch14lev7">Flooding</h4>
+        <p class="noindent">In flooding, each device participating in the control plane receives, and stores, a copy of every piece of information about the network topology and reachable destinations. While there are a number of ways to synchronize a database, or table, only one is normally used in control planes: record-level replication. <a href="ch14.xhtml#ch14fig06">Figure 14-6</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/14fig06.jpg" aria-describedby="Al14fig06" alt="Figure represents flooding between network devices." width="701" height="756"><aside class="hidden" id="Al14fig06">
+        <p>A router labeled A has a line labeled 2001:db8:3e8:100::/64 leading to a router labeled B. A line labeled 2001:db8:3e8:101::/64 leads to a router labeled C. A line labeled 2001Ldb8:3e8:102::/64 leads to a computer labeled D. A set of information is listed below. Three boxes labeled I can reach 100::/64 and I can reach B, I can reach 100::/64 and I can reach B, and I can reach 100::/64 and I can reach B lie below, connected with arrows leading to the right. Three boxes follow with four sections each that read: I can reach 100::/64, I can reach 101::/64, I can reach A, and I can reach C, I can reach 100::/64, I can reach 101::/64, I can reach A, and I can reach C, and I can reach 100::/64, I can reach 101::/64, I can reach A, and I can reach C. A leftward arrow leads from the second box to the first. A rightward arrow leads from the second box to the third. Three boxes with four sections follow that read: I can reach 101::/64, I can reach 102::/64, I can reach B, and I can reach D, I can reach 101::/64, I can reach 102::/64, I can reach B, and I can reach D, and I can reach 101::/64, I can reach 102::/64, I can reach B, and I can reach D. All boxes are connected with leftward arrows. A set of boxes to the left are marked with a box filled with dotted lines, labeled Complete database.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch14fig06"></a><strong>Figure 14-6</strong> <em>Flooding Between Network Devices</em></p>
+        </div>
+        <p class="indent">In <a href="ch14.xhtml#ch14fig06">Figure 14-6</a>, each device will flood the information it knows to each neighbor, who will then reflood the information to each neighbor. For instance, A knows two specific things about the network topology: how to reach 2001:db8:3e8:100::/64 and how to reach B. A floods this information to B, which, in turn, floods this information to C. Each device in the network ultimately ends up with a copy of all the topology information available; A, B, and C have <em>synchronized</em> topology databases (or tables).</p>
+        <p class="indent">In <a href="ch14.xhtml#ch14fig06">Figure 14-6</a>, C’s connectivity to D is shown as an item in the database; not all control planes would include this information. Instead, C may just include connectivity to the 2001:db8:3e8:102::/64 range of addresses (or subnet), which contains D’s address.</p>
+        <div class="note">
+        <p class="title"><strong>Note</strong></p>
+        <p class="notepara">In larger networks, it is impossible for the entire description of a device’s connections to fit into a single MTU-sized packet, and connection information needs to be timed out and reflooded on a regular basis to ensure freshness.</p>
+        </div>
+        <p class="indent"><a id="page_384"></a>An interesting problem arises in flooded distribution mechanisms that can cause temporary routing loops, called microloops; <a href="ch14.xhtml#ch14fig07">Figure 14-7</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/14fig07.jpg" aria-describedby="Al14fig07" alt="Figure represents microloops in flooded database distribution." width="505" height="367"><aside class="hidden" id="Al14fig07">
+        <p>A router labeled A has two lines leading upward and downward to reach routers, B and E. A line leads from B to reach a router labeled C. Another line leads from C to reach a router labeled D. Two lines lead from routers, E and D and are not connected to each other.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch14fig07"></a><strong>Figure 14-7</strong> <em>Microloops in Flooded Database Distribution</em></p>
+        </div>
+        <p class="indentb">In <a href="ch14.xhtml#ch14fig07">Figure 14-7</a>, assume the [E,D] link fails. Consider the following chain of events, including some roughly possible times for each event:</p>
+        <p class="indenthangingN">1. <strong>Start:</strong> A is using E to reach D; C is using D to reach E.</p>
+        <p class="indenthangingN">2. <strong>100ms:</strong> E and D discover the link failure.</p>
+        <p class="indenthangingN">3. <strong>500ms:</strong> E and D flood information about the topology change to C and A.</p>
+        <p class="indenthangingN"><a id="page_385"></a>4. <strong>750ms:</strong> C and A receive the updated topology information.</p>
+        <p class="indenthangingN">5. <strong>1,000ms:</strong> E and D recompute their best paths; E selects A as its best path to reach D, D selects C as its best path to reach E.</p>
+        <p class="indenthangingN">6. <strong>1,250ms:</strong> A and C flood information about the topology change to B.</p>
+        <p class="indenthangingN">7. <strong>1,400ms:</strong> A and C recompute their best paths; A selects B to reach D, C selects B to reach E.</p>
+        <p class="indenthangingN">8. <strong>1,500ms:</strong> B receives the updated topology information.</p>
+        <p class="indenthangingN">9. <strong>2,000ms:</strong> B recomputes its best paths; it chooses C to reach D, and A to reach E.</p>
+        <p class="indentt">While the times and ordering might vary slightly in any particular network, the ordering of discovery, advertisement, and recomputing will almost always follow a similar pattern. In this example, a microloop forms between steps 5 and 7; for 400ms, A is using E to reach D, and E is using A to reach D. Any traffic entering the ring at either A or D during the time between E’s recalculation of the best path to D and A’s recalculation of the best path to D <em>will loop</em>. A more formal definition of this problem will be considered in the later section, “Consistency, Accessibility, and Partitionability.” One solution to this problem is to precompute Loop-Free Alternates or remote Loop-Free Alternates (both discussed in discussed in <a href="ch13.xhtml#ch13">Chapter 13</a>).</p>
+        <div class="sidebar1">
+        <p class="title1"><a id="page_386"></a><strong>Microloops and Ordered FIB</strong></p>
+        <p class="noindent">If the routers receiving new topology information and calculating new best paths could be induced to order the installation of the new best paths, the microloop can be avoided. In <a href="ch14.xhtml#ch14fig07">Figure 14-7</a>, if C could somehow be configured to wait to install its new best path until B has computed and installed its new best path, and if D could be configured to wait to install its new best path until C has computed and installed its new best path, the microloop can be avoided. In other words, one way to avoid the microloop is to somehow ensure the Forwarding Information Base (FIB) entries in the network devices are installed in the order B-&gt;(C,A)-&gt;(D,E).</p>
+        <p class="indent">There is actually a technique for computing the order of installs called <em>ordered FIB</em>, or <em>oFIB</em>.<sup><a id="ch14fn1"></a><a href="ch14.xhtml#ch14fn-1">1</a></sup> This mechanism assumes some form of Shortest Path First (SPF) algorithm, such as Dijkstra’s, to compute the best path. To compute the order in which the FIB entries should be installed to avoid the loop, begin with the assumption that all the new topology information available will be received on every network device before the best path calculation is undertaken by any network device. This requires measuring the largest (typical) amount of time flooding updated topology information through the network, and setting some timer so that no network device will calculate a new best path until the timer has expired.</p>
+        <p class="indent">Once all the topology information is received, each device calculates two best paths: one from the local node based on the new topology information and one from the <em>affected node</em> using the topology information from before the change. The affected node is either the end of the failed link farthest from the local node (D, from A’s perspective in <a href="ch14.xhtml#ch14fig07">Figure 14-7</a>), or the actual node that has failed. This can be discovered by examining the report of the failure from both of the devices connected to the failure point (D and E in <a href="ch14.xhtml#ch14fig07">Figure 14-7</a>).</p>
+        <p class="indent">The number of devices relying on the local node to forward to the affected device can be computed using the shortest path from the perspective of the affected router. For the network in <a href="ch14.xhtml#ch14fig07">Figure 14-7</a>, A and B rely on E to reach D, and B relies on A to reach D. Given this information, the device can wait to install any new forwarding information until after it is certain any devices that once <a id="page_387"></a>depended on it—who might still be using the local device to forward traffic to the affected device—have installed their new forwarding information. To do this, an installation wait time (called <em>wait-time</em> here) is agreed on throughout the network (before the failure!). This wait time is how long, per dependent node, any device should wait before installing any new forwarding information after a failure. It is best, of course, to base this wait time on real measurements of how long it takes to compute and install a new best path in the slowest node in the network.</p>
+        <p class="indent">Given this wait time, E can note that two devices were (potentially) forwarding traffic to E to reach D. Hence, when the [D,E] link fails, E should wait <em>2*wait-time</em> before installing any new path to D. A can note that one device was (potentially) forwarding traffic to A to reach D; hence it should wait <em>1*wait-time</em> before installing any new path to D. This process will ensure the new forwarding information is installed in the correct order to prevent the microloop.</p>
+        <p class="indent">What is interesting about oFIB is it not only prevents microloops in the case of link or node failures, but it also prevents microloops in the case of metric increases at one or more links in the network, and even the microloops that form in the case of metric decreases, or the insertion of new links or nodes in the network. The tradeoff is the two additional wait times that must be introduced to allow oFIB to operate: The computation of the new best paths must not take place until all the reports of the topology change are received by every node in the network, including the additional time each device must wait before installing new forwarding information.</p>
+        </div>
+        <div class="heading">
+        <h4 class="h4" id="ch14lev8"><strong>Hop by Hop</strong></h4>
+        <p class="noindent">In hop-by-hop distribution, each device computes a local best path and sends just the best path to its neighbors. <a href="ch14.xhtml#ch14fig08">Figure 14-8</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/14fig08.jpg" aria-describedby="Al14fig08" alt="Figure represents hop-by-hop distribution." width="700" height="429"><aside class="hidden" id="Al14fig08">
+        <p>Five routers, A, B, C, D, and E are connected together with a straight line. A box labeled I can reach E lies below D and has a leftward arrow. A box with two sections that read: I can reach E and I can reach D fall below with a leftward arrow. A box with three sections labeled I can reach E, I can reach D, and I can reach C fall below with an arrow pointing to the left. A box with four sections labeled I can reach E, I can reach D, I can reach C, and I can reach B lie below with an arrow pointing to the left.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch14fig08"></a><strong>Figure 14-8</strong> <em>Hop-by-Hop Distribution</em></p>
+        </div>
+        <p class="indent">In <a href="ch14.xhtml#ch14fig08">Figure 14-8</a>, each device advertises information about what it can reach to each of its neighbors. D, for instance, advertises reachability to E, and B advertises reachability to C, D, and E toward A. It is interesting to consider what happens when A advertises its reachability toward E through the link along the top of the network. Once E receives this information, it will have two paths to B, for instance: one through D and one through A. In the same way, A will have two paths to B: one <a id="page_388"></a>directly to B and another through E. Any of the shortest path algorithms discussed in previous chapters can determine which of these paths to use, but is it possible for microloops to form with a flooded distribution mechanism? Consider:</p>
+        <p class="indenthangingN">1. E chooses the path through A to reach B.</p>
+        <p class="indenthangingN">2. The [A,B] link fails.</p>
+        <p class="indenthangingN">3. A detects this failure, and switches to the path through E.</p>
+        <p class="indenthangingN">4. A then advertises this new path to E.</p>
+        <p class="indenthangingN">5. E receives the changed topology information and calculates a new best path through D.</p>
+        <p class="indentt">During the time between steps 3 and 5, A will point to E as its best path to B, while E will point to A as its best path to B—a microloop. Most hop-by-hop distribution systems resolve this through <em>split horizon</em> or <em>poison reverse</em>. Defined, these are as follows:</p>
+        <p class="bullt">• The split horizon rule states: a device should not advertise reachability toward a destination it is using to reach the destination.</p>
+        <p class="bullb">• The poison reverse rule states: a device should advertise destinations toward the adjacent device it is using to reach the destination with an infinite metric.</p>
+        <p class="indent"><a id="page_389"></a>If split horizon is implemented in <a href="ch14.xhtml#ch14fig08">Figure 14-8</a>, E would not advertise reachability to B, as it is using the path through A to reach B. Alternatively, E could poison the route to B through A, which would have the effect of ensuring A has no path through E to B.</p>
+        <div class="heading">
+        <h4 class="h4" id="ch14lev9"><strong>A Centralized Store</strong></h4>
+        <p class="noindent">In a centralized system, each network device reports information about changes to the topology and reachability to a controller, or rather some collection of off box services and devices acting as a controller. While centralization often evokes the idea of a single device (or virtual device) to which all information is reported, and which feeds the correct forwarding information to all the packet processing devices in the network, this is an oversimplification of what a <em>centralized control plane</em> really means. <a href="ch14.xhtml#ch14fig09">Figure 14-9</a> illustrates.</p>
+        </div>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/14fig09.jpg" aria-describedby="Al14fig09" alt="Figure represents topology changes and centralized control planes." width="700" height="558"><aside class="hidden" id="Al14fig09">
+        <p>A router labeled A has two lines leading upward and leftward to routers labeled B and D. A line leads from B to reach a router labeled F. A line leads downward from F to reach a router labeled E. A line leads from E to reach a router labeled B. Two lines lead from routers, D and F that are not connected to each other. A controller labeled X has two dotted lines leading to routers, A and B. A controller labeled Y has three dotted lines leading to routers, D, E, and F.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch14fig09"></a><strong>Figure 14-9</strong> <em>Topology Changes and Centralized Control Planes</em></p>
+        </div>
+        <p class="indentb"><a id="page_390"></a>In <a href="ch14.xhtml#ch14fig09">Figure 14-9</a>, when the link between D and F fails:</p>
+        <p class="indenthangingN">1. D and F both report the topology change to the controller, Y.</p>
+        <p class="indenthangingN">2. Y forwards this information to the other controller, X.</p>
+        <p class="indenthangingN">3. Y computes the best path to each destination without the [D,F] link and sends it to each affected device in the network.</p>
+        <p class="indenthangingN">4. Each device installs this new forwarding information into its local table.</p>
+        <p class="indent1">A specific instance of step 3 is Y computing a next best path to E without the [D,F] link, and sending it to D to install in its local forwarding table. Can microloops form in a centralized control plane?</p>
+        <p class="bullt">• The databases in X and Y need to be synchronized for both controllers to compute the same loop-free paths through the network.</p>
+        <p class="bull">• Synchronizing these databases will involve the same challenges, and (probably) use the same solutions, as the solutions discussed thus far in this chapter.</p>
+        <p class="bull">• There will be some time required for the connected devices to discover the change in topology and report the change to the controller.</p>
+        <p class="bull">• There will be some time required for the controller to compute new loop-free paths.</p>
+        <p class="bullb">• There will be some time required for the controller to notify the affected devices of the new loop-free paths through the network.</p>
+        <p class="indentt">During the timing intervals described here, it is still possible for the network to form microloops. A centralized control plane most often translates to <em>the control plane is not running on the devices forwarding traffic.</em> Although they may seem radically different, centralized control planes actually use many of the same mechanisms to distribute topology and reachability, and the same algorithms to compute loop-free paths through the network, as distributed control planes.</p>
+        <div class="sidebar1">
+        <p class="title1"><strong>Sharding and Control Planes</strong></p>
+        <p class="noindent">One interesting idea to reduce the state carried on any individual device, whether using a distributed or centralized control plane, is to <em>shard</em> the information in the topology table (or database). Sharding is splitting up the information in a single table based on some property of the data itself, and storing each resulting shard, or piece of the database, on a separate device. <a href="ch14.xhtml#ch14fig10">Figure 14-10</a> illustrates.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/14fig10.jpg" aria-describedby="Al14fig10" alt="Figure represents sharding reachability information." width="698" height="360"><aside class="hidden" id="Al14fig10">
+        <p>A router labeled A has three lines labeled 2001:db8:3e8:100::/64, 2001:db8:3e8:101::/64, and 2001:db8:3e8:110::/64. A line leads from A to reach a router labeled B with two lines leading downward. It is labeled 2001:db8:3e8:103::/64 and 2001:db8:3e8:104::/64. A line leads from B to reach a router labeled E that has three lines leading downward labeled 2001:db8:3e8:111::/64, 2001:db8:3e8:104::/64, and 2001:db8:3e8:112::/64. A line leads upward from E to reach a router labeled F. Two lines lead from F labeled 2001:db8:3e8:102::/64 and 2001:db8:3e8:111::/64. A line leads from F to reach a router labeled B. Two controllers labeled X and Y have dotted lines leading to A and B and E and F respectively.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch14fig10"></a><strong>Figure 14-10</strong> <em>Sharding Reachability Information</em></p>
+        </div>
+        <p class="indent"><a id="page_391"></a>In the network in <a href="ch14.xhtml#ch14fig10">Figure 14-10</a>, assume both controllers, X and Y, have topology information for all the nodes (devices) and edges (links) in the network. However, to scale the size of the network, the reachable destinations have been sharded across the two controllers. There are many possible sharding schemes—anything able to divide the database (or table) into somewhat equally sized pieces will work. A hash is often used, as hashes can be quickly modified on every device where a shard is stored to rebalance the shard sizes.</p>
+        <p class="indent">In this case, assume the sharding scheme is something a bit simpler: a range of Internet Protocol (IP) addresses. Specifically, there are two ranges of IP addresses represented in the illustration: 2001:db8:3e8:100::/60, which contains 100::/64 through 10f::/64; and 2001:db8:3e8:110::/60, which contains 110::/64 through 11f::/64. Each of these address ranges is sharded onto a single controller; X will hold information about 2001:db8:3e8:100::/60, and Y will hold information about 2001:db8:3e8:110::/64. It doesn’t matter where these reachable destinations are attached to the network. For instance, the information that 2001:db8:3e8:102::/64 is connected to F will be held at controller X, and the information that 2001:db8:3e8:110::/64 is connected to A will be held at controller Y. To build reachability information about 2001:db8:3e8:102::/64, Y will need to retrieve the information about where this destination is connected from X. This will be less efficient in terms of calculating shortest paths, but it will be more efficient in terms of storing the information needed to calculate the shortest paths. In fact, it is possible, <a id="page_392"></a>if the information is stored correctly (rather than in the trivial way used in this example), for several devices to calculate different parts of the shortest path and then exchange just the resulting tree with one another; this would distribute not only the storage, but also the processing.</p>
+        <p class="indent">There are a number of ways in which control plane information can be split up, stored, and calculations run across it to find a set of loop-free paths through a network. All of these systems face the same challenges discussed in the chapters in this section: discovering the topology, calculating a set of loop-free paths, distributing topology and reachability information, and reacting to changes in the topology.</p>
+        </div>
+        <div class="heading">
+        <h3 class="h3" id="ch14lev10">Consistency, Accessibility, and Partitionability</h3>
+        <p class="noindent">In all three distribution systems discussed in this chapter—flooding, hop by hop, and centralized stores—the problem of microloops arises. Protocols implementing these techniques have various systems, such as split horizon and Loop-Free Alternates, to work around these microloops, or they allow the microloop to occur, assuming the results will not be too great on the network. Is there a unifying theory or model that will allow engineers to understand the problems inherent in the distribution of data through a network and the various tradeoffs involved?</p>
+        </div>
+        <p class="indent">There is: the <em>CAP theorem</em>.</p>
+        <p class="indentb">In 2000, Eric Brewer, working on both theoretical and practical pursuits, postulated there are three qualities to a distributed database: Consistency, Accessibility, and Partition tolerance (CAP). Between these three, there is always a tradeoff such that you can choose two of the three in any system design. This conjecture, later proved true mathematically, is now known as the CAP theorem. The three terms are defined as</p>
+        <p class="bullt">• <strong>Consistency:</strong> Every reader sees a consistent view of the contents of the database. If some device C writes to the database moments before two other devices, A and B, read from the database, the two readers will receive the same information. In other words, there is no lag between the writing of the database and both of the readers, A and B, being able to read the information that was just written.</p>
+        <p class="bull"><a id="page_393"></a>• <strong>Accessibility:</strong> Every reader has access to the database when required (in near real time). The response to a read may be delayed, but every read will receive a response. Another way to put this is every reader has access to the database all the time; there is no time during which a reader would receive the answer “you cannot query this database right now.”</p>
+        <p class="bullb">• <strong>Partition tolerance:</strong> The ability of the database to be copied, or partitioned onto multiple devices.</p>
+        <p class="indentt">It is simpler to <em>see</em> the CAP theorem in a small network; <a href="ch14.xhtml#ch14fig11">Figure 14-11</a> is used for this.</p>
+        <div class="fig-heading">
+        <div class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780134762814/files/graphics/14fig11.jpg" aria-describedby="Al14fig11" alt="Figure represents the CAP theorem." width="529" height="452"><aside class="hidden" id="Al14fig11">
+        <p>A server labeled A has a line leading downward to a router labeled B. Two lines lead downward to reach computers C and D. To the right, two servers labeled E and F have two lines leading downward to a router labeled G. Two lines lead from G to reach computers, K and L.</p>
+        </aside>
+        </div>
+        <p class="fig-caption"><a id="ch14fig11"></a><strong>Figure 14-11</strong> <em>The CAP Theorem Illustrated</em></p>
+        </div>
+        <p class="indent">Assume A contains a single copy of a database that both C and D must access. Assume C writes some information to the database and then immediately after C and D both read the same information. The only processing that must take place to make certain C and D receive the same information is on A itself. Now, replicate the database, so there is a copy on E and another copy on F. Now assume K writes to the replica on E, and L reads from the replica on F. What will happen?</p>
+        <p class="bullt">• F could return the value it currently has, even though it is not the same value K just wrote. This means the database returns an inconsistent reply, so <em>consistency</em> has been sacrificed by <em>partitioning</em> the database.</p>
+        <p class="bull"><a id="page_394"></a>• If the two databases are synchronized, the reply will eventually be the same, of course, but it will take some time to package the change up (marshal the data), transfer it to F, and integrate the change into F’s local copy. F could <em>lock</em> the database, or a specific part of the database, while the synchronization is taking place. In this case, when L reads the data, it may receive a reply that the record is locked. In this case, <em>accessibility</em> is lost, but consistency and the partitioning of the database are preserved.</p>
+        <p class="bullb">• If the two databases are merged, then <em>consistency</em> and <em>accessibility</em> can be preserved, at the cost of <em>partitioning.</em></p>
+        <p class="indent">There is no way to work it out so all three are preserved because of the time required to synchronize the information between the two copies of the database. The same problem holds true for a sharded database.</p>
+        <p class="indent">How does this apply to control planes? In a distributed control plane, the database from which the control plane draws information to calculate loop-free paths is partitioned across the entire network. Further, the database is locally readable at any time in order to calculate loop-free paths. Given the partitioning and accessibility required of the distributed database used in a control plane, you should expect consistency to suffer—and it does, resulting in microloops during convergence. A centralized control plane does not “solve” this problem; rather it just moves the problem around, or allows the designer to make different choices in the tradeoffs. A centralized control plane running on a single device will always be consistent, but it will not always be accessible, and the lack of partitioning will present an issue in the resilience of the network.</p>
+        <p class="indent">The three poles—consistency, accessibility, and partition tolerance—are not as clear-cut as they have been presented here, of course. There are often situations where less partitioning can result in more consistency, or short-term losses in availability will yield large increases in consistency. In other words, the CAP theorem does not really describe a set of three absolute poles, but rather a set of extreme points across a range of possibilities. In this way it is much like the <em>state, optimization, surface</em> triad found in an analysis of network complexity.<sup><a id="ch14fn2"></a><a href="ch14.xhtml#ch14fn-2">2</a></sup></p>
+        <p class="indent">The CAP theorem is a useful way to think about the performance of the database used in control planes.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch14lev11">Final Thoughts</h3>
+        <p class="noindent">The problem of detecting and distributing information about topology changes is second only to the problem of calculating shortest paths over a network in the space <a id="page_395"></a>of network engineering. Breaking the problem down into four steps—detection, reporting, calculation, and installation—provides a framework you can use to assess the various options and think through the way a network really converges. Two broad classes of solutions are available, event driven and polling, each with a different set of tradeoffs; control planes normally use some form of record-level replication to carry topology information through the network in the case of a change.</p>
+        </div>
+        <p class="indent">The problems of loops and microloops have been particularly thorny in link state protocols, mirrored by dropped packets in distance vector protocols. These problems have occasioned years of research on the part of the best minds in protocol design; ultimately, however, all these solutions run up against the three-way tradeoff of the CAP theorem. The CAP theorem will show up again when considering centralized control planes.</p>
+        <p class="indent">The next two chapters will consider the three basic kinds of widely deployed control planes—distance vector, link state, and path vector. The material in this chapter and the two chapters on unicast loop-free paths should enable you to more readily understand the operation of the examples given in the following chapters. Overall, understanding what problems a control plane needs to solve, and the solutions available, will help you ask the right questions of any control plane and quickly understand its operation.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch14lev12">Further Reading</h3>
+        <p class="ref">Bhatia, Manav, Carlos Pignataro, Sam Aldrin, and Trilok Ranganath. <em>OSPF Extensions to Advertise Seamless Bidirectional Forwarding Detection (S-BFD) Target Discriminators</em>. Request for Comments 7884. RFC Editor, 2016. <a href="https://rfc-editor.org/rfc/rfc7884.txt">https://rfc-editor.org/rfc/rfc7884.txt</a>.</p>
+        </div>
+        <p class="ref">Bryant, Stewart, Stefano Previdi, Clarence Filsfils, Pierre Francois, Mike Shand, and Olivier Bonaventure. <em>Framework for Loop-Free Convergence Using the Ordered Forwarding Information Base (oFIB) Approach</em>. Request for Comments 6976. RFC Editor, 2013. <a href="https://rfc-editor.org/rfc/rfc6976.txt">https://rfc-editor.org/rfc/rfc6976.txt</a>.</p>
+        <p class="ref">Gilbert, Seth, and Nancy A. Lynch. “Perspectives on the CAP Theorem.” <em>Computer</em> 45 (2011): 30–36. doi:doi.ieeecomputersociety.org/10.1109/MC.2011.389.</p>
+        <p class="ref">Huang, Peng, Chuanxiong Guo, Lidong Zhou, Jacob R. Lorch, Yingnong Dang, Murali Chintalapati, and Randolph Yao. “Gray Failure: The Achilles’ Heel of Cloud-Scale Systems.” In <em>Proceedings of the 16th Workshop on Hot Topics in Operating Systems</em>, 150–155. HotOS ’17. New York, NY, USA: ACM, 2017. doi:10.1145/3102980.3103005.</p>
+        <p class="ref">Katz, Dave, and David Ward. <em>Bidirectional Forwarding Detection (BFD)</em>. Request for Comments 5880. RFC Editor, 2010. <a href="https://rfc-editor.org/rfc/rfc5880.txt">https://rfc-editor.org/rfc/rfc5880.txt</a>.</p>
+        <p class="ref"><a id="page_396"></a>Pignataro, Carlos, David Ward, Manav Bhatia, Nobo Akiya, and Juniper Networks.</p>
+        <p class="ref"><em>Seamless Bidirectional Forwarding Detection (S-BFD)</em>. Request for Comments 7880. RFC Editor, 2016. <a href="https://rfc-editor.org/rfc/rfc7880.txt">https://rfc-editor.org/rfc/rfc7880.txt</a>.</p>
+        <p class="ref">White, Russ, and Jeff Tantsura. <em>Navigating Network Complexity: Next-Generation Routing with SDN, Service Virtualization, and Service Chaining</em>. Indianapolis, IN: Addison-Wesley Professional, 2015.</p>
+        <div class="heading">
+        <h3 class="h3" id="ch14lev13">Review Questions</h3>
+        <p class="indenthangingN">1. Consider the concept of information overload in reporting topology changes within the context of the State/Optimization/Surface (SOS) model. What are some of the tradeoffs in sending information more quickly versus slow topology change information more slowly, in terms of optimization versus state?</p>
+        </div>
+        <p class="indenthangingN">2. Consider polling and event-driven notification within the context of the state, optimization, surface model. List at least one or two, more if possible, positive and negative aspects of each kind of solution in each of the three realms of the model (SOS).</p>
+        <p class="indenthangingN">3. Read the paper “Gray Failure: The Achilles’ Heel of Cloud-Scale Systems.” Do you think a polling-based or event-driven solution would be best for solving the kinds of problems described in the paper? Why?</p>
+        <p class="indenthangingN">4. Explain why jitter is introduced in BFD sessions.</p>
+        <p class="indenthangingN">5. One alternative to record-level replication is binary-level replication of two files. For instance, rsynch uses binary replication to synchronize two files or databases. Why would network control planes not use binary replication?</p>
+        <p class="indenthangingN">6. What is the relationship between network topology and microloops? Will microloops form in any topology or only rings? Does the size of the ring impact whether or not microloops will form?</p>
+        <p class="footnotet"><a id="ch14fn-1"></a><a href="ch14.xhtml#ch14fn1">1</a>. Bryant et al., Framework for Loop-Free Convergence Using the Ordered Forwarding Information <em>Base (oFIB) Approach</em>.</p>
+        <p class="footnote"><a id="ch14fn-2"></a><a href="ch14.xhtml#ch14fn2">2</a>. For more information on complexity theory and control planes, see White and Tantsura, <em>Navigating Network Complexity</em>.</p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780134762814/files/9780134762852.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

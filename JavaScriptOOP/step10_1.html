@@ -1,0 +1,57 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="chapter" title="Chapter&nbsp;10.&nbsp;Organizing Code"><div class="titlepage"><div><div><h1 class="title"><a id="ch10"></a>Chapter&nbsp;10.&nbsp;Organizing Code</h1></div></div></div><p>We rarely worry about code organization for simple scripts, since a few lines of code may be immediately identified and possibly changed without any issues. But when the codebase of our application grows, the need to organize our code becomes increasingly urgent. In this chapter, we will describe the most common ways to face this problem starting from namespaces through the ECMAScript 6 modules. In the middle, we will explore the different approaches to define organizational units of the code that fit on the server-side and on client-side the JavaScript programming.</p><p>The following topics will be discussed in the chapter:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc">The global scope</li><li class="listitem" style="list-style-type: disc">The namespace pattern</li><li class="listitem" style="list-style-type: disc">The module pattern</li><li class="listitem" style="list-style-type: disc">Approaches to JavaScript modularization (AMD and CommonJS)</li><li class="listitem" style="list-style-type: disc">ES6 modules</li></ul></div><div class="section" title="The global scope"><div class="titlepage"><div><div><h1 class="title"><a id="ch10lvl1sec63"></a>The global scope</h1></div></div></div><p>When JavaScript was born, its role was very limited. It was mainly used for event handling and for some visual effects, acting as the glue between the user and the HTML document. Usually, this purpose did not require too much code and most of its organization relied on functions and files. The global scope was the natural living environment of publicly accessible variables and functions.</p><p>With the growth of JavaScript's capability, the evolution of object models and the spread of the language also in a context different from the browser, the importance of JavaScript's role has grown as well, and so has the code size. What once was a simple set of scripts, now has become an application. The global scope is no longer a suitable environment to put code without criteria.</p><p>The use of global scope has always been an anti-pattern in any programming language for various reasons:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>Understandability issues</strong></span>: When the code size of an application is not trivial, reasoning about a snippet of code that makes reference to a global variable may be difficult, since its value may be changed by any other part of the application and we cannot have control over it.</li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>Implicit coupling</strong></span>: References to global variables, objects, or functions create an implicit coupling making code reuse impossible.</li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>Namespace pollution</strong></span>: The global scope is an open environment—every snippet of code may access it and add new items without control; this may lead to a confused heap of variables, objects, functions difficult to read and with a high risk of naming clash.</li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>Memory allocation issues</strong></span>: Global items are alive throughout the application life, and their memory footprint may be significant even if they are not used.</li></ul></div><p>In a dynamic language such as JavaScript, these issues are even more amplified. Let's see some side effects we can have by relying on the global scope.</p><div class="section" title="Global definitions"><div class="titlepage"><div><div><h2 class="title"><a id="ch10lvl2sec81"></a>Global definitions</h2></div></div></div><p>As we know, JavaScript is very permissive. If we do not declare a variable, it is created on our behalf. Of course, this is a bad practice that always should be avoided by enabling <span class="emphasis"><em>strict mode</em></span> using the <code class="literal">"use strict";</code> clause. In fact, if we rely on this behavior to create global variables, we have no control over their existence nor on their management. We define a global variable in the following example:</p><pre class="programlisting">function myFunction() { 
+  globalVar = "This is a global variable"; 
+ 
+  return globalVar; 
+} 
+</pre><p>The assignment to the <code class="literal">globalVar</code> variable implicitly creates it in the global scope. So, in another part of the application, we have another code snippet that creates another variable with the same name. We are assigning a new value to the existing variable as follows:</p><pre class="programlisting">function anotherFunction() { 
+  globalVar = { name: "John", surname: "Smith"}; 
+ 
+  return globalVar; 
+} 
+</pre><p>Since we have no control over global scope, we cannot avoid naming clashes of variables and consequently undesired assignments. This is particularly true when we want to reuse a piece of code in another application. Moreover, when we read the code, not always it is obvious which value has a global variable in a given file, and this may lead to misunderstandings.</p><p>Of course, the same problem happens with functions defined in the global scope. In fact, if we define a new function with the same name of an existing one, the last definition overrides the previous one. So, when the amount of code of an application grows without any organization, we might risk redefining existing functions with obvious bad effects. Think of the creation of a library; how can we make sure that our functions or our variables do not collide with the functions and variables existing in the application that will use it?</p></div></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

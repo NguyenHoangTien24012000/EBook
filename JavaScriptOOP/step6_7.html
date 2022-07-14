@@ -1,0 +1,92 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="Recycling objects with an object pool"><div class="titlepage"><div><div><h1 class="title"><a id="ch06lvl1sec44"></a>Recycling objects with an object pool</h1></div></div></div><p>Sometimes, the creation of objects may be so complex that it can affect the application performance. Consider, for example, when the creation of an object requires a call across the network to a remote API or when the object's setup need expensive computational resources. Also, the&nbsp;frequent creation and destruction of objects may affect the overall performance, since the garbage collector is frequently involved.</p><p>In these situations, it would be better to extend the object's life as much as possible. In other words, we may maintain an object alive instead of discarding it when a client no longer needs it. Here, we can use the <span class="strong"><strong>object pool pattern</strong></span>.</p><p>The object pool pattern involves the following actors:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>A client</strong></span>: This is the object that needs another object</li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>An object pool</strong></span>: This is the component responsible for managing a set of reusable objects</li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>A reusable object</strong></span>: This is the object required by the client</li></ul></div><p>In simple terms, the object pool pattern allows to retain a set of unused objects of the same type. When a client needs a new object, rather than creating a new one by itself, it instead recycles one of the unused objects from the pool. When the client no longer need the object, rather than releasing it to the main memory, it is returned to the pool. Note that the object will not be garbage collected, since it is never deleted from the code. The following picture shows how the actors of this pattern interact with each other:</p><div class="mediaobject"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781785889103/files/graphics/image_06_004.jpg" alt="Recycling objects with an object pool" width="750" height="424"></div><p>Let's take a look how we can implement an object pool in our software house model. Suppose that objects such as trainers are very expensive to create, it is not convenient to create and destroy this type of objects, however, we can manage their lifecycle inside an object pool.</p><p>The following code shows a simple example of object pool implementation:</p><pre class="programlisting">var ObjectPool = (function(){ 
+  var instance; 
+  var objConstructor; 
+  var objPool = []; 
+ 
+  return class { 
+    constructor(objConstr) { 
+      if (!instance) { 
+        objConstructor = objConstr; 
+        instance = this; 
+      } 
+ 
+      return instance; 
+    } 
+ 
+    get() { 
+      var obj; 
+ 
+      if (objPool.length == 0) { 
+        obj = new objConstructor(); 
+      } else { 
+        obj = objPool.pop(); 
+      } 
+ 
+      return obj; 
+    } 
+ 
+    recycle(obj) { 
+      objPool.push(obj); 
+    } 
+  }; 
+})(); 
+</pre><p>We can see that the object is a singleton. It is necessary since we need a unique entry point to access shared resources.</p><p>In addition to the <code class="literal">instance</code> variable that allows us to manage the singleton, we have two other private variables: the <code class="literal">objConstructor</code> variable, which will store the constructor function of the objects be created; and the <code class="literal">objPool</code>, an array that will actually contain the reusable objects.</p><p>The pool's constructor takes an object constructor as an argument. This is the constructor to be used in order to create new instances of objects when the pool is empty.</p><p>The object pool has two methods: <code class="literal">get()</code>, the method that returns an available object from the pool, and <code class="literal">recycle()</code>, that pushes an unused object in the pool. The <code class="literal">get()</code> method has also the responsibility for creating a new object when the pool is empty. Let's consider the <code class="literal">Trainer</code> class whose objects we want to manage with the Object Pool Pattern:</p><pre class="programlisting">class Trainer { 
+  explain() {...} 
+  show() {...} 
+  exercise() {...} 
+} 
+</pre><p>The class is very simplified since it is not so relevant for our purpose. Now we can create a pool of trainer using the following code:</p><pre class="programlisting">var trainerPool = new ObjectPool(Trainer); 
+</pre><p>The <code class="literal">trainerPool</code> object will be an object pool specializing in managing <code class="literal">Trainer</code> instances. The pool will initially be empty, and the first requests to create new objects will return new <code class="literal">Trainer</code> objects leaving the pool still empty:</p><pre class="programlisting">var trainer1 = trainerPool.get(); 
+var trainer2 = trainerPool.get(); 
+</pre><p>The pool will have some entries when a client releases its <code class="literal">Trainer</code> object using the <code class="literal">recycle()</code> method:</p><pre class="programlisting">trainerPool.recycle(trainer1); 
+</pre><p>Now, when a client requests a new <code class="literal">Trainer</code> object, the pool will not create a new one, but will return the one in the pool:</p><pre class="programlisting">var trainer3 = trainerPool.get(); 
+ 
+console.log(trainer1 == trainer2);  //false 
+console.log(trainer1 == trainer3);  //true 
+</pre><p>This avoids a possible expensive creation cost, a frequent involvement of the garbage collector, and a reduction in memory fragmentation. Of course, the reuse of an object in the pool is possible only if it has no state, that is, its private variables and public properties do not change. If it is not the case, the objects to be stored in the pool require an initialization method that allows to it reset its state to the initial value.</p><p>In our simple example, we have not placed any constraint on the management of the pool. It is implemented as an array that can grow without limits. In real-life situations, the pool is configured so that it cannot grow over a maximum size, avoiding to run out of memory.</p><p>Moreover, in our example we defined an object pool that can contain only one type of objects, <code class="literal">Trainer</code>. Once created, an object pool by passing a specific object constructor or class, we cannot store objects of another type. In practical implementation, we should allow one object pool to manage different type of objects or allow the creation of multiple object pools managing different type of objects.</p><p>During the design of a real-life object pool, we must take into account various policies that allow to manage the memory as best as possible. For instance, we must remember that unused objects remain in memory forever, so we might think of a way to destroy them and to free memory after a certain amount of lifetime.</p></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

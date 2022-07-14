@@ -1,0 +1,257 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div class="section" title="Property descriptors"><div class="titlepage"><div><div><h1 class="title"><a id="ch03lvl1sec23"></a>Property descriptors</h1></div></div></div><p>Once we have found a satisfactory solution to control the visibility of an object's members, we have to face how public members can be accessed and which constraints we can set.</p><div class="section" title="Controlling access to public properties"><div class="titlepage"><div><div><h2 class="title"><a id="ch03lvl2sec21"></a>Controlling access to public properties</h2></div></div></div><p>When we define public properties, we do not put any constraints on their accessibility. Consider the literal person definition:</p><pre class="programlisting">var person = { name: "John", surname: "Smith"}; 
+    </pre><p>Public properties are readable and writable and they can be set to any value. The following assignments are perfectly legal:</p><pre class="programlisting">var personName = person.name; 
+     
+    person.name = "Mario"; 
+    person.surname = [1, 2, 3]; 
+    </pre><p>But for the meaning we want to give to the object, these assignments might not make sense or not be desirable. Assigning an array to a person's surname is definitively bizarre!</p><p>In general, it would be desirable to have more control over the way to access public properties in order to determine as precisely as possible the meaning of an object. For example, consider the following definition of a person:</p><pre class="programlisting">var person = { 
+      name: "John", 
+      surname: "Smith", 
+      fullName: "John Smith", 
+      email: "john.smith@packtpub.com" 
+    }; 
+    </pre><p>We would like that the <code class="literal">fullName</code> property is read-only, and its value was calculated from the combination of the <code class="literal">name</code> and <code class="literal">surname</code> properties. Moreover, we would like to check that the <code class="literal">email</code> property was a syntactically valid e-mail address.</p><p>We can obtain this behavior using methods instead of properties, as shown in the following example:</p><pre class="programlisting">var person = { 
+      name: "John", 
+      surname: "Smith", 
+      getFullName: function() { ... }, 
+      getEmail: function() { ... }, 
+      setEmail: function() { ... } 
+    }; 
+    </pre><p>But it may be less intuitive and elegant and leads to designing all members as actions instead of distinguishing between data and actions, as reality abstraction would require. A better and natural approach should be based on properties, accessing their values using the same syntax.</p></div><div class="section" title="Using getters and setters"><div class="titlepage"><div><div><h2 class="title"><a id="ch03lvl2sec22"></a>Using getters and setters</h2></div></div></div><p>Although often we are used to seeing objects with public properties without any access control, JavaScript allows us to accurately describe properties. In fact, we can use descriptors in order to control how a property can be accessed and which logic we can apply to it. Consider the following example:</p><pre class="programlisting">var person = { 
+      name: "John", 
+      surname: "Smith", 
+    <span class="strong"><strong>  get fullName() { return this.name + " " + this.surname; },</strong></span> 
+      email: "john.smith@packtpub.com" 
+    }; 
+    </pre><p>The <code class="literal">fullName</code> property is defined through a descriptor that allows us to define what is usually called a <span class="strong"><strong>getter</strong></span>, which is a function returning a value for a property. Our getter returns the value of the <code class="literal">fullName</code> property as the concatenation of the <code class="literal">name</code> and <code class="literal">surname</code> properties. Although this definition of a person object seems quite similar to the one that uses a method returning the full name, it allows us to use the standard property syntax:</p><pre class="programlisting">console.log(person.fullName); //John Smith 
+    </pre><p>We can try to assign a value to the <code class="literal">fullName</code> property, but when we read it we will always get the concatenation of <code class="literal">name</code> and <code class="literal">surname</code> as the result:</p><pre class="programlisting">person.fullName = "Mario Rossi"; 
+     
+    console.log(person.fullName); //John Smith 
+    </pre><p>Another type of descriptor is the <span class="strong"><strong>setter</strong></span>, that is a function that sets a value for a property. For example, we could allow to set a value to the <code class="literal">fullName</code> property and split its value so that <code class="literal">name</code> and <code class="literal">surname</code> properties can be updated. We can use a convention to distinguish the name and surname by considering the first white space as a separator. The following is an example of implementation of a setter for the <code class="literal">fullName</code> property:</p><pre class="programlisting">var person = { 
+      name: "John", 
+      surname: "Smith", 
+      get fullName() { return this.name + " " + this.surname; }, 
+    <span class="strong"><strong>  set fullName(value) {</strong></span>
+    <span class="strong"><strong> 
+        var parts = value.toString().split(" ");
+    </strong></span>
+    <span class="strong"><strong>    this.name = parts[0] || "";
+    </strong></span>
+    <span class="strong"><strong>    this.surname = parts[1] || "";</strong></span>
+    <span class="strong"><strong> 
+      },</strong></span> 
+      email: "john.smith@packtpub.com" 
+    }; 
+    </pre><p>Here, we defined a setter for <code class="literal">fullName</code> property by means of a function that takes an argument, <code class="literal">value</code>, splits it in to two parts based on a white space character, and assigns the first part to the <code class="literal">name</code> property and the second part to the <code class="literal">surname</code> property. This allows us to use the <code class="literal">fullName</code> property as in the following example:</p><pre class="programlisting">console.log(person.fullName); //John Smith 
+     
+    person.fullName = "Mario Rossi"; 
+     
+    console.log(person.name);      //Mario 
+    console.log(person.surname);   //Rossi 
+    console.log(person.fullName);  //Mario Rossi 
+    </pre><p>As we can see, getters and setters allow us to create properties that do not act just as containers of values, but have an active role in the object's life.</p></div><div class="section" title="Describing properties"><div class="titlepage"><div><div><h2 class="title"><a id="ch03lvl2sec23"></a>Describing properties</h2></div></div></div><p>In the preceding example, we declared a getter and a setter for the <code class="literal">fullName</code> property directly in the literal object. This is a quick and convenient way to get control over properties. However, not always, it is the best way to define properties with an advanced behavior.</p><p>Consider, for example, the definition of a constructor. How can we specify a getter or a setter in this case? We can use an alternative approach based on the <code class="literal">Object.defineProperty()</code> method. This method takes three arguments: the first argument is the object to add the property to, the second is the name of the property, and the third is the property's descriptor. For instance, we can define the constructor for our person object as follows:</p><pre class="programlisting">var  Person = (function() { 
+     
+      function PersonConstructor() { 
+        this.name = ""; 
+        this.surname = ""; 
+        this.email = ""; 
+     
+    <span class="strong"><strong>    Object.defineProperty(</strong></span>
+    <span class="strong"><strong> 
+          this,
+    </strong></span>
+    <span class="strong"><strong>      "fullName",</strong></span>
+    <span class="strong"><strong>      
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {
+    </strong></span>
+    <span class="strong"><strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; get: function() { return this.name + " " +
+            this.surname;},
+    </strong></span>
+    <span class="strong"><strong>        set: function(value) {
+    </strong></span>
+    <span class="strong"><strong>          var parts = value.toString().split(" ");
+    </strong></span>
+    <span class="strong"><strong>          this.name = parts[0] || "";
+    </strong></span>
+    <span class="strong"><strong>          this.surname = parts[1] || "";
+    </strong></span>
+    <span class="strong"><strong>      }</strong></span>
+    <span class="strong"><strong>     
+       });</strong></span> 
+      } 
+     
+      return  PersonConstructor; 
+     
+    }()); 
+    </pre><p>As we can see, the <code class="literal">fullName</code> property is defined through the <code class="literal">Object.defineProperty()</code> method. The third parameter is the property descriptor that allows us to attach a getter and a setter to the property in a similar way as in the literal case. While in the previous case, the <code class="literal">get</code> and <code class="literal">set</code> keywords were sort of decorators of the methods, here they represents properties of the descriptor object.</p><p>At first glance, the definition of getters and setters inside a constructor does not add anything more to the <code class="literal">fullName</code> property than its definition inside a literal. We can use the property as in the previous examples. However, using <code class="literal">Object.defineProperty()</code> gives more control over our property definition. For example, we can specify if the property we are describing can be dynamically deleted or redefined, if its value can be changed, and so on. We can such constraints by setting the following properties of the descriptor object:</p><div class="itemizedlist"><ul class="itemizedlist"><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>writable:</strong></span> This is a Boolean that says whether the value of the property can be changed; its default value is <span class="emphasis"><em>false</em></span></li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>configurable: </strong></span>This is a Boolean that says whether the property's descriptor can be changed or the property itself can be deleted; its default value is <span class="emphasis"><em>false</em></span></li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>enumerable: </strong></span>This is a Boolean indicating whether the property can be accessed in a loop over the object's properties; its default value is <span class="emphasis"><em>false</em></span></li><li class="listitem" style="list-style-type: disc"><span class="strong"><strong>value: </strong></span>This represents the value associated to the property; its default value is <span class="emphasis"><em>undefined</em></span></li></ul></div><p>As we can see, the default values of these constraints are very restrictive. For example, the following description of the <code class="literal">age</code> property does not explicitly define getters and setters:</p><pre class="programlisting">Object.defineProperty(person, "age", { value: 28 }) 
+    </pre><p>We can access its value, but we cannot change it, since the default value of the <code class="literal">writable</code> constraint is <span class="emphasis"><em>false</em></span>:</p><pre class="programlisting">console.log(person.age);    //28 
+    person.age = 22; 
+    console.log(person.age);    //28 
+    </pre><p>We have to pay attention when combining constraints in a property descriptor, since some combinations are not allowed. For example, if we define a <code class="literal">value</code> for a property, we cannot add a getter or a setter.</p><p>Moreover, it is very important to understand the difference between defining a property by assigning it a value and defining a property using <code class="literal">Object.defineProperty()</code>. The default constraints are very different. If we define a property by assigning a value, we will be able to change its value, to enumerate the property, and to redefine or delete it. In other words, suppose we create a property using the following code:</p><pre class="programlisting">var person = {}; 
+     
+    person.name = "John"; 
+    </pre><p>It corresponds to create the property as follows:</p><pre class="programlisting">var person = {}; 
+     
+    Object.defineProperty( 
+      person, 
+      "name", 
+      { 
+        value: "John", 
+        writable: true, 
+        configurable: true, 
+        enumerable: true 
+      }); 
+    </pre><p>On the other hand, if we create a property using the <code class="literal">Object.defineProperty()</code> method, we put more restrictive constraints on its usage. This means that the following code:</p><pre class="programlisting">var person = {}; 
+     
+    Object.defineProperty(person, "name", { value: "John" }); 
+    </pre><p>Corresponds to the following explicit settings:</p><pre class="programlisting">var person = {}; 
+     
+    Object.defineProperty( 
+      person, 
+      "name", 
+      { 
+        value: "John", 
+        writable: false, 
+        configurable: false, 
+        enumerable: false 
+      }); 
+    </pre></div><div class="section" title="Properties with internal state"><div class="titlepage"><div><div><h2 class="title"><a id="ch03lvl2sec24"></a>Properties with internal state</h2></div></div></div><p>In previous examples, we defined a <code class="literal">fullName</code> property whose value was based on existing public properties <code class="literal">name</code> and <code class="literal">surname</code>. Sometimes, we need to define a property whose value is not directly exposed, maybe because we need to make some processing on it before storing or returning it. In this case, we need a private variable where the actual value of the property is stored. Consider the example of an e-mail address of a person. We want that only a syntactically valid address can be assigned to an <code class="literal">email</code> property of our person object. In this case, we can add the property as in the following example:</p><pre class="programlisting">var Person = (function() { 
+     
+      function PersonConstructor() { 
+    <span class="strong"><strong>    var _email = "";</strong></span> 
+     
+        this.name = ""; 
+        this.surname = ""; 
+     
+        Object.defineProperty( 
+          this, 
+          "fullName", 
+          { 
+            get: function() { return this.name + " " + this.surname;}, 
+            set: function(value) { 
+              var parts = value.toString().split(" "); 
+     
+              this.name = parts[0] || ""; 
+              this.surname = parts[1] || ""; 
+            } 
+          }); 
+     
+    <span class="strong"><strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Object.defineProperty(
+    </strong></span>
+    <span class="strong"><strong>        this,
+    </strong></span>
+    <span class="strong"><strong>        "email",
+    </strong></span>
+    <span class="strong"><strong>        {</strong></span>
+    <span class="strong"><strong> 
+               get: function() { return _email; },
+    </strong></span>
+    <span class="strong"><strong>           set: function(value) {
+    </strong></span>
+    <span class="strong"><strong>             var emailRegExp = /\w+@\w+\.\w{2,4}/i;
+    </strong></span>
+    <span class="strong"><strong>             if (emailRegExp.test(value)) {
+    </strong></span>
+    <span class="strong"><strong>               _email = value;</strong></span>
+    <span class="strong"><strong> 
+                 } else {</strong></span>
+    <span class="strong"><strong> 
+                   throw new Error("Invalid email address!");</strong></span>
+    <span class="strong"><strong>            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;}</strong></span>
+    <span class="strong"><strong>          
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }
+    </strong></span>
+    <span class="strong"><strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; });</strong></span> 
+       &nbsp;&nbsp;&nbsp;} 
+     
+      return  PersonConstructor; 
+     
+    }()); 
+    </pre><p>In this example, we highlighted the code we added to support the new <code class="literal">email</code> property. As we can see, a private variable named <code class="literal">_email</code> has been declared inside the constructor, in order to store the internal state of the property. The <code class="literal">Object.defineProperty()</code> method is used to define a getter and a setter for the <code class="literal">email</code> property. In particular, the setter checks the validity of the passed value using a regular expression. If the value is not valid, an exception is thrown. We can verify this by executing the following code:</p><pre class="programlisting">var p = new Person(); 
+     
+    p.email = "john.smith";    //throws exception 
+    </pre><p>The attempt to set a string that is not a syntactically valid e-mail address throws an exception as expected.</p><p>Since getters and setters are basically methods that control the access to properties and the internal state of a property is nothing but a private member, we have again to face the same problem seen while trying to hide private data. If we define a property inside the body of the constructor, we will replicate that code for each object instance. The best option should be to define getters and setters of our properties following the guidelines seen for information hiding.</p><p>Following these guidelines, we can redefine our <code class="literal">Person()</code> constructor as follows:</p><pre class="programlisting">var Person = (function() { 
+      var priv = new WeakMap(); 
+      var _= function(instance) {return priv.get(instance);}; 
+     
+      function PersonConstructor() { 
+        var privateMembers = { email: "" }; 
+     
+        priv.set(this, privateMembers); 
+     
+        this.name = ""; 
+        this.surname = ""; 
+      } 
+     
+      Object.defineProperty( 
+        PersonConstructor.prototype, 
+        "fullName", 
+        { 
+          get: function() { return this.name + " " + this.surname;} 
+        }); 
+     
+        Object.defineProperty( 
+          PersonConstructor.prototype, 
+          "email", 
+          { 
+            get: function() { return _(this).email; }, 
+            set: function(value) { 
+              var emailRegExp = /\w+@\w+\.\w{2,4}/i; 
+     
+              if (emailRegExp.test(value)) { 
+                _(this).email = value; 
+              } else { 
+                throw new Error("Invalid email address!"); 
+              } 
+            } 
+          }); 
+     
+      return  PersonConstructor; 
+     
+    }()); 
+    </pre><p>We defined the internal state of the&nbsp;<code class="literal">email</code> property using the WeakMap approach and created the properties outside the <code class="literal">PersonConstructor()</code> function. Note that in this case, we attached the properties to the <code class="literal">PersonConstructor</code> function's prototype.</p></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781785889103/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com
