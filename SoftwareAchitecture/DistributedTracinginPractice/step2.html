@@ -1,0 +1,585 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 2. An Ontology of Instrumentation"><div class="chapter" id="Chapter3">
+        <h1><span class="label">Chapter 2. </span>An Ontology of Instrumentation</h1>
+        
+        
+        <p><a data-type="indexterm" data-primary="black box instrumentation" id="idm45357010174536"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="black box versus white box" id="idm45357010173816"></a>When you sketch a system diagram, what do you start with? We often start with a simple box representing a single service, as in <a data-type="xref" href="#figure3-1">Figure&nbsp;2-1</a>.</p>
+        
+        <figure><div id="figure3-1" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0201.png" alt="An image of a single box, with an arrow leading in and out of it." width="810" height="419">
+        <h6><span class="label">Figure 2-1. </span>A visual representation of a service, component, function, or what have you.</h6>
+        </div></figure>
+        
+        <p>This box is extended, added to, and connected to a variety of other boxes through dashed and solid lines, arrows, and other logically connected fabric. At the end of the day, we can’t really escape the idea of our software being this series of connected boxes on some sort of plane. Often, we aren’t able to conceptualize of our boxes as much other than a simple function that accepts inputs, does something to them, and sends the output to another box off in the distance (see <a data-type="xref" href="#figure3-2">Figure&nbsp;2-2</a>).</p>
+        
+        <p>We already instrument our boxes in various ways during development to understand what’s happening inside each one—after all, practically no software is bug-free, and any system accepting input from users is likely to receive something the developer did not expect. You can think of <a data-type="indexterm" data-primary="instrumentation" data-secondary="definition" id="idm45357010167304"></a><em>instrumentation</em> as anything that assists you in monitoring or measuring the performance and state of an application—so you’ll write some logs that indicate when a user inputs invalid parameters to your function, or perhaps when an operation is disallowed.</p>
+        
+        <figure><div id="figure3-2" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0202.png" alt="An image of several boxes, connected through arrows." width="857" height="534">
+        <h6><span class="label">Figure 2-2. </span>Multiple services, components, functions, etc. linked together <span class="keep-together">visually</span>.</h6>
+        </div></figure>
+        
+        <p>Now, if you’re reading this, we’ll assume you’re interested in instrumenting your code for <em>tracing</em>, which has its own set of concerns and edge cases that you’ll need to address. In this chapter, we’ll cover the two critical things you need to understand in order to begin instrumenting an application and talk about the trade-offs between them. Finally, we’ll demonstrate how to apply the instrumentation techniques we present in order to trace a simple service that communicates over HTTP.</p>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p>As mentioned in <a href="preface01.html#chapter_1">the Introduction</a>, a span is a unit of work performed by a service. We’ll discuss more concrete representations of them in <a data-type="xref" href="ch03.html#chapter_4">Chapter&nbsp;3</a>, but in the upcoming sections we represent them as JSON blobs.</p>
+        </div>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="White Box Versus Black Box"><div class="sect1" id="idm45357010158584">
+        <h1>White Box Versus Black Box</h1>
+        
+        <p>The first major topic we’ll cover is the distinction between <em>white box</em> and <em>black box</em> instrumentation. Remember the little square from <a data-type="xref" href="#figure3-1">Figure&nbsp;2-1</a> that contained the service we were interested in monitoring? Turn it on its side and imagine that it’s a box—like in <a data-type="xref" href="#figure3-3">Figure&nbsp;2-3</a>.</p>
+        
+        <figure><div id="figure3-3" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0203.png" alt="A 3-D image of the box from Figure 3-1." width="810" height="407">
+        <h6><span class="label">Figure 2-3. </span>A visual representation of a service from <a data-type="xref" href="#figure3-1">Figure&nbsp;2-1</a>, but in three dimensions.</h6>
+        </div></figure>
+        
+        <p>To an outside observer, such as a user or consumer of our service, this box is completely opaque. You may have some guarantees, such as, “If I put something in this box, I’ll get something else out of it,” but the actual mechanism of this operation is unknown and unknowable to you, the user. Consider a scenario where, as an external end user, you wanted to know the performance of the mechanism inside the box—all you’re able to do is measure the length of time it takes from when you put something into when you’re given your result. You don’t have any real ability to model what’s happening inside the box—other than pure conjecture, which isn’t really useful in this circumstance—and thus the amount of data you can reasonably make inferences about is fairly small. We consider this sort of instrumentation to be operating against a <em>black box</em>.</p>
+        
+        <p>Let’s apply this metaphor to a daemon process running on a system and the various dimensions we can measure it in. As an operator of this process, I can view interesting and potentially valuable data about the process by inspecting <code>/proc/&lt;pid&gt;/status</code>]—for example, the amount of memory mapped to the process (as <code>VmSize</code>).<sup><a data-type="noteref" id="idm45357010147736-marker" href="ch02.html#idm45357010147736">1</a></sup> I can view open file handles, calculate the percentage of CPU utilization by the process over a fixed time range with some fancy math, and do all sorts of things. <a data-type="indexterm" data-primary="traces" data-secondary="observable inputs for" id="idm45357010146328"></a>However, little of this helps me trace the application. For that, I’ll need to observe the set of
+        <em>observable inputs</em> to my process:</p>
+        
+        <ul>
+        <li>
+        <p>I/O devices</p>
+        </li>
+        <li>
+        <p>System calls</p>
+        </li>
+        <li>
+        <p>Network activity</p>
+        </li>
+        <li>
+        <p>External libraries</p>
+        </li>
+        <li>
+        <p>Process operations</p>
+        </li>
+        </ul>
+        
+        <p><a data-type="indexterm" data-primary="distributed applications" data-secondary="inputs defined by RPCs" id="idm45357010139544"></a><a data-type="indexterm" data-primary="RPCs (remote procedure calls)" data-secondary="distributed software inputs as" id="idm45357010138504"></a>We can discard several of these in the context of distributed systems; as a matter of fact, we can generally focus on just one—network activity. By and large, distributed applications running across multiple physical or virtual servers will have the majority of their inputs defined by an RPC (remote procedure call) that is delivered across a LAN or WAN link. This does not diminish the utility or importance of these other forms of input (they can be critical for debugging or deep, kernel-level tracing), but it does help to focus our discussion.</p>
+        
+        <p>Thus, one example of a black box trace would be to observe, through some sort of proxy, the incoming and outgoing network traffic of a process. If we know that our black box accepts requests in the format <code>/api/:operation/:resourceId</code>, and responds with some message, we could use the proxy to create a span that looks something like <a data-type="xref" href="#EX3-1">Example&nbsp;2-1</a>.</p>
+        <div id="EX3-1" data-type="example">
+        <h5><span class="label">Example 2-1. </span>Black box trace</h5>
+        
+        <pre data-type="programlisting">{
+            'operationName': '/api/&lt;operation&gt;',
+            'duration': &lt;endTime—startTime&gt;
+            'tags': [
+                {'resource': '&lt;id&gt;'},
+                {'service': '&lt;processName&gt;'},
+                {'wasSuccess': true}
+                // And so forth—pid, other metrics
+            ]
+        }</pre></div>
+        
+        <p>By analyzing the traffic as it enters and exits the process, we can collect the data required to build a useful span.</p>
+        
+        <p><a data-type="indexterm" data-primary="white box instrumentation" id="idm45357015110072"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="white box versus black box" id="idm45357015109352"></a>Up to this point, we’ve been talking about <em>black box</em> instrumentation, presupposing that we don’t know what’s going on inside the box. What if we opened it up to look inside, as in <a data-type="xref" href="#figure3-4">Figure&nbsp;2-4</a>? We can easily create and validate a hypothesis due to our knowledge of the inner workings of a service we write—after all, we wrote it! It is this knowledge of the service and the ability to modify it that comprises white box <span class="keep-together">instrumentation</span>.</p>
+        
+        <figure><div id="figure3-4" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0204.png" alt="The same box from Figure 3-3, but open rather than closed." width="806" height="407">
+        <h6><span class="label">Figure 2-4. </span>When you open the box, you can view all of the inputs, outputs, and how they’re transformed.</h6>
+        </div></figure>
+        
+        <p>With the ability to look inside the service and modify its code, we can instrument our software in much more powerful ways. The ability to fully comprehend the internal workings of the service, the data model that it operates on, and the exact call graph that comprises its execution flow allows for writing trace instrumentation that is more comprehensive and more useful than we might otherwise. Recall our earlier example—when limited to merely observing the inputs and outputs, we could lack critical pieces of information for our span, such as the relationships between external RPC calls created by our service or requests to other components of our distributed application, such as a database. With white box instrumentation, we do not have to think of the entire internal transaction as a single logical whole, but can consider it as almost a subtrace of our greater transaction.</p>
+        
+        <p>Given this, you might be wondering, “Why wouldn’t I always use white box instrumentation?” Quite simply: sometimes, you cannot. This is common in larger engineering teams with more legacy software to maintain—consider a modern API frontend that is backed by a legacy mainframe application. Even if you could modify the source code to your legacy services (which is not always possible), would you <em>want</em> to? In these circumstances, you might be able to represent only the work performed in your legacy component via black box instrumentation. Keep in mind, you do not necessarily need to create your black box spans from the system that operates a service; a typical pattern is to use the calling service with its white box instrumentation to create a separate span for the black box process.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Application Versus System"><div class="sect1" id="idm45357010157912">
+        <h1>Application Versus System</h1>
+        
+        <p><a data-type="indexterm" data-primary="instrumentation" data-secondary="application versus system" id="idm45357015099272"></a><a data-type="indexterm" data-primary="monitoring" data-secondary="application versus system" id="idm45357015098280"></a><a data-type="indexterm" data-primary="metrics" data-secondary="application versus system" id="idm45357015097320"></a><a data-type="indexterm" data-primary="application versus system instrumentation" id="idm45357015096360"></a><a data-type="indexterm" data-primary="system versus application instrumentation" id="idm45357015095656"></a>Our second topic is the distinction between application and system instrumentation. Much has been written about the difference between application and system <em>monitoring</em>, and instrumentation for distributed tracing follows similar lines. We’ll briefly review the distinction and discuss how it applies to instrumentation for distributed tracing.</p>
+        
+        <p>Traditionally, the people who operated applications and the people who operated the servers that ran those applications had different concerns. A system operator might be concerned with the health of disk drives, the amount of memory available on a server, or other <em>system</em> metrics. Meanwhile, an application operator would have more prosaic questions—is the application responding to requests, and is it performing acceptably? The application operator, thus, might monitor their application by using a script to access the application over the network every few seconds and report any failures. The system operator, however, would use similar scripts to query the server’s operating system to understand when a disk was running out of space.</p>
+        
+        <p>In the context of distributed tracing, we’re usually less concerned with these sort of metrics (or, to be more accurate, we gather them through other sources), but they shouldn’t be ignored. Indeed, we can think of this as more of a question about what component <em>generates</em> our traces. In short, do we generate spans in our application code, or does some service or subsystem that is running our application code do it for us?</p>
+        
+        <p>Consider our simple service from the last section—we know it has some inputs and produces some outputs. Let’s add some more boxes to our service diagram in <a data-type="xref" href="#figure3-5">Figure&nbsp;2-5</a>.</p>
+        
+        <figure><div id="figure3-5" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0205.png" alt="A simple system diagram." width="1196" height="266">
+        <h6><span class="label">Figure 2-5. </span>A simple system diagram of an API server, service proxy, and worker process.</h6>
+        </div></figure>
+        
+        <p><a data-type="indexterm" data-primary="trace context" data-secondary="application versus system level" id="idm45357015087464"></a>All of these services could be independently instrumented for traces, emitting spans as a single request passes through them—in fact, this is a very common pattern and the easiest way to get started with tracing distributed systems. However, applications are often ignorant of what’s going on outside of their immediate context—indeed, a stateless service would be ignorant of anything happening outside of the context of a specific request! In this case, we need to pull back a bit, looking not only at the services that are running, but the substrate they exist in. This is where system instrumentation comes into play.</p>
+        
+        <p>Systems can be many exciting things—consider container orchestration systems such as Kubernetes or managed platforms such as DC/OS. We can use these systems to generate trace data in the form of spans or context baggage that provides turn-key instrumentation to applications or to enhance the quality of spans emitted by application code. Since these orchestrators and platforms act, practically, as the operating system for services running on them (see <a data-type="xref" href="#figure3-6">Figure&nbsp;2-6</a>), you’re able to extract useful <em>system</em> data such as memory usage, CPU share utilization, and other data external to the process or its container and share that with the application or emit it as a separate span for analysis.</p>
+        
+        <figure><div id="figure3-6" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0206.png" alt="The same system diagram as figure 3-5, but running in a service mesh that exposes metric and telemetry data." width="792" height="570">
+        <h6><span class="label">Figure 2-6. </span>The services from <a data-type="xref" href="#figure3-5">Figure&nbsp;2-5</a>, but running inside a platform that exposes system data.</h6>
+        </div></figure>
+        
+        <p>So, when should you use application instrumentation and when should you use system instrumentation? Ideally, you’d use both. At the time of this writing, it’s generally easier to get started with pure application instrumentation, but new technology such as service meshes dramatically reduces the difficulty of implementing system instrumentation. In the future, we expect that managed orchestration platforms such as Google Kubernetes Engine or AWS Fargate will provide seamless span context propagation to services running on them.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Agents Versus Libraries"><div class="sect1" id="idm45357015100216">
+        <h1>Agents Versus Libraries</h1>
+        
+        <p><a data-type="indexterm" data-primary="instrumentation" data-secondary="agents versus libraries" data-seealso="agent-based instrumentation" id="idm45357015078056"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="libraries versus agents" data-seealso="library-based instrumentation" id="idm45357015076792"></a><a data-type="indexterm" data-primary="agent-based instrumentation" data-secondary="library-based versus" id="idm45357015075560"></a><a data-type="indexterm" data-primary="library-based instrumentation" data-secondary="agent-based versus" id="idm45357015074600"></a>The third topic we’ll cover is the distinction between agent-based and library-based instrumentation. What do we mean by <em>agents</em> and <em>libraries</em>? Remember, a white box presupposes that the person writing instrumentation has access to the source code of the application being instrumented and can use that knowledge to generate more logically accurate instrumentation. This closely maps to the concept of instrumenting with a library. Conversely, the black box assumes you don’t have that interior knowledge of the application source—agents are more analogous to this case, since they operate outside of the process itself.</p>
+        
+        <p>The terms <em>agent</em> and <em>library</em> are used quite a bit in the modern tracing space, sometimes interchangeably, with confusing results. There are libraries that brand themselves as agents, agents that call themselves libraries, and a lot of things in between. We suggest that the biggest distinction between the two comes down to intent. The intent of a library is to make it easier to write instrumentation that can be shared across multiple services, easing the pain of adoption for creating distributed traces across a polyglot distributed system. Agents, conversely, intend to make it very easy to trace and observe <em>existing</em> systems without rewriting code.</p>
+        
+        <p><a data-type="indexterm" data-primary="library-based instrumentation" data-secondary="about" id="idm45357015069416"></a>A library-based instrumentation approach can be characterized by its reliance on an application-level dependency on some shared, standardized library that is used throughout its services. These libraries provide a sane and standardized API for handling the key components of creating instrumentation and propagating context. Libraries can support a polyglot heterogeneous application by defining a relatively small API that supports the least-common set of features shared by all of the target languages. Indeed, it’s generally possible with a library-based strategy to write your instrumentation against a thin interface wrapper and only depend on a concrete implementation of your library at runtime via dependency injection. That said, library-based instrumentation generally relies on developers to write instrumentation code.</p>
+        
+        <p><a data-type="indexterm" data-primary="agent-based instrumentation" data-secondary="about" id="idm45357015067144"></a>Agent-based instrumentation relies on some sort of external process or processes to instrument processes at runtime. There are a wide variety of agents and strategies for instrumenting with agents, but there are really two major methods agents use to instrument a service directly. The first is some external process or monitoring service that injects code into your service and uses this to create a trace of the service as various functions are called. The second method is through some sort of in-process agent that is imported to the runtime environment of a process and uses a system of user-defined rules to trace specific actions. Of special note is indirect usage of agents to capture data that can be transformed into trace data—one such interesting application is to extend the black box approach and use some sort of existing data source for service state, like structured or unstructured log files, which the agent then transforms into trace data.</p>
+        
+        <p>Really, as with everything else in this chapter, you’re going to need to blend these approaches. Even with modern code, if you haven’t been considering how to instrument your services from the jump, there’s going to be an implementation cost to add tracing libraries to your existing services and applications. Some of your older services may not be able to have tracing added at all, and will require agents in order to be instrumented. That said, even if you have fairly modern software and services, you can jump-start tracing with agents to more quickly prove value or to prop up overall system visibility for teams that don’t have high-quality library-based instrumentation.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Propagating Context"><div class="sect1" id="idm45357015063832">
+        <h1>Propagating Context</h1>
+        
+        <p><a data-type="indexterm" data-primary="spans" data-secondary="context propagation" id="idm45357015062360"></a><a data-type="indexterm" data-primary="trace context" data-secondary="context propagation" data-seealso="context propagation" id="idm45357015061384"></a><a data-type="indexterm" data-primary="traces" data-secondary="span context propagation" id="idm45357015060168"></a><a data-type="indexterm" data-primary="context propagation" id="idm45357015059256"></a><a data-type="indexterm" data-primary="propagating context" data-see="context propagation" id="idm45357015058584"></a>So far, we’ve discussed various strategies for instrumenting our services to emit spans that describe the work our services are doing. These spans, as standalone pieces of data, aren’t very exciting. In order to create <em>traces</em>, we will need some way to communicate certain details about our spans to other services or other parts of our process. The mechanism by which we communicate these details to other services is generally known as <em>context propagation</em>.</p>
+        
+        <p>Let’s start by talking about what we’re propagating, then we’ll move into how it’s propagated. Let’s assume we have a simple service proxy that provides functions around user management. What would a span look like? (These span representations are covered in more detail in <a data-type="xref" href="ch03.html#chapter_4">Chapter&nbsp;3</a> when we discuss OpenTelemetry.)</p>
+        
+        <p>Our span in <a data-type="xref" href="#EX3-2">Example&nbsp;2-2</a> has some pretty basic information—the operation we’re concerned with, a tag—but there’s something new as well. We’ve added a <code>spanId</code> field that provides an identifier for this particular span. Conceptually, each of our services is going to emit a span for the work that it’s doing, represented in <a data-type="xref" href="#figure3-7">Figure&nbsp;2-7</a>.</p>
+        <div id="EX3-2" data-type="example">
+        <h5><span class="label">Example 2-2. </span>Basic span</h5>
+        
+        <pre data-type="programlisting">{
+            operationName: "api/getUser",
+            spanId: "09f42f7e-e606-4923-831b-7dd612683720",
+            tags: [
+                {
+                    key: "userName",
+                    value: "testUser"
+                },
+            ],
+            // Start time, duration, etc.
+        }</pre></div>
+        
+        <figure><div id="figure3-7" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0207.png" alt="A service diagram showing the relationship between two services." width="1114" height="446">
+        <h6><span class="label">Figure 2-7. </span>Relationship between the API proxy and the datastore services.</h6>
+        </div></figure>
+        
+        <p>What’s going on in our datastore service? Let’s look at <a data-type="xref" href="#EX3-3">Example&nbsp;2-3</a>.</p>
+        <div id="EX3-3" data-type="example">
+        <h5><span class="label">Example 2-3. </span>Datastore service</h5>
+        
+        <pre data-type="programlisting">{
+            operationName: "getUserFromStore",
+            spanId: "dac303fb-6c1c-4816-ac86-ce717cee1714",
+            tags: [
+                {
+                    key: "userId",
+                    value: 105832
+                }
+            ],
+            // Start time, duration, etc.
+        }</pre></div>
+        
+        <p><a data-type="indexterm" data-primary="distributed tracing" data-secondary="benefits of" id="idm45357015043736"></a><a data-type="indexterm" data-primary="spans" data-secondary="independence of" id="idm45357015042600"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="span independence" id="idm45357015041656"></a>One of the benefits of distributed tracing is that your spans exist largely independently of each other. As we’ll talk about in later chapters, you can collect and centralize data from multiple sources, so we want a way for each of these spans to know the relationship between them that doesn’t require us to send too much data around. <a data-type="indexterm" data-primary="spans" data-secondary="parent-child relationship" id="idm45357015040232"></a><a data-type="indexterm" data-primary="trace context" data-secondary="span parent-child relationships" id="idm45357015039272"></a>For distributed RPCs like this, it’s popular to send the <em>trace context</em> between services in an HTTP header, and have the child service create a span with a defined parent-child relationship. Our second span’s data structure would look something like <a data-type="xref" href="#EX3-4">Example&nbsp;2-4</a>, in contrast.</p>
+        <div id="EX3-4" data-type="example">
+        <h5><span class="label">Example 2-4. </span>Span with a defined parent-child relationship</h5>
+        
+        <pre data-type="programlisting">{
+            operationName: "getUserFromStore",
+            spanId: "dac303fb-6c1c-4816-ac86-ce717cee1714",
+            parentSpanId: "09f42f7e-e606-4923-831b-7dd612683720",
+            tags: [
+                {
+                    key: "userId",
+                    value: 105832
+                }
+            ],
+            // Start time, duration, etc.
+        }</pre></div>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p><a data-type="indexterm" data-primary="trace context" data-secondary="about" id="idm45357015033656"></a>The trace context (sometimes simplified to just <em>context</em>) is covered more in <a data-type="xref" href="ch03.html#chapter_4">Chapter&nbsp;3</a> and later in this chapter. For now, think of it as a set of globally unique identifiers for a trace and each of its spans. Typically, these identifiers are a bunch of random bits or a large random number.</p>
+        </div>
+        
+        <p>Those are the basics—let’s dive in for a more detailed look at the two different types of propagation: <em>interprocess</em> and <em>intraprocess</em>.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Interprocess Propagation"><div class="sect2" id="idm45357015029384">
+        <h2>Interprocess Propagation</h2>
+        
+        <p><a data-type="indexterm" data-primary="trace context" data-secondary="interprocess propagation" id="idm45357015027784"></a><a data-type="indexterm" data-primary="interprocess context propagation" id="idm45357015026792"></a><a data-type="indexterm" data-primary="microservices" data-secondary="interprocess context propagation" id="idm45357015026104"></a><a data-type="indexterm" data-primary="microservices" data-secondary="independence of services" id="idm45357015025144"></a>One key notion of microservice architectures is that we can think of each service as fairly independent of its peers. A service should do one logical thing reliably and robustly. This allows our services to scale horizontally in response to demand or other signals. This notion maps very well to span-based distributed tracing—each service, logically, would have a single span that corresponds to the work being performed by that service. It’s often helpful to conceive of this by considering the RPCs that make up your microservices as a sort of call stack. Imagine an application with a few components, building off what we’ve been discussing earlier, as in <a data-type="xref" href="#figure3-8">Figure&nbsp;2-8</a>.</p>
+        
+        <figure><div id="figure3-8" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0208.png" alt="The full request chain in a service diagram." width="891" height="264">
+        <h6><span class="label">Figure 2-8. </span>A service diagram from client to datastore.</h6>
+        </div></figure>
+        
+        <p>Now let’s manually trace a request through the system, starting at the client:</p>
+        
+        <pre data-type="programlisting">client
+        api-proxy
+        auth
+        api-server
+        datastore</pre>
+        
+        <p>Any transaction you make, logically, needs to follow this series of RPC calls: the client talks to the <code>api-proxy</code>, the <code>api-proxy</code> authenticates the request and passes it along to the <code>api-server</code>, which talks to the datastore, which returns the result all the way back to the client. The work each of those services performs would be a single, logical span. We can intuit that we’ll need some mechanism to propagate the <em>trace context</em> through this chain of requests so that each subsequent call can use that information to form a parent-child relationship with its predecessor.</p>
+        
+        <p>For the purposes of this section, let’s presume that our services communicate with each other using HTTP. However, the principles that we’re discussing aren’t limited to interprocess communication over HTTP—they can be performed over a variety of transport methods such as gRPC, Apache Thrift, SOAP, etc.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45357015015832">
+        <h5>Why HTTP?</h5>
+        <p><a data-type="indexterm" data-primary="API services" data-secondary="RESTful API" id="idm45357015014632"></a><a data-type="indexterm" data-primary="API services" data-secondary="HTTP API idioms used in book" id="idm45357015013656"></a><a data-type="indexterm" data-primary="HTTP" data-secondary="book use of" id="idm45357015012696"></a><a data-type="indexterm" data-primary="RESTful API" id="idm45357015011752"></a><a data-type="indexterm" data-primary="RPCs (remote procedure calls)" data-secondary="HTTP use in book" id="idm45357015011080"></a>Here and throughout the book, we tend to use HTTP and RESTful API idioms when discussing RPCs. This is mostly an affordance to the relative simplicity of HTTP, the familiarity that most of our readers have with it, and the fact that conceptually the model of a RESTful API with HTTP as the message-passing system is easily modeled by distributed traces.</p>
+        </div></aside>
+        
+        <p><a data-type="indexterm" data-primary="RPCs (remote procedure calls)" data-secondary="interprocess context propagation" id="idm45357015009240"></a>Ultimately, when you’re making an RPC between any two of these services, you need two things to happen. The caller needs a way to take the current span context and serialize the required information to propagate the trace context to the next hop. The callee needs a way to discover the span context (if it exists) and create a child span using this data. <a data-type="indexterm" data-primary="inject operations" data-secondary="about" id="idm45357015007736"></a><a data-type="indexterm" data-primary="extract operations" data-secondary="about" id="idm45357015006792"></a>The first action, serializing the current span context, is also known as an <em>inject</em> operation, whereas the latter is an <em>extract</em>. We’re “injecting” the span context into the transport, and “extracting” it back out. These inject and extract operations happen at the edge of our service in code—you’d generally want to use some sort of middleware in your HTTP service that would automatically perform these operations when a new request is created or received.</p>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p>The terms <em>trace context</em> and <em>span context</em> are used interchangeably throughout the text. In general, they denote the same context—unique identifiers about a trace and span.</p>
+        </div>
+        
+        <p><a data-type="indexterm" data-primary="spans" data-secondary="span context" id="idm45357015002088"></a><a data-type="indexterm" data-primary="OpenTracing" data-secondary="span context" id="idm45357015001112"></a>Broadly speaking, inject and extract semantics are fairly universal—you either pass in a span context, or get one back as the result. The span context is simple enough—it’s an object that contains the identifier for a span. The exact implementation of a span context varies somewhat across implementations, but open source projects such as OpenTracing have defined a <a data-type="indexterm" data-primary="spans" data-secondary="span ID" id="idm45357014999656"></a><a data-type="indexterm" data-primary="traces" data-secondary="TraceID" id="idm45357014998712"></a><a data-type="indexterm" data-primary="trace context" data-secondary="TraceID" id="idm45357014997768"></a>span context as an object containing a SpanID, a TraceID, and an array of <a data-type="indexterm" data-primary="baggage" data-secondary="OpenTracing span context" id="idm45357014996696"></a>baggage (which contains arbitrary key-value pairs). In general, we want these identifiers to be fairly unique—a span ID should be unique within a TraceID, and a TraceID should be unique within a very large space. How large? That depends entirely on the amount of traces your system is generating, but a random 64-bit value is usually sufficient. The W3C’s forthcoming general specification for trace context is standardizing around 128-bit identifiers, such as UUIDv4, which allows for very low probabilities of collisions (to reach a 50% probability of a single collision with UUIDv4, you’d need to generate 2.71 quintillion identifiers—that’s one billion IDs a second for 85 years!) and should be sufficient for any single system.</p>
+        
+        <p>Aside from IDs, there’s <em>baggage</em>, as mentioned earlier—this is a convenient way to propagate information from earlier services to later ones. Imagine that you would like to propagate some piece of information from the client through every span such as a user ID, a version, etc. You <em>could</em> use baggage to do this, but use it with care! Everything you put into baggage will exist on every hop after you add it, and the overhead of pushing that additional data across the network may incur noticeable performance penalties.</p>
+        
+        <p>How should we use these methods? It’s best that they happen in a fairly touch-free way. A good practice is to include middleware in your HTTP request pipeline that attempts to extract the span context from each incoming request and adds it to the request object. In your route handler, you can then look for the incoming span context and create a new child span. Similarly, wrapping your outgoing HTTP requests with a function that looks for an existing span and injects it into the outgoing request ensures that the next service down the line can pick it up if properly instrumented. A productive way to begin instrumenting an existing application is through this strategy, as a matter of fact—we’ll talk more about that later.</p>
+        
+        <p><a data-type="indexterm" data-primary="header formats" data-secondary="standardization of" id="idm45357014975208"></a><a data-type="indexterm" data-primary="standards" data-secondary="context propagation headers and formats" id="idm45357014974008"></a><a data-type="indexterm" data-primary="trace context" data-secondary="standard headers and formats" id="idm45357014973048"></a><a data-type="indexterm" data-primary="context propagation" data-secondary="standard headers and formats" id="idm45357014972088"></a>It is very important that your team or organization develops standards for the format of propagated contexts. Eventually, the W3C’s standardization efforts will reduce this burden, but as of this writing, you’ll need to ensure that upstream and downstream service owners all agree on the format for your span context. <a data-type="indexterm" data-primary="inject operations" data-secondary="standardizing" id="idm45357014970664"></a><a data-type="indexterm" data-primary="extract operations" data-secondary="standardizing" id="idm45357014969720"></a>Standardizing around some shared code for performing inject/extract works well and is easy to do in more homogenous environments. In a more polyglot world, such as one where you’ve got microservices written and running in a variety of languages, make sure that <a data-type="indexterm" data-primary="documentation" data-secondary="trace context" id="idm45357014968376"></a><a data-type="indexterm" data-primary="trace context" data-secondary="documentation of" id="idm45357014967432"></a>documentation is clear and widely shared about the specific headers that will carry your trace context, and the format of that data. Open source telemetry frameworks also ease the burden of dealing with this problem, which we’ll cover in <a data-type="xref" href="ch03.html#chapter_4">Chapter&nbsp;3</a>.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Intraprocess Propagation"><div class="sect2" id="idm45357015028728">
+        <h2>Intraprocess Propagation</h2>
+        
+        <p><a data-type="indexterm" data-primary="trace context" data-secondary="intraprocess propagation" id="idm45357014963896"></a><a data-type="indexterm" data-primary="microservices" data-secondary="intraprocess context propagation" id="idm45357014962952"></a><a data-type="indexterm" data-primary="intraprocess context propagation" id="idm45357014961992"></a>Where interprocess propagation is concerned with passing a trace context between different services, intraprocess propagation is concerned with passing the trace context around inside a single process. Why would we want to do this? If our microservice applications are being designed like we all hope they are, we would have a single span per service, right?</p>
+        
+        <p>Not all applications are pretty arrangements of microservices. We would hazard a guess that <em>most</em> applications aren’t. We’re seeing a greater and greater number of what we call <a data-type="indexterm" data-primary="gentrified applications" id="idm45357014959896"></a><a data-type="indexterm" data-primary="microservices" data-secondary="gentrified applications" id="idm45357014959192"></a><a data-type="indexterm" data-primary="monolithic applications" data-secondary="gentrified applications" id="idm45357014958248"></a>“gentrified” applications—new, greenfield development tacked on to large brownfield monoliths. These hybrid applications often do involve a great deal of microservices surrounding the core monolith—and wouldn’t you know it, we’d like to trace both those microservices <em>and</em> the calls they make inside the monolith. Even in microservices, it’s extremely likely that we’ll want to trace individual functions, or requests into our database.</p>
+        
+        <p>In addition, not all microservices are equally micro—think about a worker service that parallelizes work across multiple threads or across multiple remote services. In all of these cases, it would be highly beneficial to be able to propagate a trace inside a service in order to create spans that more accurately represent the work being <span class="keep-together">performed</span>.</p>
+        
+        <p>The basic concepts here are very similar to the ones discussed in the section on interprocess propagation, with one critical difference. Since we aren’t making RPCs, we don’t need to concern ourselves with injecting or extracting our span context and serializing or deserializing it across a process boundary. In general, we’re more concerned with the <em>scope</em> of a span. The details of this are fairly language-specific, but we’ll give an overview of the concept. In a multithreaded or asynchronous processing scenario, we can define an <a data-type="indexterm" data-primary="spans" data-secondary="active span" id="idm45357014953320"></a><a data-type="indexterm" data-primary="active span" id="idm45357014952344"></a><em>active</em> span as the span that is in scope of the work that our process is doing at any given point. Consider the pseudocode in <a data-type="xref" href="#EX3-5">Example&nbsp;2-5</a>.</p>
+        <div id="EX3-5" data-type="example">
+        <h5><span class="label">Example 2-5. </span>Active span</h5>
+        
+        <pre data-type="programlisting">async function bigSearch(*context, key, dataset...) {
+            for dataset d {
+                let result = await d.findInSet(*context, key)
+            }
+            return result
+        }
+        
+        async function (dataset) findInSet(*context, key) {
+            while *context.isNotCancelled {
+                let found = d.find(key)
+                if found {
+                    *context = *context.Cancel
+                    return found
+                }
+            }
+        }</pre></div>
+        
+        <p>Our <code>bigSearch</code> function can take some arbitrary amount of datasets, a context, and a key to look up in those sets. For each set, it starts a thread and begins to search for the key. When the key is found, it cancels the context and returns the result, causing all other searches to short-circuit as well. We can visualize this in the timing graph shown in <a data-type="xref" href="#figure3-9">Figure&nbsp;2-9</a>, which would be generated by the pseudocode in <a data-type="xref" href="#EX3-6">Example&nbsp;2-6</a>.</p>
+        
+        <figure><div id="figure3-9" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0209.png" alt="A flame graph showing the relationship between the bigSearch and findInSet functions." width="462" height="358">
+        <h6><span class="label">Figure 2-9. </span>A span timing diagram demonstrating early cancellation of child spans.</h6>
+        </div></figure>
+        
+        <p><a data-type="indexterm" data-primary="spans" data-secondary="parent-child relationship" id="idm45357014942712"></a><a data-type="indexterm" data-primary="trace context" data-secondary="span parent-child relationships" id="idm45357014941720"></a>How do you create these relationships in spans? As mentioned, we can create parent-child relations between spans using a span context, and the same principle applies here. Since we don’t have to cross an RPC boundary, the simplest way is to pass the span context as a parameter to child functions, like in <a data-type="xref" href="#EX3-6">Example&nbsp;2-6</a>.</p>
+        <div id="EX3-6" data-type="example">
+        <h5><span class="label">Example 2-6. </span>Span context as a parameter to child functions</h5>
+        
+        <pre data-type="programlisting">async function bigSearch(*context, key, dataset...) {
+            let span = startSpan("bigSearch")
+            span.setTag("searchKey", key)
+            for dataset d {
+                let result = await d.findInSet(*context, key, span.context)
+            }
+            span.finish()
+            return result
+        }
+        
+        async function (dataset) findInSet(*context, key, spanContext) {
+            let childSpan = startSpanFromContext("findInSet", spanContext)
+            while *context.isNotCancelled {
+                let found = d.find(key)
+                if found {
+                    *context = *context.Cancel
+                    span.log("found span in dataset", d)
+                    span.finish()
+                    return found
+                }
+            }
+            span.setTag("cancelled", true)
+            span.finish()
+        }</pre></div>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p>The preceding pseudocode is written in the style of Go or other languages where a <a data-type="indexterm" data-primary="Go tracing features" data-secondary="user-managed process context object" id="idm45357014935800"></a>user-managed process context object is available. In languages such as <a data-type="indexterm" data-primary="Java" data-secondary="user-managed process context object" id="idm45357014934584"></a><a data-type="indexterm" data-primary="C/C#/C++ tracing features" data-secondary="user-managed process context object" id="idm45357014933544"></a>Java or C#, thread-local storage would offer similar functions. The key thing to note is that you need to pass the <em>span context</em> into child functions that you wish to create spans for and use whatever language facility exists to do so. It can be as simple as passing a single span object around via function parameters.</p>
+        </div>
+        
+        <p>Each of the child spans in this case would have a single parent, but it’s kind of ugly to have to modify our method signatures to accept span contexts everywhere. Worry not, there’s an easier way to do it through a mechanism known as a <a data-type="indexterm" data-primary="spans" data-secondary="scope manager for span contexts" id="idm45357014930824"></a><a data-type="indexterm" data-primary="scope manager for span contexts" id="idm45357014929832"></a><em>scope manager</em>, but that’s dependent on the specific technology and language you’re using. In general, a scope manager removes the manual part of this process by using thread-local storage to automatically preserve a reference to the active span for a function and can use that reference to create new child spans from the active one. We’ll discuss explicit implementations of scope managers in <a data-type="xref" href="ch03.html#chapter_4">Chapter&nbsp;3</a>. For now, just know that you don’t have to limit your traces simply to RPCs!</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="The Shape of Distributed Tracing"><div class="sect1" id="idm45357015063336">
+        <h1>The Shape of Distributed Tracing</h1>
+        
+        <p>Now that we’ve introduced some of the basic concepts around instrumenting services, let’s dive in to make it a bit more real. You might have an understanding of differing forms of instrumentation and how they can interact with each other, but how do we tie these concepts back to the sort of software and services you might be familiar with? In general, there’s a certain pattern—or shape—of how distributed traces act, and interact, with common software architectural styles. Let’s review them and give some pointers on which sort of instrumentation approaches would work best.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Tracing-Friendly Microservices and Serverless"><div class="sect2" id="idm45357014925464">
+        <h2>Tracing-Friendly Microservices and Serverless</h2>
+        
+        <p><a data-type="indexterm" data-primary="distributed applications" data-secondary="tracing-friendly architectures" id="idm45357014924056"></a><a data-type="indexterm" data-primary="microservices" data-secondary="tracing-friendly architectures" id="idm45357014923000"></a><a data-type="indexterm" data-primary="serverless technologies" data-secondary="tracing-friendly architectures" id="idm45357014922040"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="tracing-friendly architectures" id="idm45357014921080"></a>Distributed tracing and microservices/serverless were, quite literally, made for each other. Historically, distributed tracing technology has been built by large engineering organizations with thousands or tens of thousands of microservices that are operated and maintained by hundreds or thousands of people. It may surprise you, then, that not all microservices are created equal when it comes to being traced. As a matter of fact, span-based distributed request tracing has several characteristics that you can hew to in order to create more useful traces from your microservices or serverless architectures. We’ll cover some quick dos and don’ts here.</p>
+        <dl>
+        <dt>Generally with microservices or serverless, consider white box instrumentation first</dt>
+        <dd>
+        <p><a data-type="indexterm" data-primary="library-based instrumentation" data-secondary="tracing-friendly architectures" id="idm45357014917784"></a><a data-type="indexterm" data-primary="white box instrumentation" data-secondary="tracing-friendly architectures" id="idm45357014916680"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="white box as tracing-friendly" id="idm45357014915672"></a>Your microservices should be small enough that you can make the necessary changes to allow for library-based instrumentation practices, where your tracing code is integrated into the service itself. This allows for trace data that’s not only more accurately scoped to the actual function of the service, but also offers you the opportunity to build out tracing over time as services are updated to take advantage of it. Capture semantic information about each service in your trace data. <a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="semantic attributes" id="idm45357014914072"></a><a data-type="indexterm" data-primary="tags" data-secondary="important information in" id="idm45357014913128"></a><a data-type="indexterm" data-primary="spans" data-secondary="tag information" data-seealso="tags" id="idm45357014912168"></a>A well-traced microservice should attach relevant <a data-type="indexterm" data-primary="tags" data-secondary="semantic attributes" id="idm45357014910760"></a>semantic attributes (such as the OpenTelemetry <code>span.kind</code> attribute) to the spans that it generates. This gives you a more complete and accurate view of what your services are doing and is especially beneficial in a microservice architecture as you have fewer guarantees about trace data consumers being aware of what your service <em>does</em>.</p>
+        </dd>
+        <dt>Create attributes for the important things!</dt>
+        <dd>
+        <p>Think about what you’d want to know if you were trying to debug a production fire at 3 a.m., then add that. Some recommended attributes/tags are <code>hostname</code>, <code>region</code> or <code>datacenter</code>, and <code>service.version</code>. One great idea that we’re starting to see more of is a <a data-type="indexterm" data-primary="README attributes" id="idm45357014904984"></a><a data-type="indexterm" data-primary="tags" data-secondary="README attributes" id="idm45357014904280"></a><a data-type="indexterm" data-primary="questions answered, pointer to" id="idm45357014903336"></a><a data-type="indexterm" data-primary="documentation" data-secondary="README attributes" id="idm45357014902696"></a><code>README</code> attribute, or some other pointer to an internal system that indicates where people can ask questions or find out more information about the service. <a data-type="indexterm" data-primary="ingress" data-secondary="tracing importance" id="idm45357014901208"></a><a data-type="indexterm" data-primary="egress" data-secondary="tracing importance" id="idm45357014900232"></a><a data-type="indexterm" data-primary="network boundary tracing" id="idm45357014899288"></a>Ensure that <a data-type="indexterm" data-primary="ingress" data-secondary="definition" id="idm45357014898520"></a>ingress and <a data-type="indexterm" data-primary="egress" data-secondary="definition" id="idm45357014897416"></a>egress are traced.<sup><a data-type="noteref" id="idm45357014896312-marker" href="ch02.html#idm45357014896312">2</a></sup> As we’ve mentioned, it’s best practice <a data-type="indexterm" data-primary="library-based instrumentation" data-secondary="RPC library instrumentation" id="idm45357014895352"></a><a data-type="indexterm" data-primary="RPCs (remote procedure calls)" data-secondary="library instrumentation" id="idm45357014894376"></a>to have the process of creating spans for incoming and outgoing requests to be handled automatically by your RPC library.</p>
+        </dd>
+        <dt>Finally, start with what you know</dt>
+        <dd>
+        <p><a data-type="indexterm" data-primary="instrumentation" data-secondary="trouble spots" id="idm45357014892280"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="deployment" id="idm45357014891304"></a><a data-type="indexterm" data-primary="deployment of distributed tracing" data-secondary="instrumentation" id="idm45357014890360"></a>If you have particular trouble spots, latency-sensitive services, or other areas of interest, then the quickest way to make useful traces is to start building them from there. It can often be easier to add a little bit of instrumentation to understand the problems you’re having <em>now</em> rather than waiting for a large-scale instrumentation plan to be developed and executed, and we’ll go into more detail on this later.</p>
+        </dd>
+        </dl>
+        
+        <p><a data-type="indexterm" data-primary="instrumentation" data-secondary="don’t do these things" id="idm45357014887864"></a>There are also some things to avoid:</p>
+        <dl>
+        <dt>Don’t neglect to set “rules of the road”</dt>
+        <dd>
+        <p><a data-type="indexterm" data-primary="trace context" data-secondary="standard headers and formats" id="idm45357014885160"></a><a data-type="indexterm" data-primary="standards" data-secondary="context propagation headers and formats" id="idm45357014884216"></a><a data-type="indexterm" data-primary="context propagation" data-secondary="standard headers and formats" id="idm45357014883256"></a>The most critical aspect of successful instrumentation is that each service is able to create spans that are part of a larger distributed trace. This means that one of your first steps should be to ensure that standard context propagation headers and formats are being used. <a data-type="xref" href="ch04.html#chapter_5">Chapter&nbsp;4</a> will dive in deeper to a variety of open source frameworks for distributed tracing; we’d suggest using one of those.</p>
+        </dd>
+        <dt>In general, don’t try to trace extremely long operations</dt>
+        <dd>
+        <p>Distributed request tracing works best when the entire traced operation takes place in a fairly short (minutes) time span. There are several reasons for this, such as data retention periods for trace analyzers and sampling considerations (which we’ll get into later), but for now let’s just say that it’s not a great fit. If you are trying to trace operations with an extremely long execution time, don’t fret, there are options to address those use cases.</p>
+        </dd>
+        <dt>If you own a service that isn’t in the critical path, don’t assume you don’t need to do anything</dt>
+        <dd>
+        <p><a data-type="indexterm" data-primary="microservices" data-secondary="spans for all" id="idm45357014877960"></a><a data-type="indexterm" data-primary="spans" data-secondary="all microservices producing" id="idm45357014876984"></a>You might think that your service isn’t important, or that it doesn’t have a role to play in a trace. At the very least, you’ll want to ensure that all of your services pass tracing headers through that may be coming from their callers to their callees. We would suggest, though, that if you’re going to go ahead and do that, it doesn’t take a lot more work to wrap your microservice in a span and send it on its way, giving everyone a more complete view of the work of the application.</p>
+        </dd>
+        <dt>Finally, don’t hold trace data locally for very long</dt>
+        <dd>
+        <p>This is more of a concern with a serverless service, but it’s good advice in general—preferably, you’re regularly exfiltrating your trace data from your service to some external collector. Some of this is to ensure that your analysis system is able to capture and analyze each request in its entirety while that trace is still relevant. More importantly, this practice reduces the potential for lost data if an instance of your service becomes unavailable due to a crash or some other disaster.</p>
+        </dd>
+        </dl>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Tracing in a Monolith"><div class="sect2" id="idm45357014873304">
+        <h2>Tracing in a Monolith</h2>
+        
+        <p><a data-type="indexterm" data-primary="distributed tracing" data-secondary="monolithic server tracing" id="idm45357014871704"></a><a data-type="indexterm" data-primary="monolithic applications" data-secondary="tracing in" id="idm45357014870760"></a>We’ve stated that distributed tracing is primarily the domain of microservices, so some of you might be looking forlornly at your monoliths of yore, silently mouthing “Is tracing not for me, then?” Humble reader, hope is not lost—but you will need different tactics to instrument a monolith.</p>
+        
+        <p>When instrumenting monoliths, you should first take stock of what you already have and consider why you’re adding tracing. We see a few rationales for this. One is that you’re decomposing your monolith and have decided to adopt tracing, but need to extend traces into the monolith from the new microservice components. Another is that you’re adopting tracing at a different layer of the system (for example, at your client/frontend) and would like to capture end-to-end performance data to identify hotspots. Whatever your reasons are, instrumenting a monolith looks both similar and dissimilar to instrumenting a microservice.</p>
+        
+        <p>As mentioned earlier, you should take stock of how you’re observing the monolith already to determine the best path forward. Are your existing metrics and logs valuable? Studying how your on-call teams and engineers are using existing observability data to inform their on-call practice can be useful in understanding where tracing would be beneficial to your monolith. For example, one common pattern we’ve seen with engineers who retrofit tracing into their monolithic applications is to use <a data-type="indexterm" data-primary="logs" data-secondary="monolithic server tracing" id="idm45357014867400"></a>agents or other out-of-process services to capture log data and marshal it into trace data. This is a fairly low-touch method of adding tracing to a monolith, yes, but if the logs you’re using aren’t valuable to begin with, then the trace data you generate is also going to be of limited value.</p>
+        
+        <p><a data-type="indexterm" data-primary="instrumentation" data-secondary="monolithic server tracing" id="idm45357014865752"></a><a data-type="indexterm" data-primary="black box instrumentation" data-secondary="monolithic server tracing" id="idm45357014864760"></a>That said, what distinguishes tracing in a monolith from tracing in a microservice? First, and most critical, is your instrumentation methodology. Attempting to trace a monolith as a black box can be challenging to the point of futility. Many monolithic applications are characterized by a high level of concurrency and parallel processing on different threads or thread-shaped objects, requiring some level of white box introspection of what’s happening inside the process itself. <a data-type="indexterm" data-primary="ingress" data-secondary="monolithic servers" id="idm45357014863160"></a><a data-type="indexterm" data-primary="egress" data-secondary="monolithic servers" id="idm45357014862216"></a>Ingress and egress operations may be extremely difficult to quantify due to the complexity of the monolith, especially if the monolith exposes multiple versions of an API that each support different RPC styles—consider a monolithic service that exposes a <code>v1</code>…<code>vn</code> API where each version adds and/or deprecates a particular RPC transport (SOAP, JSON over HTTP, Apache Thrift, etc.).</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45357014859784">
+        <h5>The Right Abstraction to Instrument</h5>
+        <p><a data-type="indexterm" data-primary="instrumentation" data-secondary="layer of abstraction of" id="idm45357014858616"></a>In general, divorced from whatever framework you’re using, it’s best to instrument at the layer of abstraction <em>below</em> the one you’re trying to understand and inspect. Instrumenting below the layer of inspection gives you more visibility into your system with less effort. In addition, if you’ve instrumented below the layer you’re inspecting, then it is generally easier to pull a context “up” in order to get more details in a particular service or part of your code than it is to push an existing context “down” into the underlying framework.</p>
+        </div></aside>
+        
+        <p><a data-type="indexterm" data-primary="agent-based instrumentation" data-secondary="monolithic server tracing" id="idm45357014856120"></a><a data-type="indexterm" data-primary="framework instrumentation" id="idm45357014855064"></a>One strategy that can serve you well when instrumenting a monolithic service for tracing is to rely on agent-based approaches to inject instrumentation into the service framework layer. Consider the <a data-type="indexterm" data-primary="Java" data-secondary="Spring Framework instrumentation" id="idm45357014854040"></a><a data-type="indexterm" data-primary="Spring Framework instrumentation" id="idm45357014853080"></a>Spring Framework for Java—if your application is built on Spring, you’ll get more bang for the buck by instrumenting the Spring classes themselves as opposed to your own code. Conveniently enough, these <a data-type="indexterm" data-primary="instrumentation" data-secondary="open source for popular frameworks" id="idm45357014852040"></a>popular frameworks often have open source instrumentation available, saving you the trouble of implementing it yourself. Framework instrumentation can get you started, and in some cases might be enough to understand the broad performance shape of requests, but will often need to be paired with some level of manual instrumentation to capture the nuances of your business logic. There aren’t many silver bullets here, to be blunt—you’ll need to carefully consider the structure of your application code, and how calls propagate through your service. <a data-type="indexterm" data-primary="intraprocess context propagation" data-secondary="monolithic contexts" id="idm45357014850376"></a>You need to pay special attention to the intraprocess propagation of spans and traces inside your service, as there aren’t necessarily clean lines of separation like you’d get in a microservice architecture.</p>
+        
+        <p>Along those same lines, spend some time thinking about exactly what functions or intraprocess calls need to be their own spans, and which can be combined with a common parent span. It may not be necessary, or desirable, to add a trace for every single function call in your monolith. It usually isn’t!</p>
+        
+        <p>Finally, it can be helpful to create a model of your monolith’s various internal components and use those to orient your thinking around what “should be traced.” Consider a simple ecommerce monolith that provides some sort of UI, an inventory component, an account management component, and an order management component (see <a data-type="xref" href="#figure3-10">Figure&nbsp;2-10</a>). In a monolith, each of these components may share code with others, and they may have very fuzzy boundaries in some cases, but they’re the logical divisions available to you that can provide context to trace data. For example, it might be that some piece of shared functionality fails more often when called from the account management component versus the order management component—having trace data that corresponds to the component instead of the function will make it easier to identify the reason.</p>
+        
+        <figure><div id="figure3-10" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0210.png" alt="A drawing of a monolithic application." width="869" height="437">
+        <h6><span class="label">Figure 2-10. </span>A shopping cart/ecommerce monolithic application.</h6>
+        </div></figure>
+        
+        <p>There are a lot of things you’ll want to do the same way as you would if you were tracing a microservice, though. You’ll still want to capture <a data-type="indexterm" data-primary="tags" data-secondary="monolithic server traces" id="idm45357014843704"></a>semantic information about your service (or internal component) in each span, and you’ll want to create attributes for hostname, IP address, etc. If you’re using agents or framework-based instrumentation for your monolith, much of this work may be done for you. Ultimately, there’s nothing that stops you from tracing monoliths or having trace data from monoliths be a part of a larger trace. In the worst case, where you don’t have any ability to modify or introspect your existing process, you can always fall back on wrapping the monolith in some sort of request proxy and generating trace data through that—it’s always better to have a span than no span.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Tracing in Web and Mobile Clients"><div class="sect2" id="idm45357014872680">
+        <h2>Tracing in Web and Mobile Clients</h2>
+        
+        <p><a data-type="indexterm" data-primary="distributed tracing" data-secondary="web and mobile clients" id="idm45357014840520"></a><a data-type="indexterm" data-primary="web clients" data-secondary="distributed tracing" id="idm45357014839544"></a><a data-type="indexterm" data-primary="mobile clients" data-secondary="distributed tracing" id="idm45357014838600"></a><a data-type="indexterm" data-primary="frontend services" data-secondary="distributed tracing" id="idm45357014837656"></a>Most of this book has been written from the implied perspective of a backend service, running in your datacenter or on a cloud provider. What about when your code doesn’t run on something you control quite so neatly? As mentioned earlier, one of the benefits of distributed tracing is that it allows for visibility into the complete, end-to-end life cycle of a request—not just a narrow slice of it.</p>
+        
+        <p>So, what does a distributed trace look like when it begins at the beginning? Mobile computing through cell phones, tablets, and other small-scale devices has become the gateway to software for millions of people, and so we’ve seen a rise in client-side single-page applications and native mobile applications. You should consider how you’re tracing these parts of your application, and be aware of some of their special requirements. For the sake of brevity, we’ll refer to these client applications as <span class="keep-together"><em>frontend</em></span> services for the rest of this section.</p>
+        
+        <p><a data-type="indexterm" data-primary="instrumentation" data-secondary="frontend services" id="idm45357014834104"></a>Instrumenting a frontend service looks an awful lot like instrumenting any other service, with the same sort of stipulations and watchwords—be sure to <a data-type="indexterm" data-primary="egress" data-secondary="frontend service tracing" id="idm45357014832664"></a>trace egress (so, any communication between your client and your server), add <a data-type="indexterm" data-primary="tags" data-secondary="frontend tracing" id="idm45357014831576"></a>semantic tags, and so forth. The biggest question is one of verbosity. How much detail in your frontend trace data is too much? There’s a wealth of information available in <a data-type="indexterm" data-primary="API services" data-secondary="Web APIs for frontend tracing" id="idm45357014830312"></a><a data-type="indexterm" data-primary="Web APIs, URL for frontend tracing" id="idm45357014829352"></a><a data-type="indexterm" data-primary="URLs" data-secondary="Web APIs for frontend tracing" id="idm45357014828664"></a>Web APIs through the <a href="https://oreil.ly/Hngwz">Performance interface</a> on the amount of time it takes to load resources (such as HTML, CSS, JavaScript, and image assets), how long redirects and other HTTP methods take to execute, and how long it takes to create the DOM and display it to an end user. This can be extremely valuable information to include in a trace of your frontend service. However, it’s possible that it can be an overwhelming amount of data for consumers of your traces—both humans and machines. We’ll discuss the trade-offs around collecting and storing trace data in later chapters, but suffice to say that there’s some amount of overhead for creating, collecting, and storing trace data.</p>
+        
+        <p><a data-type="indexterm" data-primary="data analysis" data-secondary="frontend traces" id="idm45357014826056"></a>One option is, of course, to collect everything you can and leverage your analysis tools to cut through the chaff. This is becoming more popular as the sophistication of analysis tools increases. Another option is to create two separate traces—a trace that represents the work being done by the frontend client, such as performance and timing information around rendering the DOM or drawing UI elements, and a separate trace that represents the work being done by the frontend communicating with backend components, such as loading data from an API. These traces can be linked by a single, shared attribute. Consider the humans who are consuming your trace data in order to make a decision here—how much data do they need in order to understand the performance profile of a request, and what are they responsible for?</p>
+        
+        <p>Other challenges than verbosity are involved in instrumenting frontend services, of course. Many of them are challenges endemic to the nature of mobile or web services in general—inconsistent network availability, a significantly wider variance in the performance of end-user hardware, etc. Here are some common scenarios to watch out for when instrumenting frontend services:</p>
+        <dl class="pagebreak-before less_space">
+        <dt>Loss of WAN connectivity</dt>
+        <dd>
+        <p><a data-type="indexterm" data-primary="WAN connectivity loss" id="idm45357014821512"></a>Your instrumentation and reporting should check to make sure they can report spans before they start recording, and potentially <a data-type="indexterm" data-primary="NoOp (no operation)" id="idm45357014820536"></a><em>NoOp</em> (short for no operation) to avoid unneeded allocations and work if there’s no chance that the trace data can be sent to your <span class="keep-together">backend</span>.</p>
+        </dd>
+        <dt>Unexpected loss of focus for your service</dt>
+        <dd>
+        <p><a data-type="indexterm" data-primary="focus loss" id="idm45357014817368"></a>In general, background processes on mobile devices are constrained in what they can do or how long they can do it. Make sure that your tracer is listening for events that indicate a loss of focus, and hurry up to flush whatever trace data is available to your trace analyzer.</p>
+        </dd>
+        <dt>Debounce your spans</dt>
+        <dd>
+        <p><a data-type="indexterm" data-primary="spans" data-secondary="debouncing" id="idm45357014815096"></a><a data-type="indexterm" data-primary="debouncing spans" id="idm45357014814120"></a>If your application has a button, someone is probably going to click it in frustration. You should be debouncing any sort of long-running request, so make sure that span creation is <em>also</em> debounced to avoid creating a lot of unnecessary spans (although it might be fun to count how many rage taps you get and monitor that!).</p>
+        </dd>
+        <dt>Be careful with PII</dt>
+        <dd>
+        <p><a data-type="indexterm" data-primary="data collection" data-secondary="privacy" data-see="privacy laws" id="idm45357014811400"></a><a data-type="indexterm" data-primary="logs" data-secondary="privacy laws and regulations" id="idm45357014810152"></a><a data-type="indexterm" data-primary="privacy laws and regulations" data-secondary="logging and" id="idm45357014809144"></a>As privacy laws and regulations continue to develop, you should be extremely careful about what you’re logging or recording from a device. We are not lawyers (and we’re especially not <em>your</em> lawyers), so you should check the specifics with your legal counsel, but the <a data-type="indexterm" data-primary="privacy laws and regulations" data-secondary="EU General Data Protection Regulation" id="idm45357014807464"></a><a data-type="indexterm" data-primary="European Union General Data Protection Regulation (GDPR)" id="idm45357014806456"></a><a data-type="indexterm" data-primary="General Data Protection Regulation (GDPR)" id="idm45357014805816"></a>European Union’s General Data Protection Regulation (GDPR) asserts that users have a right to understand how you’re using their personal data, to request access to that personal data, and to request that their data be deleted. In the interest of not having to delete swaths of telemetry data at the request of your end users, it would behoove you to simply not track personal data to begin with. Again, talk to a lawyer for details.</p>
+        </dd>
+        </dl>
+        
+        <p>If you feel a bit lost, don’t worry—we just dumped a lot on you. It might be useful to keep these pointers in mind and reference them after you’ve finished the book and have a better understanding of not only instrumentation, but also collection and analysis of trace data. In <a data-type="xref" href="ch03.html#chapter_4">Chapter&nbsp;3</a>, we’ll discuss various open source telemetry and tracing frameworks that you can use to address many of the challenges raised when tracing microservices, serverless, monolithic, or frontend services.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        <div data-type="footnotes"><p data-type="footnote" id="idm45357010147736"><sup><a href="ch02.html#idm45357010147736-marker">1</a></sup> Or through <code>Get-Process</code> in PowerShell, for our Windows friends!</p><p data-type="footnote" id="idm45357014896312"><sup><a href="ch02.html#idm45357014896312-marker">2</a></sup> Ingress and egress refer to traffic that enters, or exits, a network boundary, respectively. Broadly, these are used to refer to any or all incoming or outgoing requests from a service.</p></div></div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492056621/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

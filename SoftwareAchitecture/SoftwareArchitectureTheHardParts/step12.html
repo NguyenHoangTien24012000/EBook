@@ -1,0 +1,1432 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 12. Transactional Sagas"><div class="chapter" id="ch12-transactional-sagas">
+        <h1><span class="label">Chapter 12. </span>Transactional Sagas</h1>
+        
+        
+        <p><code>Thursday, March 31, 16:55</code></p>
+        <div class="story">
+        
+        <p>Austen showed up at Logan’s office late on a windy Thursday afternoon. “Addison just sent me over here to ask you about some horror story?”<a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="transactional sagas" id="idm45978842378464"></a><a data-type="indexterm" data-primary="transactional saga patterns" data-secondary="Sysops Squad saga" id="idm45978842377488"></a><a data-type="indexterm" data-primary="sagas" data-secondary="transactional saga patterns" data-tertiary="Sysops Squad saga" id="idm45978842376480"></a></p>
+        
+        <p>Logan stopped and looked up. “Is that a description of whatever crazy extreme sport you’re doing this weekend? What is it this time?”</p>
+        
+        <p>“It’s late spring, so a bunch of us are going ice skating on the thawing lake. We’re wearing body suits, so it’s really a combination of skating and swimming. But that’s not what Addison meant at all. When I showed Addison my design for the Ticketing workflow, I was immediately instructed to come to you and tell you I’ve created a horror story.”</p>
+        
+        <p>Logan laughed. “Oh, I see what’s going on—you stumbled into the Horror Story saga communication pattern. You designed a workflow with asynchronous communication, atomic transactionality, and choreography, right?”</p>
+        
+        <p>“How did you know?”</p>
+        
+        <p>“That’s the Horror Story saga pattern, or really, anti-pattern. There are eight generic saga patterns we start from, so it’s good to know what they are, because each has a different balance of trade-offs.”</p>
+        <hr>
+        </div>
+        
+        <p>The concept of a <em>saga</em> in architecture predates microservices,<a data-type="indexterm" data-primary="sagas" data-secondary="about" id="idm45978842370752"></a><a data-type="indexterm" data-primary="transactional saga patterns" data-secondary="about sagas" id="idm45978842369776"></a><a data-type="indexterm" data-primary="distributed workflows" data-secondary="transactional saga patterns" data-seealso="transactional saga patterns" id="idm45978842368864"></a> originally concerned with limiting the scope of database locks in early distributed architectures—the paper largely assumed to have coined the concept is from the Proceedings of the 1987 ACM conference. <a data-type="indexterm" data-primary="Richardson, Chris" id="idm45978842367264"></a><a data-type="indexterm" data-primary="Microservices Patterns (Richardson)" id="idm45978842366592"></a><a data-type="indexterm" data-primary="microservices" data-secondary="saga pattern" id="idm45978842365904"></a><a data-type="indexterm" data-primary="sagas" data-secondary="microservice saga pattern" id="idm45978842364960"></a><a data-type="indexterm" data-primary="resources online" data-secondary="Saga Pattern (Richardson)" id="idm45978842364000"></a>In his book <em>Microservices Patterns</em> (Manning Publications) and also outlined in the <a href="https://oreil.ly/drXJa">“Saga Pattern”</a> section of his website, Chris Richardson describes the <em>saga pattern</em> for microservices as a sequence of local transactions where each update publishes an event, thus triggering the next update in the sequence. If any of those updates fail, the saga issues a series of compensating updates to undo the prior changes made during the saga.</p>
+        
+        <p>However, recall from <a data-type="xref" href="ch02.html#ch02-discerning">Chapter&nbsp;2</a> that this is only one of eight possible types of sagas. In this section, we dive much deeper and look at the inner workings of transactional sagas and how to manage them, particularly when errors occur. After all, since distributed transactions lack atomicity (see <a data-type="xref" href="ch09.html#sec-acid-vs-base">“Distributed Transactions”</a>), what makes them interesting is when problems occur.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Transactional Saga Patterns"><div class="sect1" id="sec-transactional-sagas">
+        <h1>Transactional Saga Patterns</h1>
+        
+        <p>In <a data-type="xref" href="ch02.html#ch02-discerning">Chapter&nbsp;2</a>, we introduced a matrix that juxtaposed each<a data-type="indexterm" data-primary="sagas" data-secondary="transactional saga patterns" data-tertiary="about" id="idm45978842355200"></a><a data-type="indexterm" data-primary="transactional saga patterns" data-secondary="about" id="idm45978842353984"></a><a data-type="indexterm" data-primary="sagas" data-secondary="dynamic coupling matrix" id="idm45978842353024"></a><a data-type="indexterm" data-primary="transactional saga patterns" data-secondary="about" data-tertiary="pattern matrix" id="idm45978842352080"></a><a data-type="indexterm" data-primary="dynamic coupling" data-secondary="relationships among factors" id="idm45978842350848"></a><a data-type="indexterm" data-primary="distributed architectures" data-secondary="dynamic coupling matrix" id="idm45978842349888"></a><a data-type="indexterm" data-primary="communication" data-secondary="dynamic coupling as" data-tertiary="saga pattern matrix" id="idm45978842348928"></a><a data-type="indexterm" data-primary="consistency" data-secondary="dynamic coupling relationship matrix" id="idm45978842347712"></a><a data-type="indexterm" data-primary="coordination of workflow" data-secondary="dynamic coupling relationship matrix" id="idm45978842346752"></a> of the intersecting dimensions when architects must choose how to implement a transactional saga, reproduced in <a data-type="xref" href="#tbl-sagas-matrix">Table&nbsp;12-1</a>.</p>
+        <table id="tbl-sagas-matrix" style="width: 90%">
+        <caption><span class="label">Table 12-1. </span>The matrix of dimensional intersections for distributed architectures</caption>
+        <thead>
+        <tr>
+        <th>Pattern name</th>
+        <th>Communication</th>
+        <th>Consistency</th>
+        <th>Coordination</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Epic Saga<sup>(sao)</sup></p></td>
+        <td><p>Synchronous</p></td>
+        <td><p>Atomic</p></td>
+        <td><p>Orchestrated</p></td>
+        </tr>
+        <tr>
+        <td><p>Phone Tag Saga<sup>(sac)</sup></p></td>
+        <td><p>Synchronous</p></td>
+        <td><p>Atomic</p></td>
+        <td><p>Choreographed</p></td>
+        </tr>
+        <tr>
+        <td><p>Fairy Tale Saga<sup>(seo)</sup></p></td>
+        <td><p>Synchronous</p></td>
+        <td><p>Eventual</p></td>
+        <td><p>Orchestrated</p></td>
+        </tr>
+        <tr>
+        <td><p>Time Travel Saga<sup>(sec)</sup></p></td>
+        <td><p>Synchronous</p></td>
+        <td><p>Eventual</p></td>
+        <td><p>Choreographed</p></td>
+        </tr>
+        <tr>
+        <td><p>Fantasy Fiction Saga<sup>(aao)</sup></p></td>
+        <td><p>Asynchronous</p></td>
+        <td><p>Atomic</p></td>
+        <td><p>Orchestrated</p></td>
+        </tr>
+        <tr>
+        <td><p>Horror Story<sup>(aac)</sup></p></td>
+        <td><p>Asynchronous</p></td>
+        <td><p>Atomic</p></td>
+        <td><p>Choreographed</p></td>
+        </tr>
+        <tr>
+        <td><p>Parallel Saga<sup>(aeo)</sup></p></td>
+        <td><p>Asynchronous</p></td>
+        <td><p>Eventual</p></td>
+        <td><p>Orchestrated</p></td>
+        </tr>
+        <tr>
+        <td><p>Anthology Saga<sup>(aec)</sup></p></td>
+        <td><p>Asynchronous</p></td>
+        <td><p>Eventual</p></td>
+        <td><p>Choreographed</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>We provide whimsical names for each combination, all derived from types of sagas. However, the pattern names exist to help differentiate the possibilities, and we don’t want to provide a memorization test to associate a pattern name to a set of characteristics, so we have added a superscript to each saga type indicating the values of the three dimensions listed in alphabetical order (as in <a data-type="xref" href="#tbl-sagas-matrix">Table&nbsp;12-1</a>). For example, the <em>Epic Saga<sup>(sao)</sup> pattern</em> indicates the values of <em>synchronous</em>, <em>atomic</em>, and <em>orchestrated</em> for communication, consistency, and coordination. The superscripts help you associate names to character sets more easily.</p>
+        
+        <p>While architects will utilize some of the patterns more than others, they all have legitimate uses and differing sets of trade-offs.</p>
+        
+        <p class="pagebreak-before">We illustrate each possible communication combination with both a<a data-type="indexterm" data-primary="tools" data-secondary="visualization" data-tertiary="isomorphic diagrams" id="idm45978842310480"></a><a data-type="indexterm" data-primary="visualization tools" data-secondary="isomorphic diagrams" id="idm45978842309152"></a><a data-type="indexterm" data-primary="isomorphic diagrams" id="idm45978842308208"></a> three-dimensional representation of the intersection of the three forces in space along with an example workflow using generic distributed services, which we refer to as <em>isomorphic diagrams</em>. These diagrams show interactions between services in the most generic way, toward our goal of showing architect concepts in the simplest form. In each of these diagrams, we use the set of generic symbols shown in <a data-type="xref" href="#fig-iso-legend">Figure 12-1</a>.</p>
+        
+        <figure><div id="fig-iso-legend" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1201.png" alt="Legend for ISO architecture interaction diagrams" width="600" height="212">
+        <h6><span class="label">Figure 12-1. </span>Legend for ISO architecture interaction diagrams</h6>
+        </div></figure>
+        
+        <p>For each of the architecture patterns, we do not show every possible interaction, which would become repetitive. Instead, we identify and illustrate the differentiating features of the pattern—what makes its behavior unique among the patterns.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Epic Saga(sao) Pattern"><div class="sect2" id="sec-epic-saga">
+        <h2>Epic Saga<sup>(sao)</sup> Pattern</h2>
+        
+        <p>This type of communication is the “traditional” saga pattern as many<a data-type="indexterm" data-primary="transactional saga patterns" data-secondary="Epic Saga" id="ch12-epic"></a><a data-type="indexterm" data-primary="Epic Saga pattern" id="ch12-epic2"></a><a data-type="indexterm" data-primary="sagas" data-secondary="transactional saga patterns" data-tertiary="Epic Saga" id="ch12-epic3"></a><a data-type="indexterm" data-primary="Orchestrated Saga pattern" id="ch12-epic4"></a><a data-type="indexterm" data-primary="monolithic architectures" data-secondary="Epic Saga mimicking" id="ch12-epic5"></a> architects understand it, also called an <em>Orchestrated Saga</em> because of its coordination type. Its dimensional relationships appear in <a data-type="xref" href="#fig-discerning-aq-saga-cube">Figure 12-2</a>.</p>
+        
+        <p>This pattern utilizes <em>synchronous</em> communication, <em>atomic</em> consistency, and <em>orchestrated</em> coordination. The architect’s goal when choosing this pattern mimics the behavior of monolithic  systems—in fact, if a monolithic system were added to this diagram in <a data-type="xref" href="#fig-discerning-aq-saga-cube">Figure 12-2</a>, it would be the origin (0, 0, 0), lacking distribution entirely. Thus, this communication style is most familiar with architects and developers of traditional transactional systems.</p>
+        
+        <figure><div id="fig-discerning-aq-saga-cube" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1202.png" alt="saga dynamic architecture quantum coupling" width="600" height="580">
+        <h6><span class="label">Figure 12-2. </span>The Epic Saga<sup>(sao)</sup> pattern’s dynamic coupling (communication, consistency, coordination) relationships</h6>
+        </div></figure>
+        
+        <p>The isomorphic representation of the Epic Saga<sup>(sao)</sup> pattern appears in <a data-type="xref" href="#fig-discerning-aq-saga-iso">Figure 12-3</a>.</p>
+        
+        <figure><div id="fig-discerning-aq-saga-iso" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1203.png" alt="epic saga" width="600" height="584">
+        <h6><span class="label">Figure 12-3. </span>The isomorphic communication illustration of the <em>Epic Saga<sup>(sao)</sup></em> pattern</h6>
+        </div></figure>
+        
+        <p>Here, an <em>orchestrator</em> service orchestrates a workflow that includes updates for three services, expected to occur transactionally—either all three calls succeed or none do. If one of the calls fails, they all fail and return to the previous state. An architect can solve this coordination problem in a variety of ways, all complex in distributed architectures. However, such transactions limit the choice of databases and have legendary failure modes.</p>
+        
+        <p>Many nascent or naive architects trust that, because a pattern exists for a problem, it represents a clean solution. However, the pattern is recognition of only commonality, not solvability. <a data-type="indexterm" data-primary="distributed transactions" data-secondary="about" id="idm45978842281056"></a><a data-type="indexterm" data-primary="transactions" data-secondary="distributed transactions" data-tertiary="about" id="idm45978842280064"></a>Distributed transactions provide an excellent example of this phenomenon—architects accustomed to modeling transactions in nondistributed systems sometimes believe that moving that capability to the distributed world is an incremental change. However, transactions in distributed architectures present a number of challenges, which become proportionally worse depending on the complexity of the semantic coupling of the problem.</p>
+        
+        <p>Consider a common implementation of the Epic Saga<sup>(sao)</sup> pattern, utilizing compensating transactions.<a data-type="indexterm" data-primary="distributed transactions" data-secondary="compensating updates" id="idm45978842277328"></a><a data-type="indexterm" data-primary="compensating updates in distributed transactions" id="idm45978842276336"></a><a data-type="indexterm" data-primary="transactions" data-secondary="distributed transactions" data-tertiary="compensating updates" id="idm45978842275568"></a> A <em>compensating update</em> is one that reverses a data write action performed by another service (such as reversing an update, reinserting a previously deleted row, or deleting a previously inserted row) during the course of the distributed transaction scope. While compensating updates attempt to reverse changes in order to bring distributed data sources back to their original state prior to the start of the distributed transaction, they are riddled with complex issues, challenges, and trade-offs.</p>
+        
+        <p>A compensating transaction pattern assigns a service to monitor the transactional completeness of a request, as shown in <a data-type="xref" href="#fig-discerning-comp-trans-success">Figure 12-4</a>.</p>
+        
+        <figure><div id="fig-discerning-comp-trans-success" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1204.png" alt="orchestrated transactional epic saga" width="600" height="521">
+        <h6><span class="label">Figure 12-4. </span>A successful orchestrated transactional Epic Saga using a compensating transaction</h6>
+        </div></figure>
+        
+        <p>However, as with many things in architecture, the error conditions cause the difficulties. In a compensating transaction framework, the mediator monitors the success of calls, and issues compensating calls to other services if one or more of the requests fail, as shown in <a data-type="xref" href="#fig-discerning-comp-trans-rollback">Figure 12-5</a>.</p>
+        
+        <figure><div id="fig-discerning-comp-trans-rollback" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1205.png" alt="mediator generates compensating transactions when errors occur" width="600" height="521">
+        <h6><span class="label">Figure 12-5. </span>When an error occurs, a mediator must send compensating requests to other services</h6>
+        </div></figure>
+        
+        <p>A mediator both accepts requests and mediates the workflow, and synchronous calls to the first two services succeed. However, when trying to make the call to the last service, it fails (from a possibly a wide variety of both domain and operational reasons). Because the goal of the Epic Saga<sup>(sao)</sup> is atomic consistency, the mediator must utilize compensating transactions and request that the other two services undo the operation from before, returning the overall state to what it was before the transaction started.</p>
+        
+        <p>This pattern is widely used: it models familiar behavior, and it has a well-established pattern name. Many architects default to the Epic Saga<sup>(sao)</sup> pattern because it feels familiar to monolithic architectures, combined with a request (sometimes demand) from stakeholders that state changes must synchronize, regardless of technical constraints. However, many of the other dynamic quantum coupling patterns may offer a better set of trade-offs.</p>
+        
+        <p>The clear advantage of the Epic Saga<sup>(sao)</sup> is the transactional coordination that mimics monolithic systems, coupled with the clear workflow owner represented via an orchestrator. However, the disadvantages are varied. First, orchestration plus transactionality may have an impact on operational architecture characteristics such as performance, scale, elasticity, and so on—the orchestrator must make sure that all participants in the transaction have succeeded or failed, creating timing bottlenecks. Second, the various patterns used to implement distributed transactionality (such as compensating transactions) succumb to a wide variety of failure modes and boundary conditions, along with adding inherent complexity via undo operations.  Distributed transactions present a host of difficulties and thus are best avoided if possible.</p>
+        
+        <p>The Epic Saga<sup>(sao)</sup> pattern features the following characteristics:</p>
+        <dl>
+        <dt>Coupling level</dt>
+        <dd>
+        <p>This pattern exhibits extremely high levels of coupling across all possible dimensions: synchronous communication, atomic consistency, and orchestrated coordination—it is in fact the most highly coupled pattern in the list. This isn’t surprising, as it models the behavior of highly coupled monolithic system communication, but creates a number of issues in distributed architectures.</p>
+        </dd>
+        <dt>Complexity level</dt>
+        <dd>
+        <p>Error conditions and other intensive coordination added to the requirement of atomicity add complexity to this architecture. The synchronous calls this architecture uses mitigate some of the complexity, as architects don’t have to worry about race conditions and deadlocks during calls.</p>
+        </dd>
+        <dt>Responsiveness/availability</dt>
+        <dd>
+        <p>Orchestration creates a bottleneck, especially when it must also coordinate transactional atomicity, which reduces responsiveness. This pattern uses synchronous calls, further impacting performance and responsiveness. If any of the services are not available or an unrecoverable error occurs, this pattern will fail.</p>
+        </dd>
+        <dt>Scale/elasticity</dt>
+        <dd>
+        <p>Similar to <em>responsiveness</em>, the bottleneck and coordination required to implement this pattern make scale and other operational concerns difficult.</p>
+        </dd>
+        </dl>
+        
+        <p>While the Epic Saga<sup>(sao)</sup> is popular because of familiarity, it creates a number of challenges, both from a design and operational characteristics standpoint, as shown in <a data-type="xref" href="#fig-discerning-aq-epic-saga-stars">Table&nbsp;12-2</a>.</p>
+        <table id="fig-discerning-aq-epic-saga-stars" style="width: 90%">
+        <caption><span class="label">Table 12-2. </span>Ratings for the Epic Saga<sup>(sao)</sup></caption>
+        <thead>
+        <tr>
+        <th>Epic Saga<sup>(sao)</sup> pattern</th>
+        <th>Ratings</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Communication</p></td>
+        <td><p>Synchronous</p></td>
+        </tr>
+        <tr>
+        <td><p>Consistency</p></td>
+        <td><p>Atomic</p></td>
+        </tr>
+        <tr>
+        <td><p>Coordination</p></td>
+        <td><p>Orchestrated</p></td>
+        </tr>
+        <tr>
+        <td><p>Coupling</p></td>
+        <td><p>Very high</p></td>
+        </tr>
+        <tr>
+        <td><p>Complexity</p></td>
+        <td><p>Low</p></td>
+        </tr>
+        <tr>
+        <td><p>Responsiveness/availability</p></td>
+        <td><p>Low</p></td>
+        </tr>
+        <tr>
+        <td><p>Scale/elasticity</p></td>
+        <td><p>Very low</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>Fortunately, architects need not default to patterns that, while seemingly familiar, create accidental complexity—a variety of other patterns exist with differing sets of trade-offs. Refer to the <a data-type="xref" href="#ss-saga-atomic-transactions">“Sysops Squad Saga: Atomic Transactions and Compensating Updates”</a> for a concrete example of the Epic Saga<sup>(sao)</sup> and some of the complex challenges it presents (and how to address those challenges).<a data-type="indexterm" data-startref="ch12-epic" id="idm45978842235616"></a><a data-type="indexterm" data-startref="ch12-epic2" id="idm45978842234912"></a><a data-type="indexterm" data-startref="ch12-epic3" id="idm45978842234240"></a><a data-type="indexterm" data-startref="ch12-epic4" id="idm45978842233568"></a><a data-type="indexterm" data-startref="ch12-epic5" id="idm45978842232896"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Phone Tag Saga(sac) Pattern"><div class="sect2" id="sec-phone-tag-saga">
+        <h2>Phone Tag Saga<sup>(sac)</sup> Pattern</h2>
+        
+        <p>The <em>Phone Tag Saga<sup>(sac)</sup> pattern</em> changes one of the<a data-type="indexterm" data-primary="transactional saga patterns" data-secondary="Phone Tag Saga" id="ch12-pho"></a><a data-type="indexterm" data-primary="sagas" data-secondary="transactional saga patterns" data-tertiary="Phone Tag Saga" id="ch12-pho2"></a><a data-type="indexterm" data-primary="Phone Tag Saga pattern" id="ch12-pho3"></a> dimensions of the Epic Saga<sup>(sao)</sup>, changing <em>coordination</em> from <em>orchestrated</em> to <em>choreographed</em>; this change is illustrated in <a data-type="xref" href="#fig-discerning-aq-phone-tag">Figure 12-6</a>.</p>
+        
+        <figure><div id="fig-discerning-aq-phone-tag" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1206.png" alt="phone tag pattern" width="600" height="584">
+        <h6><span class="label">Figure 12-6. </span>The Phone Tag pattern utilizes loosely coupled communication</h6>
+        </div></figure>
+        
+        <p>The pattern name is <em>Phone Tag</em> because it resembles a well-known children’s game known as <em>Telephone</em> in North America: children form a circle, and one person whispers a secret to the next person, who passes it along to the next, until the final version is spoken by the last person. In <a data-type="xref" href="#fig-discerning-aq-phone-tag">Figure 12-6</a>, choreography is favored over orchestration, creating the corresponding change in the structural communication shown in <a data-type="xref" href="#fig-discerning-aq-phone-tag-iso">Figure 12-7</a>.</p>
+        
+        <figure><div id="fig-discerning-aq-phone-tag-iso" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1207.png" alt="phone tag ISO representation" width="569" height="747">
+        <h6><span class="label">Figure 12-7. </span>Because of a lack of orchestration, each participant must coordinate status</h6>
+        </div></figure>
+        
+        <p>The Phone Tag Saga<sup>(sac)</sup> pattern features atomicity but also choreography, meaning that the architect designates no formal orchestrator. Yet atomicity requires some degree of coordination. In <a data-type="xref" href="#fig-discerning-aq-phone-tag-iso">Figure 12-7</a>, the initially called service becomes the coordination point (sometimes called the <em>front controller</em>). Once it has finished its work, it passes a request on to the next service in the workflow, which continues until the workflow succeeds. However, if an error condition occurs, each service must have built-in logic to send compensating requests back along the chain.</p>
+        
+        <p>Because the architectural goal is transactional atomicity, logic to coordinate that atomicity must reside somewhere. Thus, domain services must contain more logic about the workflow context they participate within, including error handling and routing. For complex workflows, the <em>front controller</em> in this pattern will become as complex as most mediators, reducing the appeal and applicability of this pattern. Thus, this pattern is commonly used for simple workflows that need higher scale, but with a potential performance impact.</p>
+        
+        <p>How does choreography versus orchestration improve operational architecture characteristics like scale? <a data-type="indexterm" data-primary="coordination of workflow" data-secondary="choreographed coordination" data-tertiary="about orchestration versus" id="idm45978842210480"></a><a data-type="indexterm" data-primary="coordination of workflow" data-secondary="orchestrated coordination" data-tertiary="about choreographed versus" id="idm45978842209184"></a><a data-type="indexterm" data-primary="orchestrated coordination" data-secondary="about choreographed versus" id="idm45978842207920"></a><a data-type="indexterm" data-primary="choreographed coordination" data-secondary="about orchestrated versus" id="idm45978842206944"></a><a data-type="indexterm" data-primary="scalability" data-secondary="choreography" id="idm45978842205968"></a><a data-type="indexterm" data-primary="scalability" data-secondary="orchestration" data-tertiary="choreography versus" id="idm45978842205024"></a>Using choreography even with synchronous communication cuts down on bottlenecks—in nonerror conditions, the last service in the workflow can return the result, allowing for higher throughput and fewer choke points. Performance for happy path workflows can be faster than in an Epic Saga<sup>(sao)</sup> because of lack of coordination. However, error conditions will be much slower without a mediator—each service must unwind the call chain, which also increases coupling between services.</p>
+        
+        <p class="pagebreak-before">Generally, the Phone Tag Saga<sup>(sac)</sup> offers slightly better scale than the Epic Saga<sup>(sao)</sup> because of the lack of a mediator, which can sometimes become a limiting bottleneck. However, this pattern also features lower performance for error conditions and other workflow complexities—without a mediator, the workflow must be resolved via communication between services, which impacts performance.</p>
+        
+        <p>A nice feature of nonorchestrated architectures<a data-type="indexterm" data-primary="coupling" data-secondary="orchestration" data-tertiary="choreography versus" id="idm45978842200464"></a> is the lack of a coupling singularity, a single place the workflow couples to. Even though this pattern utilizes synchronous requests, fewer wait conditions for happy path workflows exist, allowing for higher scale. <a data-type="indexterm" data-primary="coupling" data-secondary="scaling relationship" id="idm45978842198848"></a><a data-type="indexterm" data-primary="scalability" data-secondary="coupling relationship" id="idm45978842197904"></a>In general, reducing coupling increases scale.</p>
+        
+        <p>With the improved scalability brought about because of a lack of orchestration comes the increased complexity of the domain services to manage the workflow concerns in addition to their nominal responsibility. For complex workflows, increased complexity and interservice communication may drive architects back toward orchestration and its trade-offs.</p>
+        
+        <p>The Phone Tag Saga<sup>(sac)</sup> has a fairly rare combination of features—generally, if an architect chooses <em>choreography</em>, they also choose <em>asynchronicity</em>. However, in some cases where an architect might choose this combination instead: synchronous calls ensure that each domain service completes its part of the workflow before invoking the next, eliminating race conditions. If error conditions are easy to resolve, or domain services can utilize idempotence and retries, then architects can build higher parallel scale using this pattern compared to an Epic Saga<sup>(sao)</sup>.</p>
+        
+        <p>The Phone Tag Saga<sup>(sac)</sup> pattern has the following characteristics:</p>
+        <dl>
+        <dt>Coupling level</dt>
+        <dd>
+        <p>This pattern relaxes one of the coupling dimensions of the Epic Saga<sup>(sao)</sup> pattern, utilizing a choreographed rather than orchestrated workflow. Thus, this pattern is slightly less coupled, but with the same transactional requirement, meaning that the complexity of the workflow must be distributed between the domain services.</p>
+        </dd>
+        <dt>Complexity level</dt>
+        <dd>
+        <p>This pattern is significantly more complex than the Epic Saga<sup>(sao)</sup>; complexity in this pattern rises linearly proportionally to the semantic complexity of the workflow: the more complex the workflow, the more logic must appear in each service to compensate for lack of orchestrator. <a data-type="indexterm" data-primary="stamp coupling" data-secondary="choreography state management" id="idm45978842187872"></a>Alternatively, an architect might add workflow information to the messages themselves as a form of <em>stamp coupling</em> (see <a data-type="xref" href="ch13.html#sec-stamp-coupling">“Stamp Coupling for Workflow Management”</a>) to maintain state but adding to the overhead context required by each service.</p>
+        </dd>
+        </dl>
+        <dl class="pagebreak-before less_space">
+        <dt>Responsiveness/availability</dt>
+        <dd>
+        <p>Less orchestration generally leads to better responsiveness, but error conditions in this pattern become more difficult to model without an orchestrator, requiring more coordination via callbacks and other time-consuming activities.</p>
+        </dd>
+        <dt>Scale/elasticity</dt>
+        <dd>
+        <p>Lack of orchestration translates to fewer bottlenecks, generally increasing scalability, but only slightly. This pattern still utilizes tight coupling around two of the three dimensions, so scalability isn’t a highlight, especially if error conditions are common.</p>
+        </dd>
+        </dl>
+        
+        <p>The ratings for the Phone Tag Saga<sup>(sac)</sup> appear in <a data-type="xref" href="#fig-discerning-aq-phone-tag-stars">Table&nbsp;12-3</a>.</p>
+        <table id="fig-discerning-aq-phone-tag-stars" style="width: 90%">
+        <caption><span class="label">Table 12-3. </span>Ratings for the Phone Tag Saga<sup>(sac)</sup></caption>
+        <thead>
+        <tr>
+        <th>Phone Tag Saga<sup>(sac)</sup></th>
+        <th>Ratings</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Communication</p></td>
+        <td><p>Synchronous</p></td>
+        </tr>
+        <tr>
+        <td><p>Consistency</p></td>
+        <td><p>Atomic</p></td>
+        </tr>
+        <tr>
+        <td><p>Coordination</p></td>
+        <td><p>Choreographed</p></td>
+        </tr>
+        <tr>
+        <td><p>Coupling</p></td>
+        <td><p>High</p></td>
+        </tr>
+        <tr>
+        <td><p>Complexity</p></td>
+        <td><p>High</p></td>
+        </tr>
+        <tr>
+        <td><p>Responsiveness/availability</p></td>
+        <td><p>Low</p></td>
+        </tr>
+        <tr>
+        <td><p>Scale/elasticity</p></td>
+        <td><p>Low</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>The Phone Tag Saga<sup>(sac)</sup> pattern is better for simple workflows that don’t have many common error conditions. While it offers a few better characteristics than the Epic Saga<sup>(sao)</sup>, the complexity introduced by lack of an orchestrator offsets many of the advantages.<a data-type="indexterm" data-startref="ch12-pho" id="idm45978842162304"></a><a data-type="indexterm" data-startref="ch12-pho2" id="idm45978842161600"></a><a data-type="indexterm" data-startref="ch12-pho3" id="idm45978842160928"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Fairy Tale Saga(seo) Pattern"><div class="sect2" id="sec-fairy-tale-saga">
+        <h2>Fairy Tale Saga<sup>(seo)</sup> Pattern</h2>
+        
+        <p>Typical fairy tales provide happy stories with easy-to-follow plots,<a data-type="indexterm" data-primary="transactional saga patterns" data-secondary="Fairy Tale Saga" id="ch12-fair"></a><a data-type="indexterm" data-primary="Fairy Tale Saga pattern" id="ch12-fair2"></a><a data-type="indexterm" data-primary="sagas" data-secondary="transactional saga patterns" data-tertiary="Fairy Tale Saga" id="ch12-fair3"></a> thus the name <em>Fairy Tale Saga<sup>(seo)</sup></em>, which utilizes synchronous communication, eventual consistency, and orchestration, as shown in <a data-type="xref" href="#fig-discerning-aq-fairy-tale">Figure 12-8</a>.</p>
+        
+        <figure><div id="fig-discerning-aq-fairy-tale" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1208.png" alt="fairy tale saga pattern" width="600" height="583">
+        <h6><span class="label">Figure 12-8. </span>The Fairy Tale Saga<sup>(seo)</sup> illustrates eventual consistency</h6>
+        </div></figure>
+        
+        <p>This communication pattern relaxes the difficult atomic requirement, providing many more options for architects to design systems. For example, if a service is down temporarily, eventual consistency allows for caching a change until the service restores. The communication structure for the Fairy Tale Saga<sup>(seo)</sup> is illustrated in <a data-type="xref" href="#fig-discerning-aq-fairy-tale-iso">Figure 12-9</a>.</p>
+        
+        <p>In this pattern, an orchestrator exists to coordinate request, response, and error handling. However, the orchestrator isn’t responsible for managing transactions, which each domain service retains responsibility for (for examples of common workflows, see <a data-type="xref" href="ch11.html#ch11-managing-workflows">Chapter&nbsp;11</a>). Thus the orchestrator can manage compensating calls, but without the requirement of occurring within an active transaction.</p>
+        
+        <figure><div id="fig-discerning-aq-fairy-tale-iso" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1209.png" alt="Fairy Tale ISO representation" width="600" height="647">
+        <h6><span class="label">Figure 12-9. </span>Isomorphic illustration of a Fairy Tale interaction</h6>
+        </div></figure>
+        
+        <p>This is a much more attractive pattern and appears commonly in many microservices architectures. Having a mediator makes managing workflows easier, synchronous communication is the easier of the two choices, and eventual consistency removes the most difficult coordination challenge, especially for error handling.</p>
+        
+        <p>The biggest appealing advantage of the Fairy Tale Saga<sup>(seo)</sup> is the lack of holistic transactions. Each domain service manages its own transactional behavior, relying on eventual consistency for the overall workflow.</p>
+        
+        <p>Compared to many other patterns, this pattern generally exhibits a good balance of trade-offs:</p>
+        <dl>
+        <dt>Coupling level</dt>
+        <dd>
+        <p>The Fairy Tale Saga<sup>(seo)</sup> features high coupling, with two of the three coupling drivers maximized in this pattern (synchronous communication and orchestrated coordination). However, the worse driver of coupling complexity—transactionality—disappears in this pattern in favor of eventual consistency. The orchestrator must still manage complex workflows, but without the stricture of doing so within a transaction.</p>
+        </dd>
+        <dt>Complexity level</dt>
+        <dd>
+        <p>Complexity for the Fairy Tale Saga<sup>(seo)</sup> is quite low; it includes the most convenient options (orchestrated, synchronicity) with the loosest restriction (eventual consistency). Thus the name Fairy Tale Saga<sup>(seo)</sup>—a simple story with a happy ending.</p>
+        </dd>
+        <dt>Responsiveness/availability</dt>
+        <dd>
+        <p>Responsiveness is typically better in communication styles of this type because, even though the calls are synchronous, the mediator needs to contain less time-sensitive state about ongoing transactions, allowing for better load balancing. However, true distinctions in performance come with asynchronicity, illustrated in future patterns.</p>
+        </dd>
+        <dt>Scale/elasticity</dt>
+        <dd>
+        <p>Lack of coupling generally leads to higher scale; removing transactional coupling allows each service to scale more independently.</p>
+        </dd>
+        </dl>
+        
+        <p>The ratings for the Fairy Tale Saga<sup>(seo)</sup> appear in <a data-type="xref" href="#fig-discerning-aq-fairy-tale-stars">Table&nbsp;12-4</a>.</p>
+        <table id="fig-discerning-aq-fairy-tale-stars" style="width: 90%">
+        <caption><span class="label">Table 12-4. </span>Ratings for the Fairy Tale Saga<sup>(seo)</sup></caption>
+        <thead>
+        <tr>
+        <th>Fairy Tale Saga<sup>(seo)</sup></th>
+        <th>Ratings</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Communication</p></td>
+        <td><p>Synchronous</p></td>
+        </tr>
+        <tr>
+        <td><p>Consistency</p></td>
+        <td><p>Eventual</p></td>
+        </tr>
+        <tr>
+        <td><p>Coordination</p></td>
+        <td><p>Orchestrated</p></td>
+        </tr>
+        <tr>
+        <td><p>Coupling</p></td>
+        <td><p>High</p></td>
+        </tr>
+        <tr>
+        <td><p>Complexity</p></td>
+        <td><p>Very low</p></td>
+        </tr>
+        <tr>
+        <td><p>Responsiveness/availability</p></td>
+        <td><p>Medium</p></td>
+        </tr>
+        <tr>
+        <td><p>Scale/elasticity</p></td>
+        <td><p>High</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>If an architect can take advantage of eventual consistency, this pattern is quite attractive, combining the easy moving parts with the fewest scary restrictions, making it a popular choice among architects.<a data-type="indexterm" data-startref="ch12-fair" id="idm45978842116016"></a><a data-type="indexterm" data-startref="ch12-fair2" id="idm45978842115280"></a><a data-type="indexterm" data-startref="ch12-fair3" id="idm45978842114608"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Time Travel Saga(sec) Pattern"><div class="sect2" id="sec-time-travel-saga">
+        <h2>Time Travel Saga<sup>(sec)</sup> Pattern</h2>
+        
+        <p>The <em>Time Travel Saga<sup>(sec)</sup></em> pattern features synchronous<a data-type="indexterm" data-primary="transactional saga patterns" data-secondary="Time Travel Saga" id="ch12-tts"></a><a data-type="indexterm" data-primary="Time Travel Saga pattern" id="ch12-tts2"></a><a data-type="indexterm" data-primary="sagas" data-secondary="transactional saga patterns" data-tertiary="Time Travel Saga" id="ch12-tts3"></a> communication, and eventual consistency, but choreographed workflow. In other words, this pattern avoids a central mediator, placing the workflow responsibilities entirely on the participating domain services, as illustrated in <a data-type="xref" href="#fig-discerning-aq-time-travel">Figure 12-10</a>.</p>
+        
+        <figure><div id="fig-discerning-aq-time-travel" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1210.png" alt="Time Travel Saga^(sec)^ Pattern" width="600" height="584">
+        <h6><span class="label">Figure 12-10. </span>The Time Travel Saga<sup>(sec)</sup> pattern uses two of three decoupling techniques</h6>
+        </div></figure>
+        
+        <p>The structural topology illustrates the lack of orchestration, shown in <a data-type="xref" href="#fig-discerning-aq-time-travel-iso">Figure 12-11</a>.</p>
+        
+        <figure><div id="fig-discerning-aq-time-travel-iso" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1211.png" alt="Time Travel ISO representation" width="579" height="741">
+        <h6><span class="label">Figure 12-11. </span>Complex workflows become difficult to manage without orchestration</h6>
+        </div></figure>
+        
+        <p>In this workflow, each service accepts a request, performs an action, and then forwards the request on to another service. <a data-type="indexterm" data-primary="design" data-secondary="Chain of Responsibility" id="idm45978842098992"></a><a data-type="indexterm" data-primary="Chain of Responsibility design pattern" id="idm45978842098016"></a><a data-type="indexterm" data-primary="design" data-secondary="Pipes and Filters" id="idm45978842097376"></a><a data-type="indexterm" data-primary="Pipes and Filters design pattern" id="idm45978842096432"></a>This architecture can implement the <em>Chain of Responsibility</em> design pattern or the <em>Pipes and Filters</em> architecture style—any workflow with a one-way series of steps. Each service in this pattern “owns” its own transactionality, so architects must design workflow error conditions into the domain design. In general, a proportional complexity relationship exists between workflow complexity and choreographed solutions because of a lack of built-in coordination via a mediator—the more complex the workflow, the more difficult choreography becomes. It is called Time Travel Saga<sup>(sec)</sup> because everything is decoupled from a time standpoint: each service owns its own transactional context, making workflow consistency temporally gradual—the state will become consistent over time based on the design of the interaction.</p>
+        
+        <p>The lack of transactions in the Time Travel Saga<sup>(sec)</sup> pattern makes workflows easier to model; however, the lack of an orchestrator means that each domain service must include most workflow state and information. As in all choreographed solutions, a direct correlation exists between workflow complexity and the utility of an orchestrator; thus, this pattern is best suited for simple workflows.</p>
+        
+        <p>For solutions that benefit from high throughput, this pattern works extremely well for “fire and forget” style workflows, such as electronic data ingestion, bulk transactions, and so on. However, because no orchestrator exists, domain services must deal with error conditions and coordination.</p>
+        
+        <p>Lack of coupling increases scalability with this pattern; only adding asynchronicity would make it more scalable (as in the Anthology Saga<sup>(aec)</sup> pattern). However, because this pattern lacks holistic transactional coordination, architects must take extra effort to synchronize data.</p>
+        
+        <p>Here is the qualitative evaluation of the Time Travel Saga<sup>(sec)</sup> pattern:</p>
+        <dl>
+        <dt>Coupling level</dt>
+        <dd>
+        <p>The coupling level falls in the medium range with the Time Travel Saga<sup>(sec)</sup>, with the decreased coupling brought on by the absence of an orchestrator balanced by the still remaining coupling of synchronous communication. As with all eventual consistency patterns, the absence of transactional coupling eases many data 
+        <span class="keep-together">concerns</span>.</p>
+        </dd>
+        <dt>Complexity level</dt>
+        <dd>
+        <p>The loss of transactionality provides a decrease in complexity for this pattern. This pattern is quasi-special-purpose, superbly suited to fast throughput, one-way communication architectures, and the coupling level matches that style of architecture well.</p>
+        </dd>
+        <dt>Responsiveness/availability</dt>
+        <dd>
+        <p><em>Responsiveness</em> scores a <em>medium</em> with this architectural pattern: it is quite high for built-to-purpose systems, as described previously, and quite low for complex error handling. Because no orchestrator exists in this pattern, each domain service must handle the scenario to restore eventual consistency in the case of an error condition, which will cause a lot of overhead with synchronous calls, impacting responsiveness and performance.</p>
+        </dd>
+        <dt>Scale/elasticity</dt>
+        <dd>
+        <p>This architecture pattern offers extremely good scale and elasticity; it could only be made better with asynchronicity (see the Anthology Saga<sup>(aec)</sup> pattern).</p>
+        </dd>
+        </dl>
+        
+        <p>The ratings for the Time Travel Saga<sup>(sec)</sup> pattern appear in <a data-type="xref" href="#fig-discerning-aq-time-travel-stars">Table&nbsp;12-5</a>.</p>
+        <table id="fig-discerning-aq-time-travel-stars" style="width: 90%">
+        <caption><span class="label">Table 12-5. </span>Ratings for the <em>Time Travel Saga<sup>(sec)</sup></em></caption>
+        <thead>
+        <tr>
+        <th>Time Travel Saga<sup>(sec)</sup></th>
+        <th>Ratings</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Communication</p></td>
+        <td><p>Synchronous</p></td>
+        </tr>
+        <tr>
+        <td><p>Consistency</p></td>
+        <td><p>Eventual</p></td>
+        </tr>
+        <tr>
+        <td><p>Coordination</p></td>
+        <td><p>Choreographed</p></td>
+        </tr>
+        <tr>
+        <td><p>Coupling</p></td>
+        <td><p>Medium</p></td>
+        </tr>
+        <tr>
+        <td><p>Complexity</p></td>
+        <td><p>Low</p></td>
+        </tr>
+        <tr>
+        <td><p>Responsiveness/availability</p></td>
+        <td><p>Medium</p></td>
+        </tr>
+        <tr>
+        <td><p>Scale/elasticity</p></td>
+        <td><p>High</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>The Time Travel Saga<sup>(sec)</sup> pattern provides an on-ramp to the more complex but ultimately scalable Anthology Saga<sup>(aec)</sup> pattern. Architects and developers find dealing with synchronous communication easier to reason about, implement, and debug; if this pattern provides adequate scalability, teams don’t have to embrace the more complex but more scalable alternatives.<a data-type="indexterm" data-startref="ch12-tts" id="idm45978842061696"></a><a data-type="indexterm" data-startref="ch12-tts2" id="idm45978842060992"></a><a data-type="indexterm" data-startref="ch12-tts3" id="idm45978842060320"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before less_space" data-pdf-bookmark="Fantasy Fiction Saga(aao) Pattern"><div class="sect2" id="sec-fantasy-fiction-saga">
+        <h2>Fantasy Fiction Saga<sup>(aao)</sup> Pattern</h2>
+        
+        <p>The <em>Fantasy Fiction Saga<sup>(aao)</sup></em> uses <em>atomic</em> consistency,<a data-type="indexterm" data-primary="transactional saga patterns" data-secondary="Fantasy Fiction Saga" id="ch12-ffs"></a><a data-type="indexterm" data-primary="sagas" data-secondary="transactional saga patterns" data-tertiary="Fantasy Fiction Saga" id="ch12-ffs2"></a><a data-type="indexterm" data-primary="Fantasy Fiction Saga pattern" id="ch12-ffs3"></a> <em>asynchronous</em> communication, and <em>orchestrated</em> coordination, as shown in <a data-type="xref" href="#fig-discerning-aq-fantasy-fiction">Figure 12-12</a>.</p>
+        
+        <figure><div id="fig-discerning-aq-fantasy-fiction" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1212.png" alt="Fantasy Fiction Saga^(aao)^ pattern" width="600" height="583">
+        <h6><span class="label">Figure 12-12. </span>Asynchronous communication makes transactionality difficult in this pattern</h6>
+        </div></figure>
+        
+        <p>The structure representation shown in <a data-type="xref" href="#fig-discerning-aq-fantasy-fiction-iso">Figure 12-13</a> starts to show some of the difficulties with this pattern.</p>
+        
+        <p>Just because a combination of architectural forces exists doesn’t mean it forms an attractive pattern, yet this relatively implausible combination has uses. This pattern resembles the Epic Saga<sup>(sao)</sup> in all aspects except for <em>communication</em>—this pattern uses <em>asynchronous</em> rather than <em>synchronous</em> communication. Traditionally, one way that architects increase the responsiveness of distributed systems is by using asynchronicity, allowing operations to occur in parallel rather than serially. This may seem like a good way to increase the perceived performance over an Epic Saga<sup>(sao)</sup>.</p>
+        
+        <figure><div id="fig-discerning-aq-fantasy-fiction-iso" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1213.png" alt="Fantasy Fiction ISO representation" width="600" height="582">
+        <h6><span class="label">Figure 12-13. </span>The Fantasy Fiction Saga<sup>(aao)</sup> pattern is far-fetched because transaction coordination for asynchronous communication presents difficulties</h6>
+        </div></figure>
+        
+        <p>However, asynchronicity isn’t a simple change—it adds many <a data-type="indexterm" data-primary="asynchronous communication" data-secondary="about complexity of" id="idm45978842040752"></a>layers of complexity to architecture, especially around coordination, requiring much more complexity in the mediator. For example, suppose a transactional workflow <em>Alpha</em> begins. Because everything is asynchronous, while Alpha is pending, transactional workflow Beta begins. Now, the mediator must keep track of the state of all ongoing transactions in pending state.</p>
+        
+        <p>It gets worse. Suppose that workflow <em>Gamma</em> begins, but the first call to the domain service depends on the still pending outcome of Alpha—how can an architect model this behavior? While possible, the complexity grows and grows.</p>
+        
+        <p>Adding asynchronicity to orchestrated workflows adds asynchronous transactional state to the equation, removing serial assumptions about ordering and adding the possibilities of deadlocks, race conditions, and a host of other parallel system 
+        <span class="keep-together">challenges</span>.</p>
+        
+        <p class="pagebreak-before">This pattern offers the following challenges:</p>
+        <dl>
+        <dt>Coupling level</dt>
+        <dd>
+        <p>The coupling level is extremely high in this pattern, using an orchestrator and atomicity but with asynchronous communication, which makes coordination more difficult because architects and developers must deal with race conditions and other out-of-order problems imposed by asynchronous communication.</p>
+        </dd>
+        <dt>Complexity level</dt>
+        <dd>
+        <p>Because the coupling is so difficult, the complexity rises in this pattern as well. There’s not only <em>design</em> complexity, requiring architects to develop overly complex workflows, but also <em>debugging</em> and <em>operational</em> complexity of dealing with asynchronous workflows at scale.</p>
+        </dd>
+        <dt>Responsiveness/availability</dt>
+        <dd>
+        <p>Because this pattern attempts transactional coordination across calls, responsiveness will be impacted overall and be extremely bad if one or more of the services isn’t available.</p>
+        </dd>
+        <dt>Scale/elasticity</dt>
+        <dd>
+        <p>High scale is virtually impossible in transaction systems, even with asynchronicity. Scale is much better in the similar pattern Parallel Saga<sup>(aeo)</sup>, which switches <em>atomic</em> to <em>eventual consistency</em>.</p>
+        </dd>
+        </dl>
+        
+        <p>The ratings for the Fantasy Fiction Saga<sup>(aao)</sup> pattern appear in <a data-type="xref" href="#fig-discerning-aq-fantasy-fiction-stars">Table&nbsp;12-6</a>.</p>
+        <table id="fig-discerning-aq-fantasy-fiction-stars" style="width: 90%">
+        <caption><span class="label">Table 12-6. </span>Ratings for the Fantasy Fiction Saga<sup>(aao)</sup></caption>
+        <thead>
+        <tr>
+        <th>Fantasy Fiction</th>
+        <th>Ratings</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Communication</p></td>
+        <td><p>Asynchronous</p></td>
+        </tr>
+        <tr>
+        <td><p>Consistency</p></td>
+        <td><p>Atomic</p></td>
+        </tr>
+        <tr>
+        <td><p>Coordination</p></td>
+        <td><p>Orchestrated</p></td>
+        </tr>
+        <tr>
+        <td><p>Coupling</p></td>
+        <td><p>High</p></td>
+        </tr>
+        <tr>
+        <td><p>Complexity</p></td>
+        <td><p>High</p></td>
+        </tr>
+        <tr>
+        <td><p>Responsiveness/availability</p></td>
+        <td><p>Low</p></td>
+        </tr>
+        <tr>
+        <td><p>Scale/elasticity</p></td>
+        <td><p>Low</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>This pattern is unfortunately more popular than it should be, mostly from the mis-guided attempt to improve the performance of Epic Saga<sup>(sao)</sup> while maintaining transactionality; a better option is usually Parallel Saga<sup>(aeo)</sup>.<a data-type="indexterm" data-startref="ch12-ffs" id="idm45978842007680"></a><a data-type="indexterm" data-startref="ch12-ffs2" id="idm45978842006944"></a><a data-type="indexterm" data-startref="ch12-ffs3" id="idm45978842006272"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before" data-pdf-bookmark="Horror Story(aac) Pattern"><div class="sect2" id="sec-horror-story">
+        <h2>Horror Story<sup>(aac)</sup> Pattern</h2>
+        
+        <p>One of the patterns must be the worst possible combination;<a data-type="indexterm" data-primary="transactional saga patterns" data-secondary="Horror Story" id="ch12-hor"></a><a data-type="indexterm" data-primary="sagas" data-secondary="transactional saga patterns" data-tertiary="Horror Story" id="ch12-hor2"></a><a data-type="indexterm" data-primary="Horror Story pattern" id="ch12-hor3"></a> it is the aptly named <em>Horror Story<sup>(aac)</sup> pattern</em>, characterized by <em>asynchronous</em> communication, <em>atomic</em> consistency, and <em>choreographed</em> coordination, illustrated in <a data-type="xref" href="#fig-discerning-aq-horror-story">Figure 12-14</a>.</p>
+        
+        <figure><div id="fig-discerning-aq-horror-story" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1214.png" alt="Horror Story^(aac)^ pattern" width="600" height="584">
+        <h6><span class="label">Figure 12-14. </span>The most difficult combination: achieving transactionality while asynchronous and choreographed</h6>
+        </div></figure>
+        
+        <p>Why is this combination so horrible? It combines the most stringent coupling around consistency (<em>atomic</em>) with the two loosest coupling styles, <em>asynchronous</em> and <em>choreography</em>. The structural communication for this pattern appears in <a data-type="xref" href="#fig-discerning-aq-horror-story-iso">Figure 12-15</a>.</p>
+        
+        <figure><div id="fig-discerning-aq-horror-story-iso" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1215.png" alt="Horror Story^(aac)^ ISO representation" width="568" height="747">
+        <h6><span class="label">Figure 12-15. </span>This pattern requires a lot of interservice communication because of required transactionality and the lack of a mediator</h6>
+        </div></figure>
+        
+        <p>In this pattern, no mediator exists to manage transactional consistency across multiple services—while using asynchronous communication. Thus, each domain service must track undo information about multiple pending transactions, potentially out of order because of asynchronicity, and coordinate with each other during error conditions. For just one of many possible horrible examples, imagine that transaction <em>Alpha</em> starts and, while pending, transaction <em>Beta</em> starts. One of the calls for the <em>Alpha</em> transaction fails—now, the choreographed services have to reverse the order of firing, undoing each (potentially out-of-order) element of the transaction along the way. The multiplicity and complexity of error conditions makes this a daunting option.</p>
+        
+        <p>Why might an architect choose this option? Asynchronicity is appealing as a performance boost, yet the architect may still try to maintain transactional integrity, which has many myriad failure modes. Instead, an architect would be better off choosing the Anthology Saga<sup>(aec)</sup> pattern, which removes holistic transactionality.</p>
+        
+        <p>The qualitative evaluations for the Horror Story<sup>(aac)</sup> pattern are as follows:</p>
+        <dl>
+        <dt>Coupling level</dt>
+        <dd>
+        <p>Surprisingly, the coupling level for this pattern isn’t the worst (that “honor” goes to the Epic Saga<sup>(sao)</sup> pattern). While this pattern does attempt the worst kind of single coupling (transactionality), it relieves the other two, lacking both a mediator and the coupling—increasing synchronous communication.</p>
+        </dd>
+        </dl>
+        <dl class="pagebreak-before less_space">
+        <dt>Complexity level</dt>
+        <dd>
+        <p>Just as the name implies, the complexity of this pattern is truly horrific, the worst of any because it requires the most stringent requirement (transactionality) with the most difficult combination of other factors to achieve that (asynchronicity and choreography).</p>
+        </dd>
+        <dt>Scale/elasticity</dt>
+        <dd>
+        <p>This pattern does scale better than ones with a mediator, and asynchronicity also adds the ability to perform more work in parallel.</p>
+        </dd>
+        <dt>Responsiveness/availability</dt>
+        <dd>
+        <p>Responsiveness is <em>low</em> for this pattern, similar to the other patterns that require holistic transactions: coordination for the workflow requires a large amount of interservice “chatter,” hurting performance and responsiveness.</p>
+        </dd>
+        </dl>
+        
+        <p>The trade-offs for the Horror Story<sup>(aac)</sup> pattern appear in <a data-type="xref" href="#tbl-horror-story-stars">Table&nbsp;12-7</a>.</p>
+        <table id="tbl-horror-story-stars" style="width: 90%">
+        <caption><span class="label">Table 12-7. </span>Ratings for the Horror Story<sup>(aac)</sup></caption>
+        <thead>
+        <tr>
+        <th>Horror Story<sup>(aac)</sup></th>
+        <th>Ratings</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Communication</p></td>
+        <td><p>Asynchronous</p></td>
+        </tr>
+        <tr>
+        <td><p>Consistency</p></td>
+        <td><p>Atomic</p></td>
+        </tr>
+        <tr>
+        <td><p>Coordination</p></td>
+        <td><p>Choreographed</p></td>
+        </tr>
+        <tr>
+        <td><p>Coupling</p></td>
+        <td><p>Medium</p></td>
+        </tr>
+        <tr>
+        <td><p>Complexity</p></td>
+        <td><p>Very high</p></td>
+        </tr>
+        <tr>
+        <td><p>Responsiveness/availability</p></td>
+        <td><p>Low</p></td>
+        </tr>
+        <tr>
+        <td><p>Scale/elasticity</p></td>
+        <td><p>Medium</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>The aptly named Horror Story<sup>(aac)</sup> pattern is often the result of a well-meaning architect starting with an Epic Saga<sup>(sao)</sup> pattern, noticing slow performance because of complex workflows, and <a data-type="indexterm" data-primary="asynchronous communication" data-secondary="about complexity of" id="idm45978841957424"></a>realizing that techniques to improve performance include asynchronous communication and choreography. However, this thinking provides an excellent example of not considering all the entangled dimensions of a problem space. In isolation, asynchronous communication improves performance. However, as architects, we cannot consider it in isolation when it is entangled with other architecture dimensions, such as consistency and coordination.<a data-type="indexterm" data-startref="ch12-hor" id="idm45978841955728"></a><a data-type="indexterm" data-startref="ch12-hor2" id="idm45978841955056"></a><a data-type="indexterm" data-startref="ch12-hor3" id="idm45978841954384"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before less_space" data-pdf-bookmark="Parallel Saga(aeo) Pattern"><div class="sect2" id="sec-parallel-saga">
+        <h2>Parallel Saga<sup>(aeo)</sup> Pattern</h2>
+        
+        <p>The <em>Parallel Saga<sup>(aeo)</sup></em> pattern is named after the<a data-type="indexterm" data-primary="transactional saga patterns" data-secondary="Parallel Saga" id="ch12-para"></a><a data-type="indexterm" data-primary="sagas" data-secondary="transactional saga patterns" data-tertiary="Parallel Saga" id="ch12-para2"></a><a data-type="indexterm" data-primary="Parallel Saga pattern" id="ch12-para3"></a> “traditional” Epic Saga<sup>(sao)</sup> pattern with two key differences that ease restrictions and therefore make it an easier pattern to implement: asynchronous communication and eventual consistency. The dimensional diagram of the Parallel Saga<sup>(aeo)</sup> pattern appears in  <a data-type="xref" href="#fig-discerning-aq-parallel-saga">Figure 12-16</a>.</p>
+        
+        <figure><div id="fig-discerning-aq-parallel-saga" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1216.png" alt="Parallel Saga^(aeo)^ pattern" width="600" height="580">
+        <h6><span class="label">Figure 12-16. </span>Parallel Saga<sup>(aeo)</sup> offers performance improvements over traditional sagas</h6>
+        </div></figure>
+        
+        <p>The most difficult goals in the Epic Saga<sup>(sao)</sup> pattern revolve around transactions and synchronous communication, both of which cause bottlenecks and performance degradation. As shown in <a data-type="xref" href="#fig-discerning-aq-parallel-saga">Figure 12-16</a>, the pattern loosens both restraints.</p>
+        
+        <p>The isomorphic representation of Parallel Saga<sup>(aeo)</sup> appears in <a data-type="xref" href="#fig-discerning-aq-parallel-saga-iso">Figure 12-17</a>.</p>
+        
+        <p>This pattern uses a mediator, making it suitable for complex workflows. However, it uses asynchronous communication, allowing for better responsiveness and parallel execution. Consistency in the pattern lies with the domain services, which may require some synchronization of shared data, either in the background or driven via the mediator. As in other architectural problems that require coordination, a mediator becomes quite useful.</p>
+        
+        <figure><div id="fig-discerning-aq-parallel-saga-iso" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1217.png" alt="Parallel Saga^(aeo)^ ISO representation" width="600" height="624">
+        <h6><span class="label">Figure 12-17. </span>Each service owns its own transactionality; the mediator coordinates request and response</h6>
+        </div></figure>
+        
+        <p>For example, if an error occurs during the execution of a workflow, the mediator can send asynchronous messages to each involved domain service to compensate for the failed change, which may entail retries, data synchronization, or a host of other 
+        <span class="keep-together">remediations</span>.</p>
+        
+        <p>Of course, the loosening of constraints implies that some benefits will be traded off, which is the nature of software architecture. Lack of transactionality imposes more burden on the mediator to resolve error and other workflow issues. Asynchronous communication, while offering better responsiveness, makes resolving timing and synchronization issues difficult—race conditions, deadlocks, queue reliability, and a host of other distributed architecture headaches reside in this space.</p>
+        
+        <p>The Parallel Saga<sup>(aeo)</sup> pattern exhibits the following qualitative scores:</p>
+        <dl>
+        <dt>Coupling level</dt>
+        <dd>
+        <p>This pattern has a low coupling level, isolating the coupling-intensifying force of transactions to the scope of the individual domain services. It also utilizes asynchronous communication, further decoupling services from wait states, allowing for more parallel processing but adding a time element to an architect’s coupling analysis.</p>
+        </dd>
+        <dt>Complexity level</dt>
+        <dd>
+        <p>The complexity of the Parallel Saga<sup>(aeo)</sup> is also low, reflecting the lessening of coupling stated previously. This pattern is fairly easy for architects to understand, and orchestration allows for simpler workflow and error-handling designs.</p>
+        </dd>
+        <dt>Scale/elasticity</dt>
+        <dd>
+        <p>Using asynchronous communication and smaller transaction boundaries allows this architecture to scale quite nicely, and with good levels of isolation between services. For example, in a microservices architecture, some public-facing services might need higher levels of scale and elasticity, where back office services don’t need scale but higher levels of security. Isolating transactions at the domain level frees the architecture to scale around domain concepts.</p>
+        </dd>
+        <dt>Responsiveness/availability</dt>
+        <dd>
+        <p>Because of lack of coordinated transactions and asynchronous communication, the responsiveness of this architecture is <em>high</em>. In fact, because each of these services maintains its own transactional context, this architecture is well suited to highly variable service performance footprints between services, allowing architects to scale some services more than others because of demand.</p>
+        </dd>
+        </dl>
+        
+        <p>The ratings associated with the Parallel Saga<sup>(aeo)</sup> pattern appear in <a data-type="xref" href="#tbl-parallel-saga-stars">Table&nbsp;12-8</a>.</p>
+        <table id="tbl-parallel-saga-stars" style="width: 90%">
+        <caption><span class="label">Table 12-8. </span>Ratings for the Parallel Saga<sup>(aeo)</sup></caption>
+        <thead>
+        <tr>
+        <th>Parallel Saga<sup>(aeo)</sup></th>
+        <th>Ratings</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Communication</p></td>
+        <td><p>Asynchronous</p></td>
+        </tr>
+        <tr>
+        <td><p>Consistency</p></td>
+        <td><p>Eventual</p></td>
+        </tr>
+        <tr>
+        <td><p>Coordination</p></td>
+        <td><p>Orchestrated</p></td>
+        </tr>
+        <tr>
+        <td><p>Coupling</p></td>
+        <td><p>Low</p></td>
+        </tr>
+        <tr>
+        <td><p>Complexity</p></td>
+        <td><p>Low</p></td>
+        </tr>
+        <tr>
+        <td><p>Responsiveness/availability</p></td>
+        <td><p>High</p></td>
+        </tr>
+        <tr>
+        <td><p>Scale/elasticity</p></td>
+        <td><p>High</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>Overall, the Parallel Saga<sup>(aeo)</sup> pattern offers an attractive set of trade-offs for many scenarios, especially with complex workflows that need high scale.<a data-type="indexterm" data-startref="ch12-para" id="idm45978841906256"></a><a data-type="indexterm" data-startref="ch12-para2" id="idm45978841905552"></a><a data-type="indexterm" data-startref="ch12-para3" id="idm45978841904880"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before less_space" data-pdf-bookmark="Anthology Saga(aec) Pattern"><div class="sect2" id="sec-anthology-saga">
+        <h2>Anthology Saga<sup>(aec)</sup> Pattern</h2>
+        
+        <p>The <em>Anthology Saga<sup>(aec)</sup> pattern</em> provides the exact opposite set of characteristics to the traditional Epic Saga<sup>(sao)</sup> pattern:<a data-type="indexterm" data-primary="transactional saga patterns" data-secondary="Anthology Saga" id="ch12-anth"></a><a data-type="indexterm" data-primary="sagas" data-secondary="transactional saga patterns" data-tertiary="Anthology Saga" id="ch12-anth2"></a><a data-type="indexterm" data-primary="Anthology Saga pattern" id="ch12-anth3"></a> it utilizes <em>asynchronous</em> communication, <em>eventual</em> consistency, and <em>choreographed</em> coordination, providing the least coupled exemplar among all these patterns. The dimensional view of the Anthology Saga<sup>(aec)</sup> pattern appears in  <a data-type="xref" href="#fig-discerning-aq-anthology">Figure 12-18</a>.</p>
+        
+        <figure><div id="fig-discerning-aq-anthology" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1218.png" alt="Anthology Saga^(aec)^ Pattern" width="600" height="571">
+        <h6><span class="label">Figure 12-18. </span>The Anthology Saga<sup>(aec)</sup> pattern offers the opposite extremes of the Epic Saga, and is therefore the least coupled pattern</h6>
+        </div></figure>
+        
+        <p>The anthology pattern uses message queues to send asynchronous messages to other domain services without orchestration, as illustrated in <a data-type="xref" href="#fig-discerning-aq-anthology-iso">Figure 12-19</a>.</p>
+        
+        <p>As you can see, each service maintains its own transactional integrity, and no orchestrator exists, forcing each domain service to include more context about the workflows they participate in, including error handling and other coordination strategies.</p>
+        
+        <figure><div id="fig-discerning-aq-anthology-iso" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1219.png" alt="Anthology Saga^(aec)^ Pattern ISO representation" width="600" height="445">
+        <h6><span class="label">Figure 12-19. </span>Lack of orchestration, eventual consistency, and asynchronicity make this pattern highly decoupled but a challenge for coordination</h6>
+        </div></figure>
+        
+        <p>The lack of orchestration makes services more complex but allows for much higher throughput, scalability, elasticity, and other beneficial operational architecture characteristics. No bottlenecks or coupling choke points exist in this architecture, allowing for high responsiveness and scalability.</p>
+        
+        <p>However, this pattern doesn’t work particularly well for complex workflows, especially around resolving data consistency errors. While it may not seem possible without an orchestrator, stamp coupling (<a data-type="xref" href="ch13.html#sec-stamp-coupling">“Stamp Coupling for Workflow Management”</a>) may be used to carry workflow state, as described in the similar Phone Tag Saga<sup>(sac)</sup> pattern.</p>
+        
+        <p>This pattern works best for simple, mostly linear workflows, where architects desire high processing throughput. This pattern provides the most potential for both high performance and scale, making it an attractive choice when those are key drivers for the system. However, the degree of decoupling makes coordination difficult, prohibitively so for complex or critical workflows.</p>
+        
+        <p>The short-story-inspired Anthology Saga<sup>(aec)</sup> pattern has the following 
+        <span class="keep-together">characteristics</span>:</p>
+        <dl>
+        <dt>Coupling level</dt>
+        <dd>
+        <p>Coupling for this pattern is the lowest for any other combination of forces, creating a highly decoupled architecture well suited for high scale and elasticity.</p>
+        </dd>
+        <dt>Complexity level</dt>
+        <dd>
+        <p>While the coupling is extremely low, complexity is correspondingly high, especially for complex workflows where an orchestrator (lacking here) is convenient.</p>
+        </dd>
+        <dt>Scale/elasticity</dt>
+        <dd>
+        <p>This pattern scores the highest in the scale and elasticity category, correlating with the overall lack of coupling found in this pattern.</p>
+        </dd>
+        <dt>Responsiveness</dt>
+        <dd>
+        <p>Responsiveness is high in this architecture because of a lack of speed governors (transactional consistency, synchronous communication) and use of responsiveness accelerators (choreographed coordination).</p>
+        </dd>
+        </dl>
+        
+        <p>The ratings table for the Anthology Saga<sup>(aec)</sup> pattern appear in <a data-type="xref" href="#tbl-anthology-stars">Table&nbsp;12-9</a>.</p>
+        <table id="tbl-anthology-stars" style="width: 90%">
+        <caption><span class="label">Table 12-9. </span>Ratings for the Anthology Saga<sup>(aec)</sup></caption>
+        <thead>
+        <tr>
+        <th>Anthology Saga<sup>(aec)</sup></th>
+        <th>Ratings</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Communication</p></td>
+        <td><p>Asynchronous</p></td>
+        </tr>
+        <tr>
+        <td><p>Consistency</p></td>
+        <td><p>Eventual</p></td>
+        </tr>
+        <tr>
+        <td><p>Coordination</p></td>
+        <td><p>Choreographed</p></td>
+        </tr>
+        <tr>
+        <td><p>Coupling</p></td>
+        <td><p>Very low</p></td>
+        </tr>
+        <tr>
+        <td><p>Complexity</p></td>
+        <td><p>High</p></td>
+        </tr>
+        <tr>
+        <td><p>Responsiveness/availability</p></td>
+        <td><p>High</p></td>
+        </tr>
+        <tr>
+        <td><p>Scale/elasticity</p></td>
+        <td><p>Very high</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>The Anthology Saga<sup>(aec)</sup> pattern is well suited to extremely high throughput communication with simple or infrequent error conditions. <a data-type="indexterm" data-primary="design" data-secondary="Pipes and Filters" id="idm45978841856688"></a><a data-type="indexterm" data-primary="Pipes and Filters design pattern" id="idm45978841855712"></a>For example, a <em>Pipes and Filters</em> architecture would fit this pattern exactly.<a data-type="indexterm" data-startref="ch12-anth" id="idm45978841854416"></a><a data-type="indexterm" data-startref="ch12-anth2" id="idm45978841853712"></a><a data-type="indexterm" data-startref="ch12-anth3" id="idm45978841853040"></a></p>
+        
+        <p>Architects can implement the patterns described in this section in a variety of ways. For example, architects can manage transactional sagas through atomic transactions by using compensating updates or by managing transactional state with eventual consistency. This section showed the advantages and disadvantages of each approach, which will help an architect decide which transactional saga pattern to use.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="State Management and Eventual Consistency"><div class="sect1" id="idm45978842358064">
+        <h1>State Management and Eventual Consistency</h1>
+        
+        <p>State management and eventual consistency leverage <em>finite state machines</em> (see <a data-type="xref" href="#sec-state-machines">“Saga State Machines”</a>) <a data-type="indexterm" data-primary="state management" data-secondary="finite state machines for" id="idm45978841848880"></a><a data-type="indexterm" data-primary="eventual consistency" data-secondary="finite state machines for" id="idm45978841847936"></a><a data-type="indexterm" data-primary="consistency" data-secondary="eventual consistency" data-tertiary="finite state machines for" id="idm45978841846976"></a><a data-type="indexterm" data-primary="transactional saga patterns" data-secondary="about state management" id="idm45978841845744"></a><a data-type="indexterm" data-primary="sagas" data-secondary="transactional saga patterns" data-tertiary="about state management" id="idm45978841844784"></a>to always know the current state of the transactional saga, and to also eventually correct the error condition through retries or some sort of automated or manual corrective action. To illustrate this approach, consider the Fairy Tale Saga<sup>(seo)</sup> implementation of the ticket completion example illustrated in <a data-type="xref" href="#fig-managing-workflows-saga-state-mgmt">Figure 12-20</a>.</p>
+        
+        <figure><div id="fig-managing-workflows-saga-state-mgmt" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1220.png" alt="Saga State Management" width="600" height="455">
+        <h6><span class="label">Figure 12-20. </span>The Fairy Tale Saga leads to better responsiveness, but leaves data sources out of sync with one another until they can be corrected</h6>
+        </div></figure>
+        
+        <p>Notice that the Survey Service is not available during the scope of the distributed transaction. However, with this type of saga, rather than issue a compensating update, the state of the saga is changed to <code>NO_SURVEY</code> and a successful response is sent to the Sysops Expert (step 7 in the diagram). The Ticket Orchestrator Service then works asynchronously (behind the scenes) to resolve the error programmatically by retries and error analysis. If it cannot resolve the error, the Ticket Orchestrator Service sends the error to an administrator or supervisor for manual repair and processing.</p>
+        
+        <p>By managing the <em>state</em> of the saga rather than issuing compensating updates,<a data-type="indexterm" data-primary="compensating updates in distributed transactions" data-secondary="state management instead" id="idm45978841837536"></a> the end user (in this case, the Sysops Squad expert) doesn’t need to be concerned that the survey was not sent to the customer—that responsibility is for the Ticket Orchestrator Service to worry about. Responsiveness is good from the end user’s perspective, and the user can work on other tasks while the errors are handled by the system.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Saga State Machines"><div class="sect2" id="sec-state-machines">
+        <h2>Saga State Machines</h2>
+        
+        <p>A <em>state machine</em> is a pattern that describes all of the possible<a data-type="indexterm" data-primary="state management" data-secondary="finite state machines for" data-tertiary="about state machines" id="ch12-asm"></a><a data-type="indexterm" data-primary="distributed architectures" data-secondary="state machines" id="ch12-asm2"></a><a data-type="indexterm" data-primary="state machines" id="ch12-asm3"></a><a data-type="indexterm" data-primary="sagas" data-secondary="state machines" id="ch12-asm4"></a><a data-type="indexterm" data-primary="transactional saga patterns" data-secondary="about state management" data-tertiary="about state machines" id="ch12-asm5"></a><a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="state machines" id="ch12-asm6"></a> paths that can exist within a distributed architecture. A state machine always starts with a beginning state that launches the transactional saga, then contains transition states and corresponding action that should occur when the transition state happens.</p>
+        
+        <p>To illustrate how a saga state machine works, consider the following workflow of a new problem ticket created by a customer in the Sysops Squad system:</p>
+        <ol>
+        <li>
+        <p>The customer enters a new problem ticket into the system.</p>
+        </li>
+        <li>
+        <p>The ticket is assigned to the next available Sysops Squad expert.</p>
+        </li>
+        <li>
+        <p>The ticket is then routed to the expert’s mobile device.</p>
+        </li>
+        <li>
+        <p>The expert receives the ticket and works on the issue.</p>
+        </li>
+        <li>
+        <p>The expert finishes the repair and marks the ticket as complete.</p>
+        </li>
+        <li>
+        <p>A survey is sent to the customer.</p>
+        </li>
+        
+        </ol>
+        
+        <p>The various states that can exist within this transactional saga, as well as the corresponding transition actions, are illustrated in <a data-type="xref" href="#fig-managing-workflows-saga-new-ticket">Figure 12-21</a>. Notice that the transactional saga begins with the <code>START</code> node indicating the saga entry point, and terminates with the <code>CLOSED</code> node indicating the saga exit point.</p>
+        
+        <figure><div id="fig-managing-workflows-saga-new-ticket" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1221.png" alt="New Ticket Saga" width="600" height="605">
+        <h6><span class="label">Figure 12-21. </span>State diagram for creating a new problem ticket</h6>
+        </div></figure>
+        
+        <p class="pagebreak-before">The following items describe in more detail this transactional saga and the corresponding states and transition actions that happen within each state:</p>
+        <dl>
+        <dt>START</dt>
+        <dd>
+        <p>The transactional saga starts with a customer entering a new problem ticket into the system. The customer’s support plan is verified, and the ticket data is validated. Once the ticket is inserted into the ticket table in the database, the transactional saga state moves to CREATED and the customer is notified that the ticket has been successfully created. This is the only possible outcome for this state transition—any errors within this state prevent the saga from starting.</p>
+        </dd>
+        <dt>CREATED</dt>
+        <dd>
+        <p>Once the ticket is successfully created, it is assigned to a Sysops Squad expert. If no expert is available to service the ticket, it is held in a wait state until an expert is available. Once an expert is assigned, the saga state moves to the ASSIGNED state. This is the only outcome for this state transition, meaning the ticket is held in CREATED state until it can be assigned.</p>
+        </dd>
+        <dt>ASSIGNED</dt>
+        <dd>
+        <p>Once a ticket is assigned to an expert, the only possible outcome is to route the ticket to the expert. It is assumed that during the assignment algorithm, the expert has been located and is available. If the ticket cannot be routed because the expert cannot be located or is unavailable, the saga stays in this state until it can be routed. Once routed, the expert must acknowledge that the ticket has been received. Once this happens, the transactional saga state moves to ACCEPTED. This is the only possible outcome for this state transition.</p>
+        </dd>
+        <dt>ACCEPTED</dt>
+        <dd>
+        <p>There are two possible states once a ticket has been accepted by a Sysops Squad expert: COMPLETED or REASSIGN. Once the expert finishes the repair and marks the ticket as “complete,” the state of the saga moves to COMPLETED. However, if for some reason the ticket was wrongly assigned or the expert is not able to finish the repair, the expert notifies the system and the state moves to REASSIGN.</p>
+        </dd>
+        <dt>REASSIGN</dt>
+        <dd>
+        <p>Once in this saga state, the system will reassign the ticket to a different expert. Like the CREATED state, if an expert is not available, the transactional saga will remain in the REASSIGN state until an expert is assigned. Once a different expert is found and the ticket is once again assigned, the state moves into the ASSIGNED state, waiting to be accepted by the other expert. This is the only possible outcome for this state transition, and the saga remains in this state until an expert is assigned to the ticket.</p>
+        </dd>
+        <dt>COMPLETED</dt>
+        <dd>
+        <p>The two possible states once an expert completes a ticket are CLOSED or NO_SURVEY. When the ticket is in this state, a survey is sent to the customer to rate the expert and the service, and the saga state is moved to CLOSED, thus ending the transaction saga. However, if the Survey Service is unavailable or an error occurs while sending the survey, the state moves to NO_SURVEY, indicating that the issue was fixed but no survey was sent to the customer.</p>
+        </dd>
+        <dt>NO_SURVEY</dt>
+        <dd>
+        <p>In this error condition state, the system continues to try sending the survey to the customer. Once successfully sent, the state moves to CLOSED, marking the end of the transactional saga. This is the only possible outcome of this state 
+        <span class="keep-together">transaction</span>.</p>
+        </dd>
+        </dl>
+        
+        <p>In many cases, it’s useful to put the list of all possible state transitions and the corresponding transition action in some sort of table. Developers can then use this table to implement the state transition triggers and possible error conditions in an orchestration service (or respective services if using choreography). An example of this practice is shown in <a data-type="xref" href="#table-saga-new-ticket">Table&nbsp;12-10</a>, which lists all the possible states and actions that are triggered when the state transition occurs.</p>
+        <table id="table-saga-new-ticket" style="width: 90%">
+        <caption><span class="label">Table 12-10. </span>Saga state machine for a new problem ticket in the Sysops Squad system</caption>
+        <thead>
+        <tr>
+        <th>Initiating state</th>
+        <th>Transition state</th>
+        <th>Transaction action</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>START</p></td>
+        <td><p>CREATED</p></td>
+        <td><p>Assign ticket to expert</p></td>
+        </tr>
+        <tr>
+        <td><p>CREATED</p></td>
+        <td><p>ASSIGNED</p></td>
+        <td><p>Route ticket to assigned expert</p></td>
+        </tr>
+        <tr>
+        <td><p>ASSIGNED</p></td>
+        <td><p>ACCEPTED</p></td>
+        <td><p>Expert fixes problem</p></td>
+        </tr>
+        <tr>
+        <td><p>ACCEPTED</p></td>
+        <td><p>COMPLETED</p></td>
+        <td><p>Send customer survey</p></td>
+        </tr>
+        <tr>
+        <td><p>ACCEPTED</p></td>
+        <td><p>REASSIGN</p></td>
+        <td><p>Reassign to a different expert</p></td>
+        </tr>
+        <tr>
+        <td><p>REASSIGN</p></td>
+        <td><p>ASSIGNED</p></td>
+        <td><p>Route ticket to assigned expert</p></td>
+        </tr>
+        <tr>
+        <td><p>COMPLETED</p></td>
+        <td><p>CLOSED</p></td>
+        <td><p>Ticket saga done</p></td>
+        </tr>
+        <tr>
+        <td><p>COMPLETED</p></td>
+        <td><p>NO_SURVEY</p></td>
+        <td><p>Send customer survey</p></td>
+        </tr>
+        <tr>
+        <td><p>NO_SURVEY</p></td>
+        <td><p>CLOSED</p></td>
+        <td><p>Ticket saga done</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>The choice between using compensating updates or state management<a data-type="indexterm" data-primary="compensating updates in distributed transactions" data-secondary="state management instead" id="idm45978841775680"></a><a data-type="indexterm" data-primary="state management" data-secondary="compensating updates versus" id="idm45978841774528"></a><a data-type="indexterm" data-primary="transactional saga patterns" data-secondary="about state management" data-tertiary="compensating updates versus" id="idm45978841773568"></a> for distributed transaction workflows depends on the situation as well as trade-off analysis between responsiveness and consistency. Regardless of the technique used to manage errors within a distributed transaction, the state of the distributed transaction should be known and also managed.</p>
+        
+        <p><a data-type="xref" href="#table-state-mgmt-tradeoffs">Table 12-11</a> summarizes the trade-offs associated with using state management rather than atomic distributed transactions with compensating updates.<a data-type="indexterm" data-startref="ch12-asm" id="idm45978841770624"></a><a data-type="indexterm" data-startref="ch12-asm2" id="idm45978841769952"></a><a data-type="indexterm" data-startref="ch12-asm3" id="idm45978841769280"></a><a data-type="indexterm" data-startref="ch12-asm4" id="idm45978841768608"></a><a data-type="indexterm" data-startref="ch12-asm5" id="idm45978841767936"></a><a data-type="indexterm" data-startref="ch12-asm6" id="idm45978841767264"></a></p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978841766464">
+        <h5>Trade-Offs</h5><table id="table-state-mgmt-tradeoffs" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 12-11. </span>Trade-offs associated with state management rather than atomic distributed transactions with compensating updates</caption>
+        <thead>
+        <tr>
+        <th>Advantages</th>
+        <th>Disadvantages</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Good responsiveness</p></td>
+        <td><p>Data may be out of sync when errors occur</p></td>
+        </tr>
+        <tr>
+        <td><p>Less impact to end user for errors</p></td>
+        <td><p>Eventual consistency may take some time</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Techniques for Managing Sagas"><div class="sect1" id="idm45978841835232">
+        <h1>Techniques for Managing Sagas</h1>
+        
+        <p>Distributed transactions are not something that can be simply “dropped into” a system.<a data-type="indexterm" data-primary="sagas" data-secondary="techniques for managing" id="idm45978841756592"></a><a data-type="indexterm" data-primary="transactional saga patterns" data-secondary="about sagas" data-tertiary="management techniques" id="idm45978841755616"></a><a data-type="indexterm" data-primary="distributed transactions" data-secondary="managing sagas" data-seealso="transactional saga patterns" id="idm45978841754384"></a> They cannot be downloaded or purchased using some sort of framework or product like ACID transaction managers—they must be designed, coded, and maintained by developers and architects.</p>
+        
+        <p>One of the techniques we like to use to help manage distributed transactions<a data-type="indexterm" data-primary="custom attributes for distributed transaction management" id="idm45978841752416"></a><a data-type="indexterm" data-primary="annotations" data-secondary="distributed transaction management" id="idm45978841751664"></a><a data-type="indexterm" data-primary="attributes for distributed transaction management" id="idm45978841750704"></a><a data-type="indexterm" data-primary="documentation for managing distributed transactions" id="idm45978841749936"></a> is to leverage annotations (Java) or custom attributes (C#), or other similar artifacts in other languages. While these language artifacts themselves don’t contain any actual functionality, they do provide a programmatic way of capturing and documenting the transactional sagas in the system, as well as provide a means for associating services with transactional sagas.</p>
+        
+        <p>The source listings in <a data-type="xref" href="#source-saga-java">Example&nbsp;12-1</a> (Java) and <a data-type="xref" href="#source-saga-csharp">Example&nbsp;12-2</a> (C#) show an example of implementing these annotations and custom attributes. Notice that in both implementations, the transactional sagas (<code>NEW_TICKET</code>, <code>CANCEL_TICKET</code>, and so on) are contained within the <code>Transaction</code> enum, providing a single place within the source code for listing and documenting the various sagas that exist within an application context.</p>
+        <div id="source-saga-java" data-type="example">
+        <h5><span class="label">Example 12-1. </span>Source code defining a transactional saga annotation (Java)</h5>
+        
+        <pre data-type="programlisting" data-code-language="java"><code class="nd">@Retention</code><code class="o">(</code><code class="n">RetentionPolicy</code><code class="o">.</code><code class="na">RUNTIME</code><code class="o">)</code>
+        <code class="nd">@Target</code><code class="o">(</code><code class="n">ElementType</code><code class="o">.</code><code class="na">TYPE</code><code class="o">)</code>
+        <code class="kd">public</code> <code class="nd">@interface</code> <code class="n">Saga</code> <code class="o">{</code>
+           <code class="kd">public</code> <code class="n">Transaction</code><code class="o">[]</code> <code class="nf">value</code><code class="o">();</code>
+        
+           <code class="kd">public</code> <code class="kd">enum</code> <code class="n">Transaction</code> <code class="o">{</code>
+              <code class="n">NEW_TICKET</code><code class="o">,</code>
+              <code class="n">CANCEL_TICKET</code><code class="o">,</code>
+              <code class="n">NEW_CUSTOMER</code><code class="o">,</code>
+              <code class="n">UNSUBSCRIBE</code><code class="o">,</code>
+              <code class="n">NEW_SUPPORT_CONTRACT</code>
+           <code class="o">}</code>
+        <code class="o">}</code></pre></div>
+        <div id="source-saga-csharp" data-type="example">
+        <h5><span class="label">Example 12-2. </span>Source code defining a transactional saga attribute (C#)</h5>
+        
+        <pre data-type="programlisting" data-code-language="csharp"><code class="na">[AttributeUsage(AttributeTargets.Class)]</code>
+        <code class="k">class</code> <code class="nc">Saga</code> <code class="p">:</code> <code class="n">System</code><code class="p">.</code><code class="n">Attribute</code> <code class="p">{</code>
+           <code class="k">public</code> <code class="n">Transaction</code><code class="p">[]</code> <code class="n">transaction</code><code class="p">;</code>
+        
+           <code class="k">public</code> <code class="k">enum</code> <code class="n">Transaction</code> <code class="p">{</code>
+              <code class="n">NEW_TICKET</code><code class="p">,</code>
+              <code class="n">CANCEL_TICKET</code><code class="p">,</code>
+              <code class="n">NEW_CUSTOMER</code><code class="p">,</code>
+              <code class="n">UNSUBSCRIBE</code><code class="p">,</code>
+              <code class="n">NEW_SUPPORT_CONTRACT</code>
+           <code class="p">};</code>
+        <code class="p">}</code></pre></div>
+        
+        <p>Once defined, these annotations or attributes can be used to identify<a data-type="indexterm" data-primary="services" data-secondary="identifying in sagas" id="idm45978841659472"></a> services that are involved in the transactional saga. For example, the source code listing in <a data-type="xref" href="#source-saga-java-using">Example&nbsp;12-3</a> shows that the Survey Service (identified by the <code>SurveyServiceAPI</code> class as the service entry point) is involved in the <code>NEW_TICKET</code> saga, whereas the Ticket Service (identified by the <code>TicketServiceAPI</code> class as the service entry point) is involved in two sagas: the <code>NEW_TICKET</code> and the <code>CANCEL_TICKET</code>.</p>
+        <div id="source-saga-java-using" data-type="example">
+        <h5><span class="label">Example 12-3. </span>Source code showing the use of the transactional saga annotation (Java)</h5>
+        
+        <pre data-type="programlisting" data-code-language="java"><code class="nd">@ServiceEntrypoint</code>
+        <code class="nd">@Saga</code><code class="o">(</code><code class="n">Transaction</code><code class="o">.</code><code class="na">NEW_TICKET</code><code class="o">)</code>
+        <code class="kd">public</code> <code class="kd">class</code> <code class="nc">SurveyServiceAPI</code> <code class="o">{</code>
+           <code class="o">...</code>
+        <code class="o">}</code>
+        
+        <code class="nd">@ServiceEntrypoint</code>
+        <code class="nd">@Saga</code><code class="o">({</code><code class="n">Transaction</code><code class="o">.</code><code class="na">NEW_TICKET</code><code class="o">,)</code>
+               <code class="n">Transaction</code><code class="o">.</code><code class="na">CANCEL_TICKET</code><code class="o">})</code>
+        <code class="kd">public</code> <code class="kd">class</code> <code class="nc">TicketServiceAPI</code> <code class="o">{</code>
+           <code class="o">...</code>
+        <code class="o">}</code></pre></div>
+        
+        <p>Notice how the <code>NEW_TICKET</code> saga includes the Survey Service and the Ticket Service. This is valuable information to a developer because it helps them define the testing scope when making changes to a particular workflow or saga, and also lets them know what other services might be impacted by a change to one of the services within the transactional saga.</p>
+        
+        <p class="pagebreak-before">Using these annotations and custom attributes, architects and developers can write simple command-line interface (CLI) tools to walk through a codebase or source code repository to provide saga information in real time. For example, using a simple custom code-walk tool, a developer, architect, or even a business analyst can query what services are involved for the <code>NEW_TICKET</code> saga:</p>
+        
+        <pre data-type="programlisting" data-code-language="bash">$ ./sagatool.sh NEW_TICKET -services
+        
+        -&gt; Ticket Service
+        -&gt; Assignment Service
+        -&gt; Routing Service
+        -&gt; Survey Service
+        
+        $</pre>
+        
+        <p>A custom code-walking tool can look at each class file in the application context containing the <code>@ServiceEntrypoint</code> custom annotation (or attribute) and check the <code>@Saga</code> custom annotation for the presence of the particular saga (in this case, <code>Transaction.NEW_TICKET</code>). This sort of custom tool is not complicated to write, and can help provide valuable information when managing transactional sagas.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Sysops Squad Saga: Atomic Transactions and Compensating Updates"><div class="sect1" id="ss-saga-atomic-transactions">
+        <h1>Sysops Squad Saga: Atomic Transactions and Compensating Updates</h1>
+        
+        <p><code>Tuesday, April 5, 09:44</code></p>
+        <div class="story">
+        
+        <p>Addison and Austen met first thing with Logan to hash out the issues around transactionality in the new microservices architecture in the longish conference room.<a data-type="indexterm" data-primary="transactional saga patterns" data-secondary="Sysops Squad saga" id="ch12-ssts"></a><a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="transactional sagas" id="ch12-ssts2"></a><a data-type="indexterm" data-primary="compensating updates in distributed transactions" data-secondary="Sysops Squad saga" id="ch12-ssts3"></a><a data-type="indexterm" data-primary="transactions" data-secondary="distributed transactions" data-tertiary="Sysops Squad saga" id="ch12-ssts5"></a><a data-type="indexterm" data-primary="distributed transactions" data-secondary="compensating updates" data-tertiary="Sysops Squad saga" id="ch12-ssts4"></a><a data-type="indexterm" data-primary="distributed transactions" data-secondary="Sysops Squad sagas" id="ch12-sstsa"></a><a data-type="indexterm" data-primary="sagas" data-secondary="transactional saga patterns" data-tertiary="Sysops Squad saga" id="ch12-sstsb"></a></p>
+        
+        <p>Logan began, “I know that not everyone is on the same page about how what you’ve read applies to what we’re doing here. So, I’ve prepared some workflows and diagrams to help everyone get on the same page. Today, we’re discussing marking a ticket complete in the system. For this workflow, the Sysops Squad expert completes a job and marks the ticket as “complete” using the mobile application on the expert’s mobile device. I want to talk about the Epic Saga pattern and the issues around compensating updates. I’ve created a diagram to illustrate this workflow in <a data-type="xref" href="#fig-managing-workflows-saga-example">Figure 12-22</a> Can everyone see it?”</p>
+        
+        <figure><div id="fig-managing-workflows-saga-example" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1222.png" alt="Saga Example" width="600" height="485">
+        <h6><span class="label">Figure 12-22. </span>The epic saga requires the ticket status to be updated and survey to be sent in one synchronous atomic operation</h6>
+        </div></figure>
+        
+        <p>Logan continued, “I’ve also created a list that describes each step. The circled numbers on the diagram match up with the workflow.”</p>
+        <ol>
+        <li>
+        <p>The Sysops Squad expert marks the ticket as complete using an app on their mobile device, which is synchronously received by the Ticket Orchestrator Service.</p>
+        </li>
+        <li>
+        <p>The Ticket Orchestrator Service sends a synchronous request to the Ticket Service to change the state of the ticket from “in-progress” to “complete.”</p>
+        </li>
+        <li>
+        <p>The Ticket Service updates the ticket number to “complete” in the database table and commits the update.</p>
+        </li>
+        <li>
+        <p>As part of the ticket completion process, the Ticket Service asynchronously sends ticketing information (such as ticket repair time, ticket wait time, duration, and so on) to a queue to be picked up by the Analytics Service. Once sent, the Ticket Service sends an acknowledgment to the Ticket Orchestrator Service that the update is complete.</p>
+        </li>
+        <li>
+        <p>At about the same time, the Analytics Service asynchronously receives the updated ticket analytics and starts to process the ticket information.</p>
+        </li>
+        <li>
+        <p>The Ticket Orchestrator Service then sends a synchronous request to the Survey Service to prepare and send the customer survey to the customer.</p>
+        </li>
+        <li>
+        <p>The Survey Service inserts data into a table with the survey information (customer, ticket info, and timestamp) and commits the insert.</p>
+        </li>
+        <li>
+        <p>The Survey Service then sends the survey to the customer via email and returns an acknowledgment back to the Ticket Orchestrator Service that the survey processing is complete.</p>
+        </li>
+        <li>
+        <p>Finally, the Ticket Orchestrator Service sends a response back to the Sysops Squad expert’s mobile device stating that the ticket completion processing is done. Once this happens, the expert can select the next problem ticket assigned to them.</p>
+        </li>
+        
+        </ol>
+        
+        <p>“Wow, this is really helpful. How long did it take you to create this?” said Addison.</p>
+        
+        <p>“Not a little time, but it’s come in handy. You aren’t the only group that’s confused about how to get all these moving pieces to work together. This is the hard part of software architecture. Everyone understand the basics of the workflow?”</p>
+        
+        <p>To a sea of nods, Logan continued, “One of the first issues that occurs with compensating updates is that since there’s no transactional isolation within a distributed transaction (see <a data-type="xref" href="ch09.html#sec-acid-vs-base">“Distributed Transactions”</a>), other services may have taken action on the data updated within the scope of the distributed transaction before the distributed transaction is complete. To illustrate this issue, consider the same Epic Saga example appearing in  <a data-type="xref" href="#fig-managing-workflows-saga-compensate">Figure 12-23</a>: the Sysops Squad expert marks a ticket as complete, but this time the Survey Service is not available. In this case, a compensating update (step 7 in the diagram) is sent to the Ticket Service to reverse the update, changing the ticket state from <em>completed</em> back to <em>in-progress</em> (step 8 in the diagram).”</p>
+        
+        <p>“Notice also in <a data-type="xref" href="#fig-managing-workflows-saga-compensate">Figure 12-23</a> that since this is an atomic distributed transaction, an error is then sent back to the Sysops Squad expert indicating that the action was not successful and to try again. Now, a question for you: why should the Sysops Squad expert have to worry that the survey is not sent?”</p>
+        
+        <p>Austen pondered a moment. “But wasn’t that part of the workflow in the monolith? All that stuff happened within a transaction, if I remember correctly.”</p>
+        
+        <p>“Yeah, but I always thought that was weird, just never said anything,” said Addison. “I don’t see why the expert should worry about the survey. The expert just wants to get on to the next ticket assigned to them.”</p>
+        
+        <p>“Right,” Logan said. “This is the issue with atomic distributed transactions—the end user is unnecessarily semantically coupled to the business process. But notice that <a data-type="xref" href="#fig-managing-workflows-saga-compensate">Figure 12-23</a> also illustrates the issue with the lack of transaction isolation within a distributed transaction. Notice that as part of the original update to mark the ticket as <em>complete,</em> the Ticket Service asynchronously sent the ticket information to a queue (step 4 in the diagram) to be processed by the Analytics Service (step 5). However, when the compensating update is issued to the Ticket Service (step 7), the ticket information has already been processed by the Analytics Service in step 5.”</p>
+        
+        <figure><div id="fig-managing-workflows-saga-compensate" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1223.png" alt="Saga Compensation" width="600" height="500">
+        <h6><span class="label">Figure 12-23. </span>Epic Saga<sup>(sao)</sup> requires compensation, but side effects can occur</h6>
+        </div></figure>
+        
+        <p>“We call this a <em>side effect</em> within distributed architectures. <a data-type="indexterm" data-primary="distributed architectures" data-secondary="side effects" id="idm45978841476336"></a><a data-type="indexterm" data-primary="side effects in distributed architectures" id="idm45978841475392"></a>By reversing the transaction in the Ticket Service, actions performed by other services using data from the prior update may have already taken place and might not be able to be reversed. <a data-type="indexterm" data-primary="isolation in ACID transactions" data-secondary="importance of" id="idm45978841474624"></a>This scenario points to the importance of <em>isolation</em> within a transaction, something that distributed transactions do not support. To address this issue, the Ticket Service could send another request through the data pump to the Analytics Service, telling that service to ignore the prior ticket information, but just imagine the amount of complex code and timing logic that would be required in the Analytics Service to address this compensating change. Furthermore, there may have been additional downstream actions taken on the analytical data already processed by the Analytics Service, further complicating the chain of events to reverse and correct. With distributed architectures and distributed transactions, it really is sometimes <a href="https://oreil.ly/zP8dK"><em>turtles all the way down</em></a>.”</p>
+        
+        <p>Logan paused for a moment, then continued, “Another issue—”</p>
+        
+        <p>Austen interrupted, “Another issue?”</p>
+        
+        <p>Logan smiled. “Another issue regarding compensating updates is compensation failures. Keeping with the same Epic Saga example for completing a ticket, notice in <a data-type="xref" href="#fig-managing-workflows-saga-compensate-fail">Figure 12-24</a> that in step 7 a compensating update is issued to the Ticket Service to change the state from <em>completed</em> back to <em>in-progress.</em> However, in this case, the Ticket Service generates an error when trying to change the state of the ticket (step 8).”</p>
+        
+        <figure><div id="fig-managing-workflows-saga-compensate-fail" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1224.png" alt="Saga Compensation Failure" width="600" height="494">
+        <h6><span class="label">Figure 12-24. </span>Compensating updates within an Epic Saga can fail, leading to inconsistency and confusion about what action to take in the event of a compensation failure</h6>
+        </div></figure>
+        
+        <p>“I’ve seen that happen! It took forever to track that down,” said Addison.</p>
+        
+        <p>“Architects and developers tend to assume that compensating updates will always work,” Logan said. “But sometimes they don’t. In this case, as shown in <a data-type="xref" href="#fig-managing-workflows-saga-compensate-fail">Figure 12-24</a>, there is confusion about what sort of response to send back to the end user (in this case, the Sysops Squad expert). The ticket status is already marked as <em>complete</em> because the compensation failed, so attempting the “mark as complete” request again might only lead to yet another error (such as <em>Ticket already marked as complete</em>). Talk about confusion on the part of the end user!”</p>
+        
+        <p>“Yeah, I can imagine the developers coming to us to ask us how to resolve this issue,” Addison said.</p>
+        
+        <p>“Often developers are good checks on incomplete or confusing architecture solutions. If they are confused, there may be a good reason,” said Logan. “OK, one more issue. Atomic distributed transactions and corresponding compensating updates also impact responsiveness. If an error occurs, the end user must wait until all corrective action is taken (through compensating updates) before a response is sent telling the user about the error.”</p>
+        
+        <p>“Isn’t that where the change to eventual consistency helps, for responsiveness?” asked Austen.</p>
+        
+        <p class="pagebreak-before">“Yes, while responsiveness can sometimes be resolved by asynchronously issuing compensating updates through eventual consistency (such as with the Parallel Saga and the Anthology Saga pattern), nevertheless most atomic distributed transactions have worse responsiveness when compensating updates are involved.”</p>
+        
+        <p>“OK, that makes sense—atomic coordination will always have overhead,” Austen said.</p>
+        
+        <p>“That’s a lot of information. Let’s build a table to summarize some of the trade-offs associated with atomic distributed transactions and compensating updates.” (See <a data-type="xref" href="#table-compensation-tradeoffs">Table 12-12</a>.)</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978841459696">
+        <h5>Trade-Offs</h5><table id="table-compensation-tradeoffs" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 12-12. </span>Trade-offs associated with atomic distributed transactions and compensating updates</caption>
+        <thead>
+        <tr>
+        <th>Advantages</th>
+        <th>Disadvantages</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>All data restored to prior state</p></td>
+        <td><p>No transaction isolation</p></td>
+        </tr>
+        <tr>
+        <td><p>Allows retries and restart</p></td>
+        <td><p>Side effects may occur on compensation</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td><p>Compensation may fail</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td><p>Poor responsiveness for the end user</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        
+        <p>Logan said, “While this compensating transaction pattern exists, it also offers a number of challenges. Who wants to name one?”</p>
+        
+        <p>“I know: <em>a service cannot perform a rollback</em>,” said Austen. “What if one of the services <em>cannot</em> successfully undo the previous operation? The orchestrator must have coordination code to indicate that the transaction wasn’t successful.”</p>
+        
+        <p>“Right—what about another?”</p>
+        
+        <p>"<em>To lock or not lock participating services?</em>" said Addison. “When the mediator places a call to a service and it updates a value, the mediator will make calls to subsequent services that are part of the workflow. However, what happens if another request appears for the first service contingent on the outcome of the first request’s resolution, either from the same mediator or a different context? This distributed architecture problem becomes worse when the calls are asynchronous rather than synchronous (illustrated in <a data-type="xref" href="#sec-phone-tag-saga">“Phone Tag Saga<sup>(sac)</sup> Pattern”</a>). Alternatively, the mediator could insist that other services don’t accept calls during the course of a workflow, which guarantees a valid transaction but destroys performance and scalability.”</p>
+        
+        <p>Logan said, “Correct. Let’s get philosophical for a moment. Conceptually, transactions force participants to stop their individual worlds and synchronize on a particular value. This is so easy to model with monolithic architectures and relational databases that architects overuse transactions in those systems. Much of the real world isn’t transactional, <a data-type="indexterm" data-primary="Hohpe, Gregor" id="idm45978841443984"></a><a data-type="indexterm" data-primary="Starbucks Does Not Use Two-Phase Commit (Hohpe)" id="idm45978841443280"></a>as observed in the famous essay by Gregor Hohpe, <a href="https://oreil.ly/feCe1">“Starbucks Does Not Use Two-Phase Commit”</a>. Transactional coordination is one of the hardest parts of architecture, and the broader the scope, the worse it becomes.”</p>
+        
+        <p>“Is there an alternative to using an Epic Saga?” Addison asked.</p>
+        
+        <p>“Yes!” Logan said. “A more realistic approach to the scenario described in <a data-type="xref" href="#fig-managing-workflows-saga-compensate-fail">Figure 12-24</a> might be to use either a Fairy Tale Saga or a Parallel Saga pattern. These sagas rely on asynchronous eventual consistency and state management rather than atomic distributed transactions with compensating updates when errors occur. With these types of sagas, the user is less impacted by errors that might occur within the distributed transaction, because the error is addressed behind the scenes, without end-user involvement. Responsiveness is also better with the state management and eventual consistency approach, because the user does not have to wait for corrective action to be taken within the distributed transaction. If we have issues with atomicity, we can investigate those patterns as alternatives.”</p>
+        
+        <p>“Thanks—that’s a lot of material, but now I see why the architects made some of the decisions in the new architecture,” Addison said.<a data-type="indexterm" data-startref="ch12-ssts" id="idm45978841439248"></a><a data-type="indexterm" data-startref="ch12-ssts2" id="idm45978841438544"></a><a data-type="indexterm" data-startref="ch12-ssts3" id="idm45978841437872"></a><a data-type="indexterm" data-startref="ch12-ssts4" id="idm45978841437200"></a><a data-type="indexterm" data-startref="ch12-ssts5" id="idm45978841436528"></a><a data-type="indexterm" data-startref="ch12-sstsa" id="idm45978841435856"></a><a data-type="indexterm" data-startref="ch12-sstsb" id="idm45978841435184"></a></p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        </div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492086888/files/epub.css" crossorigin="anonymous"><script src="https://learning.oreilly.comhttps://cdn.jsdelivr.net/npm/mathjax@3/es5/mml-svg.js"></script></div></div></section>
+</div>
+
+https://learning.oreilly.com

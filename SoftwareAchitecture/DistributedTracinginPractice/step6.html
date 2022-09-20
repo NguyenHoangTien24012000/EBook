@@ -1,0 +1,973 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 6. Overhead, Costs, and Sampling"><div class="chapter" id="chapter_7">
+        <h1><span class="label">Chapter 6. </span>Overhead, Costs, and Sampling</h1>
+        
+        
+        <p><a data-type="indexterm" data-primary="spans" data-secondary="cost of tracing and span selection" data-seealso="cost of tracing" id="idm45357000670664"></a>Defining the right set of spans to trace to understand your application can
+        be a challenge—though a challenge worth rising to—but once you’ve done
+        so, you’ll find yourself faced with another challenge: managing the torrent of
+        spans as they’re emitted from your application. Even when your application is
+        generating data at the right volume, it’s still important to understand the
+        impact on the performance of your application and the cost of your computing
+        infrastructure. The first tenet of distributed tracing—like all
+        observability tools—should be to “first, do no harm.” Tracing can be
+        implemented in a way that has negligible impact on your application, but
+        managing the cost of the infrastructure can be more difficult.</p>
+        
+        <p>Not all spans have equal value. Many spans represent run-of-the-mill requests
+        that are (hopefully) bountiful within your application. While it’s useful to
+        measure the performance of these requests and perhaps to have a few examples,
+        chances are that just a handful will be sufficient. On the other hand, spans
+        related to a rarely occurring bug or to a small but important user can provide
+        critical insight into what’s happening and why.</p>
+        
+        <p>Above all, it’s important that the set of spans representing a single request
+        are preserved as an atomic unit. If only a part of a request is available,
+        then tracing has failed in its goal of providing end-to-end information about
+        what’s happening. This means than while many spans might appear to be low
+        value because they represent ordinary cases, they provide context for other
+        less-ordinary spans within the same request.</p>
+        
+        <p>If not all spans have equal value, then selecting the right spans is crucial
+        to managing costs and making sure you are getting a return on your investment
+        in tracing.</p>
+        
+        <p>In this chapter, we will make a few assumptions about the architecture of a
+        tracing solution to aid our discussion. <a data-type="indexterm" data-primary="traces" data-secondary="tracer architecture" id="idm45357000665608"></a>Most tracing solutions include most
+        or all of the components shown in <a data-type="xref" href="ch05.html#figure6-architecture">Figure&nbsp;5-1</a>, though they may be
+        implemented in different ways. First, most tracing solutions include some
+        sort of SDK that enables application developers
+        to create and annotate spans. Some solutions may also include an agent that
+        runs close to application services as a sidecar process or on the same host.
+        A set of collectors begin the aggregation process, while finally spans are
+        analyzed and stored by some central service.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Application Overhead"><div class="sect1" id="idm45357000663064">
+        <h1>Application Overhead</h1>
+        
+        <p><a data-type="indexterm" data-primary="distributed tracing" data-secondary="cost of" data-see="cost of tracing" id="idm45357000661896"></a><a data-type="indexterm" data-primary="distributed applications" data-secondary="cost of tracing" data-see="cost of tracing" id="idm45357000660648"></a>The first place the cost of tracing can show up is in the performance of
+        the application itself. Ideally, tracing SDKs would have no effect on your
+        application’s performance, but without some care, tracing can have an impact
+        on both your application’s latency and its throughput.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Latency"><div class="sect2" id="latency-sect">
+        <h2>Latency</h2>
+        
+        <p><a data-type="indexterm" data-primary="performance considerations" data-secondary="request latency" id="idm45357000657080"></a><a data-type="indexterm" data-primary="cost of tracing" data-secondary="request latency" id="idm45357000656088"></a><a data-type="indexterm" data-primary="latency" data-secondary="in cost of tracing" data-secondary-sortas="cost of tracing" id="idm45357000655144"></a><em>Latency</em>, or the time required to process a request, is of utmost importance
+        to application owners: reducing latency is one of the primary metrics that
+        lead developers to look to distributed tracing. However, gathering the data
+        required to build traces can also contribute to latency.
+        Understanding that impact is an important part of choosing the right
+        granularity for spans.</p>
+        
+        <p>Creating and finishing spans as well as adding tags and logs all can generate latency.
+        High-performance tracers perform only the absolutely necessary work on application
+        threads and move the remaining work to a background thread. Still, building spans often
+        requires additional function calls, allocation, or updates to shared data structures.
+        For example:</p>
+        
+        <ul>
+        <li>
+        <p>Creating a span might require allocating a new object, adding a reference to
+        the string representing the name of the operation, reading a value from a
+        performance timer, and possibly updating some thread-local state.</p>
+        </li>
+        <li>
+        <p><a data-type="indexterm" data-primary="logs" data-secondary="latency of request" id="idm45357000650248"></a><a data-type="indexterm" data-primary="events" data-secondary="latency of request" id="idm45357000649272"></a>Logging an event may require serializing a data structure into a generic
+        format that can be sent over the network.</p>
+        </li>
+        <li>
+        <p>Finishing a span might require reading a value from a performance timer,
+        updating a field in an object, and storing that object in a shared buffer.</p>
+        </li>
+        </ul>
+        
+        <p>Allocating additional objects can certainly have an impact, especially if
+        tracing instrumentation is added to a performance-critical piece of code. In
+        a garbage-collected language, this allocation may trigger a collection which
+        can have further negative impact on latency.</p>
+        
+        <p>Logging has the greatest potential for impact here as it often involves the
+        greatest amount of data. Best practices for logging mean that an event should
+        be structured: application authors should log each event with a well-defined
+        structure, including field names:</p>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">span</code><code class="p">.</code><code class="nx">LogEvent</code><code class="p">({</code><code class="s1">'request_id'</code><code class="o">:</code> <code class="nx">req</code><code class="p">.</code><code class="nx">id</code><code class="p">,</code>
+                <code class="s1">'error_code'</code><code class="o">:</code> <code class="mi">404</code><code class="p">,</code>
+                <code class="s1">'message'</code><code class="o">:</code> <code class="s1">'document not in corpus'</code><code class="p">});</code></pre>
+        
+        <p>However, these events must be converted to a generic format that can be sent
+        over the network to downstream tracer systems. Usually this means that each
+        event is serialized into a single string, often JSON. This requires
+        additional allocation and time to convert integers and other binary data into
+        appropriate representations.</p>
+        
+        <p>One strategy for reducing the cost of this serialization is to defer this
+        work or move it to a background thread. While attractive, this can
+        have unintended consequences if any of the parameters passed as part of the
+        event are subsequently modified. Consider <a data-type="xref" href="#example6-2">Example&nbsp;6-1</a>, where
+        incremental progress is logged as part of a span.</p>
+        <div id="example6-2" data-type="example">
+        <h5><span class="label">Example 6-1. </span>Incremental progress logged as part of a span</h5>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">status</code> <code class="o">=</code> <code class="p">{</code><code class="nx">progress</code><code class="o">:</code> <code class="mf">0.1</code><code class="p">,</code> <code class="nx">complete</code><code class="o">:</code> <code class="kc">false</code><code class="p">};</code>
+        <code class="nx">span</code><code class="p">.</code><code class="nx">LogEvent</code><code class="p">({</code><code class="s1">'message'</code><code class="o">:</code> <code class="s1">'work started'</code><code class="p">,</code> <code class="s1">'status'</code><code class="o">:</code> <code class="nx">status</code><code class="p">});</code>
+        <code class="nx">doSomething</code><code class="p">();</code>
+        <code class="nx">status</code><code class="p">.</code><code class="nx">progress</code> <code class="o">=</code> <code class="mf">0.2</code><code class="p">;</code></pre></div>
+        
+        <p>If the event is not serialized until after the last line of that example, the
+        data that later appears as part of the trace will not reflect the state of the
+        application when <code>LogEvent</code> was called.</p>
+        
+        <p>Some tracers distinguish between an ordinary event and one which might be
+        serialized out of band. However, application developers often miss this
+        subtle distinction, and many tracers opt for a simple interface where all
+        events may be serialized out of band. As such, many tracer APIs force users
+        to express each field of an event as a scalar value. If that’s not the case,
+        best practice is to avoid passing shared, mutable data structures when logging
+        with tracers.</p>
+        
+        <p>In a multithreaded application, using a shared buffer can become a source of
+        contention as many threads try to add spans to that buffer. This can be
+        mitigated by either batching spans locally before adding them to a shared
+        buffer or by using a lock-free data structure as the implementation of that
+        buffer.</p>
+        
+        <p>While tracing can contribute to application latency, following best practices
+        usually means that its impact is quite small and might even be too small to be
+        measured. For example, if spans are only created as part of network calls,
+        the latency changes will be in the noise: one additional function call,
+        allocating a handful of bytes, and performing an atomic compare-and-swap
+        instruction are all orders of magnitude faster than making a round-trip RPC,
+        even within a single datacenter. When combining these best practices with
+        reusable buffers and lock-free structures, and moving work to a background
+        thread, most developers can safely ignore the latency impact of tracing even
+        in user-facing production systems.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45357000564488">
+        <h5>Performance Impact of Other Kinds of Tracing</h5>
+        <p><a data-type="indexterm" data-primary="distributed tracing" data-secondary="other kinds of tracing" id="idm45357000563400"></a>Throughout this book, we focus on <em>distributed</em> tracing, but there are many
+        other kinds of tracing that developers use to understand applications
+        performance. <a data-type="indexterm" data-primary="traces" data-secondary="kernel tracing" id="idm45357000561592"></a><a data-type="indexterm" data-primary="kernel tracing" id="idm45357000560616"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="kernel tracing" id="idm45357000559944"></a>Kernel tracing and <a data-type="indexterm" data-primary="traces" data-secondary="browser tracing" id="idm45357000558904"></a><a data-type="indexterm" data-primary="browser tracing" data-seealso="web clients" id="idm45357000557928"></a><a data-type="indexterm" data-primary="web clients" data-secondary="browser tracing" id="idm45357000556984"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="browser tracing" id="idm45357000556040"></a>browser tracing are two examples. Many of
+        these techniques and the associated tools focus on a single process, diving
+        deep into the performance of that process. They often provide extremely
+        fine-grained performance data, even down to the level of an individual
+        function or line of code. To provide that level of resolution, these tools
+        integrate tightly with the language complier or runtime and may have
+        significant impact on performance. If enabled in user-facing or large scale
+        deployments, this could result in poor user experience or additional
+        infrastructure costs.</p>
+        
+        <p><a data-type="indexterm" data-primary="performance considerations" data-secondary="of distributed tracing" data-secondary-sortas="distributed tracing" id="idm45357000554280"></a>When developers first learn about distributed tracing and how it’s being using
+        in production systems, they may be surprised to learn how little effect it has
+        on performance. This is largely due to the granularity of
+        instrumentation: since distributed tracing focuses on events such as
+        interprocess communication, the overhead is negligible when compared to the
+        duration of the events themselves.</p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Throughput"><div class="sect2" id="idm45357000658264">
+        <h2>Throughput</h2>
+        
+        <p><a data-type="indexterm" data-primary="throughput in cost of tracing" id="idm45357000550984"></a><a data-type="indexterm" data-primary="infrastructure costs" data-secondary="throughput and tracing" id="idm45357000550312"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="application throughput" id="idm45357000549368"></a><a data-type="indexterm" data-primary="cost of tracing" data-secondary="application throughput" id="idm45357000548456"></a>Tracing can also affect application performance by reducing <em>throughput</em>, the
+        number of requests that a fixed amount of infrastructure can handle in a fixed
+        period of time. This can result in increased infrastructure costs, since
+        additional computing power is required to handle the same number of requests.
+        Throughput is often an important concern for high-volume services, where these
+        costs can be significant.</p>
+        
+        <p>As described in <a data-type="xref" href="#latency-sect">“Latency”</a>, one of the primary ways that latency impact
+        is managed is by moving work to a background thread. This thread (or threads)
+        is then responsible for serializing span data so that it can be sent
+        downstream. It is also responsible for buffering spans to reduce per-span
+        network overhead as well as retrying failed network requests. As in other
+        contexts, buffering has its trade-offs. A larger buffer trades off-network
+        overhead for increased memory usage. In addition, larger buffers introduce
+        a delay between when events occur in the application and when they can be
+        observed in a tracing tool. Best practices indicate that application events
+        should be reflected in observability tools within one minute: any more delay
+        can mean that developers and operators can’t adequately understand whether the changes they are making (for example, rollbacks) are having the desired
+        effects.</p>
+        
+        <p><a data-type="indexterm" data-primary="cost of tracing" data-secondary="mobile clients powering down" id="idm45357000544216"></a><a data-type="indexterm" data-primary="mobile clients" data-secondary="powering down and span buffering" id="idm45357000543224"></a>For mobile clients, power is another critical resource, and many devices will
+        periodically power down mobile data radios to save power. Tracer SDKs
+        should be careful not to buffer spans for too long in case the radio is powered down in the meantime (and sending those spans would cause it to be powered up again).</p>
+        
+        <p>Given these concerns about memory and power, and the fact that other parts of
+        the tracing pipeline may also introduce additional delay, most tracer
+        libraries buffer spans for at most a few seconds, usually less than a
+        second. Network costs may also be reduced by maintaining long-lived
+        connections to downstream tracer systems, for example by streaming spans to
+        backends, effectively reducing the delay to nothing while also keeping memory
+        impact low.</p>
+        
+        <p><a data-type="indexterm" data-primary="compression of span data" id="idm45357000540664"></a>Tracers may compress span data to reduce the network costs, though this is
+        another example of trading computing resources for network ones. Often,
+        spans emitted from a single process will share many operation names, tag keys,
+        and even some tag values. For example, a service will generally only serve a
+        static number of endpoints, which in part determine the unique operation names
+        found in the spans emitted by that process. Often spans will include a tag
+        indicating the language or platform, the host, or the datacenter, all of which
+        will be shared by all spans emitted by that process. If these strings are
+        sent only once as part of a request containing many spans, a significant amount
+        of bandwidth can be saved. Tracers may also use a generic compression
+        technique, such as gzipping the entire span buffer, before sending it over the
+        wire. In all of these cases, tracers may incur slightly more computational
+        overhead in exchange for lowering network usage.</p>
+        
+        <p><a data-type="indexterm" data-primary="sampling" data-secondary="application throughput" id="idm45357000538584"></a>Finally, tracer SDKs and agents may also reduce the impact on throughput by
+        only emitting a subset of spans that could be generated. We’ll discuss this
+        as part of sampling strategies later in this chapter.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45357000537128">
+        <h5>Tracing Overhead at Google</h5>
+        <p><a data-type="indexterm" data-primary="Dapper" data-secondary="latency and throughput metrics" id="idm45357000535992"></a><a data-type="indexterm" data-primary="Google" data-secondary="Dapper project" data-see="Dapper" id="idm45357000534952"></a><a data-type="indexterm" data-primary="cost of tracing" data-secondary="Dapper latency and throughput metrics" id="idm45357000533736"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="Dapper latency and throughput metrics" id="idm45357000532776"></a><a data-type="indexterm" data-primary="sampling" data-secondary="Dapper latency and throughput metrics" id="idm45357000531800"></a>Google’s distributed tracing system, Dapper, was built to measure latency in a
+        high-volume distributed system. Many first-time tracing users believe that
+        tracing cannot be used in a production system because the overhead on the
+        application will be too high.</p>
+        
+        <p>Despite its enormous scale, Google deployed Dapper as part of every web search
+        request. As described in its technical report,<sup><a data-type="noteref" id="idm45357000529912-marker" href="ch06.html#idm45357000529912">1</a></sup> it measured the effects on latency and throughput
+        at a variety of different sampling rates. Even when each server is handling
+        tens of thousands of requests per second, Google found that the latency and
+        throughput impact of sampling 1 in 16 requests was within the experimental
+        error. <a data-type="indexterm" data-primary="cost of tracing" data-secondary="infrastructure costs" id="idm45357000501432"></a><a data-type="indexterm" data-primary="traces" data-secondary="storage of" id="idm45357000500584"></a><a data-type="indexterm" data-primary="infrastructure costs" data-secondary="Dapper sampling" id="idm45357000499736"></a><a data-type="indexterm" data-primary="data storage" data-secondary="Dapper sampling" id="idm45357000498952"></a>Dapper often sampled more aggressively—not because of the impact on
+        application overhead, but because of the infrastructure costs associated with
+        storing these spans. When running on hundreds of thousands of servers
+        concurrently, even with 1-for-16 sampling, Dapper generated far too much data
+        to store at a reasonable cost.</p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Infrastructure Costs"><div class="sect1" id="idm45357000497368">
+        <h1>Infrastructure Costs</h1>
+        
+        <p><a data-type="indexterm" data-primary="infrastructure costs" id="idm45357000496120"></a><a data-type="indexterm" data-primary="data storage" data-secondary="infrastructure costs" id="idm45357000495512"></a>While the effect of tracing on the application itself can be minimized
+        relatively easily, the cost of the network and storage required to collect,
+        store, and eventually analyze traces is a more significant design and
+        engineering challenge.</p>
+        
+        <p>We’ll walk through a simplified—and in many ways, naive—model to help
+        make these costs more concrete. This is not meant as a guide for analyzing
+        the cost of tracing your application, since it bakes in many assumptions about
+        the size and implementation of an application. Hopefully, however, it gives a
+        sense of the relative scale of the different ways that tracing can affect your
+        infrastructure costs.</p>
+        
+        <p>Assuming an individual span (including tags and logs) is 500 bytes in size, we
+        can start to estimate these costs by computing the approximate data rate
+        required to trace your application. You can do so based on the number of
+        end-user requests (that is, the number of interactions that your users have
+        with your application) and the number of services in your application
+        (including browser or mobile apps and backend services such as an
+        authentication service, a user database service, or a payment service). For
+        example, if your application serves two thousand end-user requests each second and
+        consists of 20 services, it would generate 20 MB of span data every second or
+        72 GB every hour.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Network"><div class="sect2" id="idm45357000492184">
+        <h2>Network</h2>
+        
+        <p><a data-type="indexterm" data-primary="cost of tracing" data-secondary="network costs" id="idm45357000490808"></a><a data-type="indexterm" data-primary="infrastructure costs" data-secondary="network costs" id="idm45357000489832"></a><a data-type="indexterm" data-primary="network costs" id="idm45357000488888"></a>Tracing solutions aim to move span data away from applications as quickly as
+        possible, both because this helps minimize the impact on the application and
+        because it makes these spans available for analysis (and therefore the
+        source of insights for tracing users) more quickly. As discussed earlier,
+        tracers can trade off some network costs by incurring additional computation,
+        but there are a number of additional design choices to be made in how these
+        spans are collected.</p>
+        
+        <p>Not all network costs are the same. Network transfer within a datacenter or
+        virtual private cloud (VPC) is typically free, and is usually only limited by
+        the capacity of an individual machine (often around a few GB per second).
+        Sending data out of a VPC, on the other hand, can quickly incur large costs.
+        Sending data within a region or a continent might cost as little as $0.01 per
+        GB, but costs quickly rise when sending data across continents or public
+        networks—by a factor of 10 or even 20. Assuming a cost of $0.10 per GB, a
+        tracer that sends every span over the internet would incur about $173 in
+        network fees per day for our small example application.</p>
+        
+        <p>As a basis for comparison, even a conservative estimate of the infrastructure
+        required to run the application itself is less than this amount. For example,
+        if we assume that each instance of a service can serve 500 requests per second
+        and that every service participates in every request, 80 VM instances are
+        required. At $0.04 per hour (on-demand prices) these instances would only
+        cost about $77 per day. Again, we are making a number of assumptions about
+        the behavior of an application (and your application’s performance might vary
+        by an order of magnitude), but this example shows that the network costs
+        required to send all spans over the internet are on the same scale as the
+        computing costs required to run an application. This is far beyond what most
+        organizations are willing to spend.</p>
+        
+        <p>Where spans are stored can have a huge impact on cost. Storing them close to
+        the application can reduce these costs, but this can complicate global
+        analysis of traces. Most tracers take a sample of spans
+        to reduce these costs.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Storage"><div class="sect2" id="idm45357000484520">
+        <h2>Storage</h2>
+        
+        <p><a data-type="indexterm" data-primary="data storage" data-secondary="cost of" id="idm45357000483320"></a><a data-type="indexterm" data-primary="infrastructure costs" data-secondary="storage costs" id="idm45357000482344"></a><a data-type="indexterm" data-primary="data storage" data-secondary="infrastructure costs" id="idm45357000481400"></a><a data-type="indexterm" data-primary="cost of tracing" data-secondary="storage costs" id="idm45357000480456"></a>No matter where spans are stored, tracers must store them somewhere. As a
+        baseline, assume you use a simple block storage system (such as AWS S3 or Google Cloud Storage), and your provider
+        charges $0.02 to store 1 GB for a month. Assuming that storing spans for
+        one month is sufficient, the cost of using this solution for
+        storing spans generated by our example application would be about $35 per day.</p>
+        
+        <p>However, these storage solutions are among the simplest—and cheapest—solutions. Making use of spans requires much more than just storing them:
+        providing functionality to search spans, bulk access for analysis of similar
+        or related spans, and aggregating metrics about groups of spans all require
+        some way of indexing spans once they are stored. These indices of course also
+        require storage and other resources, so this estimate must be seen as the
+        lower bound on what a naive implementation would cost. As in the case of
+        networking resources, most tracing solutions implement some form of sampling
+        to reduce storage costs.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45357000477816">
+        <h5>Tracing Costs at Google</h5>
+        <p><a data-type="indexterm" data-primary="sampling" data-secondary="Dapper network and storage costs" id="idm45357000476616"></a><a data-type="indexterm" data-primary="Dapper" data-secondary="network and storage costs" id="idm45357000475672"></a><a data-type="indexterm" data-primary="network costs" data-secondary="Dapper" id="idm45357000474760"></a><a data-type="indexterm" data-primary="data storage" data-secondary="Dapper sampling" id="idm45357000473816"></a><a data-type="indexterm" data-primary="cost of tracing" data-secondary="network costs" id="idm45357000472872"></a><a data-type="indexterm" data-primary="cost of tracing" data-secondary="Dapper network and storage costs" id="idm45357000471928"></a>Most of the sampling implemented with Dapper was aimed at reducing
+        network and storage costs. The default sampling rate in the process itself
+        was 1 in 1024, and spans were typically reduced by another factor
+        of 10 before traces were stored <span class="keep-together">durably</span>.</p>
+        
+        <p>Even at these sampling rates, Dapper stored traces in regional repositories to
+        reduce network costs. At the time when Dapper was originally deployed, most
+        requests were handled by a collection of services running within a single
+        region, so all of the spans for a given trace would be generated in a single
+        region. The team was frugal with which attributes could be used to search
+        for spans. While they originally implemented two different indices (one for
+        service and one for host), they found that usage patterns didn’t justify the
+        cost of maintaining these indices separately. They later combined these two
+        into a single composite index to bring costs in line with value.<sup><a data-type="noteref" id="idm45357000468696-marker" href="ch06.html#idm45357000468696">2</a></sup></p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Sampling"><div class="sect1" id="ch7_sampling">
+        <h1>Sampling</h1>
+        
+        <p><a data-type="indexterm" data-primary="infrastructure costs" data-secondary="sampling to reduce" data-seealso="sampling" id="idm45357000465624"></a><a data-type="indexterm" data-primary="sampling" data-secondary="costs of tracing" id="idm45357000464376"></a><a data-type="indexterm" data-primary="cost of tracing" data-secondary="sampling" id="idm45357000463432"></a>So far in this chapter, we’ve discussed the many different costs that a
+        tracing solution might incur. We concluded that if every span of every
+        request was captured, stored, and indexed, the cost of tracing could be
+        greater than the cost of running the application itself.</p>
+        
+        <p>It is paramount, therefore, that a tracing solution reduce the amount
+        of telemetry data in some way. Tracers use several strategies to do
+        so, but the most widely used and effective is to collect and process a
+        subset of spans by <em>sampling</em> them. Almost all significant
+        application behavior will surface in more than one request, so as long
+        as the tracing solution can capture at least one example of each
+        interesting behavior, users can use those examples to find and address
+        bugs and performance problems.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Minimum Requirements"><div class="sect2" id="idm45357000460616">
+        <h2>Minimum Requirements</h2>
+        
+        <p><a data-type="indexterm" data-primary="sampling" data-secondary="minimum requirements" id="idm45357000459240"></a>The first and most important consideration when determining how to sample
+        spans is to make sure that the tracing solution is building complete traces.
+        By complete, we mean that if a tracer chooses to capture a given request, it
+        must collect <em>every</em> span from that request. Failing to do so means that
+        users will be left with as many questions as they started with.</p>
+        
+        <p>The trace in <a data-type="xref" href="#figure6-2">Figure&nbsp;6-1</a> shows three spans as part of an example of an
+        incomplete trace. These three spans are labeled A (the root of the trace),
+        C (missing parent span B), and E (missing parent span D). From these,
+        the user can possibly infer that the latency is due to C or E, but the
+        three configurations in the figure show there are several
+        possibilities for why C and E were invoked. Their closest common ancestor
+        might be A, B, or D, and each of these possibilities might lead to users
+        taking different actions to understand the causes of slowness. Furthermore,
+        additional spans as children of C or E that did not appear in the trace
+        might describe the ultimate cause of the latency.</p>
+        
+        <p>Sampling consistently across a distributed system is difficult because, like
+        in many challenges in a distributed system, it requires coordination. Either
+        sampling decisions must be made globally or the tracer component associated
+        with each service must come to the same sampling decision, often by sharing
+        some information about the request. This must be done in an extremely
+        efficient way since it must be done for every request handled by the
+        application.</p>
+        
+        <figure class="width-75"><div id="figure6-2" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0601.png" alt="dtip 0601" width="825" height="1115">
+        <h6><span class="label">Figure 6-1. </span>An incomplete trace.</h6>
+        </div></figure>
+        
+        <p><a data-type="indexterm" data-primary="network costs" data-secondary="sampling decisions and" id="idm45357000451976"></a>Because the cost of sending spans over the network between datacenters is
+        high, sampling decisions must be made in—or very close to—the
+        application: at the very least, the decision must be made before spans leave
+        the datacenter or VPC. This poses an especially large problem for
+        applications that span (no pun intended!) regions or even cloud providers.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before less_space" data-pdf-bookmark="Strategies"><div class="sect2" id="idm45357000450376">
+        <h2>Strategies</h2>
+        
+        <p><a data-type="indexterm" data-primary="sampling" data-secondary="strategies" id="idm45357000448760"></a><a data-type="indexterm" data-primary="data analysis" data-secondary="sampling strategies and" id="idm45357000447784"></a>As sampling is nearly ubiquitous in tracing solutions, it can be useful to
+        classify each solution by the methods and kinds of data it uses to sample
+        traces. Which traces are sampled affects which kinds of analysis can be
+        performed and of course the results of those analyses. Consider which sorts of
+        use cases are most important to you as part of choosing a tracing solution and
+        sampling approach.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Up-front sampling"><div class="sect3" id="idm45357000446168">
+        <h3>Up-front sampling</h3>
+        
+        <p><a data-type="indexterm" data-primary="sampling" data-secondary="up-front sampling" id="idm45357000444824"></a><a data-type="indexterm" data-primary="up-front sampling" id="idm45357000443624"></a><a data-type="indexterm" data-primary="head-based sampling" id="idm45357000442952"></a>A simple way to determine which spans to keep is to make sampling decisions
+        before any spans have been generated for a given request. This is often
+        called <em>up-front</em> or <em>head-based</em> sampling, as the decision is made at the
+        beginning or “head” of the request. In some cases, it is referred to as
+        <a data-type="indexterm" data-primary="unbiased sampling" id="idm45357000441016"></a><em>unbiased</em> sampling when sampling decisions are made without even looking at
+        the request.</p>
+        
+        <p><a data-type="indexterm" data-primary="Dapper" data-secondary="up-front sampling" id="idm45357000439800"></a>In its original instantiation, Dapper followed this strategy by flipping a
+        coin at the beginning of each request and passing the result of that coin flip
+        to every other service that participated in the request. With this strategy,
+        each service knows at the moment it begins processing a request whether
+        to capture spans as part of handling that request.</p>
+        
+        <p><a data-type="indexterm" data-primary="sampling" data-secondary="sampling rates" id="idm45357000438040"></a>Solutions can vary their sampling rates based on some features of a request.
+        For example, the tracer for a lower-throughput service or endpoint might be
+        configured to use a higher sampling rate. In this case, as a user of a
+        tracing solution, you are essentially writing a set of rules that govern how
+        data is sampled.</p>
+        
+        <p>Sampling rates can also be varied dynamically to achieve a desired output
+        rate: this enables you to budget for a given amount of infrastructure (mostly
+        network and storage) and to make the most of that infrastructure, regardless
+        of the actual throughput of the application.</p>
+        
+        <p>Up-front sampling is a strong approach for use cases that only consider traces
+        in aggregate (especially high-throughput services) and for which there is
+        little diversity within the population of traces. Up-front sampling was
+        chosen as part of the implementation of Dapper as Google search requests are
+        both plentiful and relatively homogeneous.</p>
+        
+        <p>While up-front sampling is both simple and efficient, it suffers from two
+        deficiencies. First, requiring that sampling decisions are passed to every
+        service that participates in the request means there is a high degree of uniformity in
+        the application code. It also requires that the root span of each request can
+        be determined with high confidence. If the result of each coin flip is not
+        propagated properly or if it is inadvertently ignored, incomplete traces will
+        result. At Google, a unified codebase (with a small set of languages and a
+        single RPC framework) was sufficient. In addition, Google also runs a
+        standard set of frontend servers, making it easy to determine where traces
+        should start for nearly all requests.</p>
+        
+        <p>Second, up-front sampling means that sampling decisions are made with no
+        information about what will happen in the course of handling the request. The
+        parameters of the request itself can be used to inform that decision, but
+        important signals such as the duration of the request or even if the request
+        succeeded are, obviously, not known until after the request has completed.
+        This can be mitigated to some extent by performing the sampling in two stages.
+        A first pass of sampling is made within each service instance to reduce the
+        amount of data to a more manageable level. This partially sampled data can
+        then be forwarded to a centralized solution which—with the advantage of a
+        now complete picture of each request and its response, including latency and
+        response code—can make a second sampling decision. However, if <em>any</em>
+        sampling occurs within the service instances themselves (that is, in the first
+        pass), requests with interesting behavior that occur infrequently will be
+        lost. In the next section, we will consider a solution where sampling
+        decisions are made only in a central location.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Response-based sampling"><div class="sect3" id="idm45357000431896">
+        <h3>Response-based sampling</h3>
+        
+        <p><a data-type="indexterm" data-primary="sampling" data-secondary="response-based" id="idm45357000430696"></a><a data-type="indexterm" data-primary="response-based sampling" id="idm45357000429720"></a>To address many of the shortcomings of up-front sampling, many tracers make
+        each sampling decision based on features of the response or on information
+        derived from the request as a whole, including the response. For example,
+        part of the response may indicate that the request failed. This failure may
+        be used as a trigger to sample this request (since failed requests may be
+        especially valuable in tracking down issues). This strategy is sometimes
+        called <a data-type="indexterm" data-primary="tail-based sampling" id="idm45357000428456"></a><em>tail-based</em> sampling since the sampling decision is made at the end or
+        the “tail” of the request.<sup><a data-type="noteref" id="idm45357000427288-marker" href="ch06.html#idm45357000427288">3</a></sup></p>
+        
+        <p>In addition to errors, response-based sampling may also use the duration of
+        the request as part of making sampling decisions. For example, tracers may
+        set a threshold and keep all (or a significant portion of) traces whose
+        duration exceed that threshold. Response sizes or other application-specific
+        features of responses may also be used as part of making those decisions.</p>
+        
+        <p>Response-based sampling is significantly harder to implement than up-front
+        sampling. Unlike up-front sampling, whether a span is going to be
+        sampled may not be known until seconds (or more) after the part of the request
+        corresponding to that span has finished. For example, a deeply nested span
+        may be ready seconds before the root span of its trace has finished—and
+        seconds before a sampling decision for that trace can be made. In that case,
+        that child span must be temporarily stored in some way. This can consume
+        resources from the application (if it’s stored locally) or additional network
+        bandwidth (if it’s not).</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Centralized sampling decisions"><div class="sect3" id="idm45357000424344">
+        <h3>Centralized sampling decisions</h3>
+        
+        <p><a data-type="indexterm" data-primary="sampling" data-secondary="centralized sampling decisions" id="idm45357000422840"></a>Since the purpose of tracing is to construct a <em>global</em> view of your
+        application, it shouldn’t be surprising that sampling techniques
+        require <em>global</em> knowledge of your application. Even passing a single
+        bit from service to service, as in the case of up-front sampling, is a
+        form of global coordination. It follows that as more information is
+        centralized, more sophisticated sampling methods can be applied.</p>
+        
+        <p>A naive approach where we first centralize all spans and then perform any
+        sampling would, as discussed, be quite expensive. However, we can achieve
+        similar results by first centralizing only <em>portions of spans</em>, making
+        sampling decisions using that centralized data, and then communicating
+        those sampling decisions back out so that they can be implemented in a
+        distributed fashion.</p>
+        
+        <p>The first step in implementing this hybrid approach is to make sure that the
+        spans which are selected are still available at the time that sampling
+        decisions are made. This requires that spans are buffered for at least as
+        long as the duration of the longest request your application is expected to
+        handle. For example, if your application handles interactive search queries
+        that may take as long as 30 seconds, then this buffer must be large enough to
+        hold at least 30 seconds’ worth of spans (and probably more) to account for the
+        time it takes to make and communicate the sampling decisions themselves. In
+        other applications, a buffer of five or even 10 minutes might be more
+        appropriate. For the purposes of illustration, assume that the tracer will
+        buffer spans for one minute.</p>
+        
+        <p>For example, consider two spans that are part of the same trace: span A
+        represents handling an HTTP request and span B represents a
+        database query performed as part of handling that request. In addition,
+        assume that significant additional computation occurs after that database
+        query. <a data-type="xref" href="#figure6-3">Figure&nbsp;6-2</a> shows what this trace might look like.</p>
+        
+        <figure><div id="figure6-3" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0602.png" alt="dtip 0602" width="1340" height="524">
+        <h6><span class="label">Figure 6-2. </span>A trace with a timeline of buffer events.</h6>
+        </div></figure>
+        
+        <p>In <a data-type="xref" href="#figure6-3">Figure&nbsp;6-2</a>, span A doesn’t finish until 10 seconds
+        after span B finishes. If a property of span A (for example, the response
+        code of the HTTP request) is used to select A as part of the sample, that
+        decision cannot be made until at least 10 seconds after span B finishes. It
+        follows that span B must be kept in the buffer for at least 10  <span class="keep-together">seconds</span>.</p>
+        
+        <p>Typically, such a buffer is implemented as an in-memory cache in which spans
+        are appended to the buffer as they arrive. Memory is fast and cheap enough to
+        store these spans for a short period of time. Once the size of the buffer
+        reaches its limit, the oldest span is overwritten each time a new span is
+        added. Though these spans could be written to local disk, the additional
+        value of storing them durably is relatively low, and the cost of doing so is
+        usually large enough to make this approach prohibitively expensive.</p>
+        
+        <p>As the number of spans that are generated in one minute can be quite large, it
+        should be clear that we cannot implement this buffer inside of the service
+        process: the amount of memory required would be large enough to have a
+        significant impact on the service itself. Sometimes the buffer is implemented
+        as a sidecar process or, more commonly, in a separate container or on a
+        dedicated virtual machine (shown in <a data-type="xref" href="#figure6-2">Figure&nbsp;6-1</a> as a “collector”). As
+        discussed earlier, for high-throughput applications, this buffer would also need
+        to be located close to the application—within the same datacenter or VPC—to keep network costs under control.</p>
+        
+        <p><a data-type="indexterm" data-primary="spans" data-secondary="TraceID" id="idm45357000409064"></a><a data-type="indexterm" data-primary="traces" data-secondary="TraceID" id="idm45357000408088"></a><a data-type="indexterm" data-primary="sampling" data-secondary="TraceID on spans" id="idm45357000407144"></a>A key part of this approach is to make sure that all spans that are part of a
+        trace can be easily identified. In fact, this was already a requirement,
+        since the spans that make up a trace will arrive from many different sources
+        and as they are collected and analyzed, spans must be sorted into their
+        respective traces. As part of propagating context between processes, each
+        span must have a <em>TraceID</em> or other means to identify which trace it
+        belongs to. Tracing solutions can use TraceIDs to indicate which spans
+        should be sampled. Since TraceIDs are much smaller than the spans
+        themselves, and because the number of sampled spans is typically much smaller
+        than the total number of spans, this technique can dramatically lower
+        infrastructure costs. <a data-type="xref" href="#figure6-4">Figure&nbsp;6-3</a>
+        shows how part of the flow of spans from collectors to the central analysis
+        and storage components can be replaced with TraceIDs. If some or all trace
+        IDs are forwarded to the central analysis component, these can be sent back to
+        other collectors to ensure that sampling decisions are made consistently.</p>
+        
+        <figure><div id="figure6-4" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0603.png" alt="dtip 0603" width="1326" height="787">
+        <h6><span class="label">Figure 6-3. </span>An updated collection architecture showing propagation of TraceIDs.</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Selecting Traces"><div class="sect2" id="idm45357000423720">
+        <h2>Selecting Traces</h2>
+        
+        <p><a data-type="indexterm" data-primary="sampling" data-secondary="selecting traces" id="idm45357000400440"></a><a data-type="indexterm" data-primary="traces" data-secondary="sampling, selecting for" id="idm45357000399464"></a>Once a tracing solution offers a way to make sampling decisions based on a
+        wide range of request characteristics, we are left with a choice: which
+        characteristics should we use? Since the decision to sample a trace begins with
+        the decision to sample a span (which will eventually become part of that
+        trace), we should choose span characteristics that lead to valuable traces.</p>
+        
+        <p>As we’ve mentioned, one approach is to select traces which indicate
+        problems—those traces that are slow or have errors—since these often offer the
+        most actionable information. However, there are a few problems with this
+        approach. First, it is also useful to have healthy requests, which can serve
+        as a baseline for understanding problematic requests. Second, what
+        constitutes “slow” may depend on the operation that the span represents: we
+        might expect certain more expensive operations to generally be slower than
+        others, meaning that fast operations will rarely or never be sampled. Third,
+        though a given span may be tagged with an error, an operation further up the
+        stack may recover from that error, meaning that the trace as a whole is not
+        that interesting.</p>
+        
+        <p>Rather than selecting spans which are slow relative to all other spans, many
+        tracing solutions focus on spans which are slow relative to other spans for
+        the same service and operation. Similarly, spans that indicate errors at the
+        root of a trace or as the top-level span for a given service are more likely
+        to be of value. As such, tracing solutions may build models of performance
+        for each service and operation, and then select spans (and build traces)
+        relative to these models. In organizations with a few services per team and
+        at most dozens of operations per service, this approach often provides a lot
+        of value to users.</p>
+        
+        <p>Tracing solutions that take this approach, however, must put some
+        safety mechanisms in place to handle intentional or unintentional
+        misuses of these fields. For example, in our experience building and
+        managing tracing solutions both in-house and as a commercial product,
+        we’ve seen many examples of other kinds of data leaking into the
+        operation field. In one case, a developer set the operation to the
+        URL of the request, which included a user ID. This led to hundreds of
+        thousands of “operations” and an attempt by the tracing system to
+        capture representative slow traces for every one of them. Obviously,
+        this was both expensive and offered little value to users.</p>
+        
+        <p><a data-type="indexterm" data-primary="cardinality" data-secondary="sampling high-cardinality sets" id="idm45357000394392"></a>For implementers and power users of metrics tools, this will be a familiar
+        problem: maintaining state for each element of a high-cardinality set is
+        expensive. As a result, tracing solutions that attempt to find interesting
+        examples for each service and operation should include a safeguard such as
+        choosing only the most commonly occurring operations, up to some limit. In fact,
+        once such a safeguard is implemented, it can be applied to arbitrary tags,
+        enabling the tracing solution to capture representative samples for a wide
+        range of traces.</p>
+        
+        <p><a data-type="indexterm" data-primary="sampling" data-secondary="frequency of" id="idm45357000392504"></a>Once you’ve chosen what sorts of characteristics make a span (and therefore, a
+        trace) interesting, you’re left only with the choice of how frequently to
+        sample them. This choice can largely be driven by costs: set a budget for
+        infrastructure costs, then configure your tracing solution to periodically
+        sample as many traces as can fit into that budget.</p>
+        
+        <p>In addition, you may also consider selecting traces based on some external
+        events, such as when a new release is pushed out or when some production
+        configuration is changed. Service failures are often caused by changes to one
+        or more parts of an application, and ensuring that you have traces to help
+        explain what’s happening during these failures can be invaluable. The moment
+        when a failure is known to have occurred—for example, when an alert fires—is also an excellent opportunity to capture a number of traces.</p>
+        
+        <p><a data-type="indexterm" data-primary="sampling" data-secondary="bias, accounting for" id="idm45357000389816"></a>As with all biased sampling, it’s important that tracing tools account for
+        bias when computing statistics about latency, error rates, or other aspects of
+        application performance. For example, if your tracing solution biases toward
+        slower requests, it’s critical that these requests get <em>less</em> weight if they
+        are used to compute the average latency for your service.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Off-the-Shelf ETL Solutions"><div class="sect1" id="idm45357000387896">
+        <h1>Off-the-Shelf ETL Solutions</h1>
+        
+        <p><a data-type="indexterm" data-primary="ETL (extract-transform-load) tools" id="idm45357000386552"></a><a data-type="indexterm" data-primary="extract-transform-load (ETL) tools" id="idm45357000385880"></a>Can off-the-shelf extract-transform-load (ETL) tools be used to implement the ingestion portion
+        of a tracing solution? While it is certainly possible to do so, most
+        generic ETL tools are built to process data that is much more homogeneous. As
+        we’ve discussed, not all spans provide the same value: spans which are slow or
+        have errors may provide important clues to improving performance. Likewise,
+        ordinary spans that are part of the same trace as a slow span (or a span that
+        failed) may also provide helpful context. In addition, the true value of a
+        span might not be known until sometime after it is collected by a tracing
+        solution, seconds or even minutes later. Many ETL tools expect that each
+        piece of data can be processed independently or that collections can be
+        processed uniformly, and therefore are not a good fit for distributed tracing.</p>
+        
+        <p><a data-type="indexterm" data-primary="infrastructure costs" data-secondary="ETL tools for tracing" id="idm45357000383944"></a>Unsurprisingly, generic ETL solutions also offer less flexibility for trading
+        off different sorts of resources (for example, network versus storage). In
+        our experience, using a generic solution for the collection typically will
+        require an order of magnitude more infrastructure resources than a solution
+        built specifically for tracing.</p>
+        
+        <p>On the other hand, once spans have been sampled and grouped together into
+        traces, there are many opportunities to use off-the-shelf tools to analyze and
+        store them. Though detailing it is beyond the scope of this book, many of the
+        use cases described in Chapters <a href="ch07.html#chapter_9">7</a> and <a href="ch08.html#chapter_10">8</a> can be implemented
+        using off-the-shelf tools.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45357000380232">
+        <h5>Other Approaches to Reducing Data Volume (and Therefore Costs)</h5>
+        <p><a data-type="indexterm" data-primary="data collection" data-secondary="data volume reduction" id="idm45357000378984"></a><a data-type="indexterm" data-primary="data storage" data-secondary="data volume reduction" id="idm45357000378008"></a><a data-type="indexterm" data-primary="infrastructure costs" data-secondary="data volume reduction" id="idm45357000377064"></a><a data-type="indexterm" data-primary="cost of tracing" data-secondary="data volume reduction" id="idm45357000376120"></a><a data-type="indexterm" data-primary="sampling" data-secondary="data volume reduction" id="idm45357000375176"></a>One of the main challenges in building a tracing solution is managing costs:
+        sifting through spans to find information that will be valuable to users
+        without doubling your storage or network bills. Though we have focused on
+        sampling as the main technique for reducing data volume—and therefore
+        managing costs—there are other techniques that tracing solutions can also
+        take advantage of.</p>
+        
+        <p><a data-type="indexterm" data-primary="spans" data-secondary="statistics about" id="idm45357000373448"></a><a data-type="indexterm" data-primary="statistics" data-secondary="span statistics" id="idm45357000372472"></a>It might typically be considered out of scope for a tracing solution, but
+        gathering statistics about spans is a powerful way to derive some information
+        from a set of spans without recording every detail of that set or even of a
+        single span. The rate that a given operation occurs at, the frequency of
+        specific tag values, or a histogram of latency for a class of spans can all be
+        represented efficiently (often requiring less space than a single span) and
+        can offer powerful insights into what’s happening in an  <span class="keep-together">application</span>.</p>
+        
+        <p>Similarly, once a trace has been sampled, you need not store every detail of
+        that trace. Often just knowing which operations were on the critical path
+        (and how much each contributed) or the presence of certain interesting tags
+        can be valuable. If this information can be extracted before traces are
+        stored durably—and the trace itself discarded—storage costs can be
+        significantly reduced.</p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" class="notoc" data-pdf-bookmark="Summary"><div class="sect1" id="idm45357000369000">
+        <h1>Summary</h1>
+        
+        <p>Like other observability tools, distributed tracing tools must minimize the
+        impact they have on application performance. Fortunately, there are
+        straightforward ways of doing this: even at scale, tracing can be implemented
+        in a way that has very little overhead on the application itself, meaning that
+        it’s safe for you to use tracing in your <span class="keep-together">production</span> environments. This is
+        important because it is difficult to reproduce many failures and other issues
+        outside of production in distributed systems—and increasingly, in almost
+        any modern application. Using tracing in production will enable you to find
+        these issues much more quickly,</p>
+        
+        <p>While the impact on the application is small, the cost of processing and
+        storing trace data can be large. The value of traces is often in the details
+        they provide, whether following requests across services or in the tags and
+        events associated with spans. A trace can become much larger than the request and
+        response that it describes, so storing every trace would be expensive from an
+        infrastructure point of view. However, not all trace data offers the same
+        value. Traces representing slow or failed requests may offer a lot more
+        value. Sampling a subset of traces (and discarding the rest) is a commonly
+        used technique to make sure you are collecting the right traces while keeping
+        costs under control.</p>
+        
+        <p>As either an implementer or a user of a tracing solution (or both), you should
+        be aware of different sampling techniques, including when sampling decisions
+        are made and, most importantly, what information is used to inform those
+        decisions. Different techniques will offer different performance trade-offs
+        and provide better support for different sets of use cases.</p>
+        
+        <p>Since tracing takes a request-centric view of observability, it offers an
+        opportunity to serve as the backbone for other types of telemetry, including
+        metrics and logs. Tracing can help ensure you are maximizing the value of all
+        of your observability tools by putting telemetry data in context. In <a data-type="xref" href="ch07.html#chapter_9">Chapter&nbsp;7</a>, we’ll focus on what you should expect from observability tools in
+        general and how tracing relates to—and can amplify the benefits of—these
+        other tools.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        <div data-type="footnotes"><p data-type="footnote" id="idm45357000529912"><sup><a href="ch06.html#idm45357000529912-marker">1</a></sup> <a data-type="xref" href="bibliography01.html#Sig10">[Sig10]</a></p><p data-type="footnote" id="idm45357000468696"><sup><a href="ch06.html#idm45357000468696-marker">2</a></sup> <a data-type="xref" href="bibliography01.html#Sig10">[Sig10]</a></p><p data-type="footnote" id="idm45357000427288"><sup><a href="ch06.html#idm45357000427288-marker">3</a></sup> “Tail-based” can be an especially confusing term for those with a statistics background, as “tail” can refer to the narrow part of an asymmetric distribution. In that case, “tail-based” would mean sampling requests that have a higher latency compared with other requests.</p></div></div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492056621/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

@@ -1,0 +1,597 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 14. Managing Analytical Data"><div class="chapter" id="ch14-data-mesh">
+        <h1><span class="label">Chapter 14. </span>Managing Analytical Data</h1>
+        
+        
+        <p><code>Tuesday, May 31, 13:23</code></p>
+        <div class="story">
+        
+        <p>Logan and Dana (the data architect) were standing outside the big conference room, chatting after the weekly status meeting.<a data-type="indexterm" data-primary="analytical data" data-secondary="Sysops Squad saga" id="idm45978840953424"></a><a data-type="indexterm" data-primary="data" data-secondary="analytical data" data-tertiary="Sysops Squad saga" id="idm45978840952448"></a><a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="analytical data" id="idm45978840951232"></a></p>
+        
+        <p>“How are we going to handle analytical data in this new architecture?” asked Dana. “We’re splitting the databases into small parts, but we’re going to have to glue all that data back together for reporting and analytics. One of the improvements we’re trying to implement is better predictive planning, which means we are using more data science and statistics to make more strategic decisions. We now have a team that thinks about analytical data, and we need a part of the system to handle this need. Are we going to have a data warehouse?”</p>
+        
+        <p>Logan said, “We looked into creating a data warehouse, and while it solved the consolidation problem, it had a bunch of issues for us.”</p>
+        <hr>
+        </div>
+        
+        <p>Much of this book has been concerned with how to analyze trade-offs within existing architectural styles<a data-type="indexterm" data-primary="analytical data" data-secondary="about" id="idm45978840948368"></a><a data-type="indexterm" data-primary="data" data-secondary="analytical data" data-tertiary="about" id="idm45978840947392"></a> such as microservices. However, the techniques we highlight can also be used to understand brand-new capabilities as they appear in the software development ecosystem; <em>data mesh</em> is an excellent example.</p>
+        
+        <p>Analytical and operational data have widely different purposes in modern architectures (see <a data-type="xref" href="ch01.html#sec-data-in-arch">“The Importance of Data in Architecture”</a>); much of this book has dealt with the difficult trade-offs associated with operational data. When client/server systems became popular and powerful enough for large enterprises, architects and database administrators looked for a solution that would allow specialized 
+        <span class="keep-together">queries</span>.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Previous Approaches"><div class="sect1" id="idm45978840943280">
+        <h1>Previous Approaches</h1>
+        
+        <p>The split between operational and analytical data is hardly a new problem—the fundamental different uses of data have existed as long as data. As architecture styles have emerged and evolved, approaches for how to handle data have changed and evolved similarly.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="The Data Warehouse"><div class="sect2" id="idm45978840941792">
+        <h2>The Data Warehouse</h2>
+        
+        <p>Back in earlier eras of software development (for example,<a data-type="indexterm" data-primary="analytical data" data-secondary="previous approaches" data-tertiary="data warehouses" id="ch14-dw"></a><a data-type="indexterm" data-primary="data" data-secondary="analytical data" data-tertiary="data warehouses" id="ch14-dw2"></a><a data-type="indexterm" data-primary="data warehouses" id="ch14-dw3"></a> mainframe computers or early personal computers), applications were monolithic, including code and data on the same physical system. Not surprisingly, given the context we’ve covered up until this point, transaction coordination across different physical systems became challenging. As data requirements became more ambitious, coupled with the advent of local area networks in offices, <a data-type="indexterm" data-primary="client/server applications" id="idm45978840935232"></a>this led to the rise of <em>client/server</em> applications, where a powerful database server runs on the network and desktop applications run on local computers, accessing data over the network. The separation of application and data processing allowed better transactional management, coordination, and numerous other benefits, including the ability to start utilizing historical data for new purposes, such as analytics.</p>
+        
+        <p>Architects made an early attempt to provide queriable analytical data with the <em>Data Warehouse</em> pattern. The basic problem they tried to address goes to the core of the separation of operational and analytical data: the formats and schemas of one don’t necessarily fit (or even allow the use of) the other. For example, many analytical problems require aggregations and calculations, which are expensive operations on relational databases, especially those already operating under heavy transactional load.</p>
+        
+        <p>The Data Warehouse patterns that evolved had slight variations, mostly based on vendor offerings and capabilities. However, the pattern had many common characteristics. The basic assumption was that operational data was stored in relational databases directly accessible via the network. Here are the main characteristics of the Data Warehouse pattern:</p>
+        <dl>
+        <dt>Data extracted from many sources</dt>
+        <dd>
+        <p>As the operational data resided in individual databases, part of this pattern specified a mechanism for extracting the data into another (massive) data store, the “warehouse” part of the pattern. It wasn’t practical to query across all the various databases in the organization to build reports, so the data was extracted into the warehouse solely for analytical purposes.</p>
+        </dd>
+        </dl>
+        <dl class="pagebreak-before less_space">
+        <dt>Transformed to single schema</dt>
+        <dd>
+        <p>Often, operational schemas don’t match the ones needed for reporting. For example, an operational system needs to structure schemas and behavior around transactions, whereas an analytical system is rarely OLTP data (see <a data-type="xref" href="ch01.html#ch01-introduction">Chapter&nbsp;1</a>) but typically  deals with large amounts of data, for reporting, aggregations, and so on. <a data-type="indexterm" data-primary="Star Schema of data warehouses" id="idm45978840925936"></a><a data-type="indexterm" data-primary="data warehouses" data-secondary="Star Schema" id="idm45978840925200"></a>Thus, most data warehouses utilized a <em>Star Schema</em> to implement dimensional modelling, transforming data from operational systems in differing formats into the warehouse schema. To facilitate speed and simplicity, warehouse designers denormalize the data to facilitate performance and simpler queries.</p>
+        </dd>
+        <dt>Loaded into warehouse</dt>
+        <dd>
+        <p>Because the operational data resides in individual systems, the warehouse must build mechanisms to regularly extract the data, transform it, and place it in the warehouse. Designers either used built-in relational database mechanisms like replication or specialized tools to build translators from the original schema to the warehouse schema. Of course, any changes to operational systems schemas must be replicated in the transformed schema, making change coordination 
+        <span class="keep-together">difficult</span>.</p>
+        </dd>
+        <dt>Analysis done on the warehouse</dt>
+        <dd>
+        <p>Because the data “lives” in the warehouse, all analysis is done there. This is desirable from an operational standpoint: the data warehouse machinery typically featured massively capable storage and compute, offloading the heavy requirements into its own ecosystem.</p>
+        </dd>
+        <dt>Used by data analysts</dt>
+        <dd>
+        <p>The data warehouse utilized data analysts, whose job included building reports and other business intelligence assets. However, building useful reports requires domain understanding, meaning that domain expertise must reside in both the operational data system and the analytical systems, where query designers must use the same data in a transformed schema to build meaningful reports and business intelligence.</p>
+        </dd>
+        <dt>BI reports and dashboards</dt>
+        <dd>
+        <p>The output of the data warehouse included business intelligence reports, dashboards that provide analytical data, reports, and any other information to allow the company to make better decisions.</p>
+        </dd>
+        <dt>SQL-ish interface</dt>
+        <dd>
+        <p>To make it easier for DBAs to use, most data warehouse query tools provided familiar affordances, such as a SQL-like language for forming queries. One of the reasons for the data transformation step mentioned previously was to provide users with a simpler way to query complex aggregations and other intelligence.</p>
+        </dd>
+        </dl>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978840914640">
+        <h5>The Star Schema</h5>
+        <p>The <em>Star Schema pattern</em> was popular with data marts and<a data-type="indexterm" data-primary="Star Schema of data warehouses" id="idm45978840912672"></a><a data-type="indexterm" data-primary="data warehouses" data-secondary="Star Schema" id="idm45978840911872"></a><a data-type="indexterm" data-primary="dimensional models of Star Schema" id="idm45978840910928"></a> warehouses. It separates the data semantics into <em>facts</em>, which hold the organization’s quantifiable data, and <em>dimensions</em>; hence they are also known as <em>dimensional models</em>, which include descriptive attributes of the fact data.</p>
+        
+        <p>Examples of fact data for the Sysops Squad might include hourly rate, time to repair, distance to client, and other concretely measurable things. Dimensions might include squad member specialties, squad person names, store locations, and other metadata.</p>
+        
+        <p>Most significantly, the Star Schema is purposely denormalized to facilitate simpler queries, simplified business logic (in other words, fewer complex joins), faster queries and aggregations, complex analytics such as data cubes, and the ability to form multidimensional queries. Most Star Schemas become incredibly complex.</p>
+        </div></aside>
+        
+        <p>The Data Warehouse pattern provides a good example of<a data-type="indexterm" data-primary="technical partitioning" data-secondary="data warehouses as" id="idm45978840907088"></a><a data-type="indexterm" data-primary="data warehouses" data-secondary="technical partitioning" id="idm45978840906112"></a><a data-type="indexterm" data-primary="domain partitioned architecture" data-secondary="technical partitioning" data-tertiary="data warehouses as" id="idm45978840905168"></a> <em>technical partitioning</em> in software architecture: warehouse designers transform the data into a schema that facilitates queries and analysis but loses any domain partitioning, which must be re-created in queries where required. Thus, highly trained specialists were required to understand how to construct queries in this architecture.</p>
+        
+        <p>However, the major failings of the Data Warehouse pattern included integration brittleness, extreme partitioning of domain knowledge, complexity, and limited functionality for intended purpose:</p>
+        <dl>
+        <dt>Integration brittleness</dt>
+        <dd>
+        <p>The requirement built into this pattern to transform the data<a data-type="indexterm" data-primary="brittleness in architecture" data-secondary="data warehouses" id="idm45978840901264"></a><a data-type="indexterm" data-primary="architecture" data-secondary="brittleness" data-tertiary="data warehouses" id="idm45978840900192"></a> during the injection phase creates crippling brittleness in systems. A database schema for a particular problem domain is highly coupled to the semantics of that problem; changes to the domain require schema changes, which in turn require data import logic changes.</p>
+        </dd>
+        <dt>Extreme partitioning of domain knowledge</dt>
+        <dd>
+        <p>Building complex business workflows requires domain knowledge. Building complex reports and business intelligence also requires domain knowledge, coupled with specialized analytics techniques. Thus, the Venn diagrams of domain expertise overlap, but only partially. Architects, developers, DBAs, and data scientists must all coordinate on data changes and evolution, forcing tight coupling between vastly different parts of the ecosystem.</p>
+        </dd>
+        </dl>
+        <dl class="pagebreak-before less_space">
+        <dt>Complexity</dt>
+        <dd>
+        <p>Building an alternate schema to allow advanced analytics adds complexity to the system, along with the ongoing mechanisms required to injest and transform data. A data warehouse is a separate project outside the normal operational 
+        <span class="keep-together">systems</span> for an organization, so must be maintained as a wholly separate ecosystem, yet highly coupled to the domains embedded inside the operational systems. All these factors contribute to complexity.</p>
+        </dd>
+        <dt>Limited functionality for intended purpose</dt>
+        <dd>
+        <p>Ultimately, most data warehouses failed because they didn’t deliver business value commensurate to the effort required to create and maintain the warehouse. Because this pattern was common long before cloud environments, the physical investment in infrastructure was huge, along with the ongoing development and maintenance. Often, data consumers would request a certain type of report that the warehouse couldn’t provide. Thus, such an ongoing investment for ultimately limited functionality doomed most of these projects.</p>
+        </dd>
+        <dt>Synchronization creates bottlenecks</dt>
+        <dd>
+        <p>The need in a data warehouse to synchronize data across a wide variety of operational systems creates both operational and organizational bottlenecks—a location where multiple and otherwise independent data streams must converge. A common side effect of the data warehouse is the synchronization process impacting operational systems despite the desire for decoupling.</p>
+        </dd>
+        <dt>Operational versus analytical contract differences</dt>
+        <dd>
+        <p>Systems of record have specific contract needs (discussed in <a data-type="xref" href="ch13.html#ch13-contracts">Chapter&nbsp;13</a>). Analytical systems also have contractual needs that often differ from the operational ones. In a data warehouse, the pipelines often handle the transformation as well as ingestion, introducing contractual brittleness in the transformation process.</p>
+        </dd>
+        </dl>
+        
+        <p><a data-type="xref" href="#totbl-data-warehouse">Table 14-1</a> shows the trade-offs for the data warehouse pattern.<a data-type="indexterm" data-startref="ch14-dw" id="idm45978840886976"></a><a data-type="indexterm" data-startref="ch14-dw2" id="idm45978840886304"></a><a data-type="indexterm" data-startref="ch14-dw3" id="idm45978840885632"></a></p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978840884832">
+        <h5>Trade-Offs</h5><table id="totbl-data-warehouse" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 14-1. </span>Trade-offs for the Data Warehouse pattern</caption>
+        <thead>
+        <tr>
+        <th>Advantage</th>
+        <th>Disadvantage</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Centralized consolidation of data</p></td>
+        <td><p>Extreme partitioning of domain knowledge</p></td>
+        </tr>
+        <tr>
+        <td><p>Dedicated analytics silo provides isolation</p></td>
+        <td><p>Integration brittleness</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td><p>Complexity</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td><p>Limited functionality for intended purpose</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        
+        <p class="pagebreak-before"><code>Tuesday, May 31, 13:33</code></p>
+        <div class="story">
+        
+        <p>“We looked at creating a data warehouse, but realized that it fit better with older, <a data-type="indexterm" data-primary="analytical data" data-secondary="Sysops Squad saga" id="idm45978840871792"></a><a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="analytical data" id="idm45978840870816"></a><a data-type="indexterm" data-primary="data" data-secondary="analytical data" data-tertiary="Sysops Squad saga" id="idm45978840869872"></a>monolithic kinds of architectures than modern distributed ones,” said Logan. “Plus, we have a ton more machine learning cases now that we need to support.”</p>
+        
+        <p>“What about the data lake idea I’ve been hearing about?” asked Dana. “I read a blog post on Martin Fowler’s site.<sup><a data-type="noteref" id="idm45978840868000-marker" href="ch14.html#idm45978840868000">1</a></sup> It seems like it addresses a bunch of the issues with the data warehouse, and it is more suitable for ML use cases.”</p>
+        
+        <p>“Oh, yes, I read that post when it came out,” Logan said. “His site is a treasure trove of good information, and that post came out right after the topic of microservices became hot. In fact, I first read about microservices on that same site in 2014, and one of the big questions at the time was, <em>How do we manage reporting in architectures like that?</em> The data lake was one of the early answers, mostly as a counter to the data warehouse, which definitely won’t work in something like microservices.”</p>
+        
+        <p>“Why not?” Dana asked.</p>
+        <hr>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="The Data Lake"><div class="sect2" id="idm45978840863600">
+        <h2>The Data Lake</h2>
+        
+        <p>As in many reactionary responses to the complexity, expense,<a data-type="indexterm" data-primary="analytical data" data-secondary="previous approaches" data-tertiary="data lakes" id="ch14-lak"></a><a data-type="indexterm" data-primary="data lakes" id="ch14-lak2"></a><a data-type="indexterm" data-primary="data" data-secondary="analytical data" data-tertiary="data lakes" id="ch14-lak3"></a> and failures of the data warehouse, the design pendulum swung to the opposite pole, exemplified by the <em>Data Lake</em> pattern, intentionally the inverse of the Data Warehouse pattern. While it keeps the centralized model and pipelines, it inverts the “transform and load”  model of the data warehouse to a “load and transform” one. Rather than do the immense work of transformation, the philosophy of the Data Lake pattern holds that, rather than do useless transformations that may never be used, do no transformations, allowing business users access to analytical data in its natural format, which typically required transformation and massaging for their purpose. Thus, the burden of work was made <em>reactive</em> rather than <em>proactive</em>—rather than do work that might not be needed, do transformation work only on demand.</p>
+        
+        <p>The basic observation that many architects made was that the prebuilt schemas in data warehouses were frequently not suited to the type of report or inquiry required by users, requiring extra work to understand the warehouse schema enough to craft a solution. Additionally, many machine learning models work better with data “closer” to the semi-raw format rather than a transformed version. For domain experts who already understood the domain, this presented an excruciating ordeal, where data was stripped of domain separation and context to be transformed into the data 
+        <span class="keep-together">warehouse</span>, only to require domain knowledge to craft queries that weren’t natural fits of the new schema!</p>
+        
+        <p>Characteristics of the Data Lake pattern are as follows:</p>
+        <dl>
+        <dt>Data extracted from many sources</dt>
+        <dd>
+        <p>Operational data is still extracted in this pattern, but less transformation into another schema takes place—rather, the data is often stored in its “raw,” or native, form. Some transformation may still occur in this pattern. For example, an upstream system might dump formatted files into a lake that are organized based on a column-based snapshots.</p>
+        </dd>
+        <dt>Loaded into the lake</dt>
+        <dd>
+        <p>The lake, often deployed in cloud environments, consists of regular data dumps from the operational systems.</p>
+        </dd>
+        <dt>Used by data scientists</dt>
+        <dd>
+        <p>Data scientists and other consumers of analytical data discover the data in the lake and perform whatever aggregations, compositions, and other transformations necessary to answer specific questions.</p>
+        </dd>
+        </dl>
+        
+        <p>The Data Lake pattern, while an improvement in many ways to the Data Warehouse pattern, still suffered many limitations.</p>
+        
+        <p>This pattern still takes a <em>centralized</em> view of data, where data is extracted from operational systems’ databases and replicated into a more or less free-form lake. The burden was on the consumer to discover how to connect disparate data sets together, which often happened in the data warehouse despite the level of planning. The logic followed that, if we’re going to have to do pre-work for some analytics, let’s do it for all, and skip the massive up-front investment.</p>
+        
+        <p>While the Data Lake pattern avoided the transformation-induced problems from the Data Warehouse pattern, it also either didn’t address or created new problems.</p>
+        <dl>
+        <dt>Difficulty in discovery of proper assets</dt>
+        <dd>
+        <p>Much of the understanding of data relationships within a <a data-type="indexterm" data-primary="domain partitioned architecture" data-secondary="data lakes losing relationships" id="idm45978840844832"></a>domain evaporates as data flows into the unstructured lake. Thus, domain experts must still involve themselves in crafting analysis.</p>
+        </dd>
+        <dt>PII and other sensitive data</dt>
+        <dd>
+        <p>Concern around PII has risen in <a data-type="indexterm" data-primary="PII (Personally Identifiable Information)" id="idm45978840842176"></a><a data-type="indexterm" data-primary="Personally Identifiable Information (PII)" id="idm45978840841376"></a>concert with the capabilities of the data scientist to take disparate pieces of information and learn privacy-invading knowledge. Many countries now restrict not just private information, but also information that can be combined to learn and identify, for ad targeting or other less savory purposes. Dumping unstructured data into a lake often risks exposing information that can be stitched together to violate privacy. Unfortunately, just as in the discovery process, domain experts have the knowledge necessary to avoid accidental exposures, forcing them to reanalyze data in the lake.</p>
+        </dd>
+        <dt>Still technically, not domain, partitioned</dt>
+        <dd>
+        <p>The current trend in software architecture shifts focus from partitioning<a data-type="indexterm" data-primary="analytical data" data-secondary="domain over technical partitioning" id="idm45978840839296"></a><a data-type="indexterm" data-primary="data" data-secondary="analytical data" data-tertiary="domain over technical partitioning" id="idm45978840838256"></a><a data-type="indexterm" data-primary="domain partitioned architecture" data-secondary="technical partitioning" data-tertiary="domain preferred" id="idm45978840837024"></a><a data-type="indexterm" data-primary="technical partitioning" data-secondary="domain partitioning preferred" id="idm45978840835792"></a> a system based on technical capabilities into ones based on domains, whereas both the Data Warehouse and Data Lake patterns focus on technical partitioning. Generally, architects design each of those solutions with distinct ingestion, transformation, loading, and serving partitions, each focused on a technical capability. Modern architecture patterns favor domain partitioning, encapsulating technical implementation details. <a data-type="indexterm" data-primary="microservices" data-secondary="domain partitioning of" id="idm45978840834256"></a>For example, the microservices architecture attempts to separate services by domain rather than technical capabilities, encapsulating domain knowledge, including data, inside the service boundary. However, both the Data Warehouse and Data Lake patterns try to separate data as a separate entity, losing or obscuring important domain perspectives (such as PII data) in the process.</p>
+        </dd>
+        </dl>
+        
+        <p>The last point is critical—increasingly, architects design around <em>domain</em> rather than <em>technical</em> partitioning in architecture, and both previous approaches exemplify separating data from its context. What architects and data scientists need is a technique that preserves the appropriate kind of macro-level partitioning, yet supports a clean separation of analytical from operational data. <a data-type="xref" href="#totbl-data-lake">Table 14-2</a> lists the trade-offs for the Data Lake pattern.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978840830000">
+        <h5>Trade-Offs</h5><table id="totbl-data-lake" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 14-2. </span>Trade-offs for the Data Lake pattern</caption>
+        <thead>
+        <tr>
+        <th>Advantage</th>
+        <th>Disadvantage</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Less structured than data warehouse</p></td>
+        <td><p>Sometimes difficult to understand relationships</p></td>
+        </tr>
+        <tr>
+        <td><p>Less up-front transformation</p></td>
+        <td><p>Requires ad hoc transformations</p></td>
+        </tr>
+        <tr>
+        <td><p>Better suited to distributed architectures</p></td>
+        <td></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        
+        <p>The disadvantages around brittleness and pathological coupling of pipelines remain. Although they do less transformation in the Data Lake pattern, it is still common, as well as data cleansing.</p>
+        
+        <p>The Data Lake pattern pushes data integrity testing, data quality, and other quality issues to downstream lake pipelines, which can create some of the same operational bottlenecks that manifest in the Data Warehouse pattern.</p>
+        
+        <p>Because of both technical partitioning and the batch-like nature, solutions may suffer from data staleness. Without careful coordination, architects either ignore the changes in upstream systems, resulting in stale data, or allow the coupled pipelines to break.<a data-type="indexterm" data-startref="ch14-lak" id="idm45978840818400"></a><a data-type="indexterm" data-startref="ch14-lak2" id="idm45978840817696"></a><a data-type="indexterm" data-startref="ch14-lak3" id="idm45978840817024"></a></p>
+        
+        <p><code>Tuesday, May 31, 14:43</code></p>
+        <div class="story">
+        
+        <p>“OK, so we can’t use the data lake either!” exclaimed Dana. “What now?”<a data-type="indexterm" data-primary="analytical data" data-secondary="Sysops Squad saga" id="idm45978840814800"></a><a data-type="indexterm" data-primary="data" data-secondary="analytical data" data-tertiary="Sysops Squad saga" id="idm45978840813824"></a><a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="analytical data" id="idm45978840812608"></a></p>
+        
+        <p>“Fortunately, some recent research has found a way to solve the problem of analytical data with distributed architectures like microservices,” replied Logan. “It adheres to the domain boundaries we’re trying to achieve, but also allows us to project analytical data in a way that the data scientists can use. And, it eliminates the PII problems our lawyers are worried about.”</p>
+        
+        <p>“Great!” Dana replied. “How does it work?”</p>
+        <hr>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="The Data Mesh"><div class="sect1" id="idm45978840809856">
+        <h1>The Data Mesh</h1>
+        
+        <p>Observing other trends in distributed architectures, Zhamak Dehghani <a data-type="indexterm" data-primary="Dehghani, Zhamak" id="idm45978840808192"></a><a data-type="indexterm" data-primary="analytical data" data-secondary="data meshes" id="ch14-mesh2"></a><a data-type="indexterm" data-primary="data" data-secondary="analytical data" data-tertiary="data meshes" id="ch14-mesh"></a><a data-type="indexterm" data-primary="data meshes" data-secondary="about" id="idm45978840804704"></a>and several other innovators derived the core idea of the Data Mesh pattern from domain-oriented decoupling of microservices, service mesh, and sidecars (see <a data-type="xref" href="ch08.html#sec-sidecar-pattern">“Sidecars and Service Mesh”</a>), and applied it to analytical data, with modifications. As we mentioned in <a data-type="xref" href="ch08.html#ch08-reuse-patterns">Chapter&nbsp;8</a>, the <em>Sidecar Pattern</em> provides a nonentangling way to organize orthogonal coupling (see <a data-type="xref" href="ch08.html#sb-orthogonal-coupling">“Orthogonal Coupling”</a>); the separation between operational and analytical data is another excellent example of just such a coupling, but with more complexity than simple operational coupling.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Definition of Data Mesh"><div class="sect2" id="idm45978840800384">
+        <h2>Definition of Data Mesh</h2>
+        
+        <p>Data mesh is a sociotechnical approach to sharing, accessing, and managing analytical data in a decentralized fashion. It satisfies a wide range of analytical use cases, such as reporting, ML model training, and generating insights. Contrary to the previous architecture, it does so by aligning the architecture and ownership of the data with the business domains and enabling a peer-to-peer consumption of data.</p>
+        
+        <p>Data mesh is founded on four principles:</p>
+        <dl>
+        <dt>Domain ownership of data</dt>
+        <dd>
+        <p>Data is owned and shared by the domains that are most<a data-type="indexterm" data-primary="domain partitioned architecture" data-secondary="data mesh domain ownership" id="idm45978840796240"></a><a data-type="indexterm" data-primary="data" data-secondary="ownership" data-tertiary="data mesh domain ownership" id="idm45978840795232"></a><a data-type="indexterm" data-primary="ownership of data" data-secondary="data mesh domain ownership" id="idm45978840794000"></a> intimately familiar with the data: the domains that either are originating the data, or are the first-class consumers of the data. This architecture allows for distributed sharing and accessing the data from multiple domains and in a peer-to-peer fashion without any intermediary and centralized lake or warehouse, and without a dedicated data team.</p>
+        </dd>
+        <dt>Data as a product</dt>
+        <dd>
+        <p>To prevent siloing of data and encourage domains to share their data, data mesh introduces the concept of data served as a product. It puts in place the organizational roles and success metrics necessary to ensure that domains provide their data in a way that delights the experience of data consumers across the organization. <a data-type="indexterm" data-primary="architecture quantum" data-secondary="data product quantum" id="ch14-dpq3"></a><a data-type="indexterm" data-primary="data meshes" data-secondary="data product quantum" id="ch14-dpq"></a><a data-type="indexterm" data-primary="data product quantum (DPQ)" id="ch14-dpq2"></a>This principle leads to the introduction of a new architectural quantum called <em>data product quantum</em>, to maintain and serve discoverable, understandable, timely, secure, and high-quality data to the consumers. This chapter introduces the architectural aspect of the data product quantum.</p>
+        </dd>
+        <dt>Self-serve data platform</dt>
+        <dd>
+        <p>To empower the domain teams to build and maintain their data products, data mesh introduces a new set of self-serve platform capabilities. The capabilities focus on improving the experience of data product developers and consumers. It includes features such as declarative creation of data products, discoverability of data products across the mesh through search and browsing, and managing the emergence of other intelligent graphs, such as lineage of data and knowledge graphs.</p>
+        </dd>
+        <dt>Computational federated governance</dt>
+        <dd>
+        <p>This principle assures that despite decentralized ownership of the data, organization-wide governance requirements—such as compliance, security, privacy, and quality of data, as well as interoperability of data products—are met consistently across all domains. Data mesh introduces a federated decision-making model composed of domain data product owners. The policies they formulate are automated and embedded as code in each and every data product. The architectural implication of this approach to governance is a platform-supplied embedded sidecar in each data product quantum to store and execute the policies at the point of access: data read or write.</p>
+        </dd>
+        </dl>
+        
+        <p>Data mesh is a wide-ranging topic, fully covered in the book<a data-type="indexterm" data-primary="data meshes" data-secondary="Data Mesh (Dehghani)" id="idm45978840783504"></a><a data-type="indexterm" data-primary="Dehghani, Zhamak" id="idm45978840782416"></a><a data-type="indexterm" data-primary="Data Mesh (Dehghani)" id="idm45978840781744"></a> <a class="orm:hideurl" href="https://learning.oreilly.com/library/view/data-mesh/9781492092384"><em>Data Mesh</em></a> by Zhamak Dehghani (O’Reilly). In this chapter, we focus on the core architectural element, the <em>data product quantum</em>.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Data Product Quantum"><div class="sect2" id="idm45978840779152">
+        <h2>Data Product Quantum</h2>
+        
+        <p>The core tenet of the data mesh overlays modern distributed architectures such as microservices. Just as in the <em>service mesh</em>, teams build a <em>data product quantum</em>  (DPQ) adjacent but coupled to their service, as illustrated in <a data-type="xref" href="#fig-data-mesh-domain">Figure 14-1</a>.</p>
+        
+        <figure><div id="fig-data-mesh-domain" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1401.png" alt="Structure of a Data Product Quantum" width="600" height="460">
+        <h6><span class="label">Figure 14-1. </span>Structure of a data product quantum</h6>
+        </div></figure>
+        
+        <p>In this example, the service <em>Alpha</em> contains both behavior and transactional (operational) data. The domain includes a <em>data product quantum</em>, which also contains code and data, and which acts as an interface to the overall analytical and reporting portion of the system. The DPQ acts as an operationally independent but highly coupled set of behaviors and data.</p>
+        
+        <p>Several types of DPQs commonly exist in modern architectures:</p>
+        <dl>
+        <dt>Source-aligned (native) DPQ</dt>
+        <dd>
+        <p>Provides analytical data on behalf of the collaborating<a data-type="indexterm" data-primary="data product quantum (DPQ)" data-secondary="source-aligned (native) DPQ" id="idm45978840769424"></a> architecture quantum, typically a microservice, acting as a cooperative quantum.</p>
+        </dd>
+        <dt>Aggregate DQP</dt>
+        <dd>
+        <p>Aggregates data from multiple inputs, either synchronously or<a data-type="indexterm" data-primary="data product quantum (DPQ)" data-secondary="aggregate DPQ" id="idm45978840767008"></a> asynchronously. For example, for some aggregations, an asynchronous request may be sufficient; for others, the aggregator DPQ may need to perform synchronous queries for a source-aligned DPQ.</p>
+        </dd>
+        <dt>Fit-for-purpose DPQ</dt>
+        <dd>
+        <p>A custom-made DPQ to serve a particular requirement, which<a data-type="indexterm" data-primary="data product quantum (DPQ)" data-secondary="fit-for-purpose DPQ" id="idm45978840764320"></a> may encompass analytical reporting, business intelligence, machine learning, or other supporting capability.</p>
+        </dd>
+        </dl>
+        
+        <p>Each domain that also contributes to analysis and business intelligence includes a DPQ, as illustrated in <a data-type="xref" href="#fig-data-mesh-data-sidecar">Figure 14-2</a>.</p>
+        
+        <figure><div id="fig-data-mesh-data-sidecar" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1402.png" alt="data and operational sidecars" width="600" height="587">
+        <h6><span class="label">Figure 14-2. </span>The data product quantum acts as a separate but highly coupled adjunct to a service</h6>
+        </div></figure>
+        
+        <p>Here, the DPQ represents a component owned by the domain team responsible for implementing the service. It overlaps information stored in the database, and may have interactions with some of the domain behavior asynchronously. The data 
+        <span class="keep-together">product</span> quantum also likely has behavior as well as data for the purposes of analytics and business intelligence.</p>
+        
+        <p>Each data product quantum acts as a cooperative quantum for the service itself:</p>
+        <dl>
+        <dt>Cooperative quantum</dt>
+        <dd>
+        <p>An operationally separate quantum that communicates with its<a data-type="indexterm" data-primary="data product quantum (DPQ)" data-secondary="cooperative quantum" id="idm45978840755856"></a><a data-type="indexterm" data-primary="cooperative quantum" id="idm45978840754784"></a> cooperator via asynchronous communication and eventual consistency, yet features tight contract coupling with its cooperator and generally looser contract coupling to the analytics quantum, the service responsible for reports, analysis, business intelligence, and so on. While the two cooperating quanta are operationally independent, they represent two sides of data: operational data in the quantum and analytical data in the data product quantum.</p>
+        </dd>
+        </dl>
+        
+        <p>Some portion of the system will carry the responsibility for analytics and business intelligence, which will form its own domain and quantum. To operate, this analytical quantum has static quantum coupling to the individual data product quanta it needs for information. This service may make either synchronous or asynchronous calls to the DPQ, depending on the type of request. For example, some DPQs will feature a SQL interface to the analytical DPQ, allowing synchronous queries. Other requirements may aggregate information across multiple DPQs.<a data-type="indexterm" data-startref="ch14-dpq" id="idm45978840752880"></a><a data-type="indexterm" data-startref="ch14-dpq2" id="idm45978840752176"></a><a data-type="indexterm" data-startref="ch14-dpq3" id="idm45978840751504"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Data Mesh, Coupling, and Architecture Quantum"><div class="sect2" id="idm45978840778528">
+        <h2>Data Mesh, Coupling, and Architecture Quantum</h2>
+        
+        <p>Because analytical reporting is probably a required feature of a solution,<a data-type="indexterm" data-primary="analytical data" data-secondary="data meshes" data-tertiary="analytical reporting coupled" id="idm45978840749536"></a><a data-type="indexterm" data-primary="data" data-secondary="analytical data" data-tertiary="data meshes coupled to reporting" id="idm45978840748320"></a> the DPQ and its communication implementation belong to the static coupling of an architecture quantum. For example, in a microservices architecture, the service plane must be available, just as a message broker must be available if the design calls for messaging. However, like the Sidecar pattern in a service mesh, the DPQ should be orthogonal to implementation changes within the service, and maintain a separate contract with the data plane.</p>
+        
+        <p>From a dynamic quantum coupling standpoint, the data sidecar should<a data-type="indexterm" data-primary="dynamic coupling" data-secondary="analytical data communication pattern" id="idm45978840746112"></a><a data-type="indexterm" data-primary="communication" data-secondary="analytical data mesh" id="idm45978840745040"></a> always implement one of the communication patterns that features both eventual consistency and asynchronicity: either the <a data-type="xref" href="ch12.html#sec-parallel-saga">“Parallel Saga<sup>(aeo)</sup> Pattern”</a> or <a data-type="xref" href="ch12.html#sec-anthology-saga">“Anthology Saga<sup>(aec)</sup> Pattern”</a>. In other words, a data sidecar should never include a transactional requirement to keep operational and analytical data in sync, which would defeat the purpose of using a DPQ for orthogonal decoupling. Similarly, communication to the data plane should generally be asynchronous, so as to have minimal impact on the operational architecture characteristics of the domain service.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="When to Use Data Mesh"><div class="sect2" id="idm45978840741536">
+        <h2>When to Use Data Mesh</h2>
+        
+        <p>Like all things in architecture, this pattern has trade-offs<a data-type="indexterm" data-primary="analytical data" data-secondary="data meshes" data-tertiary="when to use" id="idm45978840740064"></a><a data-type="indexterm" data-primary="data meshes" data-secondary="when to use" id="idm45978840738736"></a> associated with it, as shown in <a data-type="xref" href="#totbl-data-mdsh">Table 14-3</a>.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978840736736">
+        <h5>Trade-Offs</h5><table id="totbl-data-mdsh" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 14-3. </span>Trade-offs for the Data Mesh pattern</caption>
+        <thead>
+        <tr>
+        <th>Advantage</th>
+        <th>Disadvantage</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Highly suitable for microservices architectures</p></td>
+        <td><p>Requires contract coordination with data product quantum</p></td>
+        </tr>
+        <tr>
+        <td><p>Follows modern architecture principles and engineering practices</p></td>
+        <td><p>Requires asynchronous communication and eventual consistency</p></td>
+        </tr>
+        <tr>
+        <td><p>Allows excellent decoupling between analytical and operational data</p></td>
+        <td></td>
+        </tr>
+        <tr>
+        <td><p>Carefully formed contracts allow loosely coupled evolution of analytical capabilities</p></td>
+        <td></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        
+        <p>It is most suitable in modern distributed architectures such as microservices with well-contained transactionality and good isolation between services. It allows domain teams to determine the amount, cadence, quality, and transparency of the data consumed by other quanta.</p>
+        
+        <p>It is more difficult in architectures where analytical and operational data must stay in sync at all times, which presents a daunting challenge in distributed architectures. Finding ways to support eventual consistency, perhaps with very strict contracts, allows many patterns that don’t impose other difficulties.</p>
+        
+        <p>Data mesh is an outstanding example of the constant incremental evolution that occurs in the software development ecosystem; new capabilities create new perspectives, which in turn help address some persistent headaches from the past, such as the artificial separation of domain from data, both operational and analytical.<a data-type="indexterm" data-startref="ch14-mesh" id="idm45978840723952"></a><a data-type="indexterm" data-startref="ch14-mesh2" id="idm45978840723248"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Sysops Squad Saga: Data Mesh"><div class="sect1" id="idm45978840722448">
+        <h1>Sysops Squad Saga: Data Mesh</h1>
+        
+        <p><code>Friday, June 10, 09:55</code></p>
+        <div class="story">
+        
+        <p>Logan, Dana, and Addison met in the big conference room, which often<a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="analytical data" data-tertiary="data mesh" id="ch14-sydm"></a><a data-type="indexterm" data-primary="analytical data" data-secondary="Sysops Squad saga" data-tertiary="data mesh" id="ch14-sydm2"></a><a data-type="indexterm" data-primary="data meshes" data-secondary="Sysops Squad saga" id="ch14-sydm3"></a><a data-type="indexterm" data-primary="data" data-secondary="analytical data" data-tertiary="Sysops Squad saga" id="ch14-sydm4"></a> had leftover snacks (or, this early in the day, breakfast) from previous meetings.</p>
+        
+        <p>“I just returned from a meeting with our data scientists, and they are trying to figure out a way we can solve a long-term problem for us—we need to become data-driven in expert supply planning, for skill sets demand for different geographical locations at different points in time. That capability will help recruitment, training, and other supply-related functions,” said Logan.</p>
+        
+        <p>“I haven’t been involved in much of the data mesh implementation—how far along are we?” asked Addison.</p>
+        
+        <p>“Each new service we’ve implemented includes a DPQ. The domain team is responsible for running and maintaining the DQP cooperative quantum for their service. We’ve only just started. We’re gradually building out the capabilities as we identify the needs. I have a picture of the Ticket Management Domain in <a data-type="xref" href="#fig-data-mesh-ss-ticket-dpq">Figure 14-3</a>.”</p>
+        
+        <figure><div id="fig-data-mesh-ss-ticket-dpq" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1403.png" alt="Ticket Management domain, including two services with their own DPQs, with a Ticket DPQ" width="600" height="353">
+        <h6><span class="label">Figure 14-3. </span>Ticket Management Domain, including two services with their own DPQs, with a Tickets DPQ</h6>
+        </div></figure>
+        
+        <p>Logan said, “Tickets DPQ is its own architecture quantum, and acts as an aggregation point for a couple of different ticket views that other systems care about.”</p>
+        
+        <p>“How much does each team have to build versus already supplied?” Addison asked.</p>
+        
+        <p>“I can answer that,” said Dana. “The data mesh platform team is supplying the data users and data product developers with a set of self-serve capabilities. That allows any team that wants to build a new analytical use case to search and find the data products of choice within existing architecture quanta, directly connect to them, and start using them. The platform also supports domains that want to create new data products. The platform continuously monitors the mesh for any data product downtimes, or incompatibility with the governance policies and informs the domain teams to take actions.”</p>
+        
+        <p>Logan said, “The domain data product owners in collaboration with security, legal, risk, and compliance SMEs, as well as the platform product owners, have formed a global federated governance group, which decides on aspects of the DPQs that must be standardized, such as their data-sharing contracts, modes of asynchronous transport of data, access control, and so on. The platform team, over a span of time, enriches the DPQ’s sidecar with new policy execution capabilities and upgrades the sidecars uniformly across the mesh.”</p>
+        
+        <p>“Wow, we’re further along that I thought,” said Dana. “What data do we need in order to supply the information for the expert supply problem?”</p>
+        
+        <p>Logan replied, “In collaboration with the data scientists, we have determined what information we need to aggregate. It looks like we have the correct information: the Tickets DPQ serves the long-term view of all tickets raised and resolved, the User Maintenance DPQ provides daily snapshots for all expert profiles, and the Survey DPQ provides a log of all survey results from customers.”</p>
+        
+        <p>“Awesome,” said Addison. “Perhaps we should create a new DPQ named something like Experts Supply DPQ, which takes asynchronous inputs from those three DPQs? Its first product can be called <em>supply recommendations</em>, which uses an ML model trained using data aggregated from DPQs in surveys, tickets, and maintenance domains. The Experts Supply DPQ will provide daily recommendations data, as new data becomes available about tickets, surveys and expert profiles. The overall design looks like <a data-type="xref" href="#fig-data-mesh-ss-summary">Figure 14-4</a>.”</p>
+        
+        <figure><div id="fig-data-mesh-ss-summary" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1404.png" alt="Implementing the Experts Supply DPQ" width="600" height="480">
+        <h6><span class="label">Figure 14-4. </span>Implementing the Experts Supply DPQ</h6>
+        </div></figure>
+        
+        <p>“OK, that looks perfectly reasonable,” said Dana. “The services are already done; we just have to make sure the specific endpoints exist in each of the source DPQs, and implement the new Experts Supply DPQ.”</p>
+        
+        <p>“That’s right,” said Logan. “One thing we need to worry about, though—trend analysis depends on reliable data. What happens if one of the feeder source systems returns incomplete information for a chunk of time? Won’t that throw off the trend analysis?”</p>
+        
+        <p>“That’s correct—no data for a time period is better than incomplete data, which makes it seem like there was less traffic than there was,” Dana said. “We can just exempt an empty day, as long as it doesn’t happen much.”</p>
+        
+        <p>“OK, Addison, you know what than means, right?” Logan said.</p>
+        
+        <p>“Yes, I certainly do—an ADR that specifies complete information or none, and a fitness function to make sure we get complete data.”</p>
+        <blockquote>
+        <p class="adr" id="adr_15"><em>ADR: Ensure that Expert Supply DPQ Sources Supply an Entire Day’s Data or None</em></p>
+        
+        <p><em>Context</em><br>
+        The Expert Supply DPQ performs trend analysis over specified time periods. Incomplete data for a particular day will skew trend results and should be avoided.</p>
+        
+        <p><em>Decision</em><br>
+        We will ensure that each data source for the Expert Supply DPQ receives complete snapshots for daily trends or no data for that day, allowing data scientists to exempt that day.</p>
+        
+        <p>The contracts between source feeds and the Expert Supply DPQ should be loosely coupled to prevent brittleness.</p>
+        
+        <p><em>Consequences</em><br>
+        If too many days become exempt because of availability or other problems, accuracy of trends will be negatively impacted.<a data-type="indexterm" data-startref="ch14-sydm" id="idm45978840692672"></a><a data-type="indexterm" data-startref="ch14-sydm2" id="idm45978840692000"></a><a data-type="indexterm" data-startref="ch14-sydm3" id="idm45978840691328"></a><a data-type="indexterm" data-startref="ch14-sydm4" id="idm45978840690656"></a></p>
+        
+        <p><em>Fitness functions</em>:</p>
+        <p><em>Complete daily snapshot</em>. Check timestamps on messages as they arrive. Given typical message volume, any gap of more than one minute indicates a gap in processing, marking that day as exempt.</p>
+        
+        <p><em>Consumer-driven contract fitness function for Ticket DPQ and Expert Supply DPQ.</em> To ensure that internal evolution of the Ticket Domain doesn’t break the Experts <span class="keep-together">Supply</span> DPQ.</p></blockquote>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        <div data-type="footnotes"><p data-type="footnote" id="idm45978840868000"><sup><a href="ch14.html#idm45978840868000-marker">1</a></sup> Martin Fowler posted an influential message about the Data Lake pattern on his blog in 2015 at <a href="https://martinfowler.com/bliki/DataLake.html"><em class="hyperlink">https://martinfowler.com/bliki/DataLake.html</em></a>.</p></div></div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492086888/files/epub.css" crossorigin="anonymous"><script src="https://learning.oreilly.comhttps://cdn.jsdelivr.net/npm/mathjax@3/es5/mml-svg.js"></script></div></div></section>
+</div>
+
+https://learning.oreilly.com

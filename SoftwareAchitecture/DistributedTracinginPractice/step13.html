@@ -1,0 +1,663 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 13. Beyond Distributed Tracing"><div class="chapter" id="chapter_15">
+        <h1><span class="label">Chapter 13. </span>Beyond Distributed Tracing</h1>
+        
+        
+        <p><a data-type="indexterm" data-primary="beyond distributed tracing" data-secondary="about" id="idm45356998321976"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="about" id="idm45356998321032"></a>At the very beginning of this book, in the <a href="preface01.html#chapter_1">Introduction</a>, we argued that most applications today are distributed in some fashion, whether as simple client-server applications or more general architectures like microservices. Distributed architectures give clear benefits, especially with scalability, reliability, and maintainability. The biggest drawback, however, is that distributed architectures <em>break</em> traditional methods of profiling, debugging, and monitoring. Such methods were designed to capture information in a component- or machine-centric way (because they were designed when applications only ran on a single machine). By contrast, in distributed architectures, we care about end-to-end executions of requests across multiple components and machines. Traditional methods aren’t enough for distributed architectures because they lack <em>visibility</em>: they weren’t designed to be able to correlate and combine events across multiple components and machines.</p>
+        
+        <p>This is the point of distributed tracing—to meet the profiling, debugging, and monitoring needs of modern, distributed architectures. Distributed tracing is designed for distributed architectures and addresses the key challenges of incoherence, inconsistency, and decentralization that we described in <a href="preface01.html#chapter_1">the Introduction</a>. With distributed tracing, you gain visibility across your entire stack. Distributed tracing gives you a way to profile, debug, and monitor our distributed applications, where previously it was tremendously difficult.</p>
+        
+        <p>Today, distributed tracing has become a de facto component in modern distributed applications. It is the most popular and most well-established tool for profiling, debugging, and monitoring requests. There are multiple open source initiatives and implementations, several of which we have discussed throughout this book. Clearly, distributed tracing has proved its worth.</p>
+        
+        <p>With all this said, distributed tracing is not the <em>only</em> way to gain visibility of your distributed application. In fact, just as we discussed some of the core distributed tracing history in <a data-type="xref" href="ch10.html#chapter_12">Chapter&nbsp;10</a>, there are several interesting projects that explore different (though, not entirely dissimilar) approaches to profiling, debugging, and monitoring. In <a data-type="xref" href="ch03.html#chapter_4">Chapter&nbsp;3</a>, we touched upon one: Census (open-sourced as <a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="OpenCensus as metrics of" id="idm45356998312072"></a><a data-type="indexterm" data-primary="OpenCensus" data-secondary="as OpenTelemetry metrics" data-secondary-sortas="OpenTelemetry metrics" id="idm45356998311192"></a>OpenCensus, and today forming the metrics component of OpenTelemetry). The way Census captures metrics is very similar to distributed tracing, but there are also important differences between the two.</p>
+        
+        <p>In this chapter we will examine <a data-type="indexterm" data-primary="Census" data-see="OpenCensus" id="idm45356998309208"></a>Census in more detail, along with two other projects: Pivot Tracing, a 2015 research project from Brown University; and Pythia, a 2019 research project from Boston University. These projects tackle similar sorts of problems to distributed tracing and they also make use of similar underlying techniques. In particular, they all use <a data-type="indexterm" data-primary="context propagation" data-secondary="beyond distributed tracing" id="idm45356998307752"></a>context propagation—albeit not always in the same way as distributed tracing. This is not entirely surprising, given that a <em>lack</em> of cross-component context was the main shortcoming of previous approaches. We’ll also make sure to describe some of the important motivations and design choices made by these three tools, which differ from those of distributed tracing.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Limitations of Distributed Tracing"><div class="sect1" id="idm45356998305608">
+        <h1>Limitations of Distributed Tracing</h1>
+        
+        <p><a data-type="indexterm" data-primary="beyond distributed tracing" data-secondary="challenges of distributed tracing" id="idm45356998304264"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="challenges of" data-seealso="beyond distributed tracing" id="idm45356998303208"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="challenges of distributed tracing" id="idm45356998301976"></a>When you deploy distributed tracing, and instrument your systems, you have to make a number of practical choices. It’s not always obvious what the right choices are when you’re doing instrumentation. Sometimes there might not be an obvious best choice. This is why distributed tracing can be quite difficult to get right, and why we need to resort to best practices when doing instrumentation.</p>
+        
+        <p>In <a data-type="xref" href="ch01.html#chapter_2">Chapter&nbsp;1</a> we introduced three fundamental problems that generally occur when you’re using distributed tracing. Let’s briefly recap these:</p>
+        <dl>
+        <dt>Generating trace data</dt>
+        <dd>
+        <p>Choosing where in a program useful data exists, and instrumenting the application to record it</p>
+        </dd>
+        <dt>Collecting and storing trace data</dt>
+        <dd>
+        <p>Deciding under what circumstances trace data should be emitted, and how to route it from its origin to the tracing backends</p>
+        </dd>
+        <dt>Extracting value from data</dt>
+        <dd>
+        <p>Using traces to profile, monitor, and debug your application in a meaningful way</p>
+        </dd>
+        </dl>
+        
+        <p>Even if you make all the right choices, you might still encounter unavoidable limitations. In <a data-type="indexterm" data-primary="data generation" data-secondary="challenge of distributed tracing" id="idm45356998293944"></a>data generation, you need to be able to predict what kind of problems might occur in the future and what data should be recorded to help problem diagnosis. <a data-type="indexterm" data-primary="data collection" data-secondary="challenge of distributed tracing" id="idm45356998292616"></a>On the collection and <a data-type="indexterm" data-primary="data storage" data-secondary="challenge of distributed tracing" id="idm45356998291528"></a>storage front, you need to balance sampling only a fraction of traces, paying high computational costs, and getting enough data to be meaningful for problem diagnosis. Lastly, extracting value from traces is up to you: you are responsible for identifying and debugging problems. Distributed tracing just provides you with some data to help—and because of the first two problems, that data might be misleading, redundant, or incomplete.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Challenge 1: Anticipating Problems"><div class="sect2" id="idm45356998289832">
+        <h2>Challenge 1: Anticipating Problems</h2>
+        
+        <p>When you deploy distributed tracing, it’s up to you to decide what data to record—that is, what parts of the program to instrument with spans, and what additional tags and annotations to add to those spans. At first glance this doesn’t seem too tricky, because for most applications it’s easy to identify the most important parts of the code. For example, you would almost certainly want to wrap all of your RPCs in spans to measure response latency and status codes.</p>
+        
+        <p>Beyond some of the obviously important high-level parts of your application, there are a wide range of instrumentation choices you can make. Should you break down the high-level RPC span into multiple child spans representing each stage of execution? Should you intricately instrument your caches and resource consumption? Should you augment your traces with additional log annotations, to provide more context about what’s happening during a span? Your high-level goal is to instrument the things that are going to be the most useful. But you can’t instrument everything, both because of the time-consuming nature of doing instrumentation and more fundamentally because your application needs to cope with the volume of spans being emitted. Computational costs are a driving challenge of distributed tracing, as we discuss in <a data-type="xref" href="ch06.html#chapter_7">Chapter&nbsp;6</a>.</p>
+        
+        <p>In the worst case, it might be impossible to predict a priori where to put your instrumentation, because nobody can perfectly predict where and how problems might arise. On the one hand, the point of distributed tracing is to be able to investigate unexpected behaviors and debug problems, so you’d hope that traces contain useful information for diagnosing problems when they do arise.
+        On the other hand, sometimes you’ll be unlucky, and the information you need to diagnose a problem just might not be present in traces, or even in other data sources like system logs.</p>
+        
+        <p>When you don’t have visibility of a problem’s root causes, then diagnosing the problem becomes a tedious and time-consuming task. If you want to add new instrumentation, in the hopes of shedding more light on the matter, you’d have to go back to your code to do it. This is fundamentally slow, because deploying new instrumentation is part of the development path of applications—getting that new instrumentation into the production system might take a while. In the worst case this is a repeated process—for example, how often do you get print debugging right the very first time?</p>
+        
+        <p>Of course, it isn’t all doom and gloom. What we’re describing here is an exceptional case for distributed tracing. In the grand scheme of things, the instrumentation you’ll have in place will be enough to solve most problems most of the time. But what if you do want to focus on these <em>unanticipated</em> problems? Two of the tools we’ll be looking at in a moment—<a data-type="indexterm" data-primary="beyond distributed tracing" data-secondary="Pivot Tracing" id="idm45356998282536"></a><a data-type="indexterm" data-primary="Pivot Tracing" data-secondary="goal of" id="idm45356998281416"></a>Pivot Tracing and <a data-type="indexterm" data-primary="beyond distributed tracing" data-secondary="Pythia" id="idm45356998280344"></a><a data-type="indexterm" data-primary="Pythia" data-secondary="goal of" id="idm45356998279352"></a>Pythia—target this use case in particular. Pivot Tracing and Pythia are a lot like distributed tracing, but their main goal is to home in on problems that existing instrumentation might miss.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Challenge 2: Completeness Versus Costs"><div class="sect2" id="idm45356998277944">
+        <h2>Challenge 2: Completeness Versus Costs</h2>
+        
+        <p><a data-type="indexterm" data-primary="cost of tracing" data-secondary="completeness versus cost" id="idm45356998276664"></a><a data-type="indexterm" data-primary="beyond distributed tracing" data-secondary="completeness versus cost" id="idm45356998275624"></a>Computational costs are a never-ending battle, as you saw in <a data-type="xref" href="ch06.html#chapter_7">Chapter&nbsp;6</a>. Computational costs shape your instrumentation choices and arise from multiple places in the tracing pipeline:</p>
+        
+        <ul>
+        <li>
+        <p>The critical path of requests to generate trace data</p>
+        </li>
+        <li>
+        <p>Background threads and processes that receive and buffer local trace data</p>
+        </li>
+        <li>
+        <p>Network transmission of trace data to the tracing framework’s backends</p>
+        </li>
+        <li>
+        <p>Processing and storage by the tracing backends once trace data is received</p>
+        </li>
+        </ul>
+        
+        <p><a data-type="indexterm" data-primary="infrastructure costs" data-secondary="sampling to reduce" id="idm45356998269000"></a><a data-type="indexterm" data-primary="sampling" data-secondary="costs of tracing" id="idm45356998268024"></a>The main way distributed tracing mitigates computational costs is by sampling. Sampling is simple but effective: you only have to pay computational costs when you actually trace a request, so sampling is a configuration knob that lets you reduce computational costs by tracing fewer requests. The most common sampling method is also the simplest: uniform random sampling, decided at the very beginning of a request. If a request isn’t sampled, no trace data is generated at all.</p>
+        
+        <p>Computational costs are one of the most important factors for profiling, debugging, and monitoring—<em>especially</em> for tools that run in production systems. A central tenet of profiling, debugging, and monitoring tools is “do no harm.” Distributed tracing is no exception, and neither are any of the other tools we’ll talk about. Unlike distributed tracing, Census, Pivot Tracing, and Pythia take different approaches to dealing with overheads, and <em>don’t</em> solve the problem using sampling.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Challenge 3: Open-Ended Use Cases"><div class="sect2" id="idm45356998264648">
+        <h2>Challenge 3: Open-Ended Use Cases</h2>
+        
+        <p>The value of distributed tracing doesn’t arise from individual spans or annotations in isolation—its value is in <em>combining</em> all of a request’s data coherently from start to finish. This is why distributed tracing frameworks sample traces on a per-request basis. They sample either all of the trace data for a request or none of it. This is called <a data-type="indexterm" data-primary="coherent sampling" id="idm45356998262392"></a><a data-type="indexterm" data-primary="sampling" data-secondary="coherent sampling" id="idm45356998261688"></a><em>coherent sampling</em>. Coherent sampling is necessary for distributed tracing. Think about its original goal: to help relate information from multiple points in a request’s execution, especially across different machines and components. It would be no good if distributed tracing arbitrarily recorded just bits and pieces of a request!</p>
+        
+        <p>When you instrument your systems, you instrument the spans and annotations that you think will be the most useful for the future—for example, latency and metrics of important top-level spans; annotations at critical parts of our program; and as described earlier, information to anticipate future debugging needs. Traces can end up containing a lot of data! For example, Facebook described in its <a data-type="indexterm" data-primary="Canopy (Facebook)" id="idm45356998259192"></a><a data-type="indexterm" data-primary="Facebook" data-secondary="Canopy" id="idm45356998258488"></a>Canopy paper how the volume of data in a single trace can become overwhelming, due to multiple different users and use cases all feeding data into the same traces.<sup><a data-type="noteref" id="idm45356998257240-marker" href="ch13.html#idm45356998257240">1</a></sup></p>
+        
+        <p>Fortunately, sampling gives you a convenient way to balance computational costs. For example, you can now increase the amount of detail that goes into a single trace, and simply reduce your sampling probability to average out the total cost across all requests. In their <a data-type="indexterm" data-primary="Dapper" data-secondary="sampling, usefulness of" id="idm45356998255464"></a>Dapper paper,<sup><a data-type="noteref" id="idm45356998254392-marker" href="ch13.html#idm45356998254392">2</a></sup> the authors from Google commented about how sampling was very useful, as it enabled them to capture very detailed traces.</p>
+        
+        <p>Not all tools for profiling, debugging, and monitoring need to capture so much detailed information. Part of why distributed tracing does record detailed information is because the use case is so open-ended—record all the data now, store it somewhere, and make it available for whatever future use case you have in mind. By contrast, Census, Pivot Tracing, and Pythia have more specific use cases in mind, which enables them to record less speculative data up front.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Other Tools Like Distributed Tracing"><div class="sect1" id="idm45356998251992">
+        <h1>Other Tools Like Distributed Tracing</h1>
+        
+        <p>We’ll now take a look at three tools that are similar to distributed tracing. First, <a data-type="indexterm" data-primary="OpenCensus" data-secondary="about" id="idm45356998250712"></a><a data-type="indexterm" data-primary="beyond distributed tracing" data-secondary="OpenCensus" id="idm45356998249640"></a>Census is an internal tool from Google whose primary focus is on cross-component metrics; Google released an open-source version called OpenCensus in 2018. Next, we’ll look at Pivot Tracing, a research project published in 2015 by researchers from Brown University. <a data-type="indexterm" data-primary="Pivot Tracing" data-secondary="goal of" id="idm45356998248264"></a>Pivot Tracing focuses on diagnosing recurring cross-component problems quickly, by using dynamic instrumentation. Last, we’ll look at <a data-type="indexterm" data-primary="Pythia" data-secondary="goal of" id="idm45356998247032"></a>Pythia, a research project from Boston University introduced in 2019. Pythia focuses on automatically finding and turning on useful instrumentation when problems arise: that is, finding and dynamically enabling the instrumentation needed to explain a problem.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Census"><div class="sect1" id="ch15_census">
+        <h1>Census</h1>
+        
+        <p>Census started as an internal project at Google for collecting cross-component metric data from Google services. Google never published anything about Census in detail, but in 2018 it released an open source version called OpenCensus. Soon afterward, <a data-type="indexterm" data-primary="OpenCensus" data-secondary="as OpenTelemetry metrics" data-secondary-sortas="OpenTelemetry metrics" id="idm45356998243416"></a><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="OpenCensus as metrics of" id="idm45356998242152"></a>OpenCensus was merged with <a data-type="indexterm" data-primary="OpenTracing" data-secondary="OpenTelemetry backward-compatible with" id="idm45356998241064"></a>OpenTracing to become OpenTelemetry. You can read a bit more about this history in <a data-type="xref" href="ch03.html#chapter_4">Chapter&nbsp;3</a> as well as about the relationship between OpenCensus and distributed tracing. Our focus here is specifically on the metrics part of Census.</p>
+        
+        <p>Just like distributed tracing, the fundamental motivation for Census is to capture and relate information across multiple machines. In this case, the focus is metric data, which we’ll explain with an example.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="A Motivating Example"><div class="sect2" id="idm45356998238232">
+        <h2>A Motivating Example</h2>
+        
+        <p><a data-type="indexterm" data-primary="examples" data-secondary="OpenCensus" id="idm45356998236856"></a><a data-type="indexterm" data-primary="OpenCensus" data-secondary="example" id="idm45356998235880"></a><a data-type="indexterm" data-primary="API services" data-secondary="distributed tracing challenge" id="idm45356998234936"></a>Suppose you have two frontend APIs, A and B, as well as a number of other intermediate services that A and B call. <a data-type="xref" href="#figure_census_example_1">Figure&nbsp;13-1</a> illustrates these services. Those intermediate services might themselves make calls to other intermediate services, but eventually, requests end up querying a backend database, DB. Both frontend APIs—that is, both A and B—eventually result in calls to DB, but A and B aren’t the services directly making those calls.</p>
+        
+        <figure><div id="figure_census_example_1" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_1301.png" alt="Two front-end services A and B interact with a database indirectly through several other services." width="647" height="668">
+        <h6><span class="label">Figure 13-1. </span>Two frontend services, A and B, interact with a database indirectly through several other services.</h6>
+        </div></figure>
+        
+        <p>There are a few useful questions you might want to ask in this scenario. If you’re a developer of A or B, you might want to know things like how many database calls each request makes, or how much of your request’s overall latency is spent at the database. If you’re a developer or operator of the database, then you might want to know which frontend APIs are using the database the most, so that you can better attribute costs or put together an SLA.</p>
+        
+        <p>There’s just one problem: since A and B don’t call to the database directly, nobody has the means to answer these questions by themselves. In a standalone application, it would be straightforward to drill down into these sorts of metrics. But in a distributed application, the information is unavailable by default.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="A Distributed Tracing Solution?"><div class="sect2" id="idm45356998228568">
+        <h2>A Distributed Tracing Solution?</h2>
+        
+        <p>Distributed tracing would provide one possible solution to this problem. <a data-type="xref" href="#figure_census_example_2">Figure&nbsp;13-2</a> depicts a trace of API A in this setup. Certainly, the trace would contain all the necessary information:</p>
+        
+        <figure><div id="figure_census_example_2" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_1302.png" alt="A trace of API A will record the number of database calls and the latency of each." width="1360" height="569">
+        <h6><span class="label">Figure 13-2. </span>A trace of API A will record the number of database calls and the latency of each.</h6>
+        </div></figure>
+        <dl class="calloutlist">
+        <dt><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/1.png" alt="1" width="12" height="12"></dt>
+        <dd><p>The top-level span tells you that this request came through API A.</p></dd>
+        <dt><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/2.png" alt="2" width="12" height="12"></dt>
+        <dd><p>Lurking way down in the child spans will be spans for database calls, telling you both the number of database calls and the latency of each call.</p></dd>
+        <dt><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/3.png" alt="3" width="12" height="12"></dt>
+        <dd><p>Also included in the trace will be detail from every service that is invoked along the way.</p></dd>
+        </dl>
+        
+        <p>Through straightforward postprocessing you can extract aggregate statistics to answer some of the questions mentioned earlier. However, there’s a big drawback with using distributed tracing here. You’ll inevitably be sampling distributed traces rather than tracing every request, because every service invoked adds extra detail to the trace, meaning extra overhead. You wouldn’t be able to capture traces for 100% of requests because of the huge computational overheads that would introduce.</p>
+        
+        <p>When it comes to metrics, you’ll often be interested in <a data-type="indexterm" data-primary="outlier challenges" id="idm45356998216984"></a><em>outliers</em>—how does your application behave in rare but important edge cases? Time is often spent diagnosing requests with outlier latency, in the 99th percentile and above. By sampling traces, you will miss many of the most important requests for diagnosing problems. It might give you the false impression that there are no high-latency outliers at all.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Tag Propagation and Local Metric Aggregation"><div class="sect2" id="idm45356998215288">
+        <h2>Tag Propagation and Local Metric Aggregation</h2>
+        
+        <p><a data-type="indexterm" data-primary="OpenCensus" data-secondary="new wave tracing paradigm" id="idm45356998213880"></a><a data-type="indexterm" data-primary="OpenCensus" data-secondary="associating metrics with traces" id="idm45356998212712"></a><a data-type="indexterm" data-primary="metrics" data-secondary="OpenCensus associating with traces" id="idm45356998211800"></a>Census addresses this specific use case, and it captures metrics for 100% of requests. Census doesn’t record individual traces at all, so it doesn’t use sampling to deal with computational costs. The key to Census is <a data-type="indexterm" data-primary="OpenCensus" data-secondary="context propagation" id="idm45356998210520"></a><a data-type="indexterm" data-primary="context propagation" data-secondary="OpenCensus" id="idm45356998209576"></a>context propagation. Like distributed tracing, Census propagates contexts with requests, but those contexts don’t include TraceIDs. Instead, contexts contain <a data-type="indexterm" data-primary="tags in new tracing paradigms" id="idm45356998208328"></a><a data-type="indexterm" data-primary="OpenCensus" data-secondary="tags" id="idm45356998207640"></a><em>tags</em> that describe user-selected request properties. At any point during the request, any service can write a tag to the Census context. From the preceding example, API A and API B can write tags of “API A” or “API B” respectively. Those tags then get forwarded with the request, inside the Census context, to any child services that get called.</p>
+        
+        <p>As well as tags, any service along the way can record a metric. In our example, the backend database might emit a simple count of API calls, and perhaps also the latency of each call. Whenever a component emits a metric, Census will inspect the request’s tags in the Census context, then increment <a data-type="indexterm" data-primary="counters" data-secondary="OpenCensus per-tag counters" id="idm45356998205368"></a>counters on a <em>per-tag</em> basis. Counters are maintained locally (in our example, at the database) and only aggregated metrics get reported, periodically, to the Census backends.</p>
+        
+        <p>Census doesn’t capture individual traces at all, because metrics get immediately aggregated within the application (e.g., by the backend database in our example). In the preceding example, the database would record separate counters for APIs A and B. In general, these counters get grouped arbitrarily based on whatever tags are present in the Census context. If you implemented a third frontend API, you could simply start propagating the tag “API C,” and the database would automatically group counters for API C.</p>
+        
+        <p>Doing local aggregation avoids all overheads of generating and reporting individual traces. As a result, Census can propagate tags and record metrics for <em>every</em> request. <a data-type="indexterm" data-primary="outlier challenges" data-secondary="OpenCensus handling" id="idm45356998201704"></a>Census is particularly useful for diagnosing uncommon and outlier requests, which might be missed by low sampling rates. On the other hand, <a data-type="indexterm" data-primary="OpenCensus" data-secondary="challenges" id="idm45356998200408"></a>Census’s main limitation is that it cannot drill down and inspect individual requests.</p>
+        
+        <p>A second concern about Census is the overhead of propagating tags: the bigger and more complex the system, the more tags you might want to propagate. Census simply limits the number of tags a request can have to 1,000 bytes. This is a new source of overheads that distributed tracing doesn’t really have (if we exclude baggage for now). In the next chapter, we talk about context overheads in more detail.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before less_space" data-pdf-bookmark="Comparison to Distributed Tracing"><div class="sect2" id="idm45356998198296">
+        <h2>Comparison to Distributed Tracing</h2>
+        
+        <p><a data-type="xref" href="#figure_census_example_3">Figure&nbsp;13-3</a> illustrates the <a data-type="indexterm" data-primary="OpenCensus" data-secondary="distributed tracing comparison" id="idm45356998195816"></a>distributed tracing approach compared to the Census approach. There are a few key differences:</p>
+        
+        <figure><div id="figure_census_example_3" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_1303.png" alt="A comparison of distributed tracing versus Census." width="1314" height="996">
+        <h6><span class="label">Figure 13-3. </span>A comparison of distributed tracing versus Census.</h6>
+        </div></figure>
+        <dl class="calloutlist">
+        <dt><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/1.png" alt="1" width="12" height="12"></dt>
+        <dd><p>Distributed tracing emits span data at every component visited by a request, for every request.</p></dd>
+        <dt><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/2.png" alt="2" width="12" height="12"></dt>
+        <dd><p>Distributed tracing propagates TraceIDs with requests, so that backends can combine spans from the same request.</p></dd>
+        <dt><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/3.png" alt="3" width="12" height="12"></dt>
+        <dd><p>Distributed tracing emits span data at every component, potentially leading to large traces.</p></dd>
+        <dt><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/4.png" alt="4" width="12" height="12"></dt>
+        <dd><p>Distributed tracing backends are responsible for extracting metrics from traces, if we want metrics.</p></dd>
+        <dt><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/5.png" alt="5" width="12" height="12"></dt>
+        <dd><p>Census propagates tags with requests instead of TraceIDs.</p></dd>
+        <dt><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/6.png" alt="6" width="12" height="12"></dt>
+        <dd><p>Census only emits metric data.</p></dd>
+        <dt><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/7.png" alt="7" width="12" height="12"></dt>
+        <dd><p>Census locally aggregates metrics.</p></dd>
+        <dt><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/8.png" alt="8" width="12" height="12"></dt>
+        <dd><p>Census only emits metric aggregates to the Census backend, rather than per-request measurements.</p></dd>
+        </dl>
+        
+        <p>Census is very similar to distributed tracing, in that it propagates contexts with requests so that it can combine data across component and machine boundaries. However, it is not as open-ended as distributed tracing. Census is narrower in scope: it focuses on aggregating metrics, grouped by cross-component tags. Aggregated metrics are an important use case, especially for understanding outliers like 99th-percentile tail latency. Census has directly influenced the inclusion of metrics in OpenTelemetry today.</p>
+        
+        <p>While <a data-type="indexterm" data-primary="visibility of OpenCensus" id="idm45356998177688"></a>Census is not as open-ended as distributed tracing, it does achieve complete visibility of all requests where tracing typically does not. Local aggregation means it can cheaply record metrics for every request. Census doesn’t have to sample requests—it records metrics of every request; by contrast, distributed tracing needs sampling to reduce overheads. Like distributed tracing, when you’re instrumenting your system, it’s up to you to choose which tags to use and which metrics to capture.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Pivot Tracing"><div class="sect1" id="idm45356998176152">
+        <h1>Pivot Tracing</h1>
+        
+        <p><a data-type="indexterm" data-primary="beyond distributed tracing" data-secondary="Pivot Tracing" id="idm45356998174904"></a><a data-type="indexterm" data-primary="Pivot Tracing" data-secondary="goal of" id="idm45356998173800"></a>Pivot Tracing is a research project from Brown University published in 2015.<sup><a data-type="noteref" id="idm45356998172728-marker" href="ch13.html#idm45356998172728">3</a></sup> Pivot Tracing is a lot like Census, in that its core goal is to extract aggregated metrics from distributed applications. Pivot Tracing is designed to help diagnose <a data-type="indexterm" data-primary="Pivot Tracing" data-secondary="unanticipated problem diagnosis" id="idm45356998171224"></a><a data-type="indexterm" data-primary="unanticipated problem diagnosis" data-secondary="Pivot Tracing" id="idm45356998170296"></a><em>unanticipated</em> problems in distributed applications on the fly, by using a technique called <a data-type="indexterm" data-primary="Pivot Tracing" data-secondary="dynamic instrumentation" id="idm45356998168952"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="dynamic instrumentation" id="dynInstr"></a><a data-type="indexterm" data-primary="dynamic instrumentation" data-secondary="Pivot Tracing" id="idm45356998166760"></a><em>dynamic instrumentation</em>. Like Census, Pivot Tracing aggregates data directly at the source rather than generating individual traces of requests. It correlates data across components by propagating contexts, but goes a step beyond the tags used by Census.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Dynamic Instrumentation"><div class="sect2" id="idm45356998165096">
+        <h2>Dynamic Instrumentation</h2>
+        
+        <p>When you use distributed tracing, you hardcode instrumentation into our applications, in much the same way that traditional logs and metrics are hardcoded in standalone applications.
+        Dynamic instrumentation is an alternative approach to hard-coding the instrumentation. In a standalone setting, the best-known examples are DTrace, SystemTap, and eBPF.
+        Rather than hardcoding instrumentation at development time, dynamic instrumentation frameworks let you inject code into running programs, without having to recompile or redeploy the program.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Recurring Problems"><div class="sect2" id="idm45356998162856">
+        <h2>Recurring Problems</h2>
+        
+        <p>By default, Pivot Tracing records nothing at all. It only injects instrumentation code into your running application when you ask for it to be installed. It thereby targets <em>active</em> debugging, where there is a persistent problem in the system, and you are actively investigating the problem by turning instrumentation on and off.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="How Does It Work?"><div class="sect2" id="idm45356998160408">
+        <h2>How Does It Work?</h2>
+        
+        <p><a data-type="indexterm" data-primary="examples" data-secondary="Pivot Tracing" id="idm45356998158872"></a><a data-type="indexterm" data-primary="Pivot Tracing" data-secondary="example" id="idm45356998157896"></a><a data-type="indexterm" data-primary="API services" data-secondary="distributed tracing challenge" id="idm45356998156952"></a>Let’s go back to our earlier example depicted in <a data-type="xref" href="#figure_census_example_1">Figure&nbsp;13-1</a>.</p>
+        
+        <p>In this example, we did two things. First, at the database, we counted database queries and recorded query latency. Second, at the frontends, we were using the API name (A or B) as a tag. Census would then aggregate the query latency, grouped by API name.</p>
+        
+        <p>You can do the same thing in Pivot Tracing, in roughly the same way. Pivot Tracing provides a more generalized query language for expressing these aggregates. Concretely, to record just the database query latency, you would use the following query:</p>
+        
+        <pre data-type="programlisting">FROM q in DB.ExecuteQuery
+        SELECT q.duration, COUNT</pre>
+        
+        <p>This query refers to <code>DB.ExecuteQuery</code>, which is the source code database method that executes queries. <code>ExecuteQuery</code> is an example of a <em>tracepoint</em>—a location in the application source code where Pivot Tracing can run instrumentation. The query causes the database to aggregate the <code>ExecuteQuery</code> method duration every time the method is invoked, as well as a counter. Like Census, these aggregations happen locally at the database, rather than reporting data for every request.</p>
+        
+        <p>This query accounts for measuring database metrics, but our goal was to also group those metrics by the frontend API type. To do this, we would expand our earlier query to refer to tracepoints for API A and API B, which we will collectively refer to as <code>FrontEnd.HandleRequest</code>.</p>
+        
+        <pre data-type="programlisting">FROM q in DB.ExecuteQuery
+        JOIN r in FrontEnd.HandleRequest ON r -&gt; q
+        GROUPBY r.apiName
+        SELECT r.apiName, q.duration, COUNT</pre>
+        
+        <p>The <code>-&gt;</code> symbol indicates a <em>happened-before join</em>, a special query operator introduced by Pivot Tracing. This query operator simply means that <code>FrontEnd.HandleRequest</code> has to happen first, then later in the request <code>DB.ExecuteQuery</code> happens. Pivot Tracing will record <code>apiName</code> when the request passes through the <code>HandleRequest</code> method, add it to the Pivot Tracing context, and propagate it along the execution. Then when the request reaches <code>ExecuteQuery</code> at the database, Pivot Tracing will emit the duration of <code>ExecuteQuery</code>, grouped by <code>apiName</code> in the Pivot Tracing context.</p>
+        
+        <p>The happened-before join is Pivot Tracing’s way of formalizing causality and context propagation. In essence, a happened-before join between two tracepoints indicates that information from the first tracepoint should be propagated to the second. In our earlier example, all we’re doing is propagating a tag from <code>HandleRequest</code> in the frontends, to <code>ExecuteQuery</code> at the database.</p>
+        
+        <p><a data-type="indexterm" data-primary="Pivot Tracing" data-secondary="queries" id="idm45356998141720"></a>Pivot Tracing extends beyond just simple single relations. Queries can refer to multiple tracepoints, with multiple different happened-before joins. Pivot Tracing also <span class="keep-together">supports</span> a range of standard query operators such as <code>unions</code>, <code>selection</code>, <code>projection</code>, <code>aggregation</code>, and <code>groupby</code>. Multiple queries can run side by side without interference, and queries can be nested.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Dynamic Context"><div class="sect2" id="idm45356998159784">
+        <h2>Dynamic Context</h2>
+        
+        <p><a data-type="indexterm" data-primary="Pivot Tracing" data-secondary="baggage as dynamic context" id="idm45356998136152"></a><a data-type="indexterm" data-primary="baggage" data-secondary="Pivot Tracing dynamic context" id="idm45356998134984"></a>For any query that uses a happened-before join, Pivot Tracing needs to propagate data from an initial tracepoint to a later tracepoint. Depending on the query, the exact data that gets propagated varies. In the preceding example, the data was simply a string tag containing the <code>apiName</code>—concretely, it would be either <em>API A</em> or <em>API B</em>. More generally the data could be a set of tuples, partially aggregated data, grouped data, and more. To support this, Pivot Tracing makes use of a general-purpose, dynamic context that the authors termed <em>baggage</em>. You’ve already heard the term used earlier in this book; Pivot Tracing introduced it for arbitrary metadata propagated with requests. Today, <em>baggage</em> has been adopted by distributed tracing frameworks to refer to arbitrary key-value pairs.</p>
+        
+        <p>Like Census, Pivot Tracing avoids substantial overheads by aggregating as much data locally as possible. When a user writes a query, that query is optimized to perform things like filters and aggregations at the earliest possible tracepoint. Nonetheless, baggage size is a concern for Pivot Tracing, and in general, if a tool propagates arbitrary metadata with a request, then it needs to be careful not to propagate too much! We go into this in more detail in the next chapter.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Comparison to Distributed Tracing"><div class="sect2" id="idm45356998130072">
+        <h2>Comparison to Distributed Tracing</h2>
+        
+        <p><a data-type="indexterm" data-primary="Pivot Tracing" data-secondary="distributed tracing comparison" id="idm45356998128872"></a>Pivot Tracing is much more similar to Census than to distributed tracing, but all three share a few commonalities. All three tools propagate contexts with requests, so that they can combine data across component and machine boundaries. Both Census and Pivot Tracing aggregate data as close to the source as possible, so they can be complete where distributed tracing is not. Unlike Census and Distributed Tracing, Pivot Tracing is the first tool suitable for <a data-type="indexterm" data-primary="Pivot Tracing" data-secondary="unanticipated problem diagnosis" id="idm45356998127272"></a><a data-type="indexterm" data-primary="unanticipated problem diagnosis" data-secondary="Pivot Tracing" id="idm45356998126312"></a><em>unanticipated</em> problems, as dynamic instrumentation lets developers interactively insert and remove new instrumentation to manually get to the root cause of problems. Pivot Tracing is more open-ended than Census, because it supports a broader set of operations than just tags and aggregations. However, it doesn’t provide as rich data as distributed tracing does.</p>
+        
+        <p><a data-type="indexterm" data-primary="Pivot Tracing" data-secondary="challenges" id="idm45356998124312"></a>Pivot Tracing is a research project, with an open-source implementation, but there are a few unresolved challenges. First and foremost is managing the overheads and security of using dynamic instrumentation. However, with the growing use of eBPF in production systems, we may see more Pivot Tracing style proliferate in the future.</p>
+        
+        <p>One alternative way to think about Pivot Tracing is to compare it with distributed tracing backends. In <a data-type="xref" href="ch10.html#chapter_12">Chapter&nbsp;10</a>, we described a tracing use case where we aggregate high-level metrics across many traces. Facebook’s Canopy is centered around this use case. Whereas a distributed tracing system performs these aggregation queries in the tracing backends, Pivot Tracing “optimizes” these queries by pushing their execution all the way to the original data source.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Pythia"><div class="sect1" id="idm45356998120888">
+        <h1>Pythia</h1>
+        
+        <p><a data-type="indexterm" data-primary="beyond distributed tracing" data-secondary="Pythia" id="idm45356998119576"></a>Pythia is a research project from Boston University published in 2019.<sup><a data-type="noteref" id="idm45356998118280-marker" href="ch13.html#idm45356998118280">4</a></sup> It is more closely related to distributed tracing than to Census or Pivot Tracing. Like Pivot Tracing, Pythia is intended to help diagnose <a data-type="indexterm" data-primary="unanticipated problem diagnosis" data-secondary="Pythia" id="idm45356998116808"></a><a data-type="indexterm" data-primary="Pythia" data-secondary="unanticipated problem diagnosis" id="idm45356998115880"></a><em>unanticipated</em> problems, by <a data-type="indexterm" data-primary="dynamic instrumentation" data-secondary="Pythia" id="idm45356998114536"></a><a data-type="indexterm" data-startref="dynInstr" id="idm45356998113528"></a><a data-type="indexterm" data-primary="Pythia" data-secondary="dynamic instrumentation" id="idm45356998112856"></a>dynamically changing the instrumentation in running systems. The overall output from Pythia is, in fact, distributed traces; however, the data contained in the traces is the set of data most able to explain a performance problem.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Performance Regressions"><div class="sect2" id="idm45356998111544">
+        <h2>Performance Regressions</h2>
+        
+        <p>Pythia’s use case is to automatically find explanations for differences in request performance. That is, for a collection of similar requests that have different performance, it will try to find instrumentation that best helps distinguish these two classes.</p>
+        
+        <p><a data-type="indexterm" data-primary="examples" data-secondary="Pythia" id="idm45356998109544"></a><a data-type="indexterm" data-primary="Pythia" data-secondary="example" id="idm45356998108568"></a>Consider the example illustrated in <a data-type="xref" href="#figure_pythia_example_1">Figure&nbsp;13-4</a>. Suppose a storage service has an in-memory cache to maintain a subset of the hot data in memory. Requests to this system can follow one of two paths:</p>
+        
+        <figure><div id="figure_pythia_example_1" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_1304.png" alt="A cache hit versus a cache miss." width="770" height="544">
+        <h6><span class="label">Figure 13-4. </span>A cache hit versus a cache miss.</h6>
+        </div></figure>
+        <dl class="calloutlist">
+        <dt><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/1.png" alt="1" width="12" height="12"></dt>
+        <dd><p>The fast path—the request looks up data that exists in the in-memory cache, and can immediately return a result.</p></dd>
+        <dt><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/2.png" alt="2" width="12" height="12"></dt>
+        <dd><p>The slow path—the request looks up data that doesn’t exist in the in-memory cache, and has to go to disk to fetch the data.</p></dd>
+        </dl>
+        
+        <p>By default, if you only instrument your RPC framework, then your instrumentation will only capture API calls to the storage service. If you were to plot the latency distribution of the storage service, you’d see a bimodal distribution (see <a data-type="xref" href="#figure_pythia_example_2">Figure&nbsp;13-5</a>).</p>
+        
+        <figure><div id="figure_pythia_example_2" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_1305.png" alt="The storage service has a bimodal latency distribution." width="884" height="644">
+        <h6><span class="label">Figure 13-5. </span>The storage service has a bimodal latency distribution.</h6>
+        </div></figure>
+        
+        <p><a data-type="indexterm" data-primary="Pythia" data-secondary="goal of" id="idm45356998096600"></a>The goal of Pythia is to automatically identify some internal tracepoints that are present in one mode, but not in the other. For example, slow requests might invoke a <code>fetchFromDisk</code> method that is not present in the fast, cached requests. <a data-type="indexterm" data-primary="Pythia" data-secondary="dynamic instrumentation" id="idm45356998094920"></a><a data-type="indexterm" data-primary="dynamic instrumentation" data-secondary="Pythia" id="idm45356998093864"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="dynamic instrumentation" id="idm45356998092920"></a>Pythia would identify and automatically instrument this method. The new output from the system would contain this instrumentation, making it clear to Pythia users why the two request classes are different.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Design"><div class="sect2" id="idm45356998091496">
+        <h2>Design</h2>
+        
+        <p><a data-type="indexterm" data-primary="Pythia" data-secondary="design" id="idm45356998090360"></a>Pythia primarily operates as a distributed tracing backend. It runs as a constant loop, with each iteration performing the following steps:</p>
+        <ol>
+        <li>
+        <p>Resolve group requests that are expected to perform similarly.</p>
+        </li>
+        <li>
+        <p>Identify groups that exhibit high coefficient of variation in their response time or other important metric.</p>
+        </li>
+        <li>
+        <p>Search the space of possible instrumentation and identify new instrumentation to enable.</p>
+        </li>
+        <li>
+        <p>Dynamically update the system’s instrumentation.</p>
+        </li>
+        
+        </ol>
+        
+        <p>In addition to enabling new instrumentation, Pythia also performs a <em>garbage collection</em> step of disabling instrumentation that isn’t useful.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Overheads"><div class="sect2" id="idm45356998083512">
+        <h2>Overheads</h2>
+        
+        <p>Pythia introduces a new dimension for managing and evaluating distributed tracing overheads. Concretely, Pythia can automatically determine when instrumentation is <em>not</em> useful for explaining performance variations, and disable it. Given some desired computational overhead, Pythia can either increase trace detail and reduce the sampling rate, or decrease trace detail and increase the sampling rate. Both of these are useful for Pythia. Receiving lots of samples quickly is useful for rapidly testing new instrumentation hypotheses, while having high trace detail makes it easier to rapidly localize instrumentation.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Comparison to Distributed Tracing"><div class="sect2" id="idm45356998080872">
+        <h2>Comparison to Distributed Tracing</h2>
+        
+        <p><a data-type="indexterm" data-primary="Pythia" data-secondary="distributed tracing comparison" id="idm45356998079704"></a>Pythia is built on top of distributed tracing. However, its use case is more narrow, with a sole focus on explaining performance variations. Unlike distributed tracing, Census, and Pivot Tracing, Pythia does <em>not</em> rely on end users to manually explore data and identify problems. Instead, it automates some of this process. For example, while Pivot Tracing is also suitable for explaining performance variations, each successive query must be chosen by the user—a time-consuming manual process. By contrast, Pythia automatically navigates the space of possible instrumentation, leading to much faster problem resolution. Of the tools we’ve discussed in this chapter, Pythia is the most recent, and is an ongoing project of the Massachusetts Open Cloud initiative.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" class="notoc pagebreak-before less_space" data-pdf-bookmark="Summary"><div class="sect1" id="idm45356998077096">
+        <h1>Summary</h1>
+        
+        <p><a data-type="indexterm" data-primary="beyond distributed tracing" data-secondary="about" id="idm45356998075480"></a>When we use distributed tracing, we have to make trade-offs about what to record, and how often to record it. Distributed tracing is very much “all or nothing”—if a request is traced, you get a lot of trace detail. However, none of the trade-offs made by distributed tracing are truly fundamental to profiling, debugging, or monitoring distributed architectures. Census, Pivot Tracing, and Pythia present several different approaches to distributed tracing that are also very effective. Each tool has a different use case, which enables different design choices. Overall, we can observe the <span class="keep-together">following</span>:</p>
+        
+        <ul>
+        <li>
+        <p>It’s useful to be able to turn instrumentation on and off dynamically at runtime. Sometimes instrumentation is useful for human-driven “deep dive” analysis, but not needed the rest of the time.</p>
+        </li>
+        <li>
+        <p>Not all instrumentation is created equal. Some instrumentation, like request latency, will always be important; the value of other instrumentation might be difficult to gauge.</p>
+        </li>
+        <li>
+        <p>Detailed traces are useful for historical analysis, but for recurring problems, we can insert new instrumentation and “try again,” rather than go digging through old traces.</p>
+        </li>
+        <li>
+        <p>Tracing doesn’t need to be “all or nothing.” For example, it can be useful to record a small number of detailed traces and a larger number of simple traces.</p>
+        </li>
+        <li>
+        <p>If you’re using data to do aggregate analysis, some of those aggregations can be performed directly at the data source, rather than by tracing backends. Early aggregations are far more cost-effective.</p>
+        </li>
+        <li>
+        <p>Context propagation adds a new source of overheads.</p>
+        </li>
+        </ul>
+        
+        <p>All of these tools have one thing in common: capturing cross-component causality. In distributed architectures, getting causality between events is very challenging. All of these tools use context propagation in one form or another, as the mechanism for observing and recording cross-component relationships. In the next chapter, we will dive more deeply into context propagation.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        <div data-type="footnotes"><p data-type="footnote" id="idm45356998257240"><sup><a href="ch13.html#idm45356998257240-marker">1</a></sup> <a data-type="xref" href="bibliography01.html#Kal17">[Kal17]</a></p><p data-type="footnote" id="idm45356998254392"><sup><a href="ch13.html#idm45356998254392-marker">2</a></sup> <a data-type="xref" href="bibliography01.html#Sig10">[Sig10]</a></p><p data-type="footnote" id="idm45356998172728"><sup><a href="ch13.html#idm45356998172728-marker">3</a></sup> <a data-type="xref" href="bibliography01.html#Mac15">[Mac15]</a></p><p data-type="footnote" id="idm45356998118280"><sup><a href="ch13.html#idm45356998118280-marker">4</a></sup> <a data-type="xref" href="bibliography01.html#Ate19">[Ate19]</a></p></div></div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492056621/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

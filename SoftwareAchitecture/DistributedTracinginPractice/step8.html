@@ -1,0 +1,1374 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 8. Improving Baseline Performance"><div class="chapter" id="chapter_10">
+        <h1><span class="label">Chapter 8. </span>Improving Baseline Performance</h1>
+        
+        
+        <p>In any other production system—whether it’s a software system or a factory—the
+        process by which the product is created has a profound impact on the
+        cost of production and on the product itself. <a data-type="indexterm" data-primary="distributed applications" data-secondary="production costs" id="idm45356999944104"></a><a data-type="indexterm" data-primary="infrastructure costs" data-secondary="application production costs" id="idm45356999943160"></a>In modern software
+        applications, production costs are mostly related to computing
+        resources and other infrastructure, including the costs of buying and
+        running servers in a private datacenter or renting them from a cloud
+        provider. How that software is delivered also affects user
+        experience. In this chapter, we consider how to reduce costs and
+        improve user experience using distributed tracing.</p>
+        
+        <p>In particular, we focus on <a data-type="indexterm" data-primary="improving baseline performance" data-secondary="about" id="idm45356999941272"></a>improving <em>baseline</em> performance: that is, how the
+        software performs over the course of weeks, months, or quarters.
+        Understanding baseline performance will enable you to plan engineering work
+        over the next few weeks or months effectively, maximizing your chances of
+        having a positive impact. (In contrast, the following chapter will focus on
+        approaches to <em>restoring</em> performance to that baseline when something has gone
+        wrong.)</p>
+        
+        <p>In the previous chapter, we discussed distributed tracing in the context of
+        the “three pillars of observability.” In particular, we said that software
+        developers and operators have the most to gain from distributed tracing and
+        other observability tools when those tools take advantage of all three forms
+        of performance telemetry: metrics, logs, and traces. As such, the approaches
+        in this chapter will consider distributed tracing as a means for not merely
+        viewing traces, but for analyzing and visualizing telemetry using tracing data
+        as a way to put that telemetry in the context of application requests. While
+        we will start with looking at individual traces as a way of understanding
+        application performance, we will quickly progress to approaches that automate
+        many manual steps and take advantage of hundreds or thousands of traces.</p>
+        
+        <p>Before we can start to analyze performance data, however, we must first
+        establish how we measure performance, including the statistics tools required
+        to do so for a large volume of requests.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Measuring Performance"><div class="sect1" id="idm45356999936808">
+        <h1>Measuring Performance</h1>
+        
+        <p><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="measuring performance" id="idm45356999935272"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="measuring performance" id="idm45356999934280"></a><a data-type="indexterm" data-primary="user impact of performance" data-secondary="measuring performance" id="idm45356999933320"></a><a data-type="indexterm" data-primary="latency" data-secondary="measuring performance" id="idm45356999932360"></a><a data-type="indexterm" data-primary="measuring performance" id="idm45356999931416"></a><a data-type="indexterm" data-primary="cost of tracing" data-secondary="request latency" id="idm45356999930744"></a>For user-facing applications, it’s critical to measure performance as it
+        affects users. As such, request <em>latency</em> is a critical measure for these
+        applications, and moreover, latency should be measured as close to the user as
+        possible. Measuring latency in the user’s browser or mobile app is better
+        than measuring it at the load balancer: this will enable you to see the
+        effects of the network on performance. Even better would be to measure
+        latency between a user’s interaction and when new results are rendered on their
+        screen: this lets you see the impact of multiple requests to your backends as
+        well as any computation done in the client.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45356999928488">
+        <h5>Economic Value of Lower Latency</h5>
+        <p><a data-type="indexterm" data-primary="latency" data-secondary="economic value of lower latency" id="idm45356999927320"></a><a data-type="indexterm" data-primary="cost of tracing" data-secondary="latency economic impact" id="idm45356999926280"></a><a data-type="indexterm" data-primary="economic impact of latency" id="idm45356999925336"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="latency economic impact" id="idm45356999924648"></a>Numerous studies have shown that even barely perceptible increases in latency
+        can have significant effects on revenue and other kinds of user conversions.
+        Experiments performed by Google showed that increasing the time to load a page
+        of search results by half a second reduced the total number of searches by 20%,
+        and conversely, if Google made a page faster, it would see a roughly
+        proportional increase in the amount of usage.<sup><a data-type="noteref" id="idm45356999923112-marker" href="ch08.html#idm45356999923112">1</a></sup> Research by Akamai showed
+        that even an increase in latency as little as 100 milliseconds could reduce
+        ecommerce conversion by as much as
+        7%.<sup><a data-type="noteref" id="idm45356999921720-marker" href="ch08.html#idm45356999921720">2</a></sup>
+        Pinterest showed that a 40% reduction in visitor wait time resulted in a 15%
+        increase in conversion to
+        sign-up.<sup><a data-type="noteref" id="idm45356999920392-marker" href="ch08.html#idm45356999920392">3</a></sup></p>
+        
+        <p>While it may be easy to focus on reducing infrastructure costs when thinking
+        about the economic value of software performance, improving user experience is
+        not just good for users, but has real—and measurable—business value as
+        well.</p>
+        </div></aside>
+        
+        <p><a data-type="indexterm" data-primary="performance considerations" data-secondary="user impact" id="idm45356999918296"></a><a data-type="indexterm" data-primary="user impact of performance" data-secondary="which users" id="idm45356999917304"></a>In measuring performance, you should also consider <em>which</em> users’ performance
+        you care about. Are you interested in improving performance for your average
+        users? For your power users? Perhaps for a specific customer segment? This
+        choice will affect how you go about measuring performance.</p>
+        
+        <p><a data-type="indexterm" data-primary="latency" data-secondary="median latency improvement" id="idm45356999915224"></a><a data-type="indexterm" data-primary="metrics" data-secondary="latency" data-see="latency" id="idm45356999914232"></a>If you are interested in improving performance for most users or are working
+        to reduce costs, targeting <em>median latency</em> might be a good place to start.
+        Working to improve median latency can not only improve performance for many
+        users, it’s also a good place to start if you are looking to reduce overall
+        costs. Because many requests tend to cluster around the middle of the
+        distribution, reducing the amount of <span class="keep-together">computation</span> required for each of these
+        requests can have a big impact on overall compute requirements.</p>
+        
+        <p><a data-type="indexterm" data-primary="latency" data-secondary="high-percentile latency" id="idm45356999910984"></a><a data-type="indexterm" data-primary="high-percentile latency" id="idm45356999910008"></a>If you want to improve performance for the subset of your users that are
+        having the worst experience, measuring <em>high-percentile latency</em> (as discussed
+        later) will get you pointed in the right direction. It may seem
+        counterintuitive to spend your time improving latency for only (say) 1% of
+        requests. However, there are several important reasons to consider doing so:</p>
+        
+        <ul>
+        <li>
+        <p>If you are responsible for a service in the <em>middle</em> of your
+        application, 1% of the requests that your service is handling can affect
+        many more than 1% of end users. This occurs most often when requests from
+        users are fanned out (directly or indirectly) across many instances of your
+        service. The chances of a slow request affecting a given user increase with
+        the number of instances serving that part of the request, since the slowest
+        such instance will determine the overall latency observed by that user.</p>
+        </li>
+        <li>
+        <p>Users experiencing high-percentile latency often serve as
+        bellwethers for the rest of your users. The slowest requests are usually
+        hitting parts of your application that are already performing at or near
+        their limits. As request volume increases, more and more requests will
+        suffer from similar problems; though you are improving only 1% of
+        requests today, they will represent a larger portion of requests in the near
+        future.</p>
+        </li>
+        <li>
+        <p>Our experience has shown that users experiencing high latency tend
+        to do so because they are using larger datasets or are issuing more complex
+        queries. These also tend to be high-value users, including those
+        responsible for an outsize portion of your revenue.</p>
+        </li>
+        </ul>
+        
+        <p><a data-type="indexterm" data-primary="user impact of performance" data-secondary="portion of user requests that fail" id="idm45356999903368"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="portion of user requests that fail" id="idm45356999902360"></a><a data-type="indexterm" data-primary="failure state" data-secondary="portion of user requests that fail" id="idm45356999901384"></a>Though not always considered part of “performance,” the <em>portion of user
+        requests that fail</em> (or have some unrecoverable error) is also important to
+        measure. (If you require that all “performance” measures be expressed in
+        terms of “faster” or “slower,” then consider failed requests to be infinitely
+        slow.) Requests fail for any number of reasons in distributed systems,
+        including software bugs in service (locally or further down the stack), user
+        errors, network failures, and underprovisioned services. In
+        many ways, understanding errors is the bread and butter of distributed
+        tracing: isolating them requires understanding the dependencies between
+        services and how they interact with each other.</p>
+        
+        <p><a data-type="indexterm" data-primary="performance considerations" data-secondary="traffic rate" id="idm45356999898936"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="saturation" id="idm45356999897720"></a><a data-type="indexterm" data-primary="traffic rate" data-secondary="as golden metric of performance" data-secondary-sortas="golden metric of performance" id="idm45356999896760"></a><a data-type="indexterm" data-primary="saturation" id="idm45356999895512"></a>The two other “golden” metrics of application performance, <em>traffic rate</em> and
+        <em>saturation</em>, cannot be associated with individual requests in the same way
+        that latency or the presence of errors can be. (An individual request can
+        certainly be part of what causes traffic to spike, but it’s difficult to blame
+        that request more than any other.) These metrics typically play a larger role
+        in applications that are more focused on throughput than on latency: this is
+        true of many batch-processing systems and some <span class="keep-together">high-volume</span> delivery systems
+        (including video processing). In these applications, if the throughput falls
+        below a given threshold then user experience may suffer, but most optimization
+        is focused on maintaining that throughput while reducing costs. Note, however,
+        that traffic rate and saturation can also be important signals in explaining
+        and improving latency and error rates; we will consider how they can be
+        integrated into distributed tracing to do so.</p>
+        
+        <p><a data-type="indexterm" data-primary="SLIs" data-see="service level indicators" id="idm45356999892088"></a><a data-type="indexterm" data-primary="service level indicators (SLIs)" data-secondary="improving baseline performance" id="idm45356999891112"></a>Whatever measures of performance matter for your business, organization, or
+        users, once you’ve determined what they are, measuring and setting goals for
+        them is critical to prioritizing your work. Though mostly beyond the scope of
+        this book, establishing SLIs is a way of
+        formalizing performance measurements in a way that can be measured
+        precisely by determining:</p>
+        
+        <ul>
+        <li>
+        <p>What you are measuring (for example, median or 99th-percentile latency)</p>
+        </li>
+        <li>
+        <p>What you are measuring it for (for example, which service, endpoint, or <span class="keep-together">operation</span>)</p>
+        </li>
+        <li>
+        <p>Over what time period you are measuring it (for example, the last five minutes)</p>
+        </li>
+        </ul>
+        
+        <p>If integrated into your distributed tracing solution, SLIs can also help to
+        make automated decisions about data collection and sampling and even guide you
+        toward the root causes of performance problems. Before we look at that,
+        however, let’s introduce a few concepts from statistics.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Percentiles"><div class="sect2" id="idm45356999884872">
+        <h2>Percentiles</h2>
+        
+        <p><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="percentiles" id="idm45356999883336"></a><a data-type="indexterm" data-primary="percentiles" id="idm45356999882344"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="percentiles" id="idm45356999881672"></a>Throughout this chapter and the next, we will frequently refer to <em>high-percentile latency</em> or in some cases, <em>99th-percentile latency.</em> (If you are
+        familiar with percentiles, feel free to skip this section.) Like statistics
+        such as average and maximum, percentiles are a way of summarizing the
+        performance of a large set of requests. Unlike average or maximum, however,
+        percentiles offer a much more powerful way of comparing sets (or
+        “populations”) of requests. Two common places where you may have seen
+        percentiles and similar statistics are academic tests that were “graded on a
+        curve” or measures of the height or weight of young children.</p>
+        
+        <p>Percentiles can be defined as follows: each percentile gives the value of some
+        measurement (in our case, often latency) for which a given portion of the
+        population lies below that value. For example, if the 50th-percentile latency
+        is 100 milliseconds (ms), then 50% of the requests considered were faster than 100
+        ms. Similarly, if the 90th-percentile latency was 1 second, then
+        90% of the requests considered were faster than 1 second (see <a data-type="xref" href="#tab10-percentile-example">Table&nbsp;8-1</a>).</p>
+        <table id="tab10-percentile-example" style="width: 45%">
+        <caption><span class="label">Table 8-1. </span>Example request latencies and statistics</caption>
+        <thead>
+        <tr>
+        <th>Request latency (ms)</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>87</p></td>
+        </tr>
+        <tr>
+        <td><p>89</p></td>
+        </tr>
+        <tr>
+        <td><p>91</p></td>
+        </tr>
+        <tr>
+        <td><p>93</p></td>
+        </tr>
+        <tr>
+        <td><p>102</p></td>
+        </tr>
+        <tr>
+        <td><p>138</p></td>
+        </tr>
+        <tr>
+        <td><p>174</p></td>
+        </tr>
+        <tr>
+        <td><p>260</p></td>
+        </tr>
+        <tr>
+        <td><p>556</p></td>
+        </tr>
+        <tr>
+        <td><p>5000</p></td>
+        </tr>
+        </tbody>
+        </table>
+        <table style="width: 45%">
+        
+        <thead>
+        <tr>
+        <th>Selected statistics (ms)</th>
+        <th>50th percentile</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>120</p></td>
+        <td><p>Average</p></td>
+        </tr>
+        <tr>
+        <td><p>659</p></td>
+        <td><p>90th percentile</p></td>
+        </tr>
+        <tr>
+        <td><p>1000</p></td>
+        <td><p>Maximum</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>Given the request latencies shown in <a data-type="xref" href="#tab10-percentile-example">Table&nbsp;8-1</a>, we can
+        compute the average, 50th and 90th percentiles, as shown. (Note that we’ve
+        chosen to use a definition of percentiles that interpolates between values.)</p>
+        
+        <p>Percentiles provide more flexibility than just looking at an average value.
+        Simply put, looking at the average only works well when the average is
+        representative of the data as a whole. In measuring software performance,
+        it’s not uncommon for values to be widely distributed. And when a few values
+        are <em>very</em> widely distributed, they can have an outsize impact on the
+        average. In our simple example, because there is one extremely large value,
+        the average is larger than all of the values but that one. The 50th
+        percentile (or median) is often more robust to outliers than the average.<sup><a data-type="noteref" id="idm45356999852456-marker" href="ch08.html#idm45356999852456">4</a></sup></p>
+        
+        <p>Percentiles are also useful when looking to understand and improve the
+        performance of the slowest requests. It can be tempting to look at the
+        <em>maximum</em> latency; however, the maximum will often be determined by how
+        timeouts are configured or even by some aspect of the telemetry or monitoring
+        system. For example, if you are investigating a request that took exactly 60
+        seconds, chances are you will find that some part of the request repeatedly
+        failed until the entire request was aborted (meaning that you are not really
+        debugging a slow request but a failed one). Looking at requests that are
+        among the slowest 1%, 5%, or 10% (depending on your overall request volume)
+        will usually offer better candidates for improving latency.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45356999847560">
+        <h5>Beware: Computing with Percentiles</h5>
+        <p><a data-type="indexterm" data-primary="percentiles" data-secondary="caution on computing with" id="idm45356999846344"></a><a data-type="indexterm" data-primary="statistics" data-secondary="percentile caution" id="idm45356999845304"></a>In addition to being less familiar to many engineers and developers, using
+        percentiles also presents some challenges for <em>implementers</em> of distributed
+        tracing and other observability tools.</p>
+        
+        <p>Averages and maximums can be measured on separate hosts (or even in separate
+        datacenters) and then easily combined: averages by weighting them
+        appropriately, and maximums simply by taking the largest.</p>
+        
+        <p>Unlike statistics such as average and maximum, however, there’s no
+        straightforward way of combining separate measurements of the 50th (or any other) percentile. Users should be careful when observability
+        tools claim to do so.</p>
+        </div></aside>
+        
+        <p>Computing percentiles for small datasets can be confusing and often
+        misleading. In our work, we’ve come across developers from time to time who
+        are trying to measure 99th- (or even 99.9th-) percentile latencies for datasets
+        with only dozens of examples. In trying to keep our example in
+        <a data-type="xref" href="#tab10-percentile-example">Table&nbsp;8-1</a> small, we are ourselves guilty of this: in our
+        example of 10 points, the 90th percentile is determined by only two points
+        (the two largest)!</p>
+        
+        <p>When a percentile (or any statistic, for that matter) is determined by only a
+        few points, noise in the measurement of those points can carry over into that
+        percentile. In addition, differences in how different tools compute
+        percentiles (for example, using interpolation or the nearest point) can also
+        make it difficult to compare results. In those cases, it’s easy to make
+        incorrect conclusions. Try to avoid computing percentiles that will be
+        determined by only a handful of points.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Histograms"><div class="sect2" id="idm45356999884248">
+        <h2>Histograms</h2>
+        
+        <p><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="histograms" id="idm45356999838296"></a><a data-type="indexterm" data-primary="histograms" data-secondary="improving baseline performance" id="idm45356999837304"></a><a data-type="indexterm" data-primary="latency" data-secondary="histograms" id="idm45356999836344"></a>Though slightly more expensive in terms of network and storage costs,
+        <em>histograms</em> provide much more detail than just a handful of statistics. This
+        is especially important in software performance where the behavior of a
+        service is often much more complex than just a single Gaussian or “bell”
+        curve. While they might at first seem unfamiliar if you are more used to
+        reading time series graphs, they will quickly become a go-to tool for
+        improving performance.</p>
+        
+        <p>Unlike a time series graph, where the unit of measurement—in our case,
+        latency—is on the vertical axis, in a histogram the unit of measurement is
+        on the horizontal axis (see <a data-type="xref" href="#fig10-histogram-example">Figure&nbsp;8-1</a>).</p>
+        
+        <figure class="no-frame"><div id="fig10-histogram-example" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0801.png" alt="dtip 0801" width="1313" height="773">
+        <h6><span class="label">Figure 8-1. </span>Example of a histogram.</h6>
+        </div></figure>
+        
+        <p>Each bar in the histogram represents a subset of the overall population: for
+        example, the requests with a latency between 100 and 150 ms. The
+        height of the bar indicates the size of that subset; this is sometimes labeled
+        “frequency.” In the example, there are around 10,000 requests with latencies
+        between 100 m and 150 ms. Like many latency histograms,
+        the example is plotted on a log-log scale. A logarithmic horizontal axis lets
+        us see a much wider range of latencies (from only a few milliseconds up to
+        a minute) while a logarithmic vertical axis lets us see patterns in even small
+        subsets of requests.</p>
+        
+        <p>While the 99th- and other high-percentile latencies are more robust to outliers
+        than statistics like the maximum, they can still fail to reveal many aspects
+        of application performance. For the requests in <a data-type="xref" href="#fig10-histogram-example">Figure&nbsp;8-1</a>,
+        the 99th-percentile latency is around 3 seconds. However, this would still be
+        the case even if the cluster of requests between 100 and 150 ms
+        slowed down to around 1 second instead. Likewise, it would still be the
+        case even if the cluster of requests around 5 seconds had occurred at 10
+        seconds instead. Ultimately, the 99th percentile is really just showing a
+        simple division of your requests: 99% of them are faster and 1% are slower.
+        It says nothing about how requests are distributed within these two sets.</p>
+        
+        <p>The <em>shape</em> of a latency histogram, however, describes the performance of your
+        service or application in far more detail. In several of the analyses later in this chapter
+        and in the following chapter, we’ll show how to use them to divide requests
+        into meaningful classes and then to understand the reasons behind the
+        performance differences between those classes.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Defining the Critical Path"><div class="sect1" id="idm45356999936184">
+        <h1>Defining the Critical Path</h1>
+        
+        <p><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="critical path" id="idm45356999824952"></a><a data-type="indexterm" data-primary="latency" data-secondary="critical path" id="idm45356999824008"></a><a data-type="indexterm" data-primary="user impact of performance" data-secondary="critical path" id="idm45356999823064"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="critical path" id="idm45356999822216"></a><a data-type="indexterm" data-primary="critical path" id="idm45356999821368"></a>In any distributed system of reasonable complexity, there are always many
+        services and RPCs that are slow. So many, in fact, that even the
+        hardest-working developers would not be able to track down all of these issues
+        and fix them before more were introduced. And indeed they shouldn’t! Most of
+        these issues have no impact on users and so fixing them is of little value to
+        your business or organization. Before working to address latency of any
+        particular service, you should be confident that doing so will affect performance
+        as observed by users. (In <a data-type="xref" href="ch07.html#chapter_9">Chapter&nbsp;7</a> we referred to this as
+        “prioritizing by impact.”)</p>
+        
+        <p>A common method for understanding which services are impacting user-visible
+        performance is to first determine the <em>critical path</em> of each slow
+        request. Originally developed as part of project management, the critical path
+        (when applied to requests in a distributed software system) describes the
+        parts of processing the request that, when taken together, determine the overall
+        duration of the request.</p>
+        
+        <p><a data-type="indexterm" data-primary="spans" data-secondary="critical path" id="idm45356999817560"></a>In the terms of distributed tracing, the critical path of a trace is a subset
+        of spans of that trace or even parts of those spans. One definition says that
+        span A is part of the critical path at time t if and only if two conditions are true:</p>
+        
+        <ul>
+        <li>
+        <p>A’s parent is blocked on A’s completion at time t</p>
+        </li>
+        <li>
+        <p>A is <em>not</em> blocked on any child span’s completion at time t</p>
+        </li>
+        </ul>
+        
+        <p>This is a convenient way of thinking about the critical path; in a way, it
+        describes the “bottom edge” of a trace. In some cases, however (and as we’ll
+        describe later), there is some ambiguity when there are multiple concurrent
+        child spans. To avoid this ambiguity, we define the critical path as follows.
+        Span A is part of the critical path at time t if and only if <em>reducing the length of A at time t reduces the overall latency of the request</em>.</p>
+        
+        <p><a data-type="xref" href="#fig10-critical-path-example">Figure&nbsp;8-2</a> shows an example trace with the critical
+        path shaded. You can see that the length of the critical path is the
+        same as the length of the overall request, and in this case, the length of the
+        longest span as well. In this example, span A contributes to the critical
+        path at several points, including at the beginning and end of the request.
+        Spans B, D, and E are each entirely on the critical path. Span
+        C is partially on the critical path, but only before and after D.</p>
+        
+        <figure><div id="fig10-critical-path-example" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0802.png" alt="dtip 0802" width="1334" height="549">
+        <h6><span class="label">Figure 8-2. </span>Example trace with critical path.</h6>
+        </div></figure>
+        
+        <p>If you were looking to reduce the latency of this request, you should look at
+        spans B, D, or E or at the parts of spans A and C that are
+        not blocked on one of the other spans.</p>
+        
+        <p><a data-type="xref" href="#fig10-client-server-critical-path">Figure&nbsp;8-3</a> shows a second trace. In this example,
+        two of the spans represent the same work, but as perceived by the client
+        (<code>client A</code>) and the server (<code>server A</code>).</p>
+        
+        <figure><div id="fig10-client-server-critical-path" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0803.png" alt="dtip 0803" width="866" height="418">
+        <h6><span class="label">Figure 8-3. </span>Trace with client span on the critical path.</h6>
+        </div></figure>
+        
+        <p>Looking at the time where <code>client A</code> is on the critical path, you might be
+        asking “Why is the client doing any work here?” In this case, the delay is
+        most likely due to network latency, though different tracing tools may show
+        this in different ways. As a user you must often consider: is the latency
+        being caused by the service directly? Or is it a delay caused by something
+        external (like the network)? Or is it caused by contention for some other
+        resource (for example, the CPU or a lock)? Additional metadata on spans can
+        help shed light on these cases, as discussed later.</p>
+        
+        <p><a data-type="xref" href="#fig10-concurrent-critical-path">Figure&nbsp;8-4</a> shows a third trace with the critical
+        path shaded. In this case, span A has two child spans (B and
+        C) that represent concurrently executing work. At time t, A could
+        be said to be blocked on either of the child spans (and neither of those
+        two are blocked on any other spans), so by the first definition of “critical
+        path” either one could be considered to be on the critical path.</p>
+        
+        <p>In this case, however, reducing the length of B would <em>not</em> reduce the
+        overall length of the request; only reducing C would have that effect.
+        When there are multiple child spans that describe work that is being executed
+        concurrently, the longest such request is the only one on the critical path.</p>
+        
+        <figure><div id="fig10-concurrent-critical-path" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0804.png" alt="dtip 0804" width="1334" height="417">
+        <h6><span class="label">Figure 8-4. </span>Example trace with concurrent child spans and critical path.</h6>
+        </div></figure>
+        
+        <p>Note that the definition only says that <em>some</em> reduction of the length of a
+        span on the critical path will reduce the overall latency of the request, but
+        not that <em>any</em> reduction will result in an equal reduction in overall latency.</p>
+        
+        <p>For example, consider a span that is on the critical path and is 1 second in
+        duration. Reducing its length by 500 ms doesn’t necessarily reduce
+        the time of the entire request by 500 ms. In the trace shown in
+        <a data-type="xref" href="#fig10-concurrent-critical-path">Figure&nbsp;8-4</a>, when the length of span C is reduced to
+        less than the length of B, it will no longer be on the critical path (and
+        therefore reducing its duration will no longer reduce overall latency).
+        Remember that as part of optimizing the work represented by an individual
+        span, you may change which spans appear on the critical path altogether (and
+        therefore need to change your plans for further optimization work).</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45356999793960">
+        <h5>Understanding Causal Relationships</h5>
+        <p><a data-type="indexterm" data-primary="causal relationships" id="idm45356999792824"></a><a data-type="indexterm" data-primary="Dapper" data-secondary="causal relationships in span trees" id="idm45356999792120"></a>When using the span-based model of distributed tracing popularized by Google’s
+        Dapper, spans contain explicit references to their parents. From this
+        information, a tree can be built showing where spans started relative to each
+        other. However, some assumptions about the relationships between spans still
+        need to be assumed.</p>
+        
+        <p>When a child span starts, is the parent truly blocked on the work represented
+        by the child? Or is this an asynchronous request with other work
+        continuing concurrently? Understanding the difference will partly depend on
+        the developers who are looking at traces to understand that code that
+        generated them.</p>
+        
+        <p>In addition, using conventions about how concurrent work is represented using
+        spans can also help. For example, whenever two or more threads (or workers,
+        etc.) are processing concurrently, use a separate span for each of them
+        <em>that is distinct from their parent</em>. This means that if one thread makes
+        an asynchronous call and then continues processing, <em>two</em> child spans should
+        be created. Doing so will make it easier to understand whether the
+        original thread ever blocks on the asynchronous call and enable automatic
+        trace analysis to better understanding what’s happening.</p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Approaches to Improving Performance"><div class="sect1" id="idm45356999825832">
+        <h1>Approaches to Improving Performance</h1>
+        
+        <p><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="approaches to" id="ch09_ImpApp"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="improvement approaches" id="ch09_ImpAppb"></a><a data-type="indexterm" data-primary="latency" data-secondary="improvement approaches" id="ch09_ImpAppc"></a>With these concepts in hand, we’ll now consider a number of different
+        approaches to improving baseline performance. Since our focus is on
+        distributed tracing, we will consider ways to isolate performance problems to
+        a single component within a distributed system. We’ll assume that you are
+        familiar with conventional approaches to software optimization and that, if
+        tasked with improving the speed or efficiency of a single function, class, or
+        module, you can do so using debuggers, profilers, and other tools. Our goal
+        with these approaches is to help you identify that function, class, or module,
+        so that you can then apply those tools.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Individual Traces"><div class="sect2" id="idm45356999782008">
+        <h2>Individual Traces</h2>
+        
+        <p><a data-type="indexterm" data-primary="traces" data-secondary="individual trace optimization" id="idm45356999780504"></a><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="individual traces optimized" id="idm45356999779512"></a>The most basic use of distributed tracing is to consider individual requests
+        and look for unexpected behavior, common antipatterns, or other opportunities
+        for <span class="keep-together">improvement</span>.</p>
+        
+        <p>The first questions you should ask when looking at optimizing an individual
+        trace are:</p>
+        
+        <ul>
+        <li>
+        <p>Are there any operations on the critical path that could be optimized?</p>
+        </li>
+        <li>
+        <p>Could queries on the critical path be cached?</p>
+        </li>
+        <li>
+        <p>Could the functionality offered by request be refactored to split expensive
+        operations from commonly needed ones?</p>
+        </li>
+        </ul>
+        
+        <p>As we’ve noted, asking any of these questions without understanding the
+        critical path could mean a lot of effort expended with little improvement to
+        what your users are experiencing.</p>
+        
+        <p><a data-type="indexterm" data-primary="critical path" data-secondary="longest spans optimized" id="idm45356999772808"></a>When optimizing a trace such as that shown in <a data-type="xref" href="#fig10-critical-path-example">Figure&nbsp;8-2</a>,
+        you should also consider the relative lengths of these spans. In this case,
+        since D is more than twice as long as E, a 20% improvement to D will
+        offer more than twice the benefit of a 20% improvement to E. (Similarly,
+        caching the result of D could yield as much as twice the benefit of caching the
+        result of E, assuming equivalent cache hit rates.) Focus your optimization
+        work on the spans that make up the largest parts of the critical path.</p>
+        
+        <p>Understanding the performance impact of refactoring requires some additional
+        explanation. To make our example more concrete, imagine in
+        <a data-type="xref" href="#fig10-critical-path-example">Figure&nbsp;8-2</a> that span B represents some authentication
+        operation, span C some computation that determines what’s changed since the
+        user last logged in, and span E a lookup of the user’s display preferences.
+        Often, when you are maintaining an API endpoint, both the underlying
+        performance and uses of that endpoint will change over time. In this example,
+        perhaps the original use case required these operations to be bundled together
+        (or perhaps bundling them reduced network overhead), but now the endpoint is
+        being invoked frequently just to perform the lookup of the display
+        preferences. In that case, those preferences could be returned much more
+        quickly if the endpoint is refactored into two parts: one that determines
+        what’s changed and one that returns those preferences. Sometimes, as in cases
+        like this, “optimization” simply means doing less.</p>
+        
+        <p><a data-type="indexterm" data-primary="root span" data-secondary="concurrent subspan calls" id="idm45356999767848"></a>Another example of one of the most common problems discovered when starting
+        with distributed tracing is shown in <a data-type="xref" href="#fig10-long-seq">Figure&nbsp;8-5</a>. The trace on the
+        left shows a root span with six subspans (labeled A through F). These
+        spans represent sequential calls to other services, possibly including queries
+        of one or more remote databases. It’s often the case that these calls are
+        independent of each other (that is, no one of them depends on the results of
+        any of the others), and that the calls or queries can be performed
+        concurrently. If they are performed concurrently, as shown in the trace on
+        the right side of the figure, the overall latency of the request can be
+        greatly reduced.</p>
+        
+        <figure><div id="fig10-long-seq" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0805.png" alt="dtip 0805" width="1406" height="832">
+        <h6><span class="label">Figure 8-5. </span>Trace showing sequence of independent subspans (concurrent on right).</h6>
+        </div></figure>
+        
+        <p><a data-type="indexterm" data-primary="root span" data-secondary="redundancy in subspans" id="idm45356999762936"></a>Sometimes several subspans are each implemented efficiently when considered in
+        isolation, but when considered as part of some larger request, they do
+        redundant work; <a data-type="xref" href="#fig10-refactor-subcall">Figure&nbsp;8-6</a> shows an example. Both spans
+        labeled A on the left side represent the same computation. (Taken
+        together these two A spans represent a majority of the critical path.) This
+        code can be refactored to perform that computation only one time—with the
+        results passed down to each of the two subspans—reducing the total time
+        required to process the request, as shown on the right side of the
+        figure. Doing so reduces the total amount of work performed during the
+        request: this is an example where tracing can improve both latency <em>and</em>
+        throughput.</p>
+        
+        <figure><div id="fig10-refactor-subcall" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0806.png" alt="dtip 0806" width="1437" height="563">
+        <h6><span class="label">Figure 8-6. </span>Trace showing redundant work performed in two subspans (refactored on right).</h6>
+        </div></figure>
+        
+        <p><a data-type="indexterm" data-primary="tags" data-secondary="region tag and latency" id="idm45356999757640"></a>A final example of an individual trace that can offer an opportunity for
+        optimization comes not from optimizing the code itself but from changing the
+        configuration of that code. Recall that <a data-type="xref" href="#fig10-client-server-critical-path">Figure&nbsp;8-3</a>
+        shows a trace where there is a large difference between the duration of a
+        client span and a server span for a single RPC, and that this difference
+        can often be a result of network latency. Sometimes this network latency is
+        unavoidable, but at other times it can be a result of a misconfiguration. For
+        example, one service might be calling another service but routing requests
+        to an instance in another datacenter instead of a local one or, similarly, it
+        might be querying a database replica in the wrong region. This frequently
+        occurs when service configuration is heedlessly copied from one datacenter to
+        another.</p>
+        
+        <p>The example shows that you can discover this by inspecting the tags on each of
+        the spans found in the trace. If the <code>region</code> tag differs between the
+        client and server spans, that’s a good indication that there might be an
+        opportunity to reduce overall latency.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Biased Sampling and Trace Comparison"><div class="sect2" id="ch10_biased_sampling">
+        <h2>Biased Sampling and Trace Comparison</h2>
+        
+        <p><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="biased sampling" id="idm45356999752248"></a><a data-type="indexterm" data-primary="sampling" data-secondary="biased sampling" id="idm45356999751208"></a><a data-type="indexterm" data-primary="biased sampling" data-secondary="improving performance" id="idm45356999750264"></a>In <a data-type="xref" href="ch06.html#chapter_7">Chapter&nbsp;6</a>, we discussed sampling and how it can be
+        used as a mechanism to control costs. In summary, collecting all traces (and all
+        spans) is not necessary to understanding or improving application performance—and is usually prohibitively expensive. Traces may be
+        sampled in a way that biases toward those with valuable information, usually
+        by selecting those that represent slow requests or requests with errors. Here
+        we will consider sampling in the context of improving performance indicators
+        that matter to your business, organization, or users: your SLIs. Moreover,
+        once the right traces are selected, you can compare them to quickly identify
+        the root causes of issues.</p>
+        
+        <p><a data-type="indexterm" data-primary="latency" data-secondary="high-percentile latency" id="idm45356999747416"></a>While looking at a single trace can be a good approach to improving median
+        latency, improving the performance of the <em>slowest</em> requests is best done by
+        considering at least two requests: one close to the median latency and one
+        that has a high-percentile latency. Sampling requests uniformly at random,
+        however, is unlikely to yield many examples of slow requests, especially if
+        the distribution of requests looks like that shown in
+        <a data-type="xref" href="#fig10-histogram-example">Figure&nbsp;8-1</a>. That is, if the latency of requests was
+        uniformly distributed, then uniform sampling would be a reasonable approach,
+        but since <a data-type="indexterm" data-primary="latency" data-secondary="distributions not normal" id="idm45356999744488"></a><a data-type="indexterm" data-primary="statistics" data-secondary="latency distributions not normal" id="idm45356999743528"></a>latency is almost never uniformly distributed, sampling should be
+        biased to make sure that infrequent—but still valuable—traces are
+        collected. For improving slow requests, make sure that a sufficient number of
+        99th-percentile (or even 99.9th-percentile) latency requests are sampled.
+        Note that this might even mean that these requests are sampled just as
+        frequently as median requests, even if they are many times less likely to
+        occur.</p>
+        
+        <p>Similarly, it is important to bias trace samples toward requests with errors.
+        Services typically try to keep the portion of errors to a fraction of a percent,
+        so again, uniform sampling is unlikely to pick up a reasonable set of
+        examples.</p>
+        
+        <p>There are other, more application-specific, features that might also be good
+        candidates for driving sampling bias. For example, if you are <a data-type="indexterm" data-primary="user impact of performance" data-secondary="which users" id="idm45356999740776"></a>running an
+        experiment with only 0.1% of your users, biasing toward that set of users is
+        important in understanding the performance of code running that experiment.</p>
+        
+        <p>Once you have a sample of traces (as few as just two), you can then compare
+        them to understand what is causing the slow ones to be slow. Typically it’s not
+        the case that every subspan is proportionally longer in the slow request, but
+        that one or two subspans are much longer.</p>
+        
+        <p><a data-type="xref" href="#fig10-compare-two-traces">Figure&nbsp;8-7</a> shows two traces for an <code>/api/update-inventory</code>
+        request, one on the top that takes 186 ms and one on the bottom that
+        takes 1.49 seconds (in both cases as observed by the client). Looking at the
+        spans that contributed to the critical path, most of
+        the spans in the two traces are approximately the same length. The
+        exception is the <code>write-cache</code> operation, which takes more than <em>28 times
+        longer</em> in the top example. Further investigation would be required to
+        understand why this operation takes longer in some cases, but comparing these
+        two traces has more or less eliminated any other theory as to why the
+        trace show at the top is slow.</p>
+        
+        <figure><div id="fig10-compare-two-traces" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0807.png" alt="dtip 0807" width="1360" height="1395">
+        <h6><span class="label">Figure 8-7. </span>Two traces, showing fast and slow responses for an example API request.</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Trace Search"><div class="sect2" id="idm45356999733688">
+        <h2>Trace Search</h2>
+        
+        <p><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="trace searches" id="idm45356999732232"></a><a data-type="indexterm" data-primary="traces" data-secondary="searching" id="idm45356999731064"></a><a data-type="indexterm" data-primary="searches" data-secondary="traces" id="idm45356999730120"></a><a data-type="indexterm" data-primary="documentation" data-secondary="searching traces" id="idm45356999729176"></a><a data-type="indexterm" data-primary="tags" data-secondary="searching traces" id="idm45356999728232"></a><a data-type="indexterm" data-primary="data analysis" data-secondary="searching traces" id="idm45356999727288"></a>In addition to automated sampling based on latency, errors, or other features
+        of spans, users may also want to search for spans in a manual, ad hoc way.
+        For example, users may be working to eliminate specific classes of errors. Or
+        users may be testing new code using their own user accounts and want to search
+        for the traces associated with those accounts. For traces that are generated
+        as part of a CI/CD pipeline, they may be tagged with build labels or
+        deployment information so that users can find traces associated with failures
+        quickly. Being able to search for specific traces is important when you, as a
+        user, have a hypothesis that you want to validate or refute. To support these
+        use cases, it’s necessary to <a data-type="indexterm" data-primary="data analysis" data-secondary="indexing traces" id="idm45356999725480"></a><a data-type="indexterm" data-primary="indexing traces" id="idm45356999724536"></a><a data-type="indexterm" data-primary="traces" data-secondary="indexing" id="idm45356999723864"></a>index traces in such a way that a relevant trace
+        can be found easily and efficiently.</p>
+        
+        <p>There is ample work on indexing structured data like traces; however, in many
+        cases, these indexes can become almost as large as the trace repository
+        itself. Since storage is one of the major costs associated with distributed
+        tracing, understanding how to balance the needs of users with this cost is
+        important.</p>
+        
+        <p><a data-type="indexterm" data-primary="Dapper" data-secondary="indexing traces" id="idm45356999721960"></a>The Dapper work at Google showed that a single index based on service and then
+        host and time was able to meet many of the needs of our users.<sup><a data-type="noteref" id="idm45356999720664-marker" href="ch08.html#idm45356999720664">5</a></sup> This was
+        because, first, most users were responsible for a small number of services and
+        were focusing on the performance of just one at a time, and second, some
+        other observability tool had clued them to where or when a problem was
+        occurring. Initially, we also provided an index which would enable lookup
+        based first on host, but did not see enough interest to justify the additional
+        cost. Tools that take similar approaches may limit use cases to those focused
+        on a single service.</p>
+        
+        <p><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="trace search queries" id="idm45356999718584"></a><a data-type="indexterm" data-primary="searches" data-secondary="trace search queries" id="idm45356999717672"></a><a data-type="indexterm" data-primary="traces" data-secondary="search queries" id="idm45356999716728"></a>Tracing tools can also provide some assistance in building search queries
+        <em>quickly</em>. Just as search engines suggest queries as we start typing, tracing
+        tools can suggest relevant traces. For example, once a user has selected a
+        service, a tool can suggest operations that that service implements as well as
+        tags associated with that service. Thus, tracing tools also support a form of
+        discovery about the data found in traces. For example, suggestions might help
+        users understand which sorts of errors are occurring in their service or
+        enumerate which operations their services depend on. This process can help
+        guide users toward hypotheses about which factors are impacting baseline
+        performance.</p>
+        
+        <p>Once a user has a hypothesis, the next step is to look for evidence that
+        supports or refutes that hypothesis. Searching through traces is the way to find
+        that evidence. Some examples of hypotheses that can be explored using
+        tracing:</p>
+        
+        <ul>
+        <li>
+        <p>Long requests are often blocked on retries (look for spans tagged with
+        <code>retry=true</code>)</p>
+        </li>
+        <li>
+        <p>Cache misses account for the majority of latency when they occur (look for
+        spans with <code>cache=miss</code>)</p>
+        </li>
+        <li>
+        <p>Requests that time out waiting for RPCs (look for spans with errors that
+        indicate timeouts or RPC cancellation)</p>
+        </li>
+        </ul>
+        
+        <p>While validating and refuting existing hypotheses are important use cases for
+        distributed tracing, we will explore a set of analyses later where tracing
+        tools also help users to form <em>new</em> hypotheses about application performance.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Multimodal Analysis"><div class="sect2" id="idm45356999708232">
+        <h2>Multimodal Analysis</h2>
+        
+        <p><a data-type="indexterm" data-primary="statistics" data-secondary="multimodal analysis" id="idm45356999706696"></a><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="multimodal analysis" id="idm45356999705720"></a><a data-type="indexterm" data-primary="multimodal analysis" id="idm45356999704808"></a><a data-type="indexterm" data-primary="data analysis" data-secondary="multimodal analysis" id="idm45356999704136"></a><a data-type="indexterm" data-primary="histograms" data-secondary="multimodal" id="idm45356999703192"></a><a data-type="indexterm" data-primary="visualization tools" data-secondary="histograms" data-see="histograms" id="idm45356999702248"></a>In the rest of this chapter, we’ll describe use cases that depend not
+        on just one or two traces, but a statistically significant collection of them.
+        This may be dozens, hundreds, or even thousands of traces, depending on the
+        homogeneity of the requests. Histograms offer a convenient way of visualizing
+        the behavior of many traces in a way that provides much more information than
+        just a few statistics. Here we’ll show how to use multimodal analysis to
+        break down performance into a small set of broad categories that can be used
+        to inform the next steps of optimization.</p>
+        
+        <p><a data-type="indexterm" data-primary="histograms" data-secondary="modality" id="idm45356999700056"></a><a data-type="indexterm" data-primary="modality in histograms" id="idm45356999699080"></a>A <em>modality</em> (in the context of a histogram) is what’s shown as a peak in a
+        graph: each modality represents a set of traces that have approximately the
+        same latency. A histogram is <em>multimodal</em> if it has multiple peaks. As noted
+        earlier, a <a data-type="indexterm" data-primary="statistics" data-secondary="latency distributions not normal" id="idm45356999697192"></a><a data-type="indexterm" data-primary="latency" data-secondary="distributions not normal" id="idm45356999696248"></a>latency histogram for a single service or even a single operation
+        rarely has a simple bell-shaped curve. This is because latency is usually
+        determined by a number of discrete factors, including the following:</p>
+        
+        <ul>
+        <li>
+        <p>Which network type the client is using, including mobile data (3G, 4G, 5G)
+        or broadband internet</p>
+        </li>
+        <li>
+        <p>Whether an existing connection or session can be reused</p>
+        </li>
+        <li>
+        <p>Whether the request can be serviced from a cache</p>
+        </li>
+        <li>
+        <p>Whether the request involves mutating any persistent state</p>
+        </li>
+        <li>
+        <p>Whether an upstream request timed out and must be retried</p>
+        </li>
+        </ul>
+        
+        <p>For example, requests that may be satisfied from a cache may be 10 times
+        faster on average than those that cannot. A service that uses a cache will
+        usually have a multimodal latency distribution where one peak corresponds to
+        cache hits and another to cache misses. Because a service may be affected by
+        more than one of these factors, it’s not uncommon to see histograms with five
+        or more modalities.</p>
+        
+        <p><a data-type="xref" href="#fig10-multimodal-histogram">Figure&nbsp;8-8</a> shows a multimodal latency histogram. On the
+        left side requests are presented as a single distribution; on the
+        right side, requests are broken down into three groups. (Notice that the
+        height of each bar on the left is the sum of the heights of the corresponding
+        bars on the right.) <a data-type="indexterm" data-primary="network types, 3G versus 4G" id="idm45356999687608"></a>This histogram shows what you might see if requests were
+        divided by client network type: most broadband requests are faster than most
+        4G requests (and nearly all 3G requests); most 4G requests are faster than
+        most 3G ones.</p>
+        
+        <figure class="no-frame"><div id="fig10-multimodal-histogram" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0808.png" alt="dtip 0808" width="1360" height="375">
+        <h6><span class="label">Figure 8-8. </span>Multimodal histogram (left: combined, right: as separate components).</h6>
+        </div></figure>
+        
+        <p>Understanding what distinguishes one modality from another is key to improving
+        performance. In some cases, multimodal analysis will help to make sure you
+        are comparing the right sets of requests (it’s unlikely you’ll be able to make
+        requests that mutate persistent state faster than those that don’t). In
+        others, it will help you focus on the right set of solutions (speeding up
+        backend processing time is less likely to improve 3G user latency than
+        reducing the number of requests or the sizes of the results). In still
+        others, it will help you manage performance and cost trade-offs (increasing
+        cache size may improve latency but require additional computing <span class="keep-together">resources</span>).</p>
+        
+        <p>Multimodal analysis offers more precision than just comparing requests based
+        on their latency: comparing a fast and a slow request will often provide less
+        insight than comparing traces from two different modalities. Multimodal
+        analysis is also important in that it enables users to move from just
+        “reducing latency” to more concrete next steps such as reducing payload size
+        or improving cache hit rate. Once you can focus on a more specific set of
+        requests, you can use the other techniques described earlier to find the root
+        causes of slower requests.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45356999681384">
+        <h5>Histogram Bin Width and Multimodal Analysis</h5>
+        <p><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="histograms" id="idm45356999680152"></a><a data-type="indexterm" data-primary="multimodal analysis" data-secondary="bin size" id="idm45356999679160"></a><a data-type="indexterm" data-primary="bin size in multimodal analysis" id="idm45356999678216"></a><a data-type="indexterm" data-primary="histograms" data-secondary="multimodal analysis bin size" id="idm45356999677528"></a>While we haven’t discussed many of the choices necessary in using histograms
+        at length, one implementation detail that is especially important to
+        multimodal analysis is bin size. The bin size is the width of the bars in the
+        histogram. The smaller the bins, the more bins there will be, and the more
+        detail the histogram can offer. Using larger bins can sometimes be
+        problematic as more information about each request is lost: each bucket will
+        represent a more diverse set of examples.</p>
+        
+        <p>However, using too many bins can cause random noise in the original sample to
+        appear as multiple modalities in the histogram. For example, it might be that
+        few requests have a latency of 117 ms, even though many requests
+        have latencies of 116 ms and 118 ms. This is probably not
+        a result of two truly different behaviors in your application, but just a
+        result of the fact that, even within a uniform population, measurements will
+        still show some variation—just like you can’t expect the next coin flip
+        following a “heads” to always be a “tails.”</p>
+        
+        <p>Bin size need not be fixed, even within a given histogram. We’ve found using
+        bins that are narrower at the small end of the axis and wider at the large end
+        is a good fit for understanding request latency, especially if latency will be
+        graphed on a logarithmic scale. This also helps users focus on behavior that
+        will improve performance in a meaningful way since, for example, shaving off
+        only a few milliseconds will have little impact on a request that took seconds
+        to complete.</p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Aggregate Analysis"><div class="sect2" id="ch10_aggregate_analysis">
+        <h2>Aggregate Analysis</h2>
+        
+        <p><a data-type="indexterm" data-primary="trace aggregations" data-secondary="improving baseline performance" id="idm45356999672200"></a><a data-type="indexterm" data-primary="aggregate analysis" data-secondary="traces" id="idm45356999671208"></a><a data-type="indexterm" data-primary="data analysis" data-secondary="aggregate analysis of traces" id="idm45356999670264"></a><a data-type="indexterm" data-primary="data aggregation" data-secondary="aggregate analysis of traces" id="idm45356999669304"></a><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="aggregate analysis of traces" id="idm45356999668344"></a><a data-type="indexterm" data-primary="traces" data-secondary="aggregate analysis" id="idm45356999667368"></a>Collections of traces can also be used to draw conclusions about performance
+        in ways that are less susceptible to small variations in individual traces.
+        In the preceding example of comparing two traces, there was only one major
+        difference (and so making the comparison was relatively straightforward), but
+        often there will be many differences, some significant, and others not. By
+        taking a larger sample of traces, we (or rather, our tracing tools) are able
+        to better see the patterns that can lead to meaningful improvements in
+        performance.</p>
+        
+        <p><a data-type="indexterm" data-primary="aggregate analysis" data-secondary="errors seen via traces" id="idm45356999665480"></a><a data-type="indexterm" data-primary="errors seen via traces" data-secondary="aggregate analysis" id="idm45356999664504"></a>A simple form of aggregate analysis is just to look at the most common
+        errors within those traces. This can be especially fruitful when looking at a
+        sample set that contains only failed requests, as common errors are likely
+        culprits to consider when trying to eliminate those failures (though see the
+        following section for how this approach can be further improved).</p>
+        
+        <p>Note that when we say “errors within those traces” we mean errors that occur
+        within <em>any</em> span in a given trace. This is where some of the true power of
+        tracing starts to show: while metrics would enable you to observe an increase
+        in errors in, say, both a mobile client and a backend, tracing enables you to
+        know that these two types of errors are both occurring within the same
+        requests.</p>
+        
+        <p><a data-type="indexterm" data-primary="aggregate analysis" data-secondary="critical path aggregate analysis" id="idm45356999661528"></a><a data-type="indexterm" data-primary="critical path" data-secondary="aggregate critical path analysis" id="idm45356999660536"></a><a data-type="indexterm" data-primary="sampling" data-secondary="aggregate critical path analysis" id="idm45356999659576"></a><a data-type="indexterm" data-primary="spans" data-secondary="critical path aggregate analysis" id="idm45356999658616"></a>One of the most effective forms of aggregate analysis that we observed both at
+        Google and elsewhere is aggregate <em>critical path</em> analysis. In this analysis,
+        once given a sample of traces, we identify a set of classes of spans for which
+        we want to measure the performance impact. This is usually the set of
+        services or the operations that occur in that sample of traces (though in some
+        cases those classes could be even more fine-grained). The result of the
+        analysis will tell us where we should focus our optimization efforts to
+        improve latency across the sample.</p>
+        
+        <p>The analysis proceeds as follows. For each trace, we compute what percentage
+        of the critical path of that trace was contributed by each class of spans.
+        <a data-type="xref" href="#tab10-critical-path-percentages">Table&nbsp;8-2</a> shows how much of the critical path can be
+        attributed to each span in the trace in <a data-type="xref" href="#fig10-critical-path-example">Figure&nbsp;8-2</a>.
+        Assuming that the labels in that trace correspond to services, in this one
+        trace 40% of the critical path was contributed by A, 10% by B, etc.
+        Once these percentages are calculated for each trace, they are averaged across
+        all traces in the set.</p>
+        <table id="tab10-critical-path-percentages" style="width: 60%">
+        <caption><span class="label">Table 8-2. </span>Percentages of the critical path contributed by each span in the trace in <a data-type="xref" href="#fig10-critical-path-example">Figure&nbsp;8-2</a></caption>
+        <thead>
+        <tr>
+        <th>Span</th>
+        <th>Percentage of critical path</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>A</p></td>
+        <td><p>40%</p></td>
+        </tr>
+        <tr>
+        <td><p>B</p></td>
+        <td><p>10%</p></td>
+        </tr>
+        <tr>
+        <td><p>C</p></td>
+        <td><p>20%</p></td>
+        </tr>
+        <tr>
+        <td><p>D</p></td>
+        <td><p>20%</p></td>
+        </tr>
+        <tr>
+        <td><p>E</p></td>
+        <td><p>10%</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>Assuming that the other traces in the sample under analysis looked similar to
+        this example, optimizations to services A and, to some extent, C and
+        D offer the best opportunities to reduce the latency of traces in the
+        population from which the sample was drawn. B and E offer less
+        opportunity simply because they contribute less to the critical path: even
+        reducing the duration of B to zero would only result in a 10% improvement
+        on average to request latency.</p>
+        
+        <p><a data-type="indexterm" data-primary="spans" data-secondary="critical path absolute durations" id="idm45356999639832"></a><a data-type="indexterm" data-primary="critical path" data-secondary="span absolute durations" id="idm45356999638888"></a>Aggregate critical path analysis can also be performed on the <em>absolute
+        durations</em> that each span contributes to the critical path, rather than
+        percentages. Perhaps obviously, this will bias the result toward
+        optimizations that have the biggest impact on the <em>slowest</em> traces in the
+        sample. While this might be your intent, it would be better to limit the
+        initial sample of traces to better match what you would like to optimize (for
+        example, to those traces with 99th-percentile latency or higher) as this will
+        reduce the impact of a few outliers in the sample.</p>
+        
+        <p><a data-type="indexterm" data-primary="sampling" data-secondary="time period" id="idm45356999636152"></a>There are a few other things to look out for when doing aggregate critical
+        path analysis. The first really applies to any aggregate analysis: be sure
+        that you’ve chosen an appropriate sample. One common mistake is to take a
+        sample over a period of time that doesn’t adequately represent the requests you’d
+        like to optimize, perhaps by not including requests from your peak traffic
+        periods. Requests that occur during peak traffic periods are much more
+        likely to demonstrate where resource contention occurs.</p>
+        
+        <p>A second warning is to look for how network time is attributed (explicitly or
+        implicitly) to spans. In our running example in
+        <a data-type="xref" href="#fig10-critical-path-example">Figure&nbsp;8-2</a>, we determined that the span labeled <code>A</code>
+        contributed a significant amount of time to the critical path. However, it
+        also appears that this span makes three RPCs. If spans <code>B</code>, <code>C</code>, and
+        <code>E</code> are all spans generated by the servers of those RPCs (rather than the
+        clients) then it’s likely that some of that time attributed to <code>A</code> was time
+        waiting for data to be transmitted over the network. While there may be some
+        changes that can be made to <code>A</code> to reduce this time (for example, by
+        compressing or otherwise reducing the size of payloads), optimizing the code
+        of <code>A</code> itself will likely have little effect.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Correlation Analysis"><div class="sect2" id="ch10_correlation_analysis">
+        <h2>Correlation Analysis</h2>
+        
+        <p><a data-type="indexterm" data-primary="statistics" data-secondary="correlation analysis" id="idm45356999627464"></a><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="correlation analysis" id="idm45356999626488"></a><a data-type="indexterm" data-primary="correlation analysis" data-secondary="improving performance" id="idm45356999625528"></a>We finish this chapter with a final analysis—one of the most powerful
+        that distributed tracing can offer developers looking to improve baseline
+        performance. While many of the techniques described earlier enable you to validate
+        or refute <em>existing</em> hypotheses about performance, correlation analysis takes
+        things one step further by creating <em>new</em> hypotheses, along with evidence to
+        support them. This is an entirely novel workflow for many developers: rather
+        than having to rely on intuition and guess what could be improved, tracing
+        tools can guide you directly to the opportunities with the highest potential
+        to improve performance. You of course must bring your experience and
+        expertise about the application, but rather than starting from a blank page,
+        you are offered a “draft” to begin editing.</p>
+        
+        <p><a data-type="indexterm" data-primary="errors seen via traces" data-secondary="correlation analysis" id="idm45356999622520"></a><a data-type="indexterm" data-primary="failure state" data-secondary="correlation analysis of failed requests" id="idm45356999621544"></a>In the previous section, we noted that looking at common errors within a
+        sample of failed requests can help to find which type or types of errors were
+        the root causes of those failed requests. While this approach can be useful
+        at times, it is prone to mistakes. In particular, while it accounts for when
+        they occur, it fails to account for when they do <em>not</em> occur. To understand
+        the problem, consider the following example. Suppose that there are two types
+        of errors that appear in traces as described here. <code>Error 1</code> occurs in 90% of
+        traces that represent failed requests; <code>Error 2</code> occurs in 100% of all traces
+        (including both successful and failed requests).</p>
+        
+        <p>When considering a sample of traces that exclusively represents failed
+        requests, it may appear that <code>Error 2</code> is the more likely culprit, since it
+        appears in <em>every</em> failed request, while <code>Error 1</code> only appears in 90% of
+        the sample. However, since <code>Error 2</code> occurs in every request—including
+        those that succeed—it’s unlikely to be the cause of failures in our sample:
+        this error is apparently recoverable, since it is recovered from in the
+        successful requests.</p>
+        
+        <p>The question we are really trying to ask is not “Which type of error is more
+        likely to occur in failed requests?” but “Which type of error more strongly
+        correlates with failure?” <a data-type="indexterm" data-primary="causal relationships" data-secondary="correlation analysis" id="idm45356999615432"></a>Though correlation is not causation, it is a
+        powerful tool in discovering root causes.</p>
+        
+        <p>To perform correlation analysis, we need not just one sample of traces
+        but two. One sample should represent the class of traces that you want to
+        eliminate or at least reduce, for example, failed or slow requests. The
+        second sample should represent the complement of the first sample: usually a
+        set of successful or fast requests. (You can think of this setup as being like a
+        good scientific experiment, with both an experimental group and a control
+        group.)</p>
+        
+        <p>In addition to two sample sets, we also need a set of features with which we
+        can look for correlations. In distributed tracing, these features will be
+        things like the services, operations, errors, and tags associated with the
+        spans that make up these traces. It also includes the durations of those
+        spans as well as what percentage of the critical path they are
+        responsible for. This analysis can consider features of <em>any</em> span in the
+        trace: for example, even if we were investigating the top span shown in
+        <a data-type="xref" href="#fig10-client-server-critical-path">Figure&nbsp;8-3</a>, the tags of the two spans below it
+        might be critical (pun intended!) to the analysis.</p>
+        
+        <p>Once we have the two sample sets (let’s call them <code>A</code> and <code>B</code>) and a set
+        of features, carrying out the analysis simply means looking at each feature
+        and asking, what’s the likelihood that it occurs in sample <code>A</code> but <em>not</em> in
+        sample <code>B</code>? This yields a <a data-type="indexterm" data-primary="correlation analysis" data-secondary="coefficient of correlation" id="idm45356999608120"></a><a data-type="indexterm" data-primary="coefficient of correlation" id="idm45356999607096"></a>“coefficient of correlation” for each feature. A
+        coefficient of 1.0 means that a given feature appeared in every trace in
+        sample <code>A</code> and never in a trace in sample <code>B</code>, while a coefficient of –1.0
+        means that a given feature appeared in every trace in sample <code>B</code> and never
+        in a trace in sample <code>A</code>. A coefficient of 0.0 means that the feature was
+        equally likely to appear in both samples (including all of the time, not at
+        all, or anywhere in between). The closer to 1.0 or –1.0 the coefficient of
+        correlation is, the more likely that feature can explain the difference
+        between the two samples.</p>
+        
+        <p>Going back to our example with two types of errors, we can now say that
+        <code>Error 1</code> has a coefficient of correlation of 0.9, while <code>Error 2</code> has a
+        coefficient of correlation of 0.0. This tells us that <code>Error 1</code> is a much
+        better place to start looking when trying to understand why requests have
+        failed.</p>
+        
+        <p>Of course, errors are only one type of feature that can help us understand
+        what’s gone wrong. As noted earlier, a span’s tags and contribution to the
+        critical path are among the important features that can be used to drive this
+        analysis. This serves as a good reminder of the importance of good
+        instrumentation (as covered in <a data-type="xref" href="ch04.html#chapter_5">Chapter&nbsp;4</a>)!</p>
+        
+        <p><a data-type="xref" href="#correlation_example">Table&nbsp;8-3</a> is an anonymized example taken from a
+        production service and includes several tags. It shows the results of a
+        <a data-type="indexterm" data-primary="examples" data-secondary="latency correlation analysis" id="idm45356999599352"></a><a data-type="indexterm" data-primary="latency" data-secondary="correlation analysis examples" id="idm45356999598392"></a>correlation analysis when looking at traces for a single operation whose
+        latency is in the 99th percentile or greater.</p>
+        <table id="correlation_example" style="width: 70%">
+        <caption><span class="label">Table 8-3. </span>Example showing coefficients of correlation for several (anonymized) tags</caption>
+        <thead>
+        <tr>
+        <th>Feature</th>
+        <th>Coefficient of correlation</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>org_name: Acme</p></td>
+        <td><p>0.41</p></td>
+        </tr>
+        <tr>
+        <td><p>project_name: acme-prod</p></td>
+        <td><p>0.41</p></td>
+        </tr>
+        <tr>
+        <td><p>operation: fetching</p></td>
+        <td><p>–0.39</p></td>
+        </tr>
+        <tr>
+        <td><p>total_rows_read: 0</p></td>
+        <td><p>–0.37</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>This example shows a relatively strong correlation between latency and a
+        single organization (in this case, a set of users). Perhaps the organization
+        has a large amount of data or makes particularly complex queries; in either
+        case, these queries might be quite expensive. Further investigation would be
+        necessary to understand why. (Unsurprisingly, this also correlates with the
+        largest project in this organization: often this analysis may yield one or two
+        redundant tags.) In this example, latency is <em>negatively</em> correlated with
+        queries for which no rows were read (<code>total_rows_read: 0</code>), indicating that
+        these queries were usually <em>not</em> among the 1% slowest queries. This also
+        might provide some clue as to why slow queries were slow (perhaps a new index
+        is required?). In any case, a next step might be to look at some traces that
+        meet these criteria.</p>
+        
+        <p><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="span tags" id="idm45356999583704"></a><a data-type="indexterm" data-primary="cardinality" data-secondary="tags" id="idm45356999582488"></a><a data-type="indexterm" data-primary="tags" data-secondary="cardinality" id="idm45356999581544"></a>One concern you might have when adding all of these tags is that the number of
+        tags and the number of values of those tags (that is, their <em>cardinality</em>)
+        might become large, <a data-type="indexterm" data-primary="cost of tracing" data-secondary="cardinality and" id="idm45356999579928"></a><a data-type="indexterm" data-primary="cardinality" data-secondary="cost of metrics and" id="idm45356999578920"></a>leading to excessive costs in managing all of this trace
+        data. (In particular, <code>total_rows_read</code> might have thousands of different
+        values.) In <a data-type="xref" href="ch07.html#chapter_9">Chapter&nbsp;7</a>, we identified cardinality limits as an important
+        way of comparing observability tools. Happily, most distributed tracing tools—even those supporting correlation analysis—can easily support this sort
+        of cardinality.</p>
+        
+        <p><a data-type="indexterm" data-primary="documentation" data-secondary="span tags" id="idm45356999576200"></a><a data-type="indexterm" data-primary="spans" data-secondary="tag information" id="idm45356999575224"></a>As a developer, you should add many tags to spans, including as many of the
+        following as makes sense for your application:</p>
+        
+        <ul>
+        <li>
+        <p>Software versions (including versions of platforms and third-party
+        components), active experiments, and other “feature flags”</p>
+        </li>
+        <li>
+        <p>User cohorts, segments, and other classifiers of user behavior</p>
+        </li>
+        <li>
+        <p>Where a computation is running (for example, host, cluster, or
+        datacenter)</p>
+        </li>
+        <li>
+        <p>Any resources where contention may occur while servicing a request (for
+        example, database tables, connection pools, even locks)</p>
+        </li>
+        <li>
+        <p>Metrics of CPU, disk, or network load on a host, VM, or container</p>
+        </li>
+        </ul>
+        
+        <p>Any of these features might explain variation in performance, so including
+        them in application telemetry is an important first step in providing the raw
+        data for the analysis described here. It’s worth calling out the last list item;
+        while these sorts of metrics haven’t historically been part of
+        distributed tracing, associating them with spans can help explain cases where
+        a request is slow not because of any computation performed as part of the
+        request itself, but simply because computationally intensive requests were
+        running nearby (for example, on the same host). This is an example of where a
+        good observability tool will span the “three pillars” described in the
+        previous chapter: ingesting multiple types of data (in this case metrics and
+        spans) can support more powerful analyses.</p>
+        
+        <p><a data-type="indexterm" data-primary="data analysis" data-secondary="multimodal analysis" id="idm45356999567208"></a><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="multimodal analysis" id="idm45356999566232"></a><a data-type="indexterm" data-primary="statistics" data-secondary="multimodal analysis" id="idm45356999565320"></a><a data-type="indexterm" data-primary="multimodal analysis" data-secondary="correlation analysis sample sets via" id="idm45356999564376"></a><a data-type="indexterm" data-primary="correlation analysis" data-secondary="sample sets via multimodal analysis" id="idm45356999563464"></a>You can also use multimodal analysis to identify the sample sets to use in
+        correlation analysis. In the preceding example, we compared the 1% slowest
+        requests with the remaining 99%. However, the division between fast and slow
+        will rarely fall on such an arbitrarily defined boundary. In fact, by the
+        nature of multimodal distributions, there will be several different kinds of
+        “fast” or “slow” requests. The quality of a correlation analysis will be much
+        higher if at least one of the sample sets represents a single type of
+        behavior.</p>
+        
+        <p>To take advantage of multimodal analysis, you should first consider a
+        histogram of latencies and then use the traces in the slowest peak (or if that
+        peak is too small, either several slow peaks or the largest of the slower
+        peaks) as one of your sample sets. Use the remainder of the traces as your
+        other sample set and continue with the analysis as described in this section.<a data-type="indexterm" data-startref="ch09_ImpApp" id="idm45356999561096"></a><a data-type="indexterm" data-startref="ch09_ImpAppb" id="idm45356999560392"></a><a data-type="indexterm" data-startref="ch09_ImpAppc" id="idm45356999559720"></a></p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45356999558920">
+        <h5>Fully Automated Analysis</h5>
+        <p><a data-type="indexterm" data-primary="data analysis" data-secondary="fully automated" id="idm45356999557608"></a><a data-type="indexterm" data-primary="fully automated data analysis" id="idm45356999556632"></a><a data-type="indexterm" data-primary="automated data analysis" data-secondary="fully automated" id="idm45356999555896"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="fully automated analysis" id="idm45356999554952"></a><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="fully automated analysis" id="idm45356999553976"></a><a data-type="indexterm" data-primary="latency" data-secondary="fully automated analysis" id="idm45356999553000"></a>This chapter describes an analysis that can automatically enumerate hypotheses
+        that explain slow or failed requests. Can the process of identifying
+        performance problems and fixing them be <em>completely</em> automated? In our
+        experience, the answer (fortunately or unfortunately, depending on your
+        perspective) is “no.”</p>
+        
+        <p>First, there might be several tags which are all correlated with higher
+        latency, but only one of which will be something that can be “fixed” (and is
+        not just another side effect of the problem). Understanding how to map tags
+        to source code, configuration, infrastructure, and user behavior requires
+        knowledge that’s not present in telemetry itself.</p>
+        
+        <p>Second, our experience has shown that it is difficult to identify sample sets
+        automatically, even using a form of automated multimodal analysis. Many
+        different aspects of application performance may intersect to produce complex
+        distributions, and it may take some trial and error as well as knowledge
+        about the application to find the right thresholds for creating sample sets.</p>
+        
+        <p>Finally, even when the reason that a set of requests is slow can be determined
+        automatically, the path to making them faster frequently cannot. For example,
+        say that slow requests are highly correlated with a particular set of
+        accounts. Deactivating those accounts is obviously one way to improve overall
+        latency but not a reasonable option. Instead it may require research to
+        understand what those users are trying to accomplish and looking for
+        workarounds or even developing new features to eliminate these slow requests.</p>
+        
+        <p>Though some actions may be taken automatically (for example, rolling back
+        problematic releases), human developers and operators still have an important
+        role to play (for now, anyway).</p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" class="notoc" data-pdf-bookmark="Summary"><div class="sect1" id="idm45356999628632">
+        <h1>Summary</h1>
+        
+        <p>Improving baseline performance is ultimately about defining what aspects of performance matter to you and your users, discovering the biggest factors in
+        determining that performance, and making changes to your application to
+        address any performance issues.</p>
+        
+        <p>As part of discovering which factors impact performance—and especially
+        latency—you should consider the <em>critical path</em> of each request. Being
+        able to determine the <span class="keep-together">critical</span> path of each request is a key advantage of
+        using distributed tracing; using it will help ensure your efforts to improve
+        performance pay off.</p>
+        
+        <p>Traditional uses of distributed tracing focus on analyzing <em>individual</em>
+        requests. However, more powerful analyses use <em>hundreds or thousands</em> of
+        requests to look for patterns in traces. They not only validate (or refute)
+        user-defined hypotheses but also help generate new hypotheses that
+        explain opportunities to improve performance. Whether user-defined or
+        automatically generated, those hypotheses can leverage telemetry not just from
+        one service, but from every service that generates spans that make up those
+        traces.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        <div data-type="footnotes"><p data-type="footnote" id="idm45356999923112"><sup><a href="ch08.html#idm45356999923112-marker">1</a></sup> <a data-type="xref" href="bibliography01.html#May10">[May10]</a></p><p data-type="footnote" id="idm45356999921720"><sup><a href="ch08.html#idm45356999921720-marker">2</a></sup> <a data-type="xref" href="bibliography01.html#Aka17">[Aka17]</a></p><p data-type="footnote" id="idm45356999920392"><sup><a href="ch08.html#idm45356999920392-marker">3</a></sup> <a data-type="xref" href="bibliography01.html#Med17">[Med17]</a></p><p data-type="footnote" id="idm45356999852456"><sup><a href="ch08.html#idm45356999852456-marker">4</a></sup> You can assess how wide a distribution is using its standard deviation; however, most <a data-type="indexterm" data-primary="statistics" data-secondary="latency distributions not normal" id="idm45356999851896"></a><a data-type="indexterm" data-primary="latency" data-secondary="distributions not normal" id="idm45356999850904"></a>latency distributions are not <em>normal</em> distributions. As we’ll discuss in the next section, looking at the whole distribution can be even better than just looking at a single percentile, including the median.</p><p data-type="footnote" id="idm45356999720664"><sup><a href="ch08.html#idm45356999720664-marker">5</a></sup> <a data-type="xref" href="bibliography01.html#Sig10">[Sig10]</a></p></div></div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492056621/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

@@ -1,0 +1,987 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 14. User Interfaces"><div class="chapter" id="ui-chapter">
+        <h1><span class="label">Chapter 14. </span>User Interfaces</h1>
+        
+        
+        <p>So<a data-type="indexterm" data-primary="user interfaces (UIs)" data-secondary="developments over time" id="idm45699525597664"></a> far, we haven’t really touched on the world of the user interface. A few of you out there might just be providing a cold, hard, clinical API to your customers, but many of us find ourselves wanting to create beautiful, functional user interfaces that will delight our customers. The user interface, after all, is where we’ll be pulling all these microservices together into something that makes sense to our customers.</p>
+        
+        <p>When I first started computing, we were mostly talking about big, fat clients that ran on our desktops. I spent many hours with Motif and then Swing trying to make my software as nice to use as possible. Often these systems were just for the creation and manipulation of local files, but many of them had a server-side component. My first job at Thoughtworks involved creating a Swing-based electronic point-of-sale system that was just one of a large number of moving parts, most of which were on the server.</p>
+        
+        <p>Then came the web. We instead started thinking of our UIs as being “thin,” with more logic on the server side. In the beginning, our server-side programs rendered the entire page and sent it to the client browser, which did very little. Any interactions were handled on the server side via GETs and POSTs triggered by the user clicking on links or filling in forms. Over time, JavaScript became a more popular option to add dynamic behavior to the browser-based UI, and some applications could arguably be as “fat” as the old desktop clients. We subsequently had the rise of the mobile application, and today we have a varied landscape for delivering graphical user interfaces to our users—different platforms, and different technologies for those platforms. This range of technologies gives us a host of options for how we can make effective user interfaces backed by microservices. We’ll be exploring all of this and more in this chapter.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Toward Digital"><div class="sect1" id="idm45699525593664">
+        <h1>Toward Digital</h1>
+        
+        <p>Over<a data-type="indexterm" data-primary="user interfaces (UIs)" data-secondary="melding of digital and mobile UIs" id="idm45699525592336"></a> the last couple of years, organizations have started to move away from thinking that web or mobile should be treated differently; they are instead thinking about digital more holistically. What is the best way for our customers to use the services we offer? And what does that do to our system architecture? The understanding that we cannot predict exactly how a customer might end up interacting with our products has driven adoption of more granular APIs, like those delivered by microservices. By combining the capabilities our microservices expose in different ways, we can curate different experiences for our customers on their desktop application, mobile device, and wearable device and even in physical form if they visit our brick-and-mortar store.</p>
+        
+        <p>So think of user interfaces as the places where we weave together the various strands of the capabilities we want to offer our users. With that in mind, how do we pull all these strands together? We need to look at this problem from two sides: the who and the how. Firstly, we’ll consider the organizational aspects—who owns what responsibilities when it comes to delivering user interfaces? Secondly, we’ll look at a set of patterns that can be used to implement these interfaces.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Ownership Models"><div class="sect1" id="idm45699525589328">
+        <h1>Ownership Models</h1>
+        
+        <p>As<a data-type="indexterm" data-primary="user interfaces (UIs)" data-secondary="ownership models" id="UIowner14"></a><a data-type="indexterm" data-primary="ownership models" data-secondary="overview of" id="owner14"></a> we discussed way back in <a data-type="xref" href="ch01.html#intro-chapter">Chapter&nbsp;1</a>, the traditional layered architecture can cause issues when it comes to delivering software effectively. In <a data-type="xref" href="#ch13-musiccorp-three-tiered-change">Figure&nbsp;14-1</a>, we see an example in which responsibility for the user interface layer is owned by a single frontend team, with the backend services work done by another. In this example, adding a simple control involves work being done by three different teams. These sorts of tiered organizational structures can significantly impact our speed of delivery due to the need to constantly coordinate changes and hand off work between teams.</p>
+        
+        <figure><div id="ch13-musiccorp-three-tiered-change" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_1401.png" alt="bms2 1401" width="600" height="406">
+        <h6><span class="label">Figure 14-1. </span>Making a change across all three tiers is more involved</h6>
+        </div></figure>
+        
+        <p>The model that I greatly prefer and feel is better aligned to achieving the goal of independent deployability is to have the UI broken apart and managed by a team that also manages the server-side components, as we see in <a data-type="xref" href="#ch13-end-to-end-slice">Figure&nbsp;14-2</a>. Here, a single team ends up being responsible for all the changes we need to make to add our new 
+        <span class="keep-together">control.</span></p>
+        
+        <p>Teams with full ownership of the end-to-end functionality are able to make changes more quickly. Having full ownership encourages each team to have a direct contact point with an end user of the software. With backend teams, it’s easy to lose track of who the end user is.</p>
+        
+        <p>Despite the drawbacks, I (unfortunately) still see the dedicated frontend team as being the more common organizational pattern among companies who make use of microservices. Why is this?</p>
+        
+        <figure><div id="ch13-end-to-end-slice" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_1402.png" alt="bms2 1402" width="600" height="505">
+        <h6><span class="label">Figure 14-2. </span>The UI is broken apart and is owned by a team that also manages the server-side functionality that supports the UI</h6>
+        </div></figure>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Drivers for Dedicated Frontend Teams"><div class="sect2" id="idm45699525575312">
+        <h2>Drivers for Dedicated Frontend Teams</h2>
+        
+        <p>The<a data-type="indexterm" data-primary="frontend teams" id="idm45699525573840"></a> desire for dedicated frontend teams seems to come down to three key factors: scarcity of specialists, a drive for consistency, and technical challenges.</p>
+        
+        <p>Firstly, delivering a user interface requires a degree of specialized skills. There are the interaction and graphical design aspects, and then there is the technical know-how required to deliver a great web or native application experience. Specialists with these skills can be hard to come by, and as these folks are such a rare commodity, the temptation is to stick them all together so you can make sure they are focusing only on their specialty.</p>
+        
+        <p>The second driver for a separate frontend team is consistency. If you have one team responsible for delivering your customer-facing user interface, you can ensure your UI has a consistent look and feel. You use a consistent set of controls to solve similar problems so that the user interface looks and feels like a single, cohesive entity.</p>
+        
+        <p>Finally, some user interface technology can be challenging to work with in a non-monolithic fashion. Here I’m thinking specifically of single-page applications (SPAs), which historically at least haven’t been easy to break apart. Traditionally, a web user interface would consist of multiple web pages, and you would navigate from one page to another. With SPAs, the entire application is instead served up inside a single web page. Frameworks like Angular, React, and Vue theoretically allow for the creation of more sophisticated user interfaces than “old-fashioned” websites. We’ll be looking at a set of patterns that can give you different options for how to decompose a user interface later in this chapter, and in terms of SPAs I will show how the micro frontend concept can allow you to use SPA frameworks while still avoiding the need for a monolithic user interface.<a data-type="indexterm" data-primary="" data-startref="UIowner14" id="idm45699525570944"></a><a data-type="indexterm" data-primary="" data-startref="owner14" id="idm45699525569968"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Toward Stream-Aligned Teams"><div class="sect1" id="towards-stream-aligned">
+        <h1>Toward Stream-Aligned Teams</h1>
+        
+        <p>I<a data-type="indexterm" data-primary="user interfaces (UIs)" data-secondary="stream-aligned teams" id="UIstream14"></a><a data-type="indexterm" data-primary="stream-aligned teams" id="sateam14"></a><a data-type="indexterm" data-primary="teams" data-secondary="stream-aligned teams" id="Tstream14"></a> think that having a dedicated frontend team is in general a mistake if you are trying to optimize for good throughput—it creates new handoff points in your organization, slowing things down. Ideally, our teams are aligned around end-to-end slices of functionality, allowing each team to deliver new features to its customers while reducing the amount of coordination needed. My preferred model is a team owning the end-to-end delivery of functionality in a specific part of the domain. This matches what Matthew Skelton and Manuel Pais describe as <em>stream-aligned teams</em> in their book <em>Team Topologies</em>.<sup><a data-type="noteref" id="idm45699525561696-marker" href="ch14.html#idm45699525561696">1</a></sup> As they describe it:</p>
+        <blockquote>
+        <p>A stream-aligned team is a team aligned to a single, valuable stream of work...[T]he team is empowered to build and deliver customer or user value as quickly, safely, and independently as possible, without requiring hand-offs to other teams to perform parts of the work.</p>
+        </blockquote>
+        
+        <p>In<a data-type="indexterm" data-primary="full stack teams" id="idm45699525559072"></a><a data-type="indexterm" data-primary="teams" data-secondary="full stack teams" id="idm45699525558336"></a> a sense, we are talking about <em>full stack teams</em> (rather than full stack developers).<sup><a data-type="noteref" id="idm45699525556832-marker" href="ch14.html#idm45699525556832">2</a></sup> A team with end-to-end responsibility for delivery of user-facing functionality is also going to have a more obvious, direct connection to the end user as well. All too often I’ve seen “backend” teams with a hazy idea of what the software does or what the users need, which can cause all sorts of misunderstandings when it comes to implementing new functionality. On the other hand, the end-to-end teams will find it much easier to build a direct connection with the people using the software they create—they can be more focused on making sure that the people they are serving are getting what they need.</p>
+        
+        <p>As<a data-type="indexterm" data-primary="key performance indicators (KPIs)" id="idm45699525555024"></a> a concrete example, I spent some time working with FinanceCo, a successful and growing Fintech firm based in Europe. At FinanceCo, virtually all teams work on software that directly impacts the customer experience and have customer-oriented key performance indicators (KPIs)—the success of a given team is driven less by how many features it has shipped and more by helping to improve the experience of the people using the software. It becomes very clear as to how a change can impact customers. This is only possible due to the fact that the majority of the teams have direct, customer-facing responsibilities in terms of the software they deliver. When you are more removed from the end user, it becomes harder to understand whether your contributions are successful, and you can end up focusing on goals that are a long way removed from things the people using your software care about.</p>
+        
+        <p>Let’s revisit the reasons why dedicated frontend teams exist—specialists, consistency, and technical challenges—and now let’s look at how these issues can be addressed.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Sharing Specialists"><div class="sect2" id="sharing-specialists">
+        <h2>Sharing Specialists</h2>
+        
+        <p>Good developers can be hard to find, and finding them is further complicated when you need developers with a certain specialty. In the area of user interfaces, for example, if you are providing native mobile as well as web interfaces, you could find yourself needing people who are experienced with iOS and Android as well as with modern web development. This is quite aside from the fact that you may want dedicated interaction designers, graphic designers, accessibility experts, and the like. People with the right depth of skills for these more “narrow” fields may be thin on the ground, and they may always have more work than there is time for.</p>
+        
+        <p>As we’ve touched on previously, the traditional approach to organizational structures would have you putting all the people who possess the same skill set in the same team, allowing you to tightly control what they work on. But as we’ve also discussed, this leads to siloed organizations.</p>
+        
+        <p>Putting people with specialized skills in their own dedicated team also deprives you of opportunities for other developers to pick up these in-demand skills. You don’t need every developer to learn to become an expert iOS developer, for example, but it can still be useful for some of your developers to learn enough skills in that area to help out with the easy stuff, leaving your specialists free to tackle the really hard tasks. Skill sharing can also be helped by establishing communities of practice—you might consider having a UI community that cuts across your teams, enabling people to share ideas and challenges with their peers.</p>
+        
+        <p>I remember when all database changes had to be done by a central pool of database administrators (DBAs). Developers had little awareness of how databases worked as a result, and would more frequently create software that used the database poorly. Furthermore, much of the work the experienced DBAs were being asked to do consisted of trivial changes. As more database work got pulled into delivery teams, developers in general got a better appreciation for databases and could start doing the trivial work themselves, freeing up the valuable DBAs to focus on more complex database issues, which made better use of their deeper skills and experience. A similar shift has happened in the space of operations and testers, with more of this work being pulled into teams.</p>
+        
+        <p>So, on the contrary, moving specialists out of dedicated teams won’t inhibit the specialists’ ability to do their job; in fact, it will likely increase the bandwidth they have to focus on the difficult problems that really need their attention.</p>
+        
+        <p>The<a data-type="indexterm" data-primary="teams" data-secondary="enabling teams" id="idm45699525546848"></a><a data-type="indexterm" data-primary="enabling teams" id="idm45699525545840"></a> trick is to find a more effective way to deploy your specialists. Ideally, they would be embedded in the teams. Sometimes, though, there might not be enough work to justify their full-time presence in a given team, in which case they may well split their time between multiple teams. Another model is to have a dedicated team with these skills whose explicit job is to <em>enable</em> other teams. In <em>Team Topologies</em>, Skelton and Pais describe these teams as <em>enabling teams</em>. Their job is to go out and help other teams who are focused on delivering new features to do their job. You can think of these teams as a bit more like an internal consultancy—they can come in and spend targeted time with a stream-aligned team, helping it become more self-sufficient in a particular area or else providing some dedicated time to help roll out a particularly difficult piece of work.</p>
+        
+        <p>So whether your specialists are embedded full-time in a given team, or work to enable others to do the same work, you can remove organizational silos and also help skill up your colleagues at the same time.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Ensuring Consistency"><div class="sect2" id="idm45699525542160">
+        <h2>Ensuring Consistency</h2>
+        
+        <p>The<a data-type="indexterm" data-primary="consistency" id="idm45699525540656"></a><a data-type="indexterm" data-primary="teams" data-secondary="ensuring consistency across" id="idm45699525539920"></a> second issue often cited as a reason for dedicated frontend teams is that of consistency. By having a single team responsible for a user interface, you ensure that the UI has a consistent look and feel. This can extend from easy things like using the same colors and fonts to solving the same interface problems in the same way—using a consistent design and interaction language that helps users interact with the system. This consistency doesn’t just help communicate a degree of polish regarding the product itself but also ensures that users will find it easier to use new functionality when it is delivered.</p>
+        
+        <p>There are ways, though, to help ensure a degree of consistency across teams. If you are using the enabling team model, with specialists spending time with multiple teams, they can help ensure that the work done by each team is consistent. The <span class="keep-together">creation</span> of shared resources like a living CSS style guide or shared UI components can also help.</p>
+        
+        <p>As a concrete example of an enabling team being used to help with consistency, the <em>Financial Times</em> Origami team builds web components in collaboration with the design team, which encapsulates the brand identity—ensuring a consistent look and feel across the stream-aligned teams. This type of enabling team provides two forms of aid—firstly, it shares its expertise in delivering already-built components, and secondly, it helps ensure that the UIs deliver a consistent user experience.</p>
+        
+        <p>It’s worth noting, however, that the driver for consistency shouldn’t be considered universally right. Some organizations make seemingly conscious decisions to not require consistency in their user interfaces, because they feel that allowing for more autonomy of teams is preferable. Amazon is one such organization. Earlier versions of its main shopping site had large degrees of inconsistency, with widgets using quite different styles of controls.</p>
+        
+        <p>This is shown to an even greater degree when you look at the web control panel for Amazon Web Services (AWS). Different products in AWS have massively different interaction models, making the user interface quite bewildering. This, however, seems to be a logical extension of Amazon’s drive to reduce internal coordination between teams.</p>
+        
+        <p>The<a data-type="indexterm" data-primary="Amazon Web Services (AWS)" data-secondary="autonomous product-oriented teams" id="idm45699525533392"></a> increased autonomy of product teams in AWS appears to manifest itself in other ways as well, not just in terms of an often disjointed user experience. There frequently are multiple different ways to achieve the same task (by running a container workload, for example), with different product teams inside AWS often overlapping with one another with similar but incompatible solutions. You might criticize the end result, but AWS has shown that by having these highly autonomous product-oriented teams, it has created a company that has a clear market lead. Speed of delivery trumps a consistency of user experience, at least as far as AWS is concerned.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Working Through Technical Challenges"><div class="sect2" id="idm45699525531424">
+        <h2>Working Through Technical Challenges</h2>
+        
+        <p>We’ve<a data-type="indexterm" data-primary="technology choices" data-secondary="stream-aligned teams and" id="idm45699525530016"></a> gone through some interesting evolutions when it comes to the development of user interfaces—from green-screen terminal-based textual user interfaces to rich desktop applications, the web, and now native mobile experiences. In many ways, we have gone full circle and then some—our client applications are now built with such complexity and sophistication that they absolutely rival the complexity of the rich desktop applications that were the mainstay of user interface development well into the first decade of the twenty-first century.</p>
+        
+        <p>To some degree, the more things change, the more they stay the same. We often are still working with the same UI controls as 20 years ago—buttons, checkboxes, forms, combo boxes, and the like. We’ve added a few more components to this space, but far fewer than you might think. What has changed is the technology we use to create these graphical user interfaces in the first place.</p>
+        
+        <p>Some newer technology in this space, specifically single-page applications, cause us issues when it comes to decomposing a user interface. In addition, the wider variety of devices on which we expect the same user interface to be delivered cause other problems that need to be solved.</p>
+        
+        <p>Fundamentally, our users want to engage with our software in as seamless a way as possible. Be that through a browser on a desktop, or through a native or web mobile app, the result is the same—users interact with our software through a single pane of glass. They shouldn’t care whether the user interface is built in a modular or monolithic way. So we have to look at ways to break apart our user interface functionality and bring it all back together again, all while resolving the challenges caused by single-page applications, mobile devices, and more. These issues will occupy us for the rest of this chapter.<a data-type="indexterm" data-primary="" data-startref="UIstream14" id="idm45699525525696"></a><a data-type="indexterm" data-primary="" data-startref="sateam14" id="idm45699525524720"></a><a data-type="indexterm" data-primary="" data-startref="Tstream14" id="idm45699525523776"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Pattern: Monolithic Frontend"><div class="sect1" id="API-based-decomposition">
+        <h1>Pattern: Monolithic Frontend</h1>
+        
+        <p>The<a data-type="indexterm" data-primary="user interfaces (UIs)" data-secondary="monolithic frontend pattern" id="UImono14"></a><a data-type="indexterm" data-primary="monolithic frontend pattern" id="mfront14"></a> <em>monolithic frontend</em> pattern describes an architecture in which all the UI state and behavior is defined in the UI itself, with calls made to backing microservices to get required data or carry out required operations. <a data-type="xref" href="#ch13-API-based-Decomposition">Figure&nbsp;14-3</a> shows an example of this. Our screen wants to display information about an album and its track listing, so the UI makes a request to pull this data from the <code>Album</code> microservice. We also display information about the most recent special offers by requesting information from the <code>Promotions</code> microservice. In this example, our microservices return JSON that the UI uses to update the displayed information.</p>
+        
+        <figure><div id="ch13-API-based-Decomposition" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_1403.png" alt="bms2 1403" width="600" height="402">
+        <h6><span class="label">Figure 14-3. </span>Our <code>Album</code> details screen pulls information from downstream microservices to render the UI</h6>
+        </div></figure>
+        
+        <p>This model is the most common one for people building monolithic single-page applications, often with a dedicated frontend team. The requirements of our microservices are pretty straightforward—they just need to share information in a form that can be easily interpreted by the UI. In the case of a web-based UI, this means our microservices would likely need to provide data in a textual format, JSON being the most likely choice. The UI would then need to create the various components that make up the interface, handling synchronization of state and the like with the backend. Using a binary protocol for service-to-service communication would be more difficult for web-based clients but could be fine for native mobile devices or “thick” desktop applications.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="When to Use It"><div class="sect2" id="idm45699525512224">
+        <h2>When to Use It</h2>
+        
+        <p>There are some downsides to this approach. Firstly, by its nature as a monolithic entity, it can become a driver for (or be caused by) a dedicated frontend team. Having multiple teams share responsibility for this monolithic frontend can be challenging due to the multiple sources of contention. Secondly, we have little ability to tailor the responses for different sorts of devices. If using web technology, we can change the layout of a screen to accommodate different device constraints, but this doesn’t necessarily extend to changing the calls being made to the supporting microservices. My mobile client may only be able to display 10 fields of an order, but if the microservice pulls back all one hundred fields of the order, we end up retrieving unnecessary data. One solution to this approach is for the user interface to specify what fields to pull back when it makes a request, but this assumes that each supporting microservice supports this form of interaction. In <a data-type="xref" href="#GraphQL">“GraphQL”</a>, we’ll look at how the use of both the backend for frontend pattern and GraphQL can help in this case.</p>
+        
+        <p>Really, this pattern works best when you <em>want</em> all of the implementation and behavior of your UI in one deployable unit. For a single team developing both the frontend and all supporting microservices, that might be fine. Personally, if you have more than one team working on your software, I think you should fight against that urge, as it can result in you slipping into a layered architecture with the associated organizational silos. If, however, you are unable to avoid a layered architecture and matching organizational structure, this is probably the pattern you’ll end up using.<a data-type="indexterm" data-primary="" data-startref="mfront14" id="idm45699525507424"></a><a data-type="indexterm" data-primary="" data-startref="UImono14" id="idm45699525506448"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Pattern: Micro Frontends"><div class="sect1" id="idm45699525505248">
+        <h1>Pattern: Micro Frontends</h1>
+        
+        <p>The<a data-type="indexterm" data-primary="user interfaces (UIs)" data-secondary="micro frontend pattern" id="UImicro14"></a><a data-type="indexterm" data-primary="micro frontend pattern" id="mircofront14"></a> <em>micro frontend</em> approach is an organizational pattern whereby different parts of a frontend can be worked on and deployed independently. To quote from a highly recommended article by Cam Jackson on the topic,<sup><a data-type="noteref" id="idm45699525500864-marker" href="ch14.html#idm45699525500864">3</a></sup> we can define <em>micro frontends</em> as follows: “An architectural style where independently deliverable frontend applications are composed into a greater whole.”</p>
+        
+        <p>It becomes an essential pattern for stream-aligned teams who want to own delivery of both backend microservices and the supporting UI. Where microservices deliver independent deployability for the backend functionality, micro frontends deliver independent deployability for the frontend.</p>
+        
+        <p>The micro frontend concept has gained popularity due to the challenges created by monolithic, JavaScript-heavy web UIs, as typified by single-page applications. With a micro frontend, different teams can work on and make changes to different parts of the frontend. Coming back to <a data-type="xref" href="#ch13-end-to-end-slice">Figure&nbsp;14-2</a>, the stock team, purchase flow team, and customer profile team are each able to change the frontend functionality associated with their stream of work independent of the other teams.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Implementation"><div class="sect2" id="idm45699525495728">
+        <h2>Implementation</h2>
+        
+        <p>For web-based frontends, we can consider two key decompositional techniques that can aid implementation of the micro frontend pattern. Widget-based decomposition involves splicing different parts of a frontend together into a single screen. Page-based decomposition, on the other hand, has the frontend split apart into independent web pages. Both approaches are worthy of further exploration, which we’ll get to shortly.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="When to Use It"><div class="sect2" id="idm45699525493744">
+        <h2>When to Use It</h2>
+        
+        <p>The micro frontend pattern is essential if you want to adopt end-to-end, stream-aligned teams where you are trying to move away from a layered architecture. I could also imagine it being useful in a situation in which you want to retain a layered architecture, but the functionality of the frontend is now so large that multiple dedicated frontend teams are required.</p>
+        
+        <p>There is one key problem with this approach that I’m not sure can be solved. Sometimes the capabilities offered by a microservice do not fit neatly into a widget or a page. Sure, I might want to surface recommendations in a box on a page on our website, but what if I want to weave in dynamic recommendations elsewhere? When I search, I want the type ahead to automatically trigger fresh recommendations, for example. The more cross-cutting a form of interaction is, the less likely this model will fit, and the more likely it is that we’ll fall back to just making API calls.</p>
+        <aside data-type="sidebar" epub:type="sidebar" class="pagebreak-before less_space"><div class="sidebar" id="idm45699525490896">
+        <h5>Self-Contained Systems</h5>
+        <p>A<a data-type="indexterm" data-primary="self-contained systems (SCSs)" id="idm45699525489056"></a><a data-type="indexterm" data-primary="architectural principles" data-secondary="self-contained systems (SCSs)" id="idm45699525488304"></a><a data-type="indexterm" data-primary="SCSs (self-contained systems)" id="idm45699525487328"></a> <em>self-contained system</em> (SCS) is a style of architecture that arose, arguably, out of the lack of focus on UI concerns during the early years of microservices. An SCS could consist of multiple moving parts (potentially microservices) that when taken together constitute a single SCS.</p>
+        
+        <p>As defined, a self-contained system has to comply with some specific criteria that we can see overlap with some of the same things we are trying to achieve with microservices. You can find more information about self-contained systems on the very clear <a href="https://scs-architecture.org">SCS website</a>, but here are some highlights:</p>
+        
+        <ul>
+        <li>
+        <p>Each SCS is an autonomous web application with no shared UI.</p>
+        </li>
+        <li>
+        <p>Each SCS is owned by one team.</p>
+        </li>
+        <li>
+        <p>Async communication should be used whenever possible.</p>
+        </li>
+        <li>
+        <p>No business code can be shared between SCSs.</p>
+        </li>
+        </ul>
+        
+        <p>The SCS approach hasn’t caught on to the same extent as microservices, and it’s not a concept I encounter much, despite the fact that I agree with many of the principles it outlines. I especially like calling out that a self-contained system should be owned by one team. I do wonder if this lack of wider use explains why some aspects of the SCS approach seem overly narrow and prescriptive. For example, the insistence on each SCS being an “autonomous web application” implies that many types of user interface couldn’t ever be considered an SCS. Does that mean the native iOS application I’ve built that uses gRPC can be part of an SCS or not?</p>
+        
+        <p>So is the SCS approach in conflict with microservices? Not really. I’ve worked on many microservices that, when considered in isolation would fit the definition of an SCS all by themselves. There are some interesting ideas in the SCS approach that I agree with, and many of them we’ve already covered in this book. I just find the approach to be overly prescriptive, to the extent that someone interested in SCSs might find adopting the approach to be incredibly challenging, as it might require wholesale changes to so many aspects of their software delivery.</p>
+        
+        <p>I do worry that manifestos like the SCS concept can guide us down the path of focusing too much on activity, rather than on principles and outcomes. You could follow every SCS characteristic and still potentially miss the point. On reflection, I feel that the SCS approach is a tech-focused approach to promote an organizational concept. As such, I’d rather focus on the importance of stream-aligned teams with reduced coordination, and let the technology and architecture flow from that.<a data-type="indexterm" data-primary="" data-startref="UImicro14" id="idm45699525477264"></a><a data-type="indexterm" data-primary="" data-startref="mircofront14" id="idm45699525476288"></a></p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Pattern: Page-Based Decomposition"><div class="sect1" id="page-based-decomposition">
+        <h1>Pattern: Page-Based Decomposition</h1>
+        
+        <p>In<a data-type="indexterm" data-primary="user interfaces (UIs)" data-secondary="page-based decomposition" id="UIpage14"></a><a data-type="indexterm" data-primary="page-based decomposition" id="pageb14"></a> page-based decomposition, our UI is decomposed into multiple web pages. Different sets of pages can be served from different microservices. In <a data-type="xref" href="#ch13-page-based-decomposition">Figure&nbsp;14-4</a>, we see an example of this pattern for MusicCorp. Requests for pages in <code>/albums/</code> are routed directly to the <code>Albums</code> microservice, which handles serving up those pages, and we do something similar with <code>/artists/</code>. A common navigation is used to help stitch together these pages. These microservices in turn might fetch information that is needed to construct these pages—for example, fetching stock levels from the <code>Inventory</code> microservice to show on the UI what items are in stock.</p>
+        
+        <figure><div id="ch13-page-based-decomposition" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_1404.png" alt="bms2 1404" width="600" height="634">
+        <h6><span class="label">Figure 14-4. </span>The user interface consists of multiple pages, with different groups of pages served up from different microservices</h6>
+        </div></figure>
+        
+        <p>With this model, a team owning the <code>Albums</code> microservice would be able to render a full UI end to end, making it easy for the team to understand how its changes would impact the user.</p>
+        <aside data-type="sidebar" epub:type="sidebar" class="pagebreak-before less_space"><div class="sidebar" id="idm45699525464752">
+        <h5>The Web</h5>
+        <p>Before single-page apps, we had the web. Our interaction with the web was based on visiting URLs and clicking on links that caused new pages to be loaded into our browser. Our browsers were built to allow for navigation around these pages, with bookmarks to mark pages of interest and backward and forward controls to revisit previously accessed pages. You might all be rolling your eyes and thinking, “Of course I know how the web works!”; however, it is a style of user interface that seems to have fallen out of favor. Its simplicity is something I miss when I see our current web-based user interface implementations—we’ve lost a lot by automatically assuming that a web-based UI means single-page apps.</p>
+        </div></aside>
+        
+        <p>In terms of dealing with different types of clients, there is nothing to stop the page adapting what it shows based on the nature of the device requesting the page. The concepts of progressive enhancement (or graceful degradation) should be well understood by now.</p>
+        
+        <p>The simplicity of page-based decomposition from a technical implementation point of view is a real appeal here. You don’t need any fancy JavaScript running in the browser, nor do you need to use problematic iFrames. The user clicks a link, and a new page is requested.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Where to Use It"><div class="sect2" id="idm45699525460688">
+        <h2>Where to Use It</h2>
+        
+        <p>Useful for either a monolithic frontend or a micro frontend approach, page-based decomposition would be my default choice for user-interface decomposition if my user interface was a website. The web page as a unit of decomposition is such a core concept of the web as a whole that it becomes a simple and obvious technique for breaking down a large web-based user interface.</p>
+        
+        <p>I think the problem is that in the rush to use single-page application technology, these user interfaces are becoming increasingly rare, to the extent that user experiences that in my opinion would better fit a website implementation end up being shoehorned into a single-page application.<sup><a data-type="noteref" id="idm45699525458256-marker" href="ch14.html#idm45699525458256">4</a></sup> You can of course combine page-based decomposition with some of the other patterns we have covered. I could have a page that contains widgets, for example—something we’ll look at next.<a data-type="indexterm" data-primary="" data-startref="UIpage14" id="idm45699525456720"></a><a data-type="indexterm" data-primary="" data-startref="pageb14" id="idm45699525455744"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Pattern: Widget-Based Decomposition"><div class="sect1" id="widget-based-decomposition">
+        <h1>Pattern: Widget-Based Decomposition</h1>
+        
+        <p>With<a data-type="indexterm" data-primary="widget-based decomposition" id="widget14"></a><a data-type="indexterm" data-primary="user interfaces (UIs)" data-secondary="widget-based decomposition" id="UIwidg14"></a> widget-based decomposition, a screen in a graphical interface contains widgets that can be independently changed. In <a data-type="xref" href="#ch13-micro-frontend">Figure&nbsp;14-5</a>, we see an example of Musi⁠c​Corp’s frontend, with two widgets providing the UI functionality for the shopping basket and the recommendations.</p>
+        
+        <figure><div id="ch13-micro-frontend" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_1405.png" alt="bms2 1405" width="600" height="409">
+        <h6><span class="label">Figure 14-5. </span>Basket and recommendation widgets being used on MusicCorp</h6>
+        </div></figure>
+        
+        <p>The recommendation widget for MusicCorp pulls back a carousel of recommendations that can be cycled through and filtered. As we see in <a data-type="xref" href="#ch13-recommend-interactions">Figure&nbsp;14-6</a>, when the user interacts with the recommendation widget—cycling through to the next set of recommendations, for example, or adding items to their wishlist—it may result in calls being made to backing microservices, perhaps in this case the <code>Recommendations</code> and <code>Wishlist</code> microservices. This could align well with a team that owns both those backing microservices and the component itself.</p>
+        
+        <figure><div id="ch13-recommend-interactions" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_1406.png" alt="bms2 1406" width="600" height="424">
+        <h6><span class="label">Figure 14-6. </span>Interactions between the recommendation micro frontend and supporting microservices</h6>
+        </div></figure>
+        
+        <p>Generally speaking, you’ll need a “container” application that defines things like the core navigation for the interface and which widgets need to be included. If we were thinking in terms of end-to-end stream-oriented teams, we could imagine a single team providing the recommendation widget and also being responsible for a supporting <code>Recommendations</code> microservice.</p>
+        
+        <p>This pattern is found a lot in the real world. The Spotify user interface, for example, makes heavy use of this pattern. One widget might hold a playlist, another might hold information about an artist, and a third widget might hold information about the artists and other Spotify users that you follow. These widgets are combined in different ways in different situations.</p>
+        
+        <p>You still need some sort of assembly layer to pull these parts together. This could be as simple as making use of server-side or client-side templates, though.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Implementation"><div class="sect2" id="idm45699525440000">
+        <h2>Implementation</h2>
+        
+        <p>How to splice a widget into your UI will depend largely on how your UI is created. With a simple website, including widgets as HTML fragments using either client-side or server-side templating can be pretty straightforward, although you can incur problems if the widgets have more complex behavior. As an example, if our recommendation widget contains lots of JavaScript functionality, how would we ensure that this doesn’t clash with behavior loaded into the rest of the web page? Ideally, the whole widget could be packaged in such a way that it wouldn’t break other aspects of the UI.</p>
+        
+        <p>The issue of how to deliver self-contained functionality into a UI without breaking other functionality has historically been especially problematic with single-page apps, partly because the concept of modularization doesn’t appear to have been a prime concern for how the supporting SPA frameworks were created. These challenges are worth exploring in more depth.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Dependencies"><div class="sect3" id="idm45699525436784">
+        <h3>Dependencies</h3>
+        
+        <p>Although iFrames have been a heavily used technique in the past, we tend to avoid using them to splice different widgets into a single web page. iFrames have a host of challenges regarding sizing and in terms of making it difficult to communicate between the different parts of the frontend. Instead, widgets are normally either spliced into the UI using server-side templating or else dynamically inserted into the browser on the client side. In both cases, the challenge is that the widget is running in the same browser page with other parts of the frontend, meaning that you need to be careful that the different widgets don’t conflict with one another.</p>
+        
+        <p>For example, our recommendation widget might make use of React v16, whereas the basket widget is still using React v15. This can be a blessing, of course, as it can help us try out different technology (we could use different SPA frameworks for different widgets), but it can also help when it comes to updating the versions of frameworks being used. I’ve spoken to a number of teams that have had challenges in moving between Angular or React versions, largely due to the differences in conventions used in the newer framework versions. Upgrading an entire monolithic UI could be daunting, but if you can do it incrementally, updating parts of your frontend piece by piece, you can break the work up and also mitigate the risk of the upgrade introducing new problems.</p>
+        
+        <p>The downside is that you can end up with a lot of duplication between dependencies, which in turn can lead to a large bloat in terms of page load size. I could end up including multiple different versions of the React framework and its associated transitive dependencies, for example. It is unsurprising that many websites now have a page load size several times greater than the size of some operating systems. As a quick unscientific study, I checked the page load of the CNN website at the time of writing, and it was 7.9 MB, which is a great deal larger than the 5 MB for Alpine Linux for example. 7.9 MB is actually at the small end of some of the page load sizes <span class="keep-together">I see</span>.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" class="pagebreak-before less_space" data-pdf-bookmark="Communication between in-page widgets"><div class="sect3" id="idm45699525431536">
+        <h3>Communication between in-page widgets</h3>
+        
+        <p>Although our widgets can be built and deployed independently, we still want them to be able to interact with one another. As an example from MusicCorp, when a user selects one of the albums in the best seller chart, we want other parts of the UI to update based on the selection, as shown in <a data-type="xref" href="#ch13-micro-frontend-events">Figure&nbsp;14-7</a>.</p>
+        
+        <figure><div id="ch13-micro-frontend-events" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_1407.png" alt="bms2 1407" width="600" height="321">
+        <h6><span class="label">Figure 14-7. </span>The charts widget can emit events that other parts of the UI listen to</h6>
+        </div></figure>
+        
+        <p>The way we’d achieve this would be to have the charts widget emit a custom event. Browsers already support a number of standard events that we can use to trigger behavior. These events allow us to react to buttons being pressed, the mouse being scrolled, and the like, and you’ve probably already made heavy use of such event handling if you’ve spent any time building JavaScript frontends. It’s a simple step to create your own custom events.</p>
+        
+        <p>So in our case, when an item is selected in the chart, that widget raises a custom <code>Album Selected</code> event. The recommendation and album details widgets both subscribe to the event and react accordingly, with the recommendations updating based on the selection, and the album details being loaded up. This interaction should of course already be familiar to us, as it mimics the event-driven interaction between microservices that we discussed in <a data-type="xref" href="ch04.html#event-driven">“Pattern: Event-Driven Communication”</a>. The only real difference is that these event interactions happen inside the browser.</p>
+        <aside data-type="sidebar" epub:type="sidebar" class="pagebreak-before less_space"><div class="sidebar" id="idm45699525423440">
+        <h5>Web Components</h5>
+        <p>At<a data-type="indexterm" data-primary="Web Component Standard" id="idm45699525421760"></a> first glance, the Web Component Standard should be an obvious way to implement these widgets. The Web Component Standard describes how you can create a UI component that can sandbox its HTML, CSS, and JavaScript aspects. Unfortunately, the web components standard seems to have taken a long time to settle down, and a longer time to be properly supported by browsers. Much of the initial work around them seems to have stalled, which has obviously impacted adoption. I have yet to meet an organization that uses web components served up from microservices, for 
+        <span class="keep-together">example.</span></p>
+        
+        <p>Given that the Web Component Standard is now fairly well supported, its possible that we’ll see them emerge as a common way to implement sandboxed widgets or larger micro frontends in the future, but after years of waiting for this to come about, I’m not holding my breath.</p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="When to Use It"><div class="sect2" id="idm45699525418736">
+        <h2>When to Use It</h2>
+        
+        <p>This pattern makes it easy for multiple stream-aligned teams to contribute to the same UI. It allows for more flexibility than does page-based decomposition, as the widgets delivered by different teams can all coexist in the UI at the same time. It also creates the opportunity for enabling teams to provide reusable widgets that can be used by stream-aligned teams—an example of which I shared earlier when mentioning the role of the <em>Financial Times</em> Origami team.</p>
+        
+        <p>The widget decomposition pattern is incredibly useful if you are building a rich web-based user interface, and I would strongly suggest the use of widgets in any situation in which you are making use of a SPA framework and want to break up responsibilities for the frontend, moving toward a micro frontend approach. The techniques and supporting technology around this concept have improved markedly over the last few years, to the extent that, when building an SPA-based web interface, breaking down my UI into micro frontends would be my default approach.</p>
+        
+        <p>My main concerns around widget decomposition in the context of SPAs have to do with the work required to set up the separate bundling of components and the issues around payload size. The former issue is likely a one-time cost and just involves working out what style of packaging best suits your existing toolchain. The latter issue is more problematic. A simple small change in the dependencies of one widget could result in a whole host of new dependencies being included in the application, drastically inflating the page size. If you are building a user interface where page weight is a concern, I’d suggest putting some automated checks in place to alert you if the page weight goes above a certain acceptable threshold.</p>
+        
+        <p>On the other hand, if the widgets are simpler in nature and are largely static components, the ability to include them using something as simple as client-side or server-side templating is very straightforward by comparison.<a data-type="indexterm" data-primary="" data-startref="widget14" id="idm45699525413520"></a><a data-type="indexterm" data-primary="" data-startref="UIwidg14" id="idm45699525412544"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Constraints"><div class="sect1" id="idm45699525453952">
+        <h1>Constraints</h1>
+        
+        <p>Before<a data-type="indexterm" data-primary="user interfaces (UIs)" data-secondary="adapting to device constraints" id="idm45699525410192"></a> moving on to discuss our next pattern, I want to address the topic of constraints. Increasingly, the users of our software interact with it from a variety of different devices. Each of these devices imposes different constraints that our software has to accommodate. On a desktop web application, for example, we consider constraints such as what browser visitors are using, or their screen resolution. People with impaired sight may make use of our software via screen readers, and people with restricted mobility may be more likely to use keyboard-style inputs to navigate the screen.</p>
+        
+        <p>So although our core services—our core offering—might be the same, we need a way to adapt them for the different constraints that exist for each type of interface, and for the different needs of our users. This can be driven purely from a financial standpoint if you want—more happy customers means more money. But there is also a human, ethical consideration that comes to the fore: when we ignore customers that have specific needs, we deny them the chance to use our services. In some contexts, making it impossible for people to navigate a UI due to design decisions has led to legal action and fines—for example, the UK, with a number of other countries, rightly has legislation in place to ensure access to websites for people with disabilities.<sup><a data-type="noteref" id="idm45699525407328-marker" href="ch14.html#idm45699525407328">5</a></sup></p>
+        
+        <p>Mobile devices have brought a whole host of new constraints. The way our mobile applications communicate with a server can have an impact. It isn’t just about pure bandwidth concerns, where the limitations of mobile networks can play a part. Different sorts of interactions can drain battery life, leading to some angry customers.</p>
+        
+        <p>The nature of interactions changes according to the device, too. I can’t easily right-click on a tablet. On a mobile phone, I may want to design my interface for mostly one-handed use, with most operations being controlled by a thumb. Elsewhere, I might allow people to interact with services via SMS in places where bandwidth is at a premium—the use of SMS as an interface is huge in the global south, for example.</p>
+        
+        <p>A wider discussion on the accessibility of user interfaces is outside the scope of this book, but we can at least explore the specific challenges caused by different types of clients, such as mobile devices.  A common solution to handling the different needs of client devices is to perform some sort of filtering and call aggregation on the client side. Data that isn’t required can be stripped and doesn’t need to be sent to the device, and multiple calls can be combined into a single call.</p>
+        
+        <p>Next, we’ll look at two patterns that can be useful in this space—the central aggregating gateway and the backend for frontend pattern. We’ll also look at how GraphQL is being used to help tailor responses for different types of interfaces.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Pattern: Central Aggregating Gateway"><div class="sect1" id="idm45699525402512">
+        <h1>Pattern: Central Aggregating Gateway</h1>
+        
+        <p>A<a data-type="indexterm" data-primary="user interfaces (UIs)" data-secondary="central aggregating gateway pattern" id="UIcentral14"></a><a data-type="indexterm" data-primary="central aggregating gateway pattern" id="central14"></a> central-purpose aggregating gateway sits between external user interfaces and downstream microservices and performs call filtering and aggregation for all user interfaces. Without aggregation, a user interface may have to make multiple calls to fetch required information, often throwing away data that was retrieved but not needed.</p>
+        
+        <p>In <a data-type="xref" href="#ch13-before-aggregation">Figure&nbsp;14-8</a>, we see such a situation. We want to display a screen with information about a customer’s recent orders. The screen needs to display some general information about a customer and then list a number of their orders in date order, along with summary information, showing the date and status of each order as well as the price.</p>
+        
+        <figure><div id="ch13-before-aggregation" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_1408.png" alt="Making multiple calls to fetch information for a single screen" width="600" height="267">
+        <h6><span class="label">Figure 14-8. </span>Making multiple calls to fetch information for a single screen</h6>
+        </div></figure>
+        
+        <p>We make a direct call to the <code>Customer</code> microservice, pulling back the full information about the customer, even though we need only a few fields. We then fetch the order details from the <code>Order</code> microservice. We could improve the situation somewhat, perhaps by changing the <code>Customer</code> or <code>Order</code> microservice to return data that better fits our requirements in this specific case, but that would still require two calls to be made.</p>
+        
+        <p>With an aggregating gateway, we can instead issue a single call from the  user interface to the gateway. The aggregating gateway then carries out all the required calls, combines the results into a single response, and throws away any data that the user interface doesn’t require (<a data-type="xref" href="#ch13-general-purpose-gateway">Figure&nbsp;14-9</a>).</p>
+        
+        <figure><div id="ch13-general-purpose-gateway" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_1409.png" alt="bms2 1409" width="600" height="358">
+        <h6><span class="label">Figure 14-9. </span>The server-side central gateway handles filtering and aggregation of calls to downstream microservices</h6>
+        </div></figure>
+        
+        <p>Such a gateway could also help batch calls as well. For example, rather than needing to look up 10 order IDs via separate calls, I could send one batch request to the aggregating gateway, and it could handle the rest.</p>
+        
+        <p>Fundamentally, having some sort of aggregating gateway can reduce the number of calls that the external client needs to make and reduce the amount of data that needs to be sent back. This can lead to significant benefits in terms of reducing bandwidth use and improving the latency of the application.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Ownership"><div class="sect2" id="idm45699525387200">
+        <h2>Ownership</h2>
+        
+        <p>As more user interfaces make use of the central gateway, and as more microservices need call aggregation and filtering logic for those user interfaces, the gateway becomes a potential source of contention. Who owns the gateway? Is it owned by the people creating the user interfaces, or by the people who own the microservices? Often I find that the central aggregating gateway does so much that it ends up being owned by a dedicated team. Hello, siloed layered architecture!</p>
+        
+        <p class="pagebreak-before">Fundamentally, the nature of the call aggregation and filtering is largely driven by the requirements of the external user interfaces. As such, it would make natural sense for the gateway to be owned by the team(s) creating the UI. Unfortunately, especially in an organization in which you have a dedicated frontend team, that team may not have the skills to build such a vital backend component.</p>
+        
+        <p>Regardless of who ends up owning the central gateway, it has the potential to become a bottleneck for delivery. If multiple teams need to make changes to the gateway, development on it will require coordination between those teams, slowing things down. If one team owns it, that team can become a bottleneck when it comes to delivery. We’ll see how the backend for frontend pattern can help resolve these issues shortly.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Different Types of User Interfaces"><div class="sect2" id="idm45699525383168">
+        <h2>Different Types of User Interfaces</h2>
+        
+        <p>If the challenges around ownership can be managed, a central aggregating gateway might still work well, until we consider the issue of different devices and their different needs. As we’ve discussed, the affordances of a mobile device are very different. We have less screen real estate, which means we can display less data. Opening lots of connections to server-side resources can drain battery life and limited data plans. Additionally, the nature of the interactions we want to provide on a mobile device can differ drastically. Think of a typical bricks-and-mortar retailer. On a desktop app, I might allow you to look at the items for sale and order them online or reserve them in a store. On the mobile device, though, I might want to allow you to scan bar codes to do price comparisons or give you context-based offers while in store. As we’ve built more and more mobile applications, we’ve come to realize that people use them very differently, and therefore the functionality we need to expose will differ too.</p>
+        
+        <p>So in practice, our mobile devices will want to make different and fewer calls and will want to display different (and probably less) data than their desktop counterparts. This means that we need to add additional functionality to our API backend to support different types of user interfaces. In <a data-type="xref" href="#ch13-after-aggregation-two-calls">Figure&nbsp;14-10</a>, we see MusicCorp’s web interface and mobile interface both using the same gateway for the customer summary screen, but each client wants a different set of information. The web interface wants more information about the customer and also has a brief summary of the items in each order. This leads us to implement two different aggregating and filtering calls in our backend gateway.</p>
+        
+        <figure><div id="ch13-after-aggregation-two-calls" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_1410.png" alt="bms2 1410" width="600" height="458">
+        <h6><span class="label">Figure 14-10. </span>Supporting different aggregating calls for different devices</h6>
+        </div></figure>
+        
+        <p>This can lead to a lot of bloat in the gateway, especially if we consider different native mobile applications, customer-facing websites, internal administration interfaces, and the like. We also have the problem, of course, that while these different UIs might be owned by different teams, the gateway is a single unit—we have the same old problems of multiple teams having to work on the same deployed unit. Our single aggregating backend can become a bottleneck, as so many changes are trying to be made to the same deployable artifact.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Multiple Concerns"><div class="sect2" id="idm45699525376528">
+        <h2>Multiple Concerns</h2>
+        
+        <p>There are a whole host of concerns that may need to be addressed on the server side when it comes to handling API calls. Aside from the call aggregation and filtering, we can think of more generic concerns like API key management, user authentication, or call routing. Often these generic concerns can be handled by API gateway products, which are available in many sizes and for many different price points (some of which are eye-wateringly high!). Depending on the sophistication you require, it can make a lot of sense to purchase a product (or license a service) to handle some of these concerns for you. Do you really want to manage API key issuing, tracking, rate limiting, and so on yourself? By all means, look at products in this space to solve these generic concerns, but be wary about also trying to use these products to do your call aggregation and filtering, even if they claim they can.</p>
+        
+        <p>When customizing a product built by someone else, you often have to work in their world. Your toolchain is restricted because you may not be able to use your programming language and your development practices. Rather than writing Java code, you’re configuring routing rules in some odd product-specific DSL (probably using JSON). It can be a frustrating experience, and you are baking some of the smarts of your system into a third-party product. This can reduce your ability to move this behavior later. It’s common to realize that a pattern of call aggregation actually relates to some domain functionality that could justify a microservice in its own right (something we’ll explore more shortly when we talk about BFFs). If this behavior is in a vendor-specific configuration, moving this functionality can be more problematic, as you’d likely have to reinvent it.</p>
+        
+        <p>The situation can become even worse if the aggregating gateway becomes complex enough to require a dedicated team to own and manage it. At worst, adopting more horizontal team ownership can lead to a situation in which to roll out some new functionality you have to get a frontend team to make changes, the aggregating gateway team to make changes, and the team(s) that owns the microservice to also make its changes. Suddenly everything starts going much more slowly.</p>
+        
+        <p>So if you want to make use of a dedicated API gateway, go ahead—but strongly consider having your filtering and aggregation logic elsewhere.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="When to Use It"><div class="sect2" id="idm45699525372112">
+        <h2>When to Use It</h2>
+        
+        <p>For a solution owned by a single team, where one team develops the user interface and the backend microservices, I would be OK with having a single central aggregating gateway. That said, this team sounds like it is doing a LOT of work—in such situations, I tend to see a large degree of conformity across the user interfaces, which often removes the need for these aggregation points in the first place.</p>
+        
+        <p>If you do decide to adopt a single central aggregating gateway, please be careful to limit what functionality you put inside it. I’d be extremely wary of pushing this functionality into a more generic API gateway product, for example, for reasons outlined previously.</p>
+        
+        <p>The concept of doing some form of call filtering and aggregation on the backend can be really important, though, in terms of optimizing the user’s experience of our user interfaces. The issue is that in a delivery organization with multiple teams, a central gateway can lead to requirements for lots of coordination among those teams.</p>
+        
+        <p>So if we still want do to aggregation and filtering on the backend but want to remove the problems associated with the ownership model of a central gateway, what can we do? That’s where the <em>backend for frontend</em> pattern comes in.<a data-type="indexterm" data-primary="" data-startref="central14" id="idm45699525367680"></a><a data-type="indexterm" data-primary="" data-startref="UIcentral14" id="idm45699525366672"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Pattern: Backend for Frontend (BFF)"><div class="sect1" id="ch14-BFF">
+        <h1>Pattern: Backend for Frontend (BFF)</h1>
+        
+        <p>The<a data-type="indexterm" data-primary="backend for frontend (BFF) pattern" id="bff14"></a><a data-type="indexterm" data-primary="user interfaces (UIs)" data-secondary="backend for frontend (BFF) pattern" id="UIbff14"></a> main distinction between a BFF and a central aggregating gateway is that a BFF is single purpose in nature—it is developed for a specific user interface. This pattern has proved to be very successful in helping handle the differing concerns of user interfaces, and I’ve seen it work well at a number of organizations, including SoundCloud<sup><a data-type="noteref" id="idm45699525360944-marker" href="ch14.html#idm45699525360944">6</a></sup> and REA. As we see in <a data-type="xref" href="#ch13-bff">Figure&nbsp;14-11</a>, where we revisit MusicCorp, the web and mobile shopping interfaces now have their own aggregating backends.</p>
+        
+        <figure><div id="ch13-bff" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_1411.png" alt="bms2 1411" width="600" height="463">
+        <h6><span class="label">Figure 14-11. </span>Each user interface has its own BFF</h6>
+        </div></figure>
+        
+        <p>Due to its specific nature, the BFF sidesteps some of the concerns around the central aggregating gateway. As we aren’t trying to be all things to all people, a BFF avoids becoming a bottleneck for development, with multiple teams all trying to share ownership. We are also less worried about coupling with the user interface, as coupling is much more acceptable. A given BFF is for a specific user interface—assuming they are owned by the same team, then the inherent coupling is far easier to manage. I often describe the use of a BFF with a user interface as though the UI is actually split into two parts. One part sits on the client device (the web interface or native mobile application), with the second part, the BFF, being embedded on the server side.</p>
+        
+        <p>The BFF is tightly coupled to a specific user experience and will typically be maintained by the same team as the user interface, thereby making it easier to define and adapt the API as the UI requires, while also simplifying the process of lining up release of both the client and server components.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="How Many BFFs?"><div class="sect2" id="idm45699525354512">
+        <h2>How Many BFFs?</h2>
+        
+        <p>When it comes to delivering the same (or similar) user experience on different platforms, I have seen two different approaches. The model I prefer (and the model I see most often) is to strictly have a single BFF for each different type of client—this is a model I saw used at REA, as outlined in <a data-type="xref" href="#ch13-bff-rea">Figure&nbsp;14-12</a>. The Android and iOS applications, while covering similar functionality, each had their own BFF.</p>
+        
+        <figure><div id="ch13-bff-rea" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_1412.png" alt="bms2 1412" width="600" height="507">
+        <h6><span class="label">Figure 14-12. </span>The REA iOS and Android applications have different BFFs</h6>
+        </div></figure>
+        
+        <p>A variation is to look for opportunities to use the same BFF for more than one type of client, albeit for the same type of user interface. SoundCloud’s Listener application allows people to listen to content on their Android or iOS devices. SoundCloud uses a single BFF for both Android and iOS, as shown in <a data-type="xref" href="#ch13-bff-soundcloud">Figure&nbsp;14-13</a>.</p>
+        
+        <figure><div id="ch13-bff-soundcloud" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_1413.png" alt="bms2 1413" width="600" height="494">
+        <h6><span class="label">Figure 14-13. </span>SoundCloud sharing a BFF between iOS and Android applications</h6>
+        </div></figure>
+        
+        <p>My main concern with this second model is that the more types of clients you have using a single BFF, the more temptation there may be for the BFF to become bloated by handling multiple concerns. The key thing to understand here, though, is that even when clients share a BFF, it is for the same class of user interface—so while SoundCloud’s native Listener applications for iOS and Android use the same BFF, other native applications would use different BFFs. I’m more relaxed about using this model if the same team owns both the Android and iOS applications and owns the BFF too—if these applications are maintained by different teams, I’m more inclined to recommend the more strict model. So you can see your organizational structure as being one of the main drivers for deciding which model makes the most sense (Conway’s law wins again).</p>
+        
+        <p>Stewart Gleadow from REA has suggested the guideline “one experience, one BFF.” So if the iOS and Android experiences are very similar, then it is easier to justify having a single BFF.<sup><a data-type="noteref" id="idm45699525344208-marker" href="ch14.html#idm45699525344208">7</a></sup> If, however, they diverge greatly, then having separate BFFs makes more sense. In the case of REA, although there was overlap between the two experiences, different teams owned them and rolled out similar features in different ways. Sometimes the same feature might be deployed differently on a different mobile device—what amounts to a native experience for an Android application might need to be reworked to feel native on iOS.</p>
+        
+        <p>Another lesson from the REA story (and one we’ve covered many times already) is that software often works best when aligned around team boundaries, and BFFs are no exception. SoundCloud having a single mobile team makes having a single BFF seem sensible at first glance, as does REA having two different BFFs for the two separate teams. It’s worth noting that the SoundCloud engineers I spoke to suggested that having one BFF for the Android and iOS listener applications was something they might reconsider—they had a single mobile team, but in reality they were a mix of Android and iOS specialists, and they found themselves mostly working on one or the other application, which implies they were really two teams in effect.</p>
+        
+        <p>Often the driver toward having a smaller number of BFFs is a desire to reuse server-side functionality to avoid too much duplication, but there are other ways to handle this, which we’ll cover next.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Reuse and BFFs"><div class="sect2" id="idm45699525341168">
+        <h2>Reuse and BFFs</h2>
+        
+        <p>One of the concerns of having a single BFF per user interface is that you can end up with lots of duplication among the BFFs. For example, they may end up performing the same types of aggregation, have the same or similar code for interfacing with downstream services, and so on. If you are looking to extract common functionality, then often one of the challenges is in finding it. That duplication may occur in the BFFs themselves, but it can also end up being baked into the different clients. Due to the fact that these clients use very different technology stacks, identifying the fact that this duplication is occurring can be difficult. With organizations tending to have a common technology stack for server-side components, having multiple BFFs with duplication may be easier to spot and factor out.</p>
+        
+        <p>Some people react to this by wanting to merge the BFFs back together, and they end up with a general-purpose aggregating gateway. My concern around regressing to a single aggregating gateway is that we can end up losing more than we gain, especially as there can be other ways to approach this duplication.</p>
+        
+        <p>As I have said before, I am fairly relaxed about duplicated code across microservices. Which is to say that, while in a single microservice boundary I will typically do whatever I can to refactor out duplication into suitable abstractions, I don’t have the same reaction when confronted by duplication across microservices. This is mostly because I am often more worried about the potential for the extraction of shared code to lead to tight coupling between services (a topic we explored in <a data-type="xref" href="ch05.html#a50-dry">“DRY and the Perils of Code Reuse in a Microservice World”</a>). That said, there are certainly cases where this is warranted.</p>
+        
+        <p>When the time does arise to extract common code to enable reuse between BFFs, there are two obvious options. The first, which is often cheaper but more fraught, is to extract a shared library of some sort. The reason this can be problematic is that shared libraries are a prime source of coupling, especially when used to generate client libraries for calling downstream services. Nonetheless, there are situations in which this feels right—especially when the code being abstracted is purely a concern inside the service.</p>
+        
+        <p>The other option is to extract the shared functionality into a new microservice. This can work well if the functionality being extracted represents business domain functionality. A variation of this approach might be to push aggregation responsibilities to microservices further downstream. Let’s consider a situation in which we want to display a list of the items in a customer’s wishlist, along with information about whether or not those items are in stock and the current price, as shown in <a data-type="xref" href="#ch13-wishlist-table">Table&nbsp;14-1</a>.</p>
+        <table id="ch13-wishlist-table">
+        <caption><span class="label">Table 14-1. </span>Displaying the wishlist for a customer of MusicCorp</caption>
+        <tbody>
+        <tr>
+        <td><p>The Brakes, Give Blood</p></td>
+        <td><p>In Stock!</p></td>
+        <td><p>$5.99</p></td>
+        </tr>
+        <tr>
+        <td><p>Blue Juice, Retrospectable</p></td>
+        <td><p>Out of Stock</p></td>
+        <td><p>$7.50</p></td>
+        </tr>
+        <tr>
+        <td><p>Hot Chip, Why Make Sense?</p></td>
+        <td><p>Going Fast! (2 left)</p></td>
+        <td><p>$9.99</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>The <code>Customer</code> microservice stores information about the wishlist and the ID of each item. The <code>Catalog</code> microservice stores the name and price of each item, and the stock levels are stored in our <code>Inventory</code> microservice. To display this same control on both the iOS and Android applications, each BFF would need to make the same three calls to the supporting microservices, as shown in <a data-type="xref" href="#ch13-bff-wishlist-operations">Figure&nbsp;14-14</a>.</p>
+        
+        <figure><div id="ch13-bff-wishlist-operations" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_1414.png" alt="bms2 1414" width="600" height="492">
+        <h6><span class="label">Figure 14-14. </span>Both BFFs are performing the same operations to display a wishlist</h6>
+        </div></figure>
+        
+        <p>A way to reduce the duplication in functionality here would be to extract this common behavior into a new microservice. In <a data-type="xref" href="#ch13-bff-wishlist-microservice">Figure&nbsp;14-15</a>, we see our new dedicated <code>Wishlist</code> microservice that our Android and iOS applications can both make use of.</p>
+        
+        <p>I have to say that the same code being used in two places wouldn’t automatically cause me to want to extract out a service in this way, but I’d certainly be considering it if the transaction cost of creating a new service was low enough, or if I was using the code in more than a couple of places—in this specific situation, if we were also showing wishlists on our web interface, for example, a dedicated microservice would start to look even more appealing. I think the old adage of creating an abstraction when you’re about to implement something for the third time still feels like a good rule of thumb, even at the service level.</p>
+        
+        <figure><div id="ch13-bff-wishlist-microservice" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_1415.png" alt="bms2 1415" width="600" height="560">
+        <h6><span class="label">Figure 14-15. </span>Common functionality is extracted into a <code>Wishlist</code> microservice, allowing for reuse across BFFs</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="BFFs for Desktop Web and Beyond"><div class="sect2" id="idm45699525340576">
+        <h2>BFFs for Desktop Web and Beyond</h2>
+        
+        <p>You can think of BFFs as just having a use in solving the constraints of mobile devices. The desktop web experience is typically delivered on more powerful devices with better connectivity, where the cost of making multiple downstream calls is manageable. This can allow your web application to make multiple calls directly to downstream services without the need for a BFF.</p>
+        
+        <p>I have seen situations, though, in which the use of a BFF for the web too can be useful. When you are generating a larger portion of the web UI on the server side (e.g., using server-side templating), a BFF is the obvious place where this can be done. This approach can also simplify caching somewhat, as you can place a reverse proxy in front of the BFF, allowing you to cache the results of aggregated calls.</p>
+        
+        <p>I’ve seen at least one organization use BFFs for other external parties that need to make calls. Coming back to my perennial example of MusicCorp, I might expose a BFF to allow third parties to extract royalty payment information, or to allow streaming to a range of set-top box devices, as we see in <a data-type="xref" href="#ch13-bff-for-external-parties">Figure&nbsp;14-16</a>. These aren’t really BFFs anymore, as the external parties aren’t presenting a “user interface,” but this is an example of the same pattern being used in a different context, so I thought it worth sharing.</p>
+        
+        <figure><div id="ch13-bff-for-external-parties" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_1416.png" alt="bms2 1416" width="600" height="383">
+        <h6><span class="label">Figure 14-16. </span>Using BFFs to manage external APIs</h6>
+        </div></figure>
+        
+        <p>This approach can be especially effective, as third parties often have limited to no ability (or desire) to use or change the API calls they make. With a central API backend, you may have to keep old versions of the API around just to satisfy a small subset of your outside parties unable to make a change; with a BFF, this problem is substantially reduced. It also limits the impact of breaking changes. You could change the API for Facebook in a way that would break compatibility with other parties, but as they use a different BFF, they aren’t impacted by this change.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="When to Use"><div class="sect2" id="idm45699525306880">
+        <h2>When to Use</h2>
+        
+        <p>For an application that is only providing a web UI, I suspect a BFF will make sense only if and when you have a significant amount of aggregation required on the server side. Otherwise, I think some of the other UI composition techniques we’ve already covered can work just as well without requiring an additional server-side component.</p>
+        
+        <p>The moment that you need to provide specific functionality for a mobile UI or third party, though, I would strongly consider using BFFs for each client from the outset. I might reconsider if the cost of deploying additional services is high, but the separation of concerns that a BFF can bring make it a fairly compelling proposition in most cases. I’d be even more inclined to use a BFF if there is significant separation between the people building the UI and downstream services, for reasons I’ve outlined.</p>
+        
+        <p>We then come to the question of how to implement the BFF—let’s look at GraphQL and the role it can play.<a data-type="indexterm" data-primary="" data-startref="UIbff14" id="idm45699525303712"></a><a data-type="indexterm" data-primary="" data-startref="bff14" id="idm45699525302736"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="GraphQL"><div class="sect1" id="GraphQL">
+        <h1>GraphQL</h1>
+        
+        <p>GraphQL<a data-type="indexterm" data-primary="user interfaces (UIs)" data-secondary="GraphQL" id="UIgraph14"></a><a data-type="indexterm" data-primary="GraphQL" id="graph14"></a> is a query language that allows clients to issue queries to access or mutate data. Like SQL, GraphQL allows these queries to be changed dynamically, allowing the client to define exactly what information it wants back. With a standard REST over HTTP call, for example, when issuing a GET request for an <code>Order</code> resource you’d get back all the fields for that order. But what if, in that particular situation, you only wanted the total amount of the order? You could just ignore the other fields, of course, or else provide an alternative resource (an <code>Order Summary</code>, perhaps) that contains just the information you need. With GraphQL, you could issue a request asking for only the fields you need, as we see in <a data-type="xref" href="#ch13-graphql-sample">Example&nbsp;14-1</a>.</p>
+        <div id="ch13-graphql-sample" data-type="example">
+        <h5><span class="label">Example 14-1. </span>A example GraphQL query being used to fetch order information</h5>
+        
+        <pre data-type="programlisting" data-code-language="json"><code class="p">{</code><code class="w"></code>
+        <code class="w">    </code><code class="err">order(id</code><code class="p">:</code><code class="w"> </code><code class="mi">123</code><code class="err">)</code><code class="w"> </code><code class="p">{</code><code class="w"></code>
+        <code class="w">        </code><code class="err">da</code><code class="kc">te</code><code class="w"></code>
+        <code class="w">        </code><code class="kc">t</code><code class="err">o</code><code class="kc">tal</code><code class="w"></code>
+        <code class="w">        </code><code class="err">s</code><code class="kc">tatus</code><code class="w"></code>
+        <code class="w">        </code><code class="err">delivery</code><code class="w"> </code><code class="p">{</code><code class="w"></code>
+        <code class="w">            </code><code class="err">compa</code><code class="kc">n</code><code class="err">y</code><code class="w"></code>
+        <code class="w">            </code><code class="err">driver</code><code class="w"></code>
+        <code class="w">            </code><code class="err">dueda</code><code class="kc">te</code><code class="w"></code>
+        <code class="w">        </code><code class="p">}</code><code class="w"></code>
+        <code class="w">    </code><code class="p">}</code><code class="w"></code>
+        <code class="p">}</code><code class="w"></code></pre></div>
+        
+        <p>In this query, we’ve asked for order <code>123</code>, and we’ve asked for the total price and the status of the order. We’ve gone further and asked for information about the delivery of this order, so we can get information on the name of the driver who will deliver our package, the company they work for, and when the package is expected to arrive. With a normal REST API, unless the delivery information was contained inside the <code>Order</code> resource, we may have to make an additional call to fetch this information. So  not only is GraphQL helping us ask for exactly the fields we want, but it can also reduce round trips. A query like this requires that we define the various data types we are accessing—explicitly defining types is a key part of GraphQL.</p>
+        
+        <p>To implement GraphQL, we need a <em>resolver</em> to handle the queries. A GraphQL resolver sits on the server side and maps the GraphQL queries into calls to actually fetch the information. So in the case of a microservice architecture, we’d need a resolver that would be capable of mapping the request for the order with <code>ID 123</code> into an equivalent call to a microservice.</p>
+        
+        <p>In this way, we can use GraphQL to implement an aggregating gateway, or even a BFF. The benefit of GraphQL is that we can easily change the aggregation and filtering we want simply by changing the query from the client; no changes are needed at the GraphQL server side of things as long as the GraphQL types support the query we want to make. If we no longer wanted to see the driver name in the example query, we could just omit this from the query itself and it would no longer be sent. On the other hand, if we wanted to see the number of points we were awarded for this order, assuming this information is available in the order type, we could just add this to the query and the information would be returned. This is a significant advantage over BFF implementations that require changes in aggregation logic to also be applied to the BFF itself.</p>
+        
+        <p>The flexibility that GraphQL gives for the client device to dynamically change the queries being made without server-side changes means that there is less chance of your GraphQL server becoming a shared, contended resource, as we discussed with the general-purpose aggregating gateway. That said, server-side changes will still be needed if you need to expose new types or add fields to existing types. As such, you may still want multiple GraphQL server backends to align along team boundaries—so GraphQL becomes a way of implementing a BFF.</p>
+        
+        <p>I do have concerns around GraphQL, which I outlined in detail in <a data-type="xref" href="ch05.html#integration-technology-chapter">Chapter&nbsp;5</a>. That said, it is a neat solution allowing for dynamic querying to suit the needs of different types of user interfaces.<a data-type="indexterm" data-primary="" data-startref="UIgraph14" id="idm45699525261088"></a><a data-type="indexterm" data-primary="" data-startref="graph14" id="idm45699525260144"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="A Hybrid Approach"><div class="sect1" id="idm45699525258192">
+        <h1>A Hybrid Approach</h1>
+        
+        <p>Many<a data-type="indexterm" data-primary="user interfaces (UIs)" data-secondary="hybrid approach" id="idm45699525256896"></a> of the aforementioned options don’t need to be one-size-fits-all. I could see an organization adopting the approach of widget-based decomposition to create a website but using a backend for frontend approach when it comes to its mobile application. The key point is that we need to retain cohesion of the underlying capabilities that we offer our users. We need to ensure that logic associated with ordering music or changing customer details lives inside those services that handle those operations and doesn’t get smeared all over our system. Avoiding the trap of putting too much behavior into any intermediate layers is a tricky balancing act.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Summary"><div class="sect1" id="idm45699525254832">
+        <h1>Summary</h1>
+        
+        <p>As I hope I have shown, decomposition of functionality doesn’t have to stop at the server side, and having dedicated frontend teams isn’t inevitable. I’ve shared a number of different ways to construct a user interface that can make use of supporting microservices while enabling focused end-to-end delivery.</p>
+        
+        <p>In our next chapter, we move from the technical to the people side of things when we explore in greater detail the interplay of microservices and organizational <span class="keep-together">structures</span>.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        <div data-type="footnotes"><p data-type="footnote" id="idm45699525561696"><sup><a href="ch14.html#idm45699525561696-marker">1</a></sup> Matthew Skelton and Manuel Pais, <em>Team Topologies</em> (Portland, OR: IT Revolution, 2019).</p><p data-type="footnote" id="idm45699525556832"><sup><a href="ch14.html#idm45699525556832-marker">2</a></sup> As Charity Majors says, “You’re not a full stack developer unless you build the chips.”</p><p data-type="footnote" id="idm45699525500864"><sup><a href="ch14.html#idm45699525500864-marker">3</a></sup> Cam Jackson, “Micro Frontends,”  martinfowler.com, June 19, 2019, <a href="https://oreil.ly/U3K40"><em class="hyperlink">https://oreil.ly/U3K40</em></a>.</p><p data-type="footnote" id="idm45699525458256"><sup><a href="ch14.html#idm45699525458256-marker">4</a></sup> I’m looking at you, <em>Sydney Morning Herald</em>!</p><p data-type="footnote" id="idm45699525407328"><sup><a href="ch14.html#idm45699525407328-marker">5</a></sup> I hope it goes without saying that I am not a lawyer, but should you wish to look at the legislation that covers this in the UK, it’s the Equality Act 2010, specifically section 20. The W3C also has a <a href="https://www.w3.org/TR/WCAG">good overview of accessibility guidelines</a>.</p><p data-type="footnote" id="idm45699525360944"><sup><a href="ch14.html#idm45699525360944-marker">6</a></sup> See the article <a href="https://oreil.ly/DdnzN">“BFF @ SoundCloud”</a> by Lukasz Plotnicki for a great overview of how SoundCloud uses the BFF pattern.</p><p data-type="footnote" id="idm45699525344208"><sup><a href="ch14.html#idm45699525344208-marker">7</a></sup> Stewart has in turn credited Phil Calçado and Mustafa Sezgin for this recommendation.</p></div></div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492034018/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

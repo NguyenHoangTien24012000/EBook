@@ -1,0 +1,2751 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 4. Pathfinding and Graph Search Algorithms"><div class="chapter" id="pathfinding_algorithms">
+        <h1><span class="label">Chapter 4. </span>Pathfinding and Graph Search Algorithms</h1>
+        
+        
+        <p>Graph search algorithms <a data-type="indexterm" data-primary="Graph search algorithms" data-secondary="defined" id="idm46681381781736"></a>explore a graph either for general discovery or explicit search.
+        <a data-type="indexterm" data-primary="Graph search algorithms" id="ix_ch04-adoc0"></a>These algorithms carve paths through the graph, but there is no expectation that those paths are computationally optimal.
+        We will cover Breadth First Search and Depth First Search because they are fundamental for traversing a graph and are often a required first step for many other types of analysis.</p>
+        
+        <p><a data-type="indexterm" data-primary="Pathfinding algorithms" id="ix_ch04-adoc1"></a>Pathfinding algorithms build on top of graph search algorithms and explore routes between nodes, starting at one node and traversing through relationships until the destination has been reached.
+        These algorithms are used to identify optimal routes through a graph for uses such as logistics planning, least cost call or IP routing, and gaming simulation.</p>
+        
+        <p>Specifically, the pathfinding algorithms we’ll cover are:</p>
+        <dl>
+        <dt>Shortest Path, with two useful variations (A* and Yen’s)</dt>
+        <dd>
+        <p>Finding the shortest path or paths between two chosen nodes</p>
+        </dd>
+        <dt>All Pairs Shortest Path and Single Source Shortest Path</dt>
+        <dd>
+        <p>For finding the shortest paths between all pairs or from a chosen node to all 
+        <span class="keep-together">others</span></p>
+        </dd>
+        <dt>Minimum Spanning Tree</dt>
+        <dd>
+        <p>For finding a connected tree structure with the smallest cost for visiting all nodes from a chosen node</p>
+        </dd>
+        <dt>Random Walk</dt>
+        <dd>
+        <p>Because it’s a useful preprocessing/sampling step for machine learning workflows and other graph algorithms</p>
+        </dd>
+        </dl>
+        
+        <p>In this chapter we’ll explain how these algorithms work and show examples in Spark and Neo4j.
+        In cases where an algorithm is only available in one platform, we’ll provide just that one example or illustrate how you can customize our implementation.</p>
+        
+        <p><a data-type="indexterm" data-primary="All Pairs Shortest Path (APSP) algorithm" id="idm46681373087960"></a><a data-type="indexterm" data-primary="Graph Search algorithms" id="idm46681378688056"></a><a data-type="indexterm" data-primary="Minimum Spanning Tree algorithm" id="idm46681378687384"></a><a data-type="indexterm" data-primary="Random Walk algorithm" id="idm46681378686744"></a><a data-type="indexterm" data-primary="Shortest Path algorithm" id="idm46681378686072"></a><a data-type="indexterm" data-primary="Single Source Shortest Path (SSSP) algorithm" id="idm46681380924408"></a><a data-type="xref" href="#pathfinding-overview-image">Figure&nbsp;4-1</a> shows the key differences between these types of algorithms, and <a data-type="xref" href="#pathfinding-overview-table">Table&nbsp;4-1</a> is a quick reference to what each algorithm computes with an example use.</p>
+        
+        <figure><div id="pathfinding-overview-image" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/gral_rr_0401.png" alt="gral rr 0401" width="1427" height="1699">
+        <h6><span class="label">Figure 4-1. </span>Pathfinding and search algorithms</h6>
+        </div></figure>
+        <table id="pathfinding-overview-table" class="less_space pagebreak-before">
+        <caption><span class="label">Table 4-1. </span>Overview of pathfinding and graph search algorithms</caption>
+        <thead>
+        <tr>
+        <th>Algorithm type</th>
+        <th>What it does</th>
+        <th>Example use</th>
+        <th>Spark example</th>
+        <th>Neo4j example</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><div>
+        <p><a href="#bfs">Breadth First Search</a></p></div></td>
+        <td><div>
+        <p>Traverses a tree structure by fanning out to explore the nearest neighbors and then their sublevel neighbors</p></div></td>
+        <td><div>
+        <p>Locating neighbor nodes in GPS systems to identify nearby places of interest</p></div></td>
+        <td><div>
+        <p>Yes</p></div></td>
+        <td><div>
+        <p>No</p></div></td>
+        </tr>
+        <tr>
+        <td><div>
+        <p><a href="#dfs">Depth First Search</a></p></div></td>
+        <td><div>
+        <p>Traverses a tree structure by exploring as far as possible down each branch before backtracking</p></div></td>
+        <td><div>
+        <p>Discovering an optimal solution path in gaming simulations with hierarchical choices</p></div></td>
+        <td><div>
+        <p>No</p></div></td>
+        <td><div>
+        <p>No</p></div></td>
+        </tr>
+        <tr>
+        <td><div>
+        <p><a href="#shortest_path">Shortest Path</a></p>
+        
+        <p>Variations:
+        <a href="#astar">A*</a>, <a href="#yens">Yen’s</a></p></div></td>
+        <td><div>
+        <p>Calculates the shortest path between a pair of nodes</p></div></td>
+        <td><div>
+        <p>Finding driving directions between two locations</p></div></td>
+        <td><div>
+        <p>Yes</p></div></td>
+        <td><div>
+        <p>Yes</p></div></td>
+        </tr>
+        <tr>
+        <td><div>
+        <p><a href="#all_pairs_shortest_paths">All Pairs Shortest Path</a></p></div></td>
+        <td><div>
+        <p>Calculates the shortest path between <em>all pairs of nodes</em> in the graph</p></div></td>
+        <td><div>
+        <p>Evaluating alternate routes around a traffic jam</p></div></td>
+        <td><div>
+        <p>Yes</p></div></td>
+        <td><div>
+        <p>Yes</p></div></td>
+        </tr>
+        <tr>
+        <td><div>
+        <p><a href="#single_source_shortest_path">Single Source Shortest Path</a></p></div></td>
+        <td><div>
+        <p>Calculates the shorest path between a <em>single root</em> node and <em>all</em> other nodes</p></div></td>
+        <td><div>
+        <p>Least cost routing of phone calls</p></div></td>
+        <td><div>
+        <p>Yes</p></div></td>
+        <td><div>
+        <p>Yes</p></div></td>
+        </tr>
+        <tr>
+        <td><div>
+        <p><a href="#minimum_weight_spanning_tree">Minimum Spanning Tree</a></p></div></td>
+        <td><div>
+        <p>Calculates the path in a connected tree structure with the smallest cost for visiting all nodes</p></div></td>
+        <td><div>
+        <p>Optimizing connected routing, such as laying cable or garbage collection</p></div></td>
+        <td><div>
+        <p>No</p></div></td>
+        <td><div>
+        <p>Yes</p></div></td>
+        </tr>
+        <tr>
+        <td><div>
+        <p><a href="#random_walk">Random Walk</a></p></div></td>
+        <td><div>
+        <p>Returns a list of nodes along a path of specified size by randomly choosing relationships to traverse.</p></div></td>
+        <td><div>
+        <p>Augmenting training for machine learning or data for graph algorithms.</p></div></td>
+        <td><div>
+        <p>No</p></div></td>
+        <td><div>
+        <p>Yes</p></div></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>First we’ll take a look at the dataset for our examples and walk through how to import the data into Apache Spark and Neo4j.
+        For each algorithm, we’ll start with a short description of the algorithm and any pertinent information on how it operates.
+        Most sections also include guidance on when to use related algorithms.
+        Finally, we provide working sample code using the sample dataset at the end of each algorithm section.</p>
+        
+        <p>Let’s get started!</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Example Data: The Transport Graph"><div class="sect1" id="idm46681373003128">
+        <h1>Example Data: The Transport Graph</h1>
+        
+        <p><a data-type="indexterm" data-primary="Graph Search algorithms" data-secondary="transport graph data for" id="ix_ch04-adoc2"></a><a data-type="indexterm" data-primary="Pathfinding algorithms" data-secondary="transport graph data for" id="ix_ch04-adoc3"></a><a data-type="indexterm" data-primary="transport datasets" id="ix_ch04-adoc4"></a>All connected data contains paths between nodes, which is why search and pathfinding are the starting points for graph analytics. Transportation datasets illustrate these relationships in an intuitive and accessible way.
+        The examples in this chapter run against a <a href="http://www.elbruz.org/e-roads/">graph containing a subset of the European road network</a>.
+        You can download the nodes and relationships files from the book’s <a href="https://bit.ly/2FPgGVV">GitHub repository</a>.</p>
+        <table class="less_space pagebreak-before">
+        <caption><span class="label">Table 4-2. </span><em>transport-nodes.csv</em></caption>
+        <thead>
+        <tr>
+        <th>id</th>
+        <th>latitude</th>
+        <th>longitude</th>
+        <th>population</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Amsterdam</p></td>
+        <td><p>52.379189</p></td>
+        <td><p>4.899431</p></td>
+        <td><p>821752</p></td>
+        </tr>
+        <tr>
+        <td><p>Utrecht</p></td>
+        <td><p>52.092876</p></td>
+        <td><p>5.104480</p></td>
+        <td><p>334176</p></td>
+        </tr>
+        <tr>
+        <td><p>Den Haag</p></td>
+        <td><p>52.078663</p></td>
+        <td><p>4.288788</p></td>
+        <td><p>514861</p></td>
+        </tr>
+        <tr>
+        <td><p>Immingham</p></td>
+        <td><p>53.61239</p></td>
+        <td><p>-0.22219</p></td>
+        <td><p>9642</p></td>
+        </tr>
+        <tr>
+        <td><p>Doncaster</p></td>
+        <td><p>53.52285</p></td>
+        <td><p>-1.13116</p></td>
+        <td><p>302400</p></td>
+        </tr>
+        <tr>
+        <td><p>Hoek van Holland</p></td>
+        <td><p>51.9775</p></td>
+        <td><p>4.13333</p></td>
+        <td><p>9382</p></td>
+        </tr>
+        <tr>
+        <td><p>Felixstowe</p></td>
+        <td><p>51.96375</p></td>
+        <td><p>1.3511</p></td>
+        <td><p>23689</p></td>
+        </tr>
+        <tr>
+        <td><p>Ipswich</p></td>
+        <td><p>52.05917</p></td>
+        <td><p>1.15545</p></td>
+        <td><p>133384</p></td>
+        </tr>
+        <tr>
+        <td><p>Colchester</p></td>
+        <td><p>51.88921</p></td>
+        <td><p>0.90421</p></td>
+        <td><p>104390</p></td>
+        </tr>
+        <tr>
+        <td><p>London</p></td>
+        <td><p>51.509865</p></td>
+        <td><p>-0.118092</p></td>
+        <td><p>8787892</p></td>
+        </tr>
+        <tr>
+        <td><p>Rotterdam</p></td>
+        <td><p>51.9225</p></td>
+        <td><p>4.47917</p></td>
+        <td><p>623652</p></td>
+        </tr>
+        <tr>
+        <td><p>Gouda</p></td>
+        <td><p>52.01667</p></td>
+        <td><p>4.70833</p></td>
+        <td><p>70939</p></td>
+        </tr>
+        </tbody>
+        </table>
+        <table>
+        <caption><span class="label">Table 4-3. </span><em>transport-relationships.csv</em></caption>
+        <thead>
+        <tr>
+        <th>src</th>
+        <th>dst</th>
+        <th>relationship</th>
+        <th>cost</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Amsterdam</p></td>
+        <td><p>Utrecht</p></td>
+        <td><p>EROAD</p></td>
+        <td><p>46</p></td>
+        </tr>
+        <tr>
+        <td><p>Amsterdam</p></td>
+        <td><p>Den Haag</p></td>
+        <td><p>EROAD</p></td>
+        <td><p>59</p></td>
+        </tr>
+        <tr>
+        <td><p>Den Haag</p></td>
+        <td><p>Rotterdam</p></td>
+        <td><p>EROAD</p></td>
+        <td><p>26</p></td>
+        </tr>
+        <tr>
+        <td><p>Amsterdam</p></td>
+        <td><p>Immingham</p></td>
+        <td><p>EROAD</p></td>
+        <td><p>369</p></td>
+        </tr>
+        <tr>
+        <td><p>Immingham</p></td>
+        <td><p>Doncaster</p></td>
+        <td><p>EROAD</p></td>
+        <td><p>74</p></td>
+        </tr>
+        <tr>
+        <td><p>Doncaster</p></td>
+        <td><p>London</p></td>
+        <td><p>EROAD</p></td>
+        <td><p>277</p></td>
+        </tr>
+        <tr>
+        <td><p>Hoek van Holland</p></td>
+        <td><p>Den Haag</p></td>
+        <td><p>EROAD</p></td>
+        <td><p>27</p></td>
+        </tr>
+        <tr>
+        <td><p>Felixstowe</p></td>
+        <td><p>Hoek van Holland</p></td>
+        <td><p>EROAD</p></td>
+        <td><p>207</p></td>
+        </tr>
+        <tr>
+        <td><p>Ipswich</p></td>
+        <td><p>Felixstowe</p></td>
+        <td><p>EROAD</p></td>
+        <td><p>22</p></td>
+        </tr>
+        <tr>
+        <td><p>Colchester</p></td>
+        <td><p>Ipswich</p></td>
+        <td><p>EROAD</p></td>
+        <td><p>32</p></td>
+        </tr>
+        <tr>
+        <td><p>London</p></td>
+        <td><p>Colchester</p></td>
+        <td><p>EROAD</p></td>
+        <td><p>106</p></td>
+        </tr>
+        <tr>
+        <td><p>Gouda</p></td>
+        <td><p>Rotterdam</p></td>
+        <td><p>EROAD</p></td>
+        <td><p>25</p></td>
+        </tr>
+        <tr>
+        <td><p>Gouda</p></td>
+        <td><p>Utrecht</p></td>
+        <td><p>EROAD</p></td>
+        <td><p>35</p></td>
+        </tr>
+        <tr>
+        <td><p>Den Haag</p></td>
+        <td><p>Gouda</p></td>
+        <td><p>EROAD</p></td>
+        <td><p>32</p></td>
+        </tr>
+        <tr>
+        <td><p>Hoek van Holland</p></td>
+        <td><p>Rotterdam</p></td>
+        <td><p>EROAD</p></td>
+        <td><p>33</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p class="pagebreak-before"><a data-type="xref" href="#transport-graph-image">Figure&nbsp;4-2</a> shows the target graph that we want to construct.</p>
+        
+        <figure><div id="transport-graph-image" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/gral_0402.png" alt="gral 0402" width="3249" height="2139">
+        <h6><span class="label">Figure 4-2. </span>The transport graph</h6>
+        </div></figure>
+        
+        <p>For simplicity we consider the graph in <a data-type="xref" href="#transport-graph-image">Figure&nbsp;4-2</a> to be undirected because most roads between cities are bidirectional.
+        We’d get slightly different results if we evaluated the graph as directed because of the small number of one-way streets, but the overall approach remains similar.
+        However, both Spark and Neo4j operate on directed graphs.
+        In cases like this where we want to work with undirected graphs (e.g., bidirectional roads), there is an easy way to accomplish that:</p>
+        
+        <ul>
+        <li>
+        <p>For Spark, we’ll create two relationships for each row in <em>transport-relationships.csv</em>—one going from <code>dst</code> to <code>src</code> and one from <code>src</code> to <code>dst</code>.</p>
+        </li>
+        <li>
+        <p>For Neo4j, we’ll create a single relationship and then ignore the relationship direction when we run the algorithms.</p>
+        </li>
+        </ul>
+        
+        <p>Having understood those little modeling workarounds, we can now get on with loading graphs into Spark and Neo4j from the example CSV files.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="less_space pagebreak-before" data-pdf-bookmark="Importing the Data into Apache Spark"><div class="sect2" id="idm46681372905896">
+        <h2>Importing the Data into Apache Spark</h2>
+        
+        <p><a data-type="indexterm" data-primary="Apache Spark" data-secondary="importing transport dataset into" id="idm46681372904312"></a><a data-type="indexterm" data-primary="transport datasets" data-secondary="importing into Apache Spark" id="idm46681372903368"></a>Starting with Spark, we’ll first import the packages we need from Spark and the GraphFrames package:</p>
+        
+        <pre data-type="programlisting" data-code-language="python"><code class="kn">from</code> <code class="nn">pyspark.sql.types</code> <code class="kn">import</code> <code class="o">*</code>
+        <code class="kn">from</code> <code class="nn">graphframes</code> <code class="kn">import</code> <code class="o">*</code></pre>
+        
+        <p>The following function creates a GraphFrame from the example CSV files:</p>
+        
+        <pre data-type="programlisting" data-code-language="python"><code class="k">def</code> <code class="nf">create_transport_graph</code><code class="p">():</code>
+            <code class="n">node_fields</code> <code class="o">=</code> <code class="p">[</code>
+                <code class="n">StructField</code><code class="p">(</code><code class="s2">"id"</code><code class="p">,</code> <code class="n">StringType</code><code class="p">(),</code> <code class="bp">True</code><code class="p">),</code>
+                <code class="n">StructField</code><code class="p">(</code><code class="s2">"latitude"</code><code class="p">,</code> <code class="n">FloatType</code><code class="p">(),</code> <code class="bp">True</code><code class="p">),</code>
+                <code class="n">StructField</code><code class="p">(</code><code class="s2">"longitude"</code><code class="p">,</code> <code class="n">FloatType</code><code class="p">(),</code> <code class="bp">True</code><code class="p">),</code>
+                <code class="n">StructField</code><code class="p">(</code><code class="s2">"population"</code><code class="p">,</code> <code class="n">IntegerType</code><code class="p">(),</code> <code class="bp">True</code><code class="p">)</code>
+            <code class="p">]</code>
+            <code class="n">nodes</code> <code class="o">=</code> <code class="n">spark</code><code class="o">.</code><code class="n">read</code><code class="o">.</code><code class="n">csv</code><code class="p">(</code><code class="s2">"data/transport-nodes.csv"</code><code class="p">,</code> <code class="n">header</code><code class="o">=</code><code class="bp">True</code><code class="p">,</code>
+                                   <code class="n">schema</code><code class="o">=</code><code class="n">StructType</code><code class="p">(</code><code class="n">node_fields</code><code class="p">))</code>
+        
+            <code class="n">rels</code> <code class="o">=</code> <code class="n">spark</code><code class="o">.</code><code class="n">read</code><code class="o">.</code><code class="n">csv</code><code class="p">(</code><code class="s2">"data/transport-relationships.csv"</code><code class="p">,</code> <code class="n">header</code><code class="o">=</code><code class="bp">True</code><code class="p">)</code>
+            <code class="n">reversed_rels</code> <code class="o">=</code> <code class="p">(</code><code class="n">rels</code><code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"newSrc"</code><code class="p">,</code> <code class="n">rels</code><code class="o">.</code><code class="n">dst</code><code class="p">)</code>
+                             <code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"newDst"</code><code class="p">,</code> <code class="n">rels</code><code class="o">.</code><code class="n">src</code><code class="p">)</code>
+                             <code class="o">.</code><code class="n">drop</code><code class="p">(</code><code class="s2">"dst"</code><code class="p">,</code> <code class="s2">"src"</code><code class="p">)</code>
+                             <code class="o">.</code><code class="n">withColumnRenamed</code><code class="p">(</code><code class="s2">"newSrc"</code><code class="p">,</code> <code class="s2">"src"</code><code class="p">)</code>
+                             <code class="o">.</code><code class="n">withColumnRenamed</code><code class="p">(</code><code class="s2">"newDst"</code><code class="p">,</code> <code class="s2">"dst"</code><code class="p">)</code>
+                             <code class="o">.</code><code class="n">select</code><code class="p">(</code><code class="s2">"src"</code><code class="p">,</code> <code class="s2">"dst"</code><code class="p">,</code> <code class="s2">"relationship"</code><code class="p">,</code> <code class="s2">"cost"</code><code class="p">))</code>
+        
+            <code class="n">relationships</code> <code class="o">=</code> <code class="n">rels</code><code class="o">.</code><code class="n">union</code><code class="p">(</code><code class="n">reversed_rels</code><code class="p">)</code>
+        
+            <code class="k">return</code> <code class="n">GraphFrame</code><code class="p">(</code><code class="n">nodes</code><code class="p">,</code> <code class="n">relationships</code><code class="p">)</code></pre>
+        
+        <p>Loading the nodes is easy, but for the relationships we need to do a little preprocessing so that we can create each relationship twice.</p>
+        
+        <p>Now let’s call that function:</p>
+        
+        <pre data-type="programlisting" data-code-language="python"><code class="n">g</code> <code class="o">=</code> <code class="n">create_transport_graph</code><code class="p">()</code></pre>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Importing the Data into Neo4j"><div class="sect2" id="idm46681372623880">
+        <h2>Importing the Data into Neo4j</h2>
+        
+        <p><a data-type="indexterm" data-primary="Neo4j" data-secondary="importing transport dataset into" id="idm46681372622632"></a><a data-type="indexterm" data-primary="transport datasets" data-secondary="importing into Neo4j" id="idm46681372620488"></a>Now for Neo4j.
+        We’ll start by creating a database that we’ll use for the examples in this chapter:</p>
+        
+        <pre data-type="programlisting" data-code-language="cypher"><code class="n">:</code><code class="n">u</code><code class="n">s</code><code class="n">e</code><code class="n"> </code><code class="n">s</code><code class="n">y</code><code class="n">s</code><code class="n">t</code><code class="n">e</code><code class="n">m</code><code class="n">;</code><code class="n"> </code><a class="co" id="co_pathfinding_and_graph_search_algorithms_CO1-1" href="#callout_pathfinding_and_graph_search_algorithms_CO1-1"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/1.png" alt="1" width="12" height="12"></a><code class="n">
+        </code><code class="k">CREATE </code><code class="n">D</code><code class="n">A</code><code class="n">T</code><code class="n">A</code><code class="n">B</code><code class="n">A</code><code class="n">S</code><code class="n">E</code><code class="n"> </code><code class="n">c</code><code class="n">h</code><code class="n">a</code><code class="n">p</code><code class="n">t</code><code class="n">e</code><code class="n">r</code><code class="n">4</code><code class="n">;</code><code class="n"> </code><a class="co" id="co_pathfinding_and_graph_search_algorithms_CO1-2" href="#callout_pathfinding_and_graph_search_algorithms_CO1-2"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/2.png" alt="2" width="12" height="12"></a><code class="n">
+        </code><code class="n">:</code><code class="n">u</code><code class="n">s</code><code class="n">e</code><code class="n"> </code><code class="n">c</code><code class="n">h</code><code class="n">a</code><code class="n">p</code><code class="n">t</code><code class="n">e</code><code class="n">r</code><code class="n">4</code><code class="n">;</code><code class="n"> </code><a class="co" id="co_pathfinding_and_graph_search_algorithms_CO1-3" href="#callout_pathfinding_and_graph_search_algorithms_CO1-3"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/3.png" alt="3" width="12" height="12"></a></pre>
+        <dl class="calloutlist">
+        <dt><a class="co" id="callout_pathfinding_and_graph_search_algorithms_CO1-1" href="#co_pathfinding_and_graph_search_algorithms_CO1-1"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/1.png" alt="1" width="12" height="12"></a></dt>
+        <dd><p>Switch to the system database.</p></dd>
+        <dt><a class="co" id="callout_pathfinding_and_graph_search_algorithms_CO1-2" href="#co_pathfinding_and_graph_search_algorithms_CO1-2"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/2.png" alt="2" width="12" height="12"></a></dt>
+        <dd><p>Create a new database with the name <code>chapter4</code>. This operation is asynchronous so we may have to wait a couple of seconds before switching to the database.</p></dd>
+        <dt><a class="co" id="callout_pathfinding_and_graph_search_algorithms_CO1-3" href="#co_pathfinding_and_graph_search_algorithms_CO1-3"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/3.png" alt="3" width="12" height="12"></a></dt>
+        <dd><p>Switch to the <code>chapter4</code> database.</p></dd>
+        </dl>
+        
+        <p>Now let’s load the nodes:</p>
+        
+        <pre data-type="programlisting" data-code-language="cypher"><code class="k">WITH</code><code class="n"> </code><code class="s1">'https://github.com/neo4j-graph-analytics/book/raw/master/data/'</code><code class="n"> </code><code class="k">AS </code><code class="n">base</code>
+        <code class="k">WITH </code><code class="n">base + </code><code class="s1">'transport-nodes.csv'</code><code class="n"> </code><code class="k">AS </code><code class="n">uri</code>
+        <code class="n">LOAD CSV </code><code class="k">WITH </code><code class="n">HEADERS FROM uri  </code><code class="k">AS </code><code class="n">row</code>
+        <code class="n">MERGE (place:Place {</code><code class="nf">id</code><code class="n">:row.</code><code class="nf">id</code><code class="n">})</code>
+        <code class="k">SET </code><code class="n">place.latitude = toFloat(row.latitude),</code>
+        <code class="n">    place.longitude = toFloat(row.longitude),</code>
+        <code class="n">    place.population = toInteger(row.population);</code></pre>
+        
+        <p>And now the relationships:</p>
+        
+        <pre data-type="programlisting" data-code-language="cypher"><code class="k">WITH</code><code class="n"> </code><code class="s1">'https://github.com/neo4j-graph-analytics/book/raw/master/data/'</code><code class="n"> </code><code class="k">AS </code><code class="n">base</code>
+        <code class="k">WITH </code><code class="n">base + </code><code class="s1">'transport-relationships.csv'</code><code class="n"> </code><code class="k">AS </code><code class="n">uri</code>
+        <code class="n">LOAD CSV </code><code class="k">WITH </code><code class="n">HEADERS FROM uri </code><code class="k">AS </code><code class="n">row</code>
+        <code class="k">MATCH</code><code class="n"> (origin:Place {</code><code class="nf">id</code><code class="n">: row.src})</code>
+        <code class="k">MATCH</code><code class="n"> (destination:Place {</code><code class="nf">id</code><code class="n">: row.dst})</code>
+        <code class="n">MERGE (origin)-[:EROAD {distance: toInteger(row.cost)}]-&gt;(destination);</code></pre>
+        
+        <p>Although we’re storing directed relationships, we’ll ignore the direction when we execute algorithms later in the chapter<a data-type="indexterm" data-startref="ix_ch04-adoc4" id="idm46681372443432"></a><a data-type="indexterm" data-startref="ix_ch04-adoc3" id="idm46681372442824"></a><a data-type="indexterm" data-startref="ix_ch04-adoc2" id="idm46681372407848"></a>.<a data-type="indexterm" data-startref="ix_ch04-adoc1" id="idm46681372407048"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Breadth First Search"><div class="sect1" id="bfs">
+        <h1>Breadth First Search</h1>
+        
+        <p><a data-type="indexterm" data-primary="Breadth First Search (BFS)" id="ix_ch04-adoc5"></a><a data-type="indexterm" data-primary="Graph Search algorithms" data-secondary="Breadth First Search" id="ix_ch04-adoc6"></a><a data-type="indexterm" data-primary="graph traversal algorithms" data-secondary="Breadth First Search" id="ix_ch04-adoc7"></a>Breadth First Search (BFS) is one of the fundamental graph traversal algorithms.
+        It starts from a chosen node and explores all of its neighbors at one hop away before visiting all the neighbors at two hops away, and so on.</p>
+        
+        <p><a data-type="indexterm" data-primary="Moore, Edward F." id="idm46681372400696"></a>The algorithm was first published in 1959 by Edward F. Moore, who used it to find the shortest path out of a maze.
+        <a data-type="indexterm" data-primary="Lee, C. Y." id="idm46681372399736"></a>It was then developed into a wire routing algorithm by C. Y. Lee in 1961, as described in <a href="https://bit.ly/2U1jucF">“An Algorithm for Path Connections and Its Applications”</a>.</p>
+        
+        <p>BFS is most commonly used as the basis for other more goal-oriented algorithms.
+        For example, <a href="#shortest_path">Shortest Path</a>, <a href="ch06.html#weakly_connected_components">Connected Components</a>, and <a href="ch05.html#closeness_centrality">Closeness Centrality</a> all use the BFS algorithm.
+        It can also be used to find the shortest path between nodes.</p>
+        
+        <p><a data-type="xref" href="#den-haag-breadth-first-image">Figure&nbsp;4-3</a> shows the order in which we would visit the nodes of our transport graph if we were performing a breadth first search that started from the Dutch city, Den Haag (in English, The Hague). The numbers next to the city name indicate the order in which each node is visited.</p>
+        
+        <figure><div id="den-haag-breadth-first-image" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/gral_rr_0403.png" alt="gral rr 0403" width="1426" height="1565">
+        <h6><span class="label">Figure 4-3. </span>Breadth First Search starting from Den Haag. Node numbers indicate the order traversed.</h6>
+        </div></figure>
+        
+        <p>We first visit all of Den Haag’s direct neighbors, before visiting their neighbors, and their neighbors’ neighbors, until we’ve run out of relationships to traverse.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Breadth First Search with Apache Spark"><div class="sect2" id="bfs-spark">
+        <h2>Breadth First Search with Apache Spark</h2>
+        
+        <p><a data-type="indexterm" data-primary="Apache Spark" data-secondary="Breadth First Search with" id="idm46681372389576"></a>Spark’s implementation of the Breadth First Search algorithm finds the shortest path between two nodes by the number of relationships (i.e., hops) between them. You can explicitly name your target node or add criteria to be met.</p>
+        
+        <p>For example, we can use the <code>bfs</code> function to find the first medium-sized (by European standards) city that has a population of between 100,000 and 300,000 people.
+        Let’s first check which places have a population matching those criteria:</p>
+        
+        <pre data-type="programlisting" data-code-language="python"><code class="p">(</code><code class="n">g</code><code class="o">.</code><code class="n">vertices</code>
+         <code class="o">.</code><code class="n">filter</code><code class="p">(</code><code class="s2">"population &gt; 100000 and population &lt; 300000"</code><code class="p">)</code>
+         <code class="o">.</code><code class="n">sort</code><code class="p">(</code><code class="s2">"population"</code><code class="p">)</code>
+         <code class="o">.</code><code class="n">show</code><code class="p">())</code></pre>
+        
+        <p>This is the output we’ll see:</p>
+        <table>
+        
+        <thead>
+        <tr>
+        <th>id</th>
+        <th>latitude</th>
+        <th>longitude</th>
+        <th>population</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Colchester</p></td>
+        <td><p>51.88921</p></td>
+        <td><p>0.90421</p></td>
+        <td><p>104390</p></td>
+        </tr>
+        <tr>
+        <td><p>Ipswich</p></td>
+        <td><p>52.05917</p></td>
+        <td><p>1.15545</p></td>
+        <td><p>133384</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>There are only two places matching our criteria, and we’d expect to reach Ipswich first based on a breadth first search.</p>
+        
+        <p>The following code finds the shortest path from Den Haag to a medium-sized city:</p>
+        
+        <pre data-type="programlisting" data-code-language="python"><code class="n">from_expr</code> <code class="o">=</code> <code class="s2">"id='Den Haag'"</code>
+        <code class="n">to_expr</code> <code class="o">=</code> <code class="s2">"population &gt; 100000 and population &lt; 300000 and id &lt;&gt; 'Den Haag'"</code>
+        <code class="n">result</code> <code class="o">=</code> <code class="n">g</code><code class="o">.</code><code class="n">bfs</code><code class="p">(</code><code class="n">from_expr</code><code class="p">,</code> <code class="n">to_expr</code><code class="p">)</code></pre>
+        
+        <p><code>result</code> contains columns that describe the nodes and relationships between the two cities.
+        We can run the following code to see the list of columns returned:</p>
+        
+        <pre data-type="programlisting" data-code-language="python"><code class="k">print</code><code class="p">(</code><code class="n">result</code><code class="o">.</code><code class="n">columns</code><code class="p">)</code></pre>
+        
+        <p>This is the output we’ll see:</p>
+        
+        <pre data-type="programlisting">['from', 'e0', 'v1', 'e1', 'v2', 'e2', 'to']</pre>
+        
+        <p>Columns beginning with <code>e</code> represent relationships (edges) and columns beginning with <code>v</code> represent nodes (vertices).
+        We’re only interested in the nodes, so let’s filter out any columns that begin with <code>e</code> from the resulting DataFrame:</p>
+        
+        <pre data-type="programlisting" data-code-language="python"><code class="n">columns</code> <code class="o">=</code> <code class="p">[</code><code class="n">column</code> <code class="k">for</code> <code class="n">column</code> <code class="ow">in</code> <code class="n">result</code><code class="o">.</code><code class="n">columns</code> <code class="k">if</code> <code class="ow">not</code> <code class="n">column</code><code class="o">.</code><code class="n">startswith</code><code class="p">(</code><code class="s2">"e"</code><code class="p">)]</code>
+        <code class="n">result</code><code class="o">.</code><code class="n">select</code><code class="p">(</code><code class="n">columns</code><code class="p">)</code><code class="o">.</code><code class="n">show</code><code class="p">()</code></pre>
+        
+        <p>If we run the code in pyspark we’ll see this output:</p>
+        <table>
+        
+        <thead>
+        <tr>
+        <th>from</th>
+        <th>v1</th>
+        <th>v2</th>
+        <th>to</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>[Den Haag, 52.078…</p></td>
+        <td><p>[Hoek van Holland…</p></td>
+        <td><p>[Felixstowe, 51.9…</p></td>
+        <td><p>[Ipswich, 52.0591…</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>As expected, the <code>bfs</code> algorithm returns Ipswich!
+        Remember that this function is satisfied when it finds the first match, and as you can see in <a data-type="xref" href="#den-haag-breadth-first-image">Figure&nbsp;4-3</a>, Ipswich is evaluated before Colchester.<a data-type="indexterm" data-startref="ix_ch04-adoc7" id="idm46681372211848"></a><a data-type="indexterm" data-startref="ix_ch04-adoc6" id="idm46681372211176"></a><a data-type="indexterm" data-startref="ix_ch04-adoc5" id="idm46681372210504"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Depth First Search"><div class="sect1" id="dfs">
+        <h1>Depth First Search</h1>
+        
+        <p><a data-type="indexterm" data-primary="Depth First Search (DFS)" id="ix_ch04-adoc8"></a><a data-type="indexterm" data-primary="Graph Search algorithms" data-secondary="Depth First Search" id="ix_ch04-adoc9"></a><a data-type="indexterm" data-primary="graph traversal algorithms" data-secondary="Depth First Search" id="ix_ch04-adoc10"></a>Depth First Search (DFS) is the other fundamental graph traversal algorithm.
+        It starts from a chosen node, picks one of its neighbors, and then traverses as far as it can along that path before backtracking.</p>
+        
+        <p><a data-type="indexterm" data-primary="Trémaux, Charles Pierre" id="idm46681372204200"></a>DFS was originally invented by French mathematician Charles Pierre Trémaux as a strategy for solving mazes. It provides a useful tool to simulate possible paths for scenario modeling. <a data-type="xref" href="#den-haag-depth-first-image">Figure&nbsp;4-4</a> shows the order in which we would visit the nodes of our transport graph if we were performing a DFS that started from Den Haag.</p>
+        
+        <figure><div id="den-haag-depth-first-image" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/gral_rr_0404.png" alt="gral rr 0404" width="900" height="987">
+        <h6><span class="label">Figure 4-4. </span>Depth First Search starting from Den Haag. Node numbers indicate the order traversed.</h6>
+        </div></figure>
+        
+        <p>Notice how different the node order is compared to BFS. For this DFS, we start by traversing from Den Haag to Amsterdam, and are then able to get to every other node in the graph without needing to backtrack at all!</p>
+        
+        <p>We can see how search algorithms lay the groundwork for moving through graphs. Now let’s look at the pathfinding algorithms that find the cheapest path in terms of the number of hops or weight.
+        Weights can be anything measured, such as time, distance, capacity, or cost.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm46681372198856">
+        <h5>Two Special Paths/Cycles</h5>
+        <p><a data-type="indexterm" data-primary="Eulerian path" id="idm46681372197448"></a>There are two special paths in graph analysis that are worth noting. First, an <em>Eulerian path</em> is one where every relationship is visited exactly once. <a data-type="indexterm" data-primary="Hamiltonian path" id="idm46681372196072"></a>Second, a <em>Hamiltonian path</em> is one where every node is visited exactly once. A path can be both Eulerian and Hamiltonian, and if you start and finish at the same node it’s considered a <em>cycle</em> or <em>tour</em>. A visual comparison is shown in <a data-type="xref" href="#Eulerian-Hamiltonian">Figure&nbsp;4-5</a>.</p>
+        
+        <figure><div id="Eulerian-Hamiltonian" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/gral_rr_0405.png" alt="gral rr 0405" width="1440" height="601">
+        <h6><span class="label">Figure 4-5. </span>Eulerian and Hamiltonian cycles have a special historical significance.</h6>
+        </div></figure>
+        
+        <p><a data-type="indexterm" data-primary="Bridges of Königsberg problem" id="idm46681372166904"></a><a data-type="indexterm" data-primary="Königsberg Bridges problem" id="idm46681372166296"></a><a data-type="indexterm" data-primary="Seven Bridges of Königsberg problem" id="idm46681372165688"></a>The Königsberg bridges problem from <a data-type="xref" href="ch01.html#introduction_chapter">Chapter&nbsp;1</a> was searching for an Eulerian cycle. It’s easy to see how this applies to routing scenarios such as directing snowplows and mail delivery. However, Eulerian paths are also used by other algorithms in processing data in tree structures and are simpler mathematically to study than other cycles.</p>
+        
+        <p><a data-type="indexterm" data-primary="Traveling Salesman Problem (TSP)" id="idm46681372163640"></a>The Hamiltonian cycle is best known from its relation to the <em>Traveling Salesman Problem</em> (TSP), which asks, “What’s the shortest possible route for a salesperson to visit each of their assigned cities and return to the origin city?” Although seemingly similar to an Eulerian tour, the TSP is computationally more intensive with approximation alternatives. It’s used in a wide variety of planning, logistics, and optimization problems<a data-type="indexterm" data-startref="ix_ch04-adoc10" id="idm46681372162056"></a><a data-type="indexterm" data-startref="ix_ch04-adoc9" id="idm46681372161416"></a><a data-type="indexterm" data-startref="ix_ch04-adoc8" id="idm46681372160744"></a>.<a data-type="indexterm" data-startref="ix_ch04-adoc0" id="idm46681372159944"></a></p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Shortest Path"><div class="sect1" id="shortest_path">
+        <h1>Shortest Path</h1>
+        
+        <p>The <a data-type="indexterm" data-primary="Pathfinding algorithms" data-secondary="Shortest Path" id="ix_ch04-adoc12"></a><a data-type="indexterm" data-primary="Shortest Path algorithm" id="ix_ch04-adoc13"></a>Shortest Path algorithm calculates the shortest (weighted) path between a pair of nodes.
+        It’s useful for user interactions and dynamic workflows because it works in real time.</p>
+        
+        <p>Pathfinding has a history dating back to the 19th century and is considered to be a classic graph problem.
+        It gained prominence in the early 1950s in the context of <span class="keep-together">alternate</span> routing; that is, finding the second-shortest route if the shortest route is blocked.
+        <a data-type="indexterm" data-primary="Dijkstra, Edsger" id="idm46681372153576"></a>In 1956, Edsger Dijkstra created the best-known of these algorithms.</p>
+        
+        <p>Dijkstra’s Shortest Path algorithm operates by first finding the lowest-weight relationship from the start node to directly connected nodes.
+        It keeps track of those weights and moves to the “closest” node. It then performs the same calculation, but now as a cumulative total from the start node.
+        The algorithm continues to do this, evaluating a “wave” of cumulative weights and always choosing the lowest weighted cumulative path to advance along, until it reaches the destination node.</p>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p><a data-type="indexterm" data-primary="weight (term)" id="idm46681372150952"></a>You’ll notice in graph analytics the use of the terms <em>weight</em>, <em>cost</em>, <em>distance</em>, and <em>hop</em> when describing relationships and paths.
+        “Weight” is the numeric value of a particular property of a relationship.
+        <a data-type="indexterm" data-primary="costs" id="idm46681372147848"></a>“Cost” is used similarly, but we’ll see it more often when considering the total weight of a path.</p>
+        
+        <p><a data-type="indexterm" data-primary="distance (term)" id="idm46681372146760"></a>“Distance” is often used within an algorithm as the name of the relationship property that indicates the cost of traversing between a pair of nodes. It’s not required that this be an actual physical measure of distance. <a data-type="indexterm" data-primary="hop (term)" id="idm46681372145688"></a>“Hop” is commonly used to express the number of relationships between two nodes. You may see some of these terms combined, as in “It’s a five-hop distance to London” or “That’s the lowest cost for the distance.”</p>
+        </div>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="When Should I Use Shortest Path?"><div class="sect2" id="idm46681372144392">
+        <h2>When Should I Use Shortest Path?</h2>
+        
+        <p><a data-type="indexterm" data-primary="Shortest Path algorithm" data-secondary="when to use" id="idm46681372143080"></a>Use Shortest Path to find optimal routes between a pair of nodes, based on either the number of hops or any weighted relationship value.
+        For example, it can provide real-time answers about degrees of separation, the shortest distance between points, or the least expensive route.
+        You can also use this algorithm to simply explore the connections between particular nodes.</p>
+        
+        <p>Example use cases include:</p>
+        
+        <ul>
+        <li>
+        <p>Finding directions between locations. Web-mapping tools such as Google Maps use the Shortest Path algorithm, or a close variant, to provide driving directions.</p>
+        </li>
+        <li>
+        <p>Finding the degrees of separation between people in social networks. For example, when you view someone’s profile on LinkedIn, it will indicate how many people separate you in the graph, as well as listing your mutual connections.</p>
+        </li>
+        <li>
+        <p><a data-type="indexterm" data-primary="Bacon number" id="idm46681372138024"></a>Finding the number of degrees of separation between an actor and Kevin Bacon based on the movies they’ve appeared in  (the <em>Bacon Number</em>).
+        An example of this can be seen on the <a href="https://oracleofbacon.org">Oracle of Bacon website</a>.
+        <a href="https://www.oakland.edu/enp">The Erdös Number Project</a> provides a similar graph analysis based on collaboration with <a data-type="indexterm" data-primary="Erdös, Paul" id="idm46681372135160"></a>Paul Erdös, one of the most prolific mathematicians of the twentieth century.</p>
+        </li>
+        </ul>
+        <div data-type="tip"><h6>Tip</h6>
+        <p><a data-type="indexterm" data-primary="negative weights" id="idm46681372133176"></a>Dijkstra’s algorithm does not support negative weights.
+        The algorithm assumes that adding a relationship to a path can never make a path shorter—an invariant that would be violated with negative weights.</p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Shortest Path with Neo4j"><div class="sect2" id="shortest-path-neo4j">
+        <h2>Shortest Path with Neo4j</h2>
+        
+        <p><a data-type="indexterm" data-primary="Neo4j" data-secondary="Shortest Path algorithm (unweighted)" id="ix_ch04-adoc14"></a><a data-type="indexterm" data-primary="Neo4j Algorithms library" data-secondary="Shortest Path (unweighted)" id="ix_ch04-adoc15"></a><a data-type="indexterm" data-primary="Shortest Path algorithm" data-secondary="with Neo4j (unweighted)" id="ix_ch04-adoc16"></a><a data-type="indexterm" data-primary="unweighted shortest paths" id="ix_ch04-adoc17"></a>The Neo4j Graph Data Science library has a built-in procedure that we can use to compute both unweighted and weighted shortest paths.
+        Let’s first learn how to compute unweighted shortest paths.</p>
+        
+        <p>Neo4j’s Shortest Path algorithm takes in a config map with the following keys:</p>
+        <dl>
+        <dt><code>startNode</code></dt>
+        <dd>
+        <p>The node where our shortest path search begins.</p>
+        </dd>
+        <dt><code>endNode</code></dt>
+        <dd>
+        <p>The node where our shortest path search ends.</p>
+        </dd>
+        <dt><code>nodeProjection</code></dt>
+        <dd>
+        <p>Enables the mapping of specific kinds of nodes into the in-memory graph. We can declare one or more node labels.</p>
+        </dd>
+        <dt><code>relationshipProjection</code></dt>
+        <dd>
+        <p>Enables the mapping of relationship types into the in-memory graph. We can declare one or more relationship types along with direction and properties.</p>
+        </dd>
+        <dt><code>relationshipWeightProperty</code></dt>
+        <dd>
+        <p>The relationship property that indicates the cost of traversing between a pair of nodes. The cost is the number of kilometers between two locations.</p>
+        </dd>
+        </dl>
+        
+        <p>To have Neo4j’s Shortest Path algorithm ignore weights we won’t set the <code>relationshipWeightProperty</code> key.
+        The algorithm will then assume a default weight of <code>1.0</code> for each relationship.</p>
+        
+        <p>The following query computes the unweighted shortest path from Amsterdam to London:</p>
+        
+        <pre data-type="programlisting" data-code-language="cypher"><code class="k">MATCH</code><code class="n"> (source:Place {</code><code class="nf">id</code><code class="n">: </code><code class="s2">"Amsterdam"</code><code class="n">}),</code>
+        <code class="n">      (destination:Place {</code><code class="nf">id</code><code class="n">: </code><code class="s2">"London"</code><code class="n">})</code>
+        
+        <code class="n">CALL gds.alpha.shortestPath.stream({</code>
+        <code class="n">  startNode: source,</code>
+        <code class="n">  endNode: destination,</code>
+        <code class="n">  nodeProjection: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">  relationshipProjection: {</code>
+        <code class="n">    </code><code class="nf">all</code><code class="n">: {</code>
+        <code class="n">      </code><code class="nf">type</code><code class="n">: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">      orientation:  </code><code class="s2">"UNDIRECTED"</code><code class="n"></code>
+        <code class="n">    }</code>
+        <code class="n">  }</code>
+        <code class="n">})</code>
+        <code class="n">YIELD nodeId, cost</code>
+        <code class="k">RETURN </code><code class="n">gds.util.asNode(nodeId).</code><code class="nf">id </code><code class="k">AS </code><code class="n">place, cost;</code></pre>
+        
+        <p>In this query we are passing <code>nodeProjection: "*"</code>, which means that all node labels should be considered.
+        The <code>relationshipProjection</code> is a bit more complicated.
+        We’re using the advanced configuration mode, which enables a more flexible definition of the relationship types to consider during the traversal.
+        Let’s break down the values that we passed in:</p>
+        <dl>
+        <dt><code>type: "*"</code></dt>
+        <dd>
+        <p>All relationship types should be considered.</p>
+        </dd>
+        <dt><code>orientation: "UNDIRECTED"</code></dt>
+        <dd>
+        <p>Each relationship in the underlying graph is projected in both directions.</p>
+        </dd>
+        </dl>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p>More detailed documentation about node and relationship projections can be found in the <a href="https://neo4j.com/docs/graph-data-science/current/management-ops/native-projection/" target="_blank">Native Projection chapter</a> of the Graph Data Science user manual.</p>
+        </div>
+        
+        <p>This query returns the following output:</p>
+        <table>
+        
+        <thead>
+        <tr>
+        <th>place</th>
+        <th>cost</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Amsterdam</p></td>
+        <td><p>0.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Immingham</p></td>
+        <td><p>1.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Doncaster</p></td>
+        <td><p>2.0</p></td>
+        </tr>
+        <tr>
+        <td><p>London</p></td>
+        <td><p>3.0</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>Here, the cost is the cumulative total for relationships (or hops). This is the same path as we see using Breadth First Search in Spark.</p>
+        
+        <p>We could even work out the total distance of following this path by writing a bit of postprocessing Cypher.
+        The following procedure calculates the shortest unweighted path and then works out what the actual cost of that path would be:</p>
+        
+        <pre data-type="programlisting" data-code-language="cypher"><code class="k">MATCH</code><code class="n"> (source:Place {</code><code class="nf">id</code><code class="n">: </code><code class="s2">"Amsterdam"</code><code class="n">}),</code>
+        <code class="n">      (destination:Place {</code><code class="nf">id</code><code class="n">: </code><code class="s2">"London"</code><code class="n">})</code>
+        
+        <code class="n">CALL gds.alpha.shortestPath.stream({</code>
+        <code class="n">  startNode: source,</code>
+        <code class="n">  endNode: destination,</code>
+        <code class="n">  nodeProjection: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">  relationshipProjection: {</code>
+        <code class="n">    </code><code class="nf">all</code><code class="n">: {</code>
+        <code class="n">      </code><code class="nf">type</code><code class="n">: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">      orientation:  </code><code class="s2">"UNDIRECTED"</code><code class="n"></code>
+        <code class="n">    }</code>
+        <code class="n">  }</code>
+        <code class="n">})</code>
+        <code class="n">YIELD nodeId, cost</code>
+        
+        <code class="k">WITH </code><code class="nf">collect</code><code class="n">(gds.util.asNode(nodeId)) </code><code class="k">AS </code><code class="n">path</code>
+        <code class="n">UNWIND </code><code class="nf">range</code><code class="n">(0, size(path)-1) </code><code class="k">AS </code><code class="n">index</code>
+        <code class="k">WITH </code><code class="n">path[index] </code><code class="k">AS </code><code class="n">current, path[index+1] </code><code class="k">AS </code><code class="n">next</code>
+        <code class="k">WITH </code><code class="n">current, next, [(current)-[r:EROAD]-(next) | r.distance][0] </code><code class="k">AS </code><code class="n">distance</code>
+        
+        <code class="k">WITH </code><code class="nf">collect</code><code class="n">({current: current, next:next, distance: distance}) </code><code class="k">AS </code><code class="n">stops</code>
+        <code class="n">UNWIND </code><code class="nf">range</code><code class="n">(0, size(stops)-1) </code><code class="k">AS </code><code class="n">index</code>
+        <code class="k">WITH </code><code class="n">stops[index] </code><code class="k">AS </code><code class="n">location, stops, index</code>
+        <code class="k">RETURN </code><code class="n">location.current.</code><code class="nf">id </code><code class="k">AS </code><code class="n">place,</code>
+        <code class="n">       </code><code class="k">reduce</code><code class="n">(acc=0.0,</code>
+        <code class="n">              distance </code><code class="k">in</code><code class="n"> [stop </code><code class="k">in </code><code class="n">stops[0..index] | stop.distance] |</code>
+        <code class="n">              acc + distance) </code><code class="k">AS </code><code class="n">cost;</code></pre>
+        
+        <p>If the previous code feels a bit unwieldy, notice that the tricky part is figuring out how to massage the data to include the cost over the whole journey. This is helpful to keep in mind when we need the cumulative path cost.</p>
+        
+        <p>The query returns the following result:</p>
+        <table>
+        
+        <thead>
+        <tr>
+        <th>place</th>
+        <th>cost</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Amsterdam</p></td>
+        <td><p>0.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Immingham</p></td>
+        <td><p>369.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Doncaster</p></td>
+        <td><p>443.0</p></td>
+        </tr>
+        <tr>
+        <td><p>London</p></td>
+        <td><p>720.0</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p><a data-type="xref" href="#amsterdam-london-image">Figure&nbsp;4-6</a> shows the unweighted shortest path from Amsterdam to London, routing us through the fewest number of cities.
+        It has a total cost of 720 km.</p>
+        
+        <figure><div id="amsterdam-london-image" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/gral_rr_0406.png" alt="gral rr 0406" width="1427" height="536">
+        <h6><span class="label">Figure 4-6. </span>The unweighted shortest path between Amsterdam and London</h6>
+        </div></figure>
+        
+        <p>Choosing a route with the fewest number of nodes visited might be very useful in situations such as subway systems, where less stops are highly desirable. However, in a driving scenario, we’re probably more interested in the total cost using the shortest weighted path.<a data-type="indexterm" data-startref="ix_ch04-adoc17" id="idm46681371910120"></a><a data-type="indexterm" data-startref="ix_ch04-adoc16" id="idm46681371909416"></a><a data-type="indexterm" data-startref="ix_ch04-adoc15" id="idm46681371908744"></a><a data-type="indexterm" data-startref="ix_ch04-adoc14" id="idm46681371908072"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Shortest Path (Weighted) with Neo4j"><div class="sect2" id="shortest-path-weighted-neo4j">
+        <h2>Shortest Path (Weighted) with Neo4j</h2>
+        
+        <p><a data-type="indexterm" data-primary="Neo4j" data-secondary="Shortest Path algorithm (weighted)" id="idm46681371906088"></a><a data-type="indexterm" data-primary="Neo4j Algorithms library" data-secondary="Shortest Path (weighted)" id="idm46681371905048"></a><a data-type="indexterm" data-primary="Shortest Path algorithm" data-secondary="with Neo4j (weighted)" id="idm46681371904072"></a><a data-type="indexterm" data-primary="Weighted Shortest Paths" data-secondary="with Neo4j" id="idm46681371903128"></a>We can execute the Weighted Shortest Path algorithm to find the shortest path between Amsterdam and London like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="cypher"><code class="k">MATCH</code><code class="n"> (source:Place {</code><code class="nf">id</code><code class="n">: </code><code class="s2">"Amsterdam"</code><code class="n">}),</code>
+        <code class="n">      (destination:Place {</code><code class="nf">id</code><code class="n">: </code><code class="s2">"London"</code><code class="n">})</code>
+        
+        <code class="n">CALL gds.alpha.shortestPath.stream({</code>
+        <code class="n">  startNode: source,</code>
+        <code class="n">  endNode: destination,</code>
+        <code class="n">  nodeProjection: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">  relationshipProjection: {</code>
+        <code class="n">    </code><code class="nf">all</code><code class="n">: {</code>
+        <code class="n">      </code><code class="nf">type</code><code class="n">: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">      properties: </code><code class="s2">"distance"</code><code class="n">,</code>
+        <code class="n">      orientation:  </code><code class="s2">"UNDIRECTED"</code><code class="n"></code>
+        <code class="n">    }</code>
+        <code class="n">  },</code>
+        <code class="n">  relationshipWeightProperty: </code><code class="s2">"distance"</code><code class="n"></code>
+        <code class="n">})</code>
+        <code class="n">YIELD nodeId, cost</code>
+        <code class="k">RETURN </code><code class="n">gds.util.asNode(nodeId).</code><code class="nf">id </code><code class="k">AS </code><code class="n">place, cost;</code></pre>
+        
+        <p>We are now passing the optional <code>relationshipWeightProperty</code>, which is the name of the relationship property that indicates the cost of traversing between a pair of nodes.</p>
+        
+        <p>The cost is the number of kilometers between two locations. The query returns the following result:</p>
+        <table>
+        
+        <thead>
+        <tr>
+        <th>place</th>
+        <th>cost</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Amsterdam</p></td>
+        <td><p>0.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Den Haag</p></td>
+        <td><p>59.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Hoek van Holland</p></td>
+        <td><p>86.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Felixstowe</p></td>
+        <td><p>293.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Ipswich</p></td>
+        <td><p>315.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Colchester</p></td>
+        <td><p>347.0</p></td>
+        </tr>
+        <tr>
+        <td><p>London</p></td>
+        <td><p>453.0</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>The quickest route takes us via Den Haag, Hoek van Holland, Felixstowe, Ipswich, and Colchester!
+        The cost shown is the cumulative total as we progress through the cities.
+        First we go from Amsterdam to Den Haag, at a cost of 59.
+        Then we go from Den Haag to Hoek van Holland, at a cumulative cost of 86—and so on.
+        Finally, we arrive in London, from Colchester, for a total cost of 453 km.</p>
+        
+        <p>Remember that the unweighted shortest path had a total cost of 720 km, so we’ve been able to save 267 km by taking weights into account when computing the shortest path.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Shortest Path (Weighted) with Apache Spark"><div class="sect2" id="shortest-weighted-path-spark">
+        <h2>Shortest Path (Weighted) with Apache Spark</h2>
+        
+        <p><a data-type="indexterm" data-primary="Apache Spark" data-secondary="Shortest Path algorithm (weighted)" id="ix_ch04-adoc18"></a><a data-type="indexterm" data-primary="Shortest Path algorithm" data-secondary="with Apache Spark (weighted)" id="ix_ch04-adoc19"></a><a data-type="indexterm" data-primary="Weighted Shortest Paths" data-secondary="with Apache Spark" id="ix_ch04-adoc20"></a>In the <a href="#bfs-spark">Breadth First Search with Apache Spark</a> section we learned how to find the shortest path between two nodes.
+        That shortest path was based on hops and therefore isn’t the same as the shortest <em>weighted</em> path, which would tell us the shortest total distance between cities.</p>
+        
+        <p>If we want to find the shortest weighted path (in this case, distance) we need to use the <code>cost</code> property, which is used for various types of weighting.
+        <a data-type="indexterm" data-primary="aggregateMessages" id="idm46681371800600"></a>This option is not available out of the box with GraphFrames, so we need to write our own version of Weighted Shortest Path using its <a href="https://bit.ly/2JCFBRJ"><code>aggregateMessages</code> framework</a>. Most of our algorithm examples for Spark use the simpler process of calling on algorithms from the library, but we have the option of writing our own functions.
+        More information on <code>aggregateMessages</code> can be found in the <a href="http://bit.ly/2Wo6Hxg">“Message passing via AggregateMessages”</a> section of the GraphFrames user guide.</p>
+        <div data-type="tip"><h6>Tip</h6>
+        <p>When available, we recommend leveraging preexisting, tested libraries.
+        Writing our own functions, especially for more complicated algorithms, requires a deeper understanding of our data and calculations.</p>
+        
+        <p>The following example should be treated as a reference implementation, and would need to be optimized before running on a larger dataset.
+        Those that aren’t interested in writing their own functions can skip this example.</p>
+        </div>
+        
+        <p>Before we create our function, we’ll import some libraries that we’ll use:</p>
+        
+        <pre data-type="programlisting" data-code-language="python"><code class="kn">from</code> <code class="nn">graphframes.lib</code> <code class="kn">import</code> <code class="n">AggregateMessages</code> <code class="k">as</code> <code class="n">AM</code>
+        <code class="kn">from</code> <code class="nn">pyspark.sql</code> <code class="kn">import</code> <code class="n">functions</code> <code class="k">as</code> <code class="n">F</code></pre>
+        
+        <p>The <code>aggregateMessages</code> module is part of the GraphFrames library and contains some useful helper functions.</p>
+        
+        <p>Now let’s write our function.
+        We first create a user-defined function that we’ll use to build the paths between our source and destination:</p>
+        
+        <pre data-type="programlisting" data-code-language="python"><code class="n">add_path_udf</code> <code class="o">=</code> <code class="n">F</code><code class="o">.</code><code class="n">udf</code><code class="p">(</code><code class="k">lambda</code> <code class="n">path</code><code class="p">,</code> <code class="nb">id</code><code class="p">:</code> <code class="n">path</code> <code class="o">+</code> <code class="p">[</code><code class="nb">id</code><code class="p">],</code> <code class="n">ArrayType</code><code class="p">(</code><code class="n">StringType</code><code class="p">()))</code></pre>
+        
+        <p>And now for the main function, which calculates the shortest path starting from an origin and returns as soon as the destination has been visited:</p>
+        
+        <pre data-type="programlisting" data-code-language="python"><code class="k">def</code> <code class="nf">shortest_path</code><code class="p">(</code><code class="n">g</code><code class="p">,</code> <code class="n">origin</code><code class="p">,</code> <code class="n">destination</code><code class="p">,</code> <code class="n">column_name</code><code class="o">=</code><code class="s2">"cost"</code><code class="p">):</code>
+            <code class="k">if</code> <code class="n">g</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">filter</code><code class="p">(</code><code class="n">g</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">id</code> <code class="o">==</code> <code class="n">destination</code><code class="p">)</code><code class="o">.</code><code class="n">count</code><code class="p">()</code> <code class="o">==</code> <code class="mi">0</code><code class="p">:</code>
+                <code class="k">return</code> <code class="p">(</code><code class="n">spark</code><code class="o">.</code><code class="n">createDataFrame</code><code class="p">(</code><code class="n">sc</code><code class="o">.</code><code class="n">emptyRDD</code><code class="p">(),</code> <code class="n">g</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">schema</code><code class="p">)</code>
+                        <code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"path"</code><code class="p">,</code> <code class="n">F</code><code class="o">.</code><code class="n">array</code><code class="p">()))</code>
+        
+            <code class="n">vertices</code> <code class="o">=</code> <code class="p">(</code><code class="n">g</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"visited"</code><code class="p">,</code> <code class="n">F</code><code class="o">.</code><code class="n">lit</code><code class="p">(</code><code class="bp">False</code><code class="p">))</code>
+                        <code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"distance"</code><code class="p">,</code> <code class="n">F</code><code class="o">.</code><code class="n">when</code><code class="p">(</code><code class="n">g</code><code class="o">.</code><code class="n">vertices</code><code class="p">[</code><code class="s2">"id"</code><code class="p">]</code> <code class="o">==</code> <code class="n">origin</code><code class="p">,</code> <code class="mi">0</code><code class="p">)</code>
+                                    <code class="o">.</code><code class="n">otherwise</code><code class="p">(</code><code class="nb">float</code><code class="p">(</code><code class="s2">"inf"</code><code class="p">)))</code>
+                        <code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"path"</code><code class="p">,</code> <code class="n">F</code><code class="o">.</code><code class="n">array</code><code class="p">()))</code>
+            <code class="n">cached_vertices</code> <code class="o">=</code> <code class="n">AM</code><code class="o">.</code><code class="n">getCachedDataFrame</code><code class="p">(</code><code class="n">vertices</code><code class="p">)</code>
+            <code class="n">g2</code> <code class="o">=</code> <code class="n">GraphFrame</code><code class="p">(</code><code class="n">cached_vertices</code><code class="p">,</code> <code class="n">g</code><code class="o">.</code><code class="n">edges</code><code class="p">)</code>
+        
+            <code class="k">while</code> <code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">filter</code><code class="p">(</code><code class="s1">'visited == False'</code><code class="p">)</code><code class="o">.</code><code class="n">first</code><code class="p">():</code>
+                <code class="n">current_node_id</code> <code class="o">=</code> <code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">filter</code><code class="p">(</code><code class="s1">'visited == False'</code><code class="p">)</code><code class="o">.</code><code class="n">sort</code>
+                                                    <code class="p">(</code><code class="s2">"distance"</code><code class="p">)</code><code class="o">.</code><code class="n">first</code><code class="p">()</code><code class="o">.</code><code class="n">id</code>
+        
+                <code class="n">msg_distance</code> <code class="o">=</code> <code class="n">AM</code><code class="o">.</code><code class="n">edge</code><code class="p">[</code><code class="n">column_name</code><code class="p">]</code> <code class="o">+</code> <code class="n">AM</code><code class="o">.</code><code class="n">src</code><code class="p">[</code><code class="s1">'distance'</code><code class="p">]</code>
+                <code class="n">msg_path</code> <code class="o">=</code> <code class="n">add_path_udf</code><code class="p">(</code><code class="n">AM</code><code class="o">.</code><code class="n">src</code><code class="p">[</code><code class="s2">"path"</code><code class="p">],</code> <code class="n">AM</code><code class="o">.</code><code class="n">src</code><code class="p">[</code><code class="s2">"id"</code><code class="p">])</code>
+                <code class="n">msg_for_dst</code> <code class="o">=</code> <code class="n">F</code><code class="o">.</code><code class="n">when</code><code class="p">(</code><code class="n">AM</code><code class="o">.</code><code class="n">src</code><code class="p">[</code><code class="s1">'id'</code><code class="p">]</code> <code class="o">==</code> <code class="n">current_node_id</code><code class="p">,</code>
+                                     <code class="n">F</code><code class="o">.</code><code class="n">struct</code><code class="p">(</code><code class="n">msg_distance</code><code class="p">,</code> <code class="n">msg_path</code><code class="p">))</code>
+                <code class="n">new_distances</code> <code class="o">=</code> <code class="n">g2</code><code class="o">.</code><code class="n">aggregateMessages</code><code class="p">(</code><code class="n">F</code><code class="o">.</code><code class="n">min</code><code class="p">(</code><code class="n">AM</code><code class="o">.</code><code class="n">msg</code><code class="p">)</code><code class="o">.</code><code class="n">alias</code><code class="p">(</code><code class="s2">"aggMess"</code><code class="p">),</code>
+                                                     <code class="n">sendToDst</code><code class="o">=</code><code class="n">msg_for_dst</code><code class="p">)</code>
+        
+                <code class="n">new_visited_col</code> <code class="o">=</code> <code class="n">F</code><code class="o">.</code><code class="n">when</code><code class="p">(</code>
+                    <code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">visited</code> <code class="o">|</code> <code class="p">(</code><code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">id</code> <code class="o">==</code> <code class="n">current_node_id</code><code class="p">),</code>
+                                                        <code class="bp">True</code><code class="p">)</code><code class="o">.</code><code class="n">otherwise</code><code class="p">(</code><code class="bp">False</code><code class="p">)</code>
+                <code class="n">new_distance_col</code> <code class="o">=</code> <code class="n">F</code><code class="o">.</code><code class="n">when</code><code class="p">(</code><code class="n">new_distances</code><code class="p">[</code><code class="s2">"aggMess"</code><code class="p">]</code><code class="o">.</code><code class="n">isNotNull</code><code class="p">()</code> <code class="o">&amp;</code>
+                                         <code class="p">(</code><code class="n">new_distances</code><code class="o">.</code><code class="n">aggMess</code><code class="p">[</code><code class="s2">"col1"</code><code class="p">]</code>
+                                         <code class="o">&lt;</code> <code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">distance</code><code class="p">),</code>
+                                         <code class="n">new_distances</code><code class="o">.</code><code class="n">aggMess</code><code class="p">[</code><code class="s2">"col1"</code><code class="p">])</code>
+                                         <code class="o">.</code><code class="n">otherwise</code><code class="p">(</code><code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">distance</code><code class="p">)</code>
+                <code class="n">new_path_col</code> <code class="o">=</code> <code class="n">F</code><code class="o">.</code><code class="n">when</code><code class="p">(</code><code class="n">new_distances</code><code class="p">[</code><code class="s2">"aggMess"</code><code class="p">]</code><code class="o">.</code><code class="n">isNotNull</code><code class="p">()</code> <code class="o">&amp;</code>
+                               <code class="p">(</code><code class="n">new_distances</code><code class="o">.</code><code class="n">aggMess</code><code class="p">[</code><code class="s2">"col1"</code><code class="p">]</code>
+                               <code class="o">&lt;</code> <code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">distance</code><code class="p">),</code> <code class="n">new_distances</code><code class="o">.</code><code class="n">aggMess</code><code class="p">[</code><code class="s2">"col2"</code><code class="p">]</code>
+                               <code class="o">.</code><code class="n">cast</code><code class="p">(</code><code class="s2">"array&lt;string&gt;"</code><code class="p">))</code><code class="o">.</code><code class="n">otherwise</code><code class="p">(</code><code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">path</code><code class="p">)</code>
+        
+                <code class="n">new_vertices</code> <code class="o">=</code> <code class="p">(</code><code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">join</code><code class="p">(</code><code class="n">new_distances</code><code class="p">,</code> <code class="n">on</code><code class="o">=</code><code class="s2">"id"</code><code class="p">,</code>
+                                                 <code class="n">how</code><code class="o">=</code><code class="s2">"left_outer"</code><code class="p">)</code>
+                                <code class="o">.</code><code class="n">drop</code><code class="p">(</code><code class="n">new_distances</code><code class="p">[</code><code class="s2">"id"</code><code class="p">])</code>
+                                <code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"visited"</code><code class="p">,</code> <code class="n">new_visited_col</code><code class="p">)</code>
+                                <code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"newDistance"</code><code class="p">,</code> <code class="n">new_distance_col</code><code class="p">)</code>
+                                <code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"newPath"</code><code class="p">,</code> <code class="n">new_path_col</code><code class="p">)</code>
+                                <code class="o">.</code><code class="n">drop</code><code class="p">(</code><code class="s2">"aggMess"</code><code class="p">,</code> <code class="s2">"distance"</code><code class="p">,</code> <code class="s2">"path"</code><code class="p">)</code>
+                                <code class="o">.</code><code class="n">withColumnRenamed</code><code class="p">(</code><code class="s1">'newDistance'</code><code class="p">,</code> <code class="s1">'distance'</code><code class="p">)</code>
+                                <code class="o">.</code><code class="n">withColumnRenamed</code><code class="p">(</code><code class="s1">'newPath'</code><code class="p">,</code> <code class="s1">'path'</code><code class="p">))</code>
+                <code class="n">cached_new_vertices</code> <code class="o">=</code> <code class="n">AM</code><code class="o">.</code><code class="n">getCachedDataFrame</code><code class="p">(</code><code class="n">new_vertices</code><code class="p">)</code>
+                <code class="n">g2</code> <code class="o">=</code> <code class="n">GraphFrame</code><code class="p">(</code><code class="n">cached_new_vertices</code><code class="p">,</code> <code class="n">g2</code><code class="o">.</code><code class="n">edges</code><code class="p">)</code>
+                <code class="k">if</code> <code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">filter</code><code class="p">(</code><code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">id</code> <code class="o">==</code> <code class="n">destination</code><code class="p">)</code><code class="o">.</code><code class="n">first</code><code class="p">()</code><code class="o">.</code><code class="n">visited</code><code class="p">:</code>
+                    <code class="k">return</code> <code class="p">(</code><code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">filter</code><code class="p">(</code><code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">id</code> <code class="o">==</code> <code class="n">destination</code><code class="p">)</code>
+                            <code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"newPath"</code><code class="p">,</code> <code class="n">add_path_udf</code><code class="p">(</code><code class="s2">"path"</code><code class="p">,</code> <code class="s2">"id"</code><code class="p">))</code>
+                            <code class="o">.</code><code class="n">drop</code><code class="p">(</code><code class="s2">"visited"</code><code class="p">,</code> <code class="s2">"path"</code><code class="p">)</code>
+                            <code class="o">.</code><code class="n">withColumnRenamed</code><code class="p">(</code><code class="s2">"newPath"</code><code class="p">,</code> <code class="s2">"path"</code><code class="p">))</code>
+            <code class="k">return</code> <code class="p">(</code><code class="n">spark</code><code class="o">.</code><code class="n">createDataFrame</code><code class="p">(</code><code class="n">sc</code><code class="o">.</code><code class="n">emptyRDD</code><code class="p">(),</code> <code class="n">g</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">schema</code><code class="p">)</code>
+                    <code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"path"</code><code class="p">,</code> <code class="n">F</code><code class="o">.</code><code class="n">array</code><code class="p">()))</code></pre>
+        <div data-type="warning" epub:type="warning"><h6>Warning</h6>
+        <p>If we store references to any DataFrames in our functions, we need to cache them using the <code>AM.getCachedDataFrame</code> function or we’ll encounter a memory leak during execution.
+        In the <code>shortest_path</code> function we use this function to cache the  <code>vertices</code> and <code>new_vertices</code> DataFrames.</p>
+        </div>
+        
+        <p>If we wanted to find the shortest path between Amsterdam and Colchester we could call that function like so:</p>
+        
+        <pre data-type="programlisting" data-code-language="python"><code class="n">result</code> <code class="o">=</code> <code class="n">shortest_path</code><code class="p">(</code><code class="n">g</code><code class="p">,</code> <code class="s2">"Amsterdam"</code><code class="p">,</code> <code class="s2">"Colchester"</code><code class="p">,</code> <code class="s2">"cost"</code><code class="p">)</code>
+        <code class="n">result</code><code class="o">.</code><code class="n">select</code><code class="p">(</code><code class="s2">"id"</code><code class="p">,</code> <code class="s2">"distance"</code><code class="p">,</code> <code class="s2">"path"</code><code class="p">)</code><code class="o">.</code><code class="n">show</code><code class="p">(</code><code class="n">truncate</code><code class="o">=</code><code class="bp">False</code><code class="p">)</code></pre>
+        
+        <p>which would return the following result:</p>
+        <table>
+        
+        <thead>
+        <tr>
+        <th>id</th>
+        <th>distance</th>
+        <th>path</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Colchester</p></td>
+        <td><p>347.0</p></td>
+        <td><p>[Amsterdam, Den Haag, Hoek van Holland, Felixstowe, Ipswich, Colchester]</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>The total distance of the shortest path between Amsterdam and Colchester is 347 km and takes us via Den Haag, Hoek van Holland, Felixstowe, and Ipswich.
+        By contrast, the shortest path in terms of number of relationships between the locations, which we worked out with the <a href="#bfs">Breadth First Search algorithm</a> (refer back to <a data-type="xref" href="#den-haag-depth-first-image">Figure&nbsp;4-4</a>), would take us via Immingham, Doncaster, and London.<a data-type="indexterm" data-startref="ix_ch04-adoc20" id="idm46681371165560"></a><a data-type="indexterm" data-startref="ix_ch04-adoc19" id="idm46681371164888"></a><a data-type="indexterm" data-startref="ix_ch04-adoc18" id="idm46681371164216"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Shortest Path Variation: A*"><div class="sect2" id="astar">
+        <h2>Shortest Path Variation: A*</h2>
+        
+        <p><a data-type="indexterm" data-primary="A* algorithm" data-secondary="Shortest Path" id="ix_ch04-adoc21"></a><a data-type="indexterm" data-primary="Shortest Path algorithm" data-secondary="A* algorithm" id="ix_ch04-adoc22"></a><a data-type="indexterm" data-primary="Dijkstra’s algorithm" data-see="Shortest Path algorithm" id="idm46681371159272"></a>The A* Shortest Path algorithm improves on Dijkstra’s by finding shortest paths more quickly.
+        It does this by allowing the inclusion of extra information that the algorithm can use, as part of a heuristic function, when determining which paths to explore next.</p>
+        
+        <p><a data-type="indexterm" data-primary="Hart, Peter" id="idm46681371157672"></a><a data-type="indexterm" data-primary="Nilsson, Nils" id="idm46681371156968"></a><a data-type="indexterm" data-primary="Raphael, Bertram" id="idm46681371156296"></a>The algorithm was invented by Peter Hart, Nils Nilsson, and Bertram Raphael and described in their 1968 paper <a href="https://bit.ly/2JAaV3s">“A Formal Basis for the Heuristic Determination of Minimum Cost Paths”</a>.</p>
+        
+        <p>The A* algorithm operates by determining which of its partial paths to expand at each iteration of its main loop.
+        It does so based on an estimate of the cost (heuristic) still left to reach the goal node.</p>
+        <div data-type="warning" epub:type="warning"><h6>Warning</h6>
+        <p><a data-type="indexterm" data-primary="costs" id="idm46681371153192"></a>Be thoughtful in the heuristic employed to estimate path costs. Underestimating path costs may unnecessarily include some paths that could have been eliminated, but the results will still be accurate. However, if the heuristic overestimates path costs, it may skip over actual shorter paths (incorrectly estimated to be longer) that should have been evaluated, which can lead to inaccurate results.</p>
+        </div>
+        
+        <p>A* selects the path that minimizes the following function:</p>
+        
+        <pre data-type="programlisting">`f(n) = g(n) + h(n)`</pre>
+        
+        <p>where:</p>
+        
+        <ul>
+        <li>
+        <p><code>g(n)</code> is the cost of the path from the starting point to node <code>n</code>.</p>
+        </li>
+        <li>
+        <p><code>h(n)</code> is the estimated cost of the path from node <code>n</code> to the destination node, as computed by a heuristic.</p>
+        </li>
+        </ul>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p>In Neo4j’s implementation, geospatial distance is used as the heuristic.
+        In our example transportation dataset we use the latitude and longitude of each location as part of the heuristic function.</p>
+        </div>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="A* with Neo4j"><div class="sect3" id="idm46681371145112">
+        <h3>A* with Neo4j</h3>
+        
+        <p><a data-type="indexterm" data-primary="A* algorithm" data-secondary="with Neo4j" id="idm46681371143672"></a><a data-type="indexterm" data-primary="Neo4j" data-secondary="A* algorithm with" id="idm46681371142696"></a>Neo4j’s A* algorithm takes in a config map with the following keys:</p>
+        <dl>
+        <dt><code>startNode</code></dt>
+        <dd>
+        <p>The node where our shortest path search begins.</p>
+        </dd>
+        <dt><code>endNode</code></dt>
+        <dd>
+        <p>The node where our shortest path search ends.</p>
+        </dd>
+        <dt><code>nodeProjection</code></dt>
+        <dd>
+        <p>Enables the mapping of specific kinds of nodes into the in-memory graph. We can declare one or more node labels.</p>
+        </dd>
+        <dt><code>relationshipProjection</code></dt>
+        <dd>
+        <p>Enables the mapping of relationship types into the in-memory graph. We can declare one or more relationship types along with direction and properties.</p>
+        </dd>
+        <dt><code>relationshipWeightProperty</code></dt>
+        <dd>
+        <p>The relationship property that indicates the cost of traversing between a pair of nodes. The cost is the number of kilometers between two locations.</p>
+        </dd>
+        <dt><code>propertyKeyLat</code></dt>
+        <dd>
+        <p>The name of the node property used to represent the latitude of each node as part of the geospatial heuristic calculation.</p>
+        </dd>
+        <dt><code>propertyKeyLon</code></dt>
+        <dd>
+        <p>The name of the node property used to represent the longitude of each node as part of the geospatial heuristic calculation.</p>
+        </dd>
+        </dl>
+        
+        <p>The following query executes the A* algorithm to find the shortest path between Den Haag and London:</p>
+        
+        <pre data-type="programlisting" data-code-language="cypher"><code class="k">MATCH</code><code class="n"> (source:Place {</code><code class="nf">id</code><code class="n">: </code><code class="s2">"Den Haag"</code><code class="n">}),</code>
+        <code class="n">      (destination:Place {</code><code class="nf">id</code><code class="n">: </code><code class="s2">"London"</code><code class="n">})</code>
+        <code class="n">CALL gds.alpha.shortestPath.astar.stream({</code>
+        <code class="n">  startNode: source,</code>
+        <code class="n">  endNode: destination,</code>
+        <code class="n">  nodeProjection: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">  relationshipProjection: {</code>
+        <code class="n">    </code><code class="nf">all</code><code class="n">: {</code>
+        <code class="n">      </code><code class="nf">type</code><code class="n">: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">      properties: </code><code class="s2">"distance"</code><code class="n">,</code>
+        <code class="n">      orientation:  </code><code class="s2">"UNDIRECTED"</code><code class="n"></code>
+        <code class="n">    }</code>
+        <code class="n">  },</code>
+        <code class="n">  relationshipWeightProperty: </code><code class="s2">"distance"</code><code class="n">,</code>
+        <code class="n">  propertyKeyLat: </code><code class="s2">"latitude"</code><code class="n">,</code>
+        <code class="n">  propertyKeyLon: </code><code class="s2">"longitude"</code><code class="n"></code>
+        <code class="n">})</code>
+        <code class="n">YIELD nodeId, cost</code>
+        <code class="k">RETURN </code><code class="n">gds.util.asNode(nodeId).</code><code class="nf">id </code><code class="k">AS </code><code class="n">place, cost;</code></pre>
+        
+        <p>Running this procedure gives the following result:</p>
+        <table>
+        
+        <thead>
+        <tr>
+        <th>place</th>
+        <th>cost</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Den Haag</p></td>
+        <td><p>0.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Hoek van Holland</p></td>
+        <td><p>27.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Felixstowe</p></td>
+        <td><p>234.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Ipswich</p></td>
+        <td><p>256.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Colchester</p></td>
+        <td><p>288.0</p></td>
+        </tr>
+        <tr>
+        <td><p>London</p></td>
+        <td><p>394.0</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>We’d get the same result using the Shortest Path algorithm, but on more complex datasets the A* algorithm will be faster as it evaluates fewer paths.<a data-type="indexterm" data-startref="ix_ch04-adoc22" id="idm46681371034888"></a><a data-type="indexterm" data-startref="ix_ch04-adoc21" id="idm46681371034296"></a></p>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Shortest Path Variation: Yen’s k-Shortest Paths"><div class="sect2" id="yens">
+        <h2>Shortest Path Variation: Yen’s k-Shortest Paths</h2>
+        
+        <p><a data-type="indexterm" data-primary="Neo4j" data-secondary="Yen's k-Shortest Paths algorithm" id="idm46681371031976"></a><a data-type="indexterm" data-primary="Shortest Path algorithm" data-secondary="Yen's k-Shortest Paths variation" id="idm46681371030984"></a><a data-type="indexterm" data-primary="Yen's k-Shortest Paths algorithm" id="idm46681371030024"></a>Yen’s <em>k</em>-Shortest Paths algorithm is similar to the Shortest Path algorithm, but rather than finding just the shortest path between two pairs of nodes, it also calculates the second shortest path, third shortest path, and so on up to <em>k</em>-1 deviations of shortest paths.</p>
+        
+        <p><a data-type="indexterm" data-primary="Yen, Jin Y." id="idm46681371027848"></a>Jin Y. Yen invented the algorithm in 1971 and described it in <a href="https://bit.ly/2HS0eXB">“Finding the <em>K</em> Shortest Loopless Paths in a Network”</a>.
+        This algorithm is useful for getting alternative paths when finding the absolute shortest path isn’t our only goal. It can be particularly helpful when we need more than one backup plan!</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Yen’s with Neo4j"><div class="sect3" id="idm46681371025512">
+        <h3>Yen’s with Neo4j</h3>
+        
+        <p>The Yen’s algorithm takes in a config map with the following keys:</p>
+        <dl>
+        <dt><code>startNode</code></dt>
+        <dd>
+        <p>The node where our shortest path search begins.</p>
+        </dd>
+        <dt><code>endNode</code></dt>
+        <dd>
+        <p>The node where our shortest path search ends.</p>
+        </dd>
+        <dt><code>nodeProjection</code></dt>
+        <dd>
+        <p>Enables the mapping of specific kinds of nodes into the in-memory graph. We can declare one or more node labels.</p>
+        </dd>
+        <dt><code>relationshipProjection</code></dt>
+        <dd>
+        <p>Enables the mapping of relationship types into the in-memory graph. We can declare one or more relationship types along with direction and properties.</p>
+        </dd>
+        <dt><code>relationshipWeightProperty</code></dt>
+        <dd>
+        <p>The relationship property that indicates the cost of traversing between a pair of nodes. The cost is the number of kilometers between two locations.</p>
+        </dd>
+        <dt><code>k</code></dt>
+        <dd>
+        <p>The maximum number of shortest paths to find.</p>
+        </dd>
+        </dl>
+        
+        <p>The following query executes Yen’s algorithm to find the shortest paths between Gouda and Felixstowe:</p>
+        
+        <pre data-type="programlisting" data-code-language="cypher"><code class="k">MATCH</code><code class="n"> (</code><code class="k">start</code><code class="n">:Place {</code><code class="nf">id</code><code class="n">:</code><code class="s2">"Gouda"</code><code class="n">}),</code>
+        <code class="n">      (end:Place {</code><code class="nf">id</code><code class="n">:</code><code class="s2">"Felixstowe"</code><code class="n">})</code>
+        
+        <code class="n">CALL gds.alpha.kShortestPaths.stream({</code>
+        <code class="n">  startNode: </code><code class="k">start</code><code class="n">,</code>
+        <code class="n">  endNode: end,</code>
+        <code class="n">  nodeProjection: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">  relationshipProjection: {</code>
+        <code class="n">    </code><code class="nf">all</code><code class="n">: {</code>
+        <code class="n">      </code><code class="nf">type</code><code class="n">: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">      properties: </code><code class="s2">"distance"</code><code class="n">,</code>
+        <code class="n">      orientation:  </code><code class="s2">"UNDIRECTED"</code><code class="n"></code>
+        <code class="n">    }</code>
+        <code class="n">  },</code>
+        <code class="n">  relationshipWeightProperty: </code><code class="s2">"distance"</code><code class="n">,</code>
+        <code class="n">  k: 5</code>
+        <code class="n">})</code>
+        
+        <code class="n">YIELD index, sourceNodeId, targetNodeId, nodeIds, costs, path</code>
+        <code class="k">RETURN </code><code class="n">index,</code>
+        <code class="n">       [</code><code class="k">node in </code><code class="n">gds.util.asNodes(nodeIds[1..-1]) | </code><code class="k">node</code><code class="n">.</code><code class="nf">id</code><code class="n">] </code><code class="k">AS </code><code class="n">via,</code>
+        <code class="n">       </code><code class="k">reduce</code><code class="n">(acc=0.0, cost </code><code class="k">in </code><code class="n">costs | acc + cost) </code><code class="k">AS </code><code class="n">totalCost;</code></pre>
+        
+        <p>After we get back the shortest paths, we look up the associated node for each node ID using the <code>gds.util.asNodes</code> function, and then filter out the start and end nodes from the resulting collection.
+        We also calculate the total cost for each path by summing the returned costs.</p>
+        
+        <p>Running this procedure gives the following result:</p>
+        <table>
+        
+        <thead>
+        <tr>
+        <th>index</th>
+        <th>via</th>
+        <th>totalCost</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>0</p></td>
+        <td><p>[Rotterdam, Hoek van Holland]</p></td>
+        <td><p>265.0</p></td>
+        </tr>
+        <tr>
+        <td><p>1</p></td>
+        <td><p>[Den Haag, Hoek van Holland]</p></td>
+        <td><p>266.0</p></td>
+        </tr>
+        <tr>
+        <td><p>2</p></td>
+        <td><p>[Rotterdam, Den Haag, Hoek van Holland]</p></td>
+        <td><p>285.0</p></td>
+        </tr>
+        <tr>
+        <td><p>3</p></td>
+        <td><p>[Den Haag, Rotterdam, Hoek van Holland]</p></td>
+        <td><p>298.0</p></td>
+        </tr>
+        <tr>
+        <td><p>4</p></td>
+        <td><p>[Utrecht, Amsterdam, Den Haag, Hoek van Holland]</p></td>
+        <td><p>374.0</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p><a data-type="xref" href="#yens-gouda-felixstowe-image">Figure&nbsp;4-7</a> shows the shortest path between Gouda and Felixstowe.</p>
+        
+        <figure><div id="yens-gouda-felixstowe-image" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/gral_0407.png" alt="gral 0407" width="2957" height="576">
+        <h6><span class="label">Figure 4-7. </span>The shortest path between Gouda and Felixstowe</h6>
+        </div></figure>
+        
+        <p>The shortest path in <a data-type="xref" href="#yens-gouda-felixstowe-image">Figure&nbsp;4-7</a> is interesting in comparison to the results ordered by total cost.
+        It illustrates that sometimes you may want to consider several shortest paths or other parameters.
+        In this example, the second-shortest route is only 1 km longer than the shortest one.
+        If we prefer the scenery, we might choose the slightly longer route.<a data-type="indexterm" data-startref="ix_ch04-adoc13" id="idm46681370895144"></a><a data-type="indexterm" data-startref="ix_ch04-adoc12" id="idm46681370894472"></a></p>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="All Pairs Shortest Path"><div class="sect1" id="all_pairs_shortest_paths">
+        <h1>All Pairs Shortest Path</h1>
+        
+        <p><a data-type="indexterm" data-primary="All Pairs Shortest Path (APSP) algorithm" id="ix_ch04-adoc23"></a><a data-type="indexterm" data-primary="Pathfinding algorithms" data-secondary="All Pairs Shortest Path" id="ix_ch04-adoc24"></a>The All Pairs Shortest Path (APSP) algorithm calculates the shortest (weighted) path between all pairs of nodes.
+        It’s more efficient than running the Single Source Shortest Path algorithm for every pair of nodes in the graph.</p>
+        
+        <p>APSP optimizes operations by keeping track of the distances calculated so far and running on nodes in parallel.
+        Those known distances can then be reused when calculating the shortest path to an unseen node.
+        You can follow the example in the next section to get a better understanding of how the algorithm works.</p>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p>Some pairs of nodes might not be reachable from each other, which means that there is no shortest path between these nodes.
+        The algorithm doesn’t return distances for these pairs of nodes.</p>
+        </div>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="A Closer Look at All Pairs Shortest Path"><div class="sect2" id="idm46681370887496">
+        <h2>A Closer Look at All Pairs Shortest Path</h2>
+        
+        <p><a data-type="indexterm" data-primary="All Pairs Shortest Path (APSP) algorithm" data-secondary="sequence of operations" id="ix_ch04-adoc25"></a>The calculation for APSP is easiest to understand when you follow a sequence of operations.
+        The diagram in <a data-type="xref" href="#all-pairs-example-image">Figure&nbsp;4-8</a> walks through the steps for node A.</p>
+        
+        <figure><div id="all-pairs-example-image" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/gral_rr_0408.png" alt="gral rr 0408" width="1419" height="949">
+        <h6><span class="label">Figure 4-8. </span>The steps to calculate the shortest path from node A to all other nodes, with updates shaded.</h6>
+        </div></figure>
+        
+        <p>Initially the algorithm assumes an infinite distance to all nodes. When a start node is selected, then the distance to that node is set to 0. The calculation then proceeds as follows:</p>
+        <ol>
+        <li>
+        <p>From start node A we evaluate the cost of moving to the nodes we can reach and update those values.
+        Looking for the smallest value, we have a choice of B (cost of 3) or C (cost of 1).
+        C is selected for the next phase of traversal.</p>
+        </li>
+        <li>
+        <p>Now from node C, the algorithm updates the cumulative distances from A to nodes that can be reached directly from C.
+        Values are only updated when a lower cost has been found:</p>
+        
+        <pre data-type="programlisting">A=0, B=3, C=1, D=8, E=∞</pre>
+        </li>
+        <li>
+        <p>Then B is selected as the next closest node that hasn’t already been visited. It has relationships to nodes A, D, and E.
+        The algorithm works out the distance to those nodes by summing the distance from A to B with the distance from B to each of those nodes.
+        Note that the lowest cost from the start node A to the current node is always preserved as a sunk cost.
+        The distance (d) calculation results:</p>
+        
+        <pre data-type="programlisting">d(A,A) = d(A,B) + d(B,A) = 3 + 3 = 6
+        d(A,D) = d(A,B) + d(B,D) = 3 + 3 = 6
+        d(A,E) = d(A,B) + d(B,E) = 3 + 1 = 4</pre>
+        
+        <ul>
+        <li>
+        <p>In this step the distance from node A to B and back to A, shown as d(A,A) = 6, is greater than the shortest distance already computed (0), so its value is not updated.</p>
+        </li>
+        <li>
+        <p>The distances for nodes D (6) and E (4) are less than the previously calculated distances, so their values are updated.</p>
+        </li>
+        </ul>
+        </li>
+        <li>
+        <p>E is selected next. Only the cumulative total for reaching D (5) is now lower, and therefore it is the only one updated.</p>
+        </li>
+        <li>
+        <p>When D is finally evaluated, there are no new minimum path weights; nothing is updated, and the algorithm terminates.</p>
+        </li>
+        
+        </ol>
+        <div data-type="tip"><h6>Tip</h6>
+        <p>Even though the All Pairs Shortest Path algorithm is optimized to run calculations in parallel for each node, this can still add up for a very large graph.
+        Consider using a subgraph if you only need to evaluate paths between a subcategory of nodes.<a data-type="indexterm" data-startref="ix_ch04-adoc25" id="idm46681370869832"></a></p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="When Should I Use All Pairs Shortest Path?"><div class="sect2" id="idm46681370868872">
+        <h2>When Should I Use All Pairs Shortest Path?</h2>
+        
+        <p><a data-type="indexterm" data-primary="All Pairs Shortest Path (APSP) algorithm" data-secondary="when to use" id="idm46681370867736"></a>All Pairs Shortest Path is commonly used for understanding alternate routing when the shortest route is blocked or becomes suboptimal.
+        For example, this algorithm is used in logical route planning to ensure the best multiple paths for diversity routing.
+        Use All Pairs Shortest Path when you need to consider all possible routes between all or most of your nodes.</p>
+        
+        <p>Example use cases include:</p>
+        
+        <ul>
+        <li>
+        <p>Optimizing the location of urban facilities and the distribution of goods.
+        One example of this is determining the traffic load expected on different segments of a transportation grid.
+        For more information, see R. C. Larson and A. R. Odoni’s book, <em>Urban Operations Research</em> (Prentice-Hall).</p>
+        </li>
+        <li>
+        <p>Finding a network with maximum bandwidth and minimal latency as part of a data center design algorithm.
+        There are more details about this approach in the paper <a href="https://bit.ly/2HTbhzY">“REWIRE: An Optimization-Based Framework for Data Center Network Design”</a>, by A. R. Curtis et al.</p>
+        </li>
+        </ul>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="All Pairs Shortest Path with Apache Spark"><div class="sect2" id="idm46681370861736">
+        <h2>All Pairs Shortest Path with Apache Spark</h2>
+        
+        <p><a data-type="indexterm" data-primary="All Pairs Shortest Path (APSP) algorithm" data-secondary="with Apache Spark" id="idm46681370860360"></a><a data-type="indexterm" data-primary="Apache Spark" data-secondary="All Pairs Shortest Path algorithm with" id="idm46681370859352"></a><a data-type="indexterm" data-primary="landmarks" id="idm46681370858344"></a>Spark’s <code>shortestPaths</code> function is designed for finding the shortest paths from all nodes to a set of nodes called <em>landmarks</em>.
+        If we wanted to find the shortest path from every location to Colchester, Immingham, and Hoek van Holland, we would write the following query:</p>
+        
+        <pre data-type="programlisting" data-code-language="python"><code class="n">result</code> <code class="o">=</code> <code class="n">g</code><code class="o">.</code><code class="n">shortestPaths</code><code class="p">([</code><code class="s2">"Colchester"</code><code class="p">,</code> <code class="s2">"Immingham"</code><code class="p">,</code> <code class="s2">"Hoek van Holland"</code><code class="p">])</code>
+        <code class="n">result</code><code class="o">.</code><code class="n">sort</code><code class="p">([</code><code class="s2">"id"</code><code class="p">])</code><code class="o">.</code><code class="n">select</code><code class="p">(</code><code class="s2">"id"</code><code class="p">,</code> <code class="s2">"distances"</code><code class="p">)</code><code class="o">.</code><code class="n">show</code><code class="p">(</code><code class="n">truncate</code><code class="o">=</code><code class="bp">False</code><code class="p">)</code></pre>
+        
+        <p>If we run that code in pyspark we’ll see this output:</p>
+        <table>
+        
+        <thead>
+        <tr>
+        <th>id</th>
+        <th>distances</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Amsterdam</p></td>
+        <td><p>[Immingham → 1, Hoek van Holland → 2, Colchester → 4]</p></td>
+        </tr>
+        <tr>
+        <td><p>Colchester</p></td>
+        <td><p>[Colchester → 0, Hoek van Holland → 3, Immingham → 3]</p></td>
+        </tr>
+        <tr>
+        <td><p>Den Haag</p></td>
+        <td><p>[Hoek van Holland → 1, Immingham → 2, Colchester → 4]</p></td>
+        </tr>
+        <tr>
+        <td><p>Doncaster</p></td>
+        <td><p>[Immingham → 1, Colchester → 2, Hoek van Holland → 4]</p></td>
+        </tr>
+        <tr>
+        <td><p>Felixstowe</p></td>
+        <td><p>[Hoek van Holland → 1, Colchester → 2, Immingham → 4]</p></td>
+        </tr>
+        <tr>
+        <td><p>Gouda</p></td>
+        <td><p>[Hoek van Holland → 2, Immingham → 3, Colchester → 5]</p></td>
+        </tr>
+        <tr>
+        <td><p>Hoek van Holland</p></td>
+        <td><p>[Hoek van Holland → 0, Immingham → 3, Colchester → 3]</p></td>
+        </tr>
+        <tr>
+        <td><p>Immingham</p></td>
+        <td><p>[Immingham → 0, Colchester → 3, Hoek van Holland → 3]</p></td>
+        </tr>
+        <tr>
+        <td><p>Ipswich</p></td>
+        <td><p>[Colchester → 1, Hoek van Holland → 2, Immingham → 4]</p></td>
+        </tr>
+        <tr>
+        <td><p>London</p></td>
+        <td><p>[Colchester → 1, Immingham → 2, Hoek van Holland → 4]</p></td>
+        </tr>
+        <tr>
+        <td><p>Rotterdam</p></td>
+        <td><p>[Hoek van Holland → 1, Immingham → 3, Colchester → 4]</p></td>
+        </tr>
+        <tr>
+        <td><p>Utrecht</p></td>
+        <td><p>[Immingham → 2, Hoek van Holland → 3, Colchester → 5]</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>The number next to each location in the <code>distances</code> column is the number of relationships (roads) between cities we need to traverse to get there from the source node. In our example, Colchester is one of our destination cities and you can see it has 0 nodes to traverse to get to itself but 3 hops to make from Immingham and Hoek van Holland. If we were planning a trip, we could use this information to help maximize our time at our chosen destinations.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="All Pairs Shortest Path with Neo4j"><div class="sect2" id="idm46681370690504">
+        <h2>All Pairs Shortest Path with Neo4j</h2>
+        
+        <p><a data-type="indexterm" data-primary="All Pairs Shortest Path (APSP) algorithm" data-secondary="with Neo4j" id="ix_ch04-adoc26"></a><a data-type="indexterm" data-primary="Neo4j" data-secondary="All Pairs Shortest Path algorithm with" id="ix_ch04-adoc27"></a>Neo4j has a parallel implementation of the All Pairs Shortest Path algorithm, which returns the distance between every pair of nodes.</p>
+        
+        <p>The All Pairs Shortest Path algorithm takes in a config map with the following keys:</p>
+        <dl>
+        <dt><code>nodeProjection</code></dt>
+        <dd>
+        <p>Enables the mapping of specific kinds of nodes into the in-memory graph. We can declare one or more node labels.</p>
+        </dd>
+        <dt><code>relationshipProjection</code></dt>
+        <dd>
+        <p>Enables the mapping of relationship types into the in-memory graph. We can declare one or more relationship types along with direction and properties.</p>
+        </dd>
+        <dt><code>relationshipWeightProperty</code></dt>
+        <dd>
+        <p>The relationship property that indicates the cost of traversing between a pair of nodes. The cost is the number of kilometers between two locations.</p>
+        </dd>
+        </dl>
+        
+        <p>If we don’t set <code>relationshipWeightProperty</code> then the algorithm will calculate the unweighted shortest paths between all pairs of nodes.</p>
+        
+        <p>The following query does this:</p>
+        
+        <pre data-type="programlisting" data-code-language="cypher"><code class="n">CALL gds.alpha.allShortestPaths.stream({</code>
+        <code class="n">  nodeProjection: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">  relationshipProjection: {</code>
+        <code class="n">    </code><code class="nf">all</code><code class="n">: {</code>
+        <code class="n">      </code><code class="nf">type</code><code class="n">: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">      properties: </code><code class="s2">"distance"</code><code class="n">,</code>
+        <code class="n">      orientation: </code><code class="s2">"UNDIRECTED"</code><code class="n"></code>
+        <code class="n">    }</code>
+        <code class="n">  }</code>
+        <code class="n">})</code>
+        <code class="n">YIELD sourceNodeId, targetNodeId, distance</code>
+        <code class="k">WHERE </code><code class="n">sourceNodeId &lt; targetNodeId</code>
+        <code class="k">RETURN </code><code class="n">gds.util.asNode(sourceNodeId).</code><code class="nf">id </code><code class="k">AS </code><code class="n">source,</code>
+        <code class="n">       gds.util.asNode(targetNodeId).</code><code class="nf">id </code><code class="k">AS </code><code class="n">target,</code>
+        <code class="n">       distance</code>
+        <code class="k">ORDER BY </code><code class="n">distance </code><code class="k">DESC</code>
+        <code class="k">LIMIT </code><code class="n">10;</code></pre>
+        
+        <p>This algorithm returns the shortest path between every pair of nodes twice—once with each of the nodes as the source node. This would be helpful if you were evaluating a directed graph of one-way streets.
+        However, we don’t need to see each path twice, so we filter the results to only keep one of them by using the <code>sourceNodeId &lt; targetNodeId</code> predicate.</p>
+        
+        <p>The query returns the following results:</p>
+        <table>
+        
+        <thead>
+        <tr>
+        <th>source</th>
+        <th>target</th>
+        <th>distance</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Colchester</p></td>
+        <td><p>Utrecht</p></td>
+        <td><p>5.0</p></td>
+        </tr>
+        <tr>
+        <td><p>London</p></td>
+        <td><p>Rotterdam</p></td>
+        <td><p>5.0</p></td>
+        </tr>
+        <tr>
+        <td><p>London</p></td>
+        <td><p>Gouda</p></td>
+        <td><p>5.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Ipswich</p></td>
+        <td><p>Utrecht</p></td>
+        <td><p>5.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Colchester</p></td>
+        <td><p>Gouda</p></td>
+        <td><p>5.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Colchester</p></td>
+        <td><p>Den Haag</p></td>
+        <td><p>4.0</p></td>
+        </tr>
+        <tr>
+        <td><p>London</p></td>
+        <td><p>Utrecht</p></td>
+        <td><p>4.0</p></td>
+        </tr>
+        <tr>
+        <td><p>London</p></td>
+        <td><p>Den Haag</p></td>
+        <td><p>4.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Colchester</p></td>
+        <td><p>Amsterdam</p></td>
+        <td><p>4.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Ipswich</p></td>
+        <td><p>Gouda</p></td>
+        <td><p>4.0</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>This output shows the 10 pairs of locations that have the most relationships between them because we asked for results in descending order (<code>DESC</code>).</p>
+        
+        <p>If we want to calculate the shortest weighted paths, we should set <code>relationshipWeightProperty</code> to the property name that contains the <code>cost</code> to be used in the shortest path calculation.
+        This property will then be evaluated to work out the shortest weighted path between each pair of nodes.</p>
+        
+        <p>The following query does this:</p>
+        
+        <pre data-type="programlisting" data-code-language="cypher"><code class="n">CALL gds.alpha.allShortestPaths.stream({</code>
+        <code class="n">  nodeProjection: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">  relationshipProjection: {</code>
+        <code class="n">    </code><code class="nf">all</code><code class="n">: {</code>
+        <code class="n">      </code><code class="nf">type</code><code class="n">: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">      properties: </code><code class="s2">"distance"</code><code class="n">,</code>
+        <code class="n">      orientation: </code><code class="s2">"UNDIRECTED"</code><code class="n"></code>
+        <code class="n">    }</code>
+        <code class="n">  },</code>
+        <code class="n">  relationshipWeightProperty: </code><code class="s2">"distance"</code><code class="n"></code>
+        <code class="n">})</code>
+        <code class="n">YIELD sourceNodeId, targetNodeId, distance</code>
+        <code class="k">WHERE </code><code class="n">sourceNodeId &lt; targetNodeId</code>
+        <code class="k">RETURN </code><code class="n">gds.util.asNode(sourceNodeId).</code><code class="nf">id </code><code class="k">AS </code><code class="n">source,</code>
+        <code class="n">       gds.util.asNode(targetNodeId).</code><code class="nf">id </code><code class="k">AS </code><code class="n">target,</code>
+        <code class="n">       distance</code>
+        <code class="k">ORDER BY </code><code class="n">distance </code><code class="k">DESC</code>
+        <code class="k">LIMIT </code><code class="n">10;</code></pre>
+        
+        <p>The query returns the following result:</p>
+        <table>
+        
+        <thead>
+        <tr>
+        <th>source</th>
+        <th>target</th>
+        <th>distance</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Doncaster</p></td>
+        <td><p>Hoek van Holland</p></td>
+        <td><p>529.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Rotterdam</p></td>
+        <td><p>Doncaster</p></td>
+        <td><p>528.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Gouda</p></td>
+        <td><p>Doncaster</p></td>
+        <td><p>524.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Felixstowe</p></td>
+        <td><p>Immingham</p></td>
+        <td><p>511.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Den Haag</p></td>
+        <td><p>Doncaster</p></td>
+        <td><p>502.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Ipswich</p></td>
+        <td><p>Immingham</p></td>
+        <td><p>489.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Utrecht</p></td>
+        <td><p>Doncaster</p></td>
+        <td><p>489.0</p></td>
+        </tr>
+        <tr>
+        <td><p>London</p></td>
+        <td><p>Utrecht</p></td>
+        <td><p>460.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Colchester</p></td>
+        <td><p>Immingham</p></td>
+        <td><p>457.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Immingham</p></td>
+        <td><p>Hoek van Holland</p></td>
+        <td><p>455.0</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>Now we’re seeing the 10 pairs of locations furthest from each other in terms of the total distance between them. Notice that Doncaster shows up frequently along with several cities in the Netherlands. It looks like it would be a long drive if we wanted to take a road trip between those areas<a data-type="indexterm" data-startref="ix_ch04-adoc27" id="idm46681370362440"></a><a data-type="indexterm" data-startref="ix_ch04-adoc26" id="idm46681370361736"></a>.<a data-type="indexterm" data-startref="ix_ch04-adoc24" id="idm46681370360936"></a><a data-type="indexterm" data-startref="ix_ch04-adoc23" id="idm46681370360232"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Single Source Shortest Path"><div class="sect1" id="single_source_shortest_path">
+        <h1>Single Source Shortest Path</h1>
+        
+        <p><a data-type="indexterm" data-primary="Pathfinding algorithms" data-secondary="Single Source Shortest Path" id="ix_ch04-adoc28"></a><a data-type="indexterm" data-primary="Single Source Shortest Path (SSSP) algorithm" id="ix_ch04-adoc29"></a>The Single Source Shortest Path (SSSP) algorithm, which came into prominence at around the same time as Dijkstra’s Shortest Path algorithm, acts as an implementation for both problems.</p>
+        
+        <p>The SSSP algorithm calculates the shortest (weighted) path from a root node to all other nodes in the graph, as demonstrated in <a data-type="xref" href="#sssp-steps-image">Figure&nbsp;4-9</a>.</p>
+        
+        <figure><div id="sssp-steps-image" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/gral_rr_0409.png" alt="gral rr 0409" width="1425" height="1084">
+        <h6><span class="label">Figure 4-9. </span>The steps of the Single Source Shortest Path algorithm</h6>
+        </div></figure>
+        
+        <p>It proceeds as follows:</p>
+        <ol>
+        <li>
+        <p>It begins with a root node from which all paths will be measured. In <a data-type="xref" href="#sssp-steps-image">Figure&nbsp;4-9</a> we’ve selected node A as the root.</p>
+        </li>
+        <li>
+        <p>The relationship with the smallest weight coming from that root node is selected and added to the tree, along with its connected node. In this case, that’s d(A,D)=1.</p>
+        </li>
+        <li>
+        <p>The next relationship with the smallest cumulative weight from our root node to any unvisited node is selected and added to the tree in the same way. Our choices in <a data-type="xref" href="#sssp-steps-image">Figure&nbsp;4-9</a> are d(A,B)=8, d(A,C)=5 directly or 4 via A-D-C, and d(A,E)=5. So, the route via A-D-C is chosen and C is added to our tree.</p>
+        </li>
+        <li>
+        <p>The process continues until there are no more nodes to add and we have our single source shortest path.</p>
+        </li>
+        
+        </ol>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="When Should I Use Single Source Shortest Path?"><div class="sect2" id="idm46681370345144">
+        <h2>When Should I Use Single Source Shortest Path?</h2>
+        
+        <p>Use Single Source Shortest Path when you need to evaluate the optimal route from a fixed start point to all other individual nodes.
+        Because the route is chosen based on the total path weight from the root, it’s useful for finding the best path to each node, but not necessarily when all nodes need to be visited in a single trip.</p>
+        
+        <p>For example, SSSP is helpful for identifying the main routes to use for emergency services where you don’t visit every location on each incident, but not for finding a single route for garbage collection where you need to visit each house in one trip.
+        (In the latter case, you’d use the Minimum Spanning Tree algorithm, covered later.)</p>
+        
+        <p>Example use cases include:</p>
+        
+        <ul>
+        <li>
+        <p>Detecting changes in topology, such as link failures, and <a href="https://bit.ly/2HL7ndd">suggesting a new routing structure in seconds</a></p>
+        </li>
+        <li>
+        <p>Using Dijkstra as an IP routing protocol for use in autonomous systems such as a <a href="https://bit.ly/2HUsAAr">local area network (LAN)</a></p>
+        </li>
+        </ul>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Single Source Shortest Path with Apache Spark"><div class="sect2" id="idm46681370321784">
+        <h2>Single Source Shortest Path with Apache Spark</h2>
+        
+        <p><a data-type="indexterm" data-primary="Apache Spark" data-secondary="Single Source Shortest Path algorithm with" id="ix_ch04-adoc30"></a><a data-type="indexterm" data-primary="Single Source Shortest Path (SSSP) algorithm" data-secondary="with Apache Spark" id="ix_ch04-adoc31"></a>We can adapt the <code>shortest_path</code> function that we wrote to <a href="#shortest-weighted-path-spark">calculate the shortest path between two locations</a> to instead return us the shortest path from one location to all others. <a data-type="indexterm" data-primary="aggregateMessages" id="idm46681370316440"></a>Note that we’re using Spark’s <code>aggregateMessages</code> framework again to customize our function.</p>
+        
+        <p>We’ll first import the same libraries as before:</p>
+        
+        <pre data-type="programlisting" data-code-language="python"><code class="kn">from</code> <code class="nn">graphframes.lib</code> <code class="kn">import</code> <code class="n">AggregateMessages</code> <code class="k">as</code> <code class="n">AM</code>
+        <code class="kn">from</code> <code class="nn">pyspark.sql</code> <code class="kn">import</code> <code class="n">functions</code> <code class="k">as</code> <code class="n">F</code></pre>
+        
+        <p>And we’ll use the same user-defined function to construct paths:</p>
+        
+        <pre data-type="programlisting" data-code-language="python"><code class="n">add_path_udf</code> <code class="o">=</code> <code class="n">F</code><code class="o">.</code><code class="n">udf</code><code class="p">(</code><code class="k">lambda</code> <code class="n">path</code><code class="p">,</code> <code class="nb">id</code><code class="p">:</code> <code class="n">path</code> <code class="o">+</code> <code class="p">[</code><code class="nb">id</code><code class="p">],</code> <code class="n">ArrayType</code><code class="p">(</code><code class="n">StringType</code><code class="p">()))</code></pre>
+        
+        <p>Now for the main function, which calculates the shortest path starting from an origin:</p>
+        
+        <pre data-type="programlisting" data-code-language="python"><code class="k">def</code> <code class="nf">sssp</code><code class="p">(</code><code class="n">g</code><code class="p">,</code> <code class="n">origin</code><code class="p">,</code> <code class="n">column_name</code><code class="o">=</code><code class="s2">"cost"</code><code class="p">):</code>
+            <code class="n">vertices</code> <code class="o">=</code> <code class="n">g</code><code class="o">.</code><code class="n">vertices</code> \
+                <code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"visited"</code><code class="p">,</code> <code class="n">F</code><code class="o">.</code><code class="n">lit</code><code class="p">(</code><code class="bp">False</code><code class="p">))</code> \
+                <code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"distance"</code><code class="p">,</code>
+                    <code class="n">F</code><code class="o">.</code><code class="n">when</code><code class="p">(</code><code class="n">g</code><code class="o">.</code><code class="n">vertices</code><code class="p">[</code><code class="s2">"id"</code><code class="p">]</code> <code class="o">==</code> <code class="n">origin</code><code class="p">,</code> <code class="mi">0</code><code class="p">)</code><code class="o">.</code><code class="n">otherwise</code><code class="p">(</code><code class="nb">float</code><code class="p">(</code><code class="s2">"inf"</code><code class="p">)))</code> \
+                <code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"path"</code><code class="p">,</code> <code class="n">F</code><code class="o">.</code><code class="n">array</code><code class="p">())</code>
+            <code class="n">cached_vertices</code> <code class="o">=</code> <code class="n">AM</code><code class="o">.</code><code class="n">getCachedDataFrame</code><code class="p">(</code><code class="n">vertices</code><code class="p">)</code>
+            <code class="n">g2</code> <code class="o">=</code> <code class="n">GraphFrame</code><code class="p">(</code><code class="n">cached_vertices</code><code class="p">,</code> <code class="n">g</code><code class="o">.</code><code class="n">edges</code><code class="p">)</code>
+        
+            <code class="k">while</code> <code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">filter</code><code class="p">(</code><code class="s1">'visited == False'</code><code class="p">)</code><code class="o">.</code><code class="n">first</code><code class="p">():</code>
+                <code class="n">current_node_id</code> <code class="o">=</code> <code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">filter</code><code class="p">(</code><code class="s1">'visited == False'</code><code class="p">)</code>
+                                    <code class="o">.</code><code class="n">sort</code><code class="p">(</code><code class="s2">"distance"</code><code class="p">)</code><code class="o">.</code><code class="n">first</code><code class="p">()</code><code class="o">.</code><code class="n">id</code>
+        
+                <code class="n">msg_distance</code> <code class="o">=</code> <code class="n">AM</code><code class="o">.</code><code class="n">edge</code><code class="p">[</code><code class="n">column_name</code><code class="p">]</code> <code class="o">+</code> <code class="n">AM</code><code class="o">.</code><code class="n">src</code><code class="p">[</code><code class="s1">'distance'</code><code class="p">]</code>
+                <code class="n">msg_path</code> <code class="o">=</code> <code class="n">add_path_udf</code><code class="p">(</code><code class="n">AM</code><code class="o">.</code><code class="n">src</code><code class="p">[</code><code class="s2">"path"</code><code class="p">],</code> <code class="n">AM</code><code class="o">.</code><code class="n">src</code><code class="p">[</code><code class="s2">"id"</code><code class="p">])</code>
+                <code class="n">msg_for_dst</code> <code class="o">=</code> <code class="n">F</code><code class="o">.</code><code class="n">when</code><code class="p">(</code><code class="n">AM</code><code class="o">.</code><code class="n">src</code><code class="p">[</code><code class="s1">'id'</code><code class="p">]</code> <code class="o">==</code> <code class="n">current_node_id</code><code class="p">,</code>
+                              <code class="n">F</code><code class="o">.</code><code class="n">struct</code><code class="p">(</code><code class="n">msg_distance</code><code class="p">,</code> <code class="n">msg_path</code><code class="p">))</code>
+                <code class="n">new_distances</code> <code class="o">=</code> <code class="n">g2</code><code class="o">.</code><code class="n">aggregateMessages</code><code class="p">(</code>
+                    <code class="n">F</code><code class="o">.</code><code class="n">min</code><code class="p">(</code><code class="n">AM</code><code class="o">.</code><code class="n">msg</code><code class="p">)</code><code class="o">.</code><code class="n">alias</code><code class="p">(</code><code class="s2">"aggMess"</code><code class="p">),</code> <code class="n">sendToDst</code><code class="o">=</code><code class="n">msg_for_dst</code><code class="p">)</code>
+        
+                <code class="n">new_visited_col</code> <code class="o">=</code> <code class="n">F</code><code class="o">.</code><code class="n">when</code><code class="p">(</code>
+                    <code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">visited</code> <code class="o">|</code> <code class="p">(</code><code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">id</code> <code class="o">==</code> <code class="n">current_node_id</code><code class="p">),</code>
+                                          <code class="bp">True</code><code class="p">)</code><code class="o">.</code><code class="n">otherwise</code><code class="p">(</code><code class="bp">False</code><code class="p">)</code>
+                <code class="n">new_distance_col</code> <code class="o">=</code> <code class="n">F</code><code class="o">.</code><code class="n">when</code><code class="p">(</code><code class="n">new_distances</code><code class="p">[</code><code class="s2">"aggMess"</code><code class="p">]</code><code class="o">.</code><code class="n">isNotNull</code><code class="p">()</code> <code class="o">&amp;</code>
+                                          <code class="p">(</code><code class="n">new_distances</code><code class="o">.</code><code class="n">aggMess</code><code class="p">[</code><code class="s2">"col1"</code><code class="p">]</code> <code class="o">&lt;</code>
+                                          <code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">distance</code><code class="p">),</code>
+                                          <code class="n">new_distances</code><code class="o">.</code><code class="n">aggMess</code><code class="p">[</code><code class="s2">"col1"</code><code class="p">])</code> \
+                                          <code class="o">.</code><code class="n">otherwise</code><code class="p">(</code><code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">distance</code><code class="p">)</code>
+                <code class="n">new_path_col</code> <code class="o">=</code> <code class="n">F</code><code class="o">.</code><code class="n">when</code><code class="p">(</code><code class="n">new_distances</code><code class="p">[</code><code class="s2">"aggMess"</code><code class="p">]</code><code class="o">.</code><code class="n">isNotNull</code><code class="p">()</code> <code class="o">&amp;</code>
+                                      <code class="p">(</code><code class="n">new_distances</code><code class="o">.</code><code class="n">aggMess</code><code class="p">[</code><code class="s2">"col1"</code><code class="p">]</code> <code class="o">&lt;</code>
+                                      <code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">distance</code><code class="p">),</code>
+                                      <code class="n">new_distances</code><code class="o">.</code><code class="n">aggMess</code><code class="p">[</code><code class="s2">"col2"</code><code class="p">]</code>
+                                      <code class="o">.</code><code class="n">cast</code><code class="p">(</code><code class="s2">"array&lt;string&gt;"</code><code class="p">))</code> \
+                                      <code class="o">.</code><code class="n">otherwise</code><code class="p">(</code><code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">path</code><code class="p">)</code>
+        
+                <code class="n">new_vertices</code> <code class="o">=</code> <code class="n">g2</code><code class="o">.</code><code class="n">vertices</code><code class="o">.</code><code class="n">join</code><code class="p">(</code><code class="n">new_distances</code><code class="p">,</code> <code class="n">on</code><code class="o">=</code><code class="s2">"id"</code><code class="p">,</code>
+                                                <code class="n">how</code><code class="o">=</code><code class="s2">"left_outer"</code><code class="p">)</code> \
+                    <code class="o">.</code><code class="n">drop</code><code class="p">(</code><code class="n">new_distances</code><code class="p">[</code><code class="s2">"id"</code><code class="p">])</code> \
+                    <code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"visited"</code><code class="p">,</code> <code class="n">new_visited_col</code><code class="p">)</code> \
+                    <code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"newDistance"</code><code class="p">,</code> <code class="n">new_distance_col</code><code class="p">)</code> \
+                    <code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"newPath"</code><code class="p">,</code> <code class="n">new_path_col</code><code class="p">)</code> \
+                    <code class="o">.</code><code class="n">drop</code><code class="p">(</code><code class="s2">"aggMess"</code><code class="p">,</code> <code class="s2">"distance"</code><code class="p">,</code> <code class="s2">"path"</code><code class="p">)</code> \
+                    <code class="o">.</code><code class="n">withColumnRenamed</code><code class="p">(</code><code class="s1">'newDistance'</code><code class="p">,</code> <code class="s1">'distance'</code><code class="p">)</code> \
+                    <code class="o">.</code><code class="n">withColumnRenamed</code><code class="p">(</code><code class="s1">'newPath'</code><code class="p">,</code> <code class="s1">'path'</code><code class="p">)</code>
+                <code class="n">cached_new_vertices</code> <code class="o">=</code> <code class="n">AM</code><code class="o">.</code><code class="n">getCachedDataFrame</code><code class="p">(</code><code class="n">new_vertices</code><code class="p">)</code>
+                <code class="n">g2</code> <code class="o">=</code> <code class="n">GraphFrame</code><code class="p">(</code><code class="n">cached_new_vertices</code><code class="p">,</code> <code class="n">g2</code><code class="o">.</code><code class="n">edges</code><code class="p">)</code>
+        
+            <code class="k">return</code> <code class="n">g2</code><code class="o">.</code><code class="n">vertices</code> \
+                        <code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"newPath"</code><code class="p">,</code> <code class="n">add_path_udf</code><code class="p">(</code><code class="s2">"path"</code><code class="p">,</code> <code class="s2">"id"</code><code class="p">))</code> \
+                        <code class="o">.</code><code class="n">drop</code><code class="p">(</code><code class="s2">"visited"</code><code class="p">,</code> <code class="s2">"path"</code><code class="p">)</code> \
+                        <code class="o">.</code><code class="n">withColumnRenamed</code><code class="p">(</code><code class="s2">"newPath"</code><code class="p">,</code> <code class="s2">"path"</code><code class="p">)</code></pre>
+        
+        <p>If we want to find the shortest path from Amsterdam to all other locations we can call the function like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="python"><code class="n">via_udf</code> <code class="o">=</code> <code class="n">F</code><code class="o">.</code><code class="n">udf</code><code class="p">(</code><code class="k">lambda</code> <code class="n">path</code><code class="p">:</code> <code class="n">path</code><code class="p">[</code><code class="mi">1</code><code class="p">:</code><code class="o">-</code><code class="mi">1</code><code class="p">],</code> <code class="n">ArrayType</code><code class="p">(</code><code class="n">StringType</code><code class="p">()))</code></pre>
+        
+        <pre data-type="programlisting" data-code-language="python"><code class="n">result</code> <code class="o">=</code> <code class="n">sssp</code><code class="p">(</code><code class="n">g</code><code class="p">,</code> <code class="s2">"Amsterdam"</code><code class="p">,</code> <code class="s2">"cost"</code><code class="p">)</code>
+        <code class="p">(</code><code class="n">result</code>
+         <code class="o">.</code><code class="n">withColumn</code><code class="p">(</code><code class="s2">"via"</code><code class="p">,</code> <code class="n">via_udf</code><code class="p">(</code><code class="s2">"path"</code><code class="p">))</code>
+         <code class="o">.</code><code class="n">select</code><code class="p">(</code><code class="s2">"id"</code><code class="p">,</code> <code class="s2">"distance"</code><code class="p">,</code> <code class="s2">"via"</code><code class="p">)</code>
+         <code class="o">.</code><code class="n">sort</code><code class="p">(</code><code class="s2">"distance"</code><code class="p">)</code>
+         <code class="o">.</code><code class="n">show</code><code class="p">(</code><code class="n">truncate</code><code class="o">=</code><code class="bp">False</code><code class="p">))</code></pre>
+        
+        <p>We define another user-defined function to filter out the start and end nodes from the resulting path.
+        If we run that code we’ll see the following output:</p>
+        <table>
+        
+        <thead>
+        <tr>
+        <th>id</th>
+        <th>distance</th>
+        <th>via</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Amsterdam</p></td>
+        <td><p>0.0</p></td>
+        <td><p>[]</p></td>
+        </tr>
+        <tr>
+        <td><p>Utrecht</p></td>
+        <td><p>46.0</p></td>
+        <td><p>[]</p></td>
+        </tr>
+        <tr>
+        <td><p>Den Haag</p></td>
+        <td><p>59.0</p></td>
+        <td><p>[]</p></td>
+        </tr>
+        <tr>
+        <td><p>Gouda</p></td>
+        <td><p>81.0</p></td>
+        <td><p>[Utrecht]</p></td>
+        </tr>
+        <tr>
+        <td><p>Rotterdam</p></td>
+        <td><p>85.0</p></td>
+        <td><p>[Den Haag]</p></td>
+        </tr>
+        <tr>
+        <td><p>Hoek van Holland</p></td>
+        <td><p>86.0</p></td>
+        <td><p>[Den Haag]</p></td>
+        </tr>
+        <tr>
+        <td><p>Felixstowe</p></td>
+        <td><p>293.0</p></td>
+        <td><p>[Den Haag, Hoek van Holland]</p></td>
+        </tr>
+        <tr>
+        <td><p>Ipswich</p></td>
+        <td><p>315.0</p></td>
+        <td><p>[Den Haag, Hoek van Holland, Felixstowe]</p></td>
+        </tr>
+        <tr>
+        <td><p>Colchester</p></td>
+        <td><p>347.0</p></td>
+        <td><p>[Den Haag, Hoek van Holland, Felixstowe, Ipswich]</p></td>
+        </tr>
+        <tr>
+        <td><p>Immingham</p></td>
+        <td><p>369.0</p></td>
+        <td><p>[]</p></td>
+        </tr>
+        <tr>
+        <td><p>Doncaster</p></td>
+        <td><p>443.0</p></td>
+        <td><p>[Immingham]</p></td>
+        </tr>
+        <tr>
+        <td><p>London</p></td>
+        <td><p>453.0</p></td>
+        <td><p>[Den Haag, Hoek van Holland, Felixstowe, Ipswich, Colchester]</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>In these results we see the physical distances in kilometers from the root node, Amsterdam, to all other cities in the graph, ordered by shortest distance.<a data-type="indexterm" data-startref="ix_ch04-adoc31" id="idm46681369726168"></a><a data-type="indexterm" data-startref="ix_ch04-adoc30" id="idm46681369725576"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Single Source Shortest Path with Neo4j"><div class="sect2" id="idm46681370321192">
+        <h2>Single Source Shortest Path with Neo4j</h2>
+        
+        <p><a data-type="indexterm" data-primary="delta-stepping algorithm" id="idm46681369723528"></a><a data-type="indexterm" data-primary="Neo4j" data-secondary="Single Source Shortest Path algorithm with" id="idm46681369722856"></a><a data-type="indexterm" data-primary="Single Source Shortest Path (SSSP) algorithm" data-secondary="with Neo4j" id="idm46681369721944"></a>Neo4j implements a variation of SSSP, called the <a href="https://bit.ly/2UaCHrw">Delta-Stepping algorithm</a> that divides Dijkstra’s algorithm into a number of phases that can be executed in parallel.</p>
+        
+        <p>The Single Source Shortest Path algorithm takes in a config map with the following keys:</p>
+        <dl>
+        <dt><code>startNode</code></dt>
+        <dd>
+        <p>The node where our shortest path search begins.</p>
+        </dd>
+        <dt><code>nodeProjection</code></dt>
+        <dd>
+        <p>Enables the mapping of specific kinds of nodes into the in-memory graph. We can declare one or more node labels.</p>
+        </dd>
+        <dt><code>relationshipProjection</code></dt>
+        <dd>
+        <p>Enables the mapping of relationship types into the in-memory graph. We can declare one or more relationship types along with direction and properties.</p>
+        </dd>
+        <dt><code>relationshipWeightProperty</code></dt>
+        <dd>
+        <p>The relationship property that indicates the cost of traversing between a pair of nodes. The cost is the number of kilometers between two locations.</p>
+        </dd>
+        <dt><code>delta</code></dt>
+        <dd>
+        <p>The grade of concurrency to use</p>
+        </dd>
+        </dl>
+        
+        <p>The following query executes the Delta-Stepping algorithm:</p>
+        
+        <pre data-type="programlisting" data-code-language="cypher"><code class="k">MATCH</code><code class="n"> (n:Place {</code><code class="nf">id</code><code class="n">:</code><code class="s2">"London"</code><code class="n">})</code>
+        <code class="n">CALL gds.alpha.shortestPath.deltaStepping.stream({</code>
+        <code class="n">  startNode: n,</code>
+        <code class="n">  nodeProjection: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">  relationshipProjection: {</code>
+        <code class="n">    </code><code class="nf">all</code><code class="n">: {</code>
+        <code class="n">      </code><code class="nf">type</code><code class="n">: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">      properties: </code><code class="s2">"distance"</code><code class="n">,</code>
+        <code class="n">      orientation:  </code><code class="s2">"UNDIRECTED"</code><code class="n"></code>
+        <code class="n">    }</code>
+        <code class="n">  },</code>
+        <code class="n">  relationshipWeightProperty: </code><code class="s2">"distance"</code><code class="n">,</code>
+        <code class="n">  delta: 1.0</code>
+        <code class="n">})</code>
+        <code class="n">YIELD nodeId, distance</code>
+        <code class="k">WHERE </code><code class="n">gds.util.isFinite(distance)</code>
+        <code class="k">RETURN </code><code class="n">gds.util.asNode(nodeId).</code><code class="nf">id </code><code class="k">AS </code><code class="n">destination, distance</code>
+        <code class="k">ORDER BY </code><code class="n">distance;</code></pre>
+        
+        <p>The query returns the following output:</p>
+        <table>
+        
+        <thead>
+        <tr>
+        <th>destination</th>
+        <th>distance</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>London</p></td>
+        <td><p>0.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Colchester</p></td>
+        <td><p>106.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Ipswich</p></td>
+        <td><p>138.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Felixstowe</p></td>
+        <td><p>160.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Doncaster</p></td>
+        <td><p>277.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Immingham</p></td>
+        <td><p>351.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Hoek van Holland</p></td>
+        <td><p>367.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Den Haag</p></td>
+        <td><p>394.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Rotterdam</p></td>
+        <td><p>400.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Gouda</p></td>
+        <td><p>425.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Amsterdam</p></td>
+        <td><p>453.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Utrecht</p></td>
+        <td><p>460.0</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>In these results we see the physical distances in kilometers from the root node, London, to all other cities in the graph, ordered by shortest distance.<a data-type="indexterm" data-startref="ix_ch04-adoc29" id="idm46681369514792"></a><a data-type="indexterm" data-startref="ix_ch04-adoc28" id="idm46681369514088"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Minimum Spanning Tree"><div class="sect1" id="minimum_weight_spanning_tree">
+        <h1>Minimum Spanning Tree</h1>
+        
+        <p><a data-type="indexterm" data-primary="Minimum Spanning Tree algorithm" id="ix_ch04-adoc32"></a><a data-type="indexterm" data-primary="Pathfinding algorithms" data-secondary="Minimum Spanning Tree algorithm" id="ix_ch04-adoc33"></a>The Minimum (Weight) Spanning Tree algorithm starts from a given node and finds all its reachable nodes and the set of relationships that connect the nodes together with the minimum possible weight.
+        It traverses to the next unvisited node with the lowest weight from any visited node, avoiding cycles.</p>
+        
+        <p>The first known Minimum Weight Spanning Tree algorithm was developed by the Czech scientist Otakar Borůvka in 1926.
+        <a data-type="indexterm" data-primary="Boruvka, Otakar" id="idm46681369508424"></a><a data-type="indexterm" data-primary="Prim's algorithm" id="idm46681369507720"></a>Prim’s algorithm, invented in 1957, is the simplest and best known.</p>
+        
+        <p>Prim’s algorithm is similar to Dijkstra’s Shortest Path algorithm, but rather than minimizing the total length of a path ending at each relationship, it minimizes the length of each relationship individually.
+        Unlike Dijkstra’s algorithm, it tolerates negative-weight relationships.</p>
+        
+        <p>The Minimum Spanning Tree algorithm operates as demonstrated in <a data-type="xref" href="#mst-steps-image">Figure&nbsp;4-10</a>.</p>
+        
+        <figure><div id="mst-steps-image" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/gral_rr_0410.png" alt="gral rr 0410" width="1415" height="298">
+        <h6><span class="label">Figure 4-10. </span>The steps of the Minimum Spanning Tree algorithm</h6>
+        </div></figure>
+        
+        <p>The steps are as follows:</p>
+        <ol>
+        <li>
+        <p>It begins with a tree containing only one node. In <a data-type="xref" href="#mst-steps-image">Figure&nbsp;4-10</a> we start with node A.</p>
+        </li>
+        <li>
+        <p>The relationship with smallest weight coming from that node is selected and added to the tree (along with its connected node). In this case, A-D.</p>
+        </li>
+        <li>
+        <p>This process is repeated, always choosing the minimal-weight relationship that joins any node not already in the tree. If you compare our example here to the SSSP example in <a data-type="xref" href="#sssp-steps-image">Figure&nbsp;4-9</a> you’ll notice that in the fourth graph the paths become different. This is because SSSP evaluates the shortest path based on cumulative totals from the root, whereas Minimum Spanning Tree only looks at the cost of the next step.</p>
+        </li>
+        <li>
+        <p>When there are no more nodes to add, the tree is a minimum spanning tree.</p>
+        </li>
+        
+        </ol>
+        
+        <p>There are also variants of this algorithm that find the maximum-weight spanning tree (highest-cost tree) and the <em>k</em>-spanning tree (tree size limited).</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="When Should I Use Minimum Spanning Tree?"><div class="sect2" id="idm46681369495272">
+        <h2>When Should I Use Minimum Spanning Tree?</h2>
+        
+        <p><a data-type="indexterm" data-primary="Minimum Spanning Tree algorithm" data-secondary="when to use" id="idm46681369650840"></a>Use Minimum Spanning Tree when you need the best route to visit all nodes.
+        Because the route is chosen based on the cost of each next step, it’s useful when you must visit all nodes in a single walk.
+        (Review the previous section on <a data-type="xref" href="#single_source_shortest_path">“Single Source Shortest Path”</a> if you don’t need a path for a single trip.)</p>
+        
+        <p>You can use this algorithm for optimizing paths for connected systems like water pipes and circuit design.
+        It’s also employed to approximate some problems with unknown compute times, such as the Traveling Salesman Problem and certain types of rounding problems.  Although it may not always find the absolute optimal solution, this algorithm makes potentially complicated and compute-intensive analysis much more approachable.</p>
+        
+        <p>Example use cases include:</p>
+        
+        <ul>
+        <li>
+        <p>Minimizing the travel cost of exploring a country.
+        <a href="https://bit.ly/2CQBs6Q">“An Application of Minimum Spanning Trees to Travel Planning”</a> describes how the algorithm analyzed airline and sea connections to do this.</p>
+        </li>
+        <li>
+        <p>Visualizing correlations between currency returns.
+        This is described in <a href="https://bit.ly/2HFbGGG">“Minimum Spanning Tree Application in the Currency Market”</a>.</p>
+        </li>
+        <li>
+        <p>Tracing the history of infection transmission in an outbreak.
+        For more information, see <a href="https://bit.ly/2U7SR4Y">“Use of the Minimum Spanning Tree Model for Molecular Epidemiological Investigation of a Nosocomial Outbreak of Hepatitis C Virus Infection”</a>.</p>
+        </li>
+        </ul>
+        <div data-type="warning" epub:type="warning"><h6>Warning</h6>
+        <p>The Minimum Spanning Tree algorithm only gives meaningful results when run on a graph where the relationships have different weights.
+        If the graph has no weights, or all relationships have the same weight, then any spanning tree is a minimum spanning tree.</p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Minimum Spanning Tree with Neo4j"><div class="sect2" id="idm46681369640344">
+        <h2>Minimum Spanning Tree with Neo4j</h2>
+        
+        <p><a data-type="indexterm" data-primary="Minimum Spanning Tree algorithm" data-secondary="with Neo4j" id="idm46681369638776"></a><a data-type="indexterm" data-primary="Neo4j" data-secondary="Minimum Spanning Tree algorithm with" id="idm46681369637736"></a>Let’s see the Minimum Spanning Tree algorithm in action.
+        The Minimum Spanning Tree algorithm takes in a config map with the following keys:</p>
+        <dl>
+        <dt><code>startNodeId</code></dt>
+        <dd>
+        <p>The id of the node where our shortest path search begins.</p>
+        </dd>
+        <dt><code>nodeProjection</code></dt>
+        <dd>
+        <p>Enables the mapping of specific kinds of nodes into the in-memory graph. We can declare one or more node labels.</p>
+        </dd>
+        <dt><code>relationshipProjection</code></dt>
+        <dd>
+        <p>Enables the mapping of relationship types into the in-memory graph. We can declare one or more relationship types along with direction and properties.</p>
+        </dd>
+        <dt><code>relationshipWeightProperty</code></dt>
+        <dd>
+        <p>The relationship property that indicates the cost of traversing between a pair of nodes. The cost is the number of kilometers between two locations.</p>
+        </dd>
+        <dt><code>writeProperty</code></dt>
+        <dd>
+        <p>The name of the relationship type written back as a result</p>
+        </dd>
+        <dt><code>weightWriteProperty</code></dt>
+        <dd>
+        <p>The name of the weight property on the <code>writeProperty</code> relationship type written back</p>
+        </dd>
+        </dl>
+        
+        <p>The following query finds a spanning tree starting from Amsterdam:</p>
+        
+        <pre data-type="programlisting" data-code-language="cypher"><code class="k">MATCH</code><code class="n"> (n:Place {</code><code class="nf">id</code><code class="n">:</code><code class="s2">"Amsterdam"</code><code class="n">})</code>
+        <code class="n">CALL gds.alpha.spanningTree.minimum.write({</code>
+        <code class="n">  startNodeId: </code><code class="nf">id</code><code class="n">(n),</code>
+        <code class="n">  nodeProjection: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">  relationshipProjection: {</code>
+        <code class="n">    EROAD: {</code>
+        <code class="n">      </code><code class="nf">type</code><code class="n">: </code><code class="s2">"EROAD"</code><code class="n">,</code>
+        <code class="n">      properties: </code><code class="s2">"distance"</code><code class="n">,</code>
+        <code class="n">      orientation:  </code><code class="s2">"UNDIRECTED"</code><code class="n"></code>
+        <code class="n">    }</code>
+        <code class="n">  },</code>
+        <code class="n">  relationshipWeightProperty: </code><code class="s2">"distance"</code><code class="n">,</code>
+        <code class="n">  writeProperty: </code><code class="s1">'MINST'</code><code class="n">,</code>
+        <code class="n">  weightWriteProperty: </code><code class="s1">'cost'</code><code class="n"></code>
+        <code class="n">})</code>
+        <code class="n">YIELD createMillis, computeMillis, writeMillis, effectiveNodeCount</code>
+        <code class="k">RETURN </code><code class="n">createMillis, computeMillis, writeMillis, effectiveNodeCount;</code></pre>
+        
+        <p>The parameters passed to this algorithm are:</p>
+        <dl>
+        <dt><code>Place</code></dt>
+        <dd>
+        <p>The node labels to consider when computing the spanning tree</p>
+        </dd>
+        <dt><code>EROAD</code></dt>
+        <dd>
+        <p>The relationship types to consider when computing the spanning tree</p>
+        </dd>
+        <dt><code>distance</code></dt>
+        <dd>
+        <p>The name of the relationship property that indicates the cost of traversing between a pair of nodes</p>
+        </dd>
+        <dt><code>id(n)</code></dt>
+        <dd>
+        <p>The internal node id of the node from which the spanning tree should begin</p>
+        </dd>
+        </dl>
+        
+        <p>This query stores its results in the graph.
+        If we want to return the minimum weight spanning tree we can run the following query:</p>
+        
+        <pre data-type="programlisting" data-code-language="cypher"><code class="k">MATCH </code><code class="n">path = (n:Place {</code><code class="nf">id</code><code class="n">:</code><code class="s2">"Amsterdam"</code><code class="n">})-[:MINST*]-()</code>
+        <code class="k">WITH </code><code class="nf">relationships</code><code class="n">(path) </code><code class="k">AS </code><code class="n">rels</code>
+        <code class="n">UNWIND rels </code><code class="k">AS rel</code>
+        <code class="k">WITH DISTINCT rel AS rel</code>
+        <code class="k">RETURN </code><code class="n">startNode(</code><code class="k">rel</code><code class="n">).</code><code class="nf">id </code><code class="k">AS </code><code class="n">source,</code>
+        <code class="n">       endNode(</code><code class="k">rel</code><code class="n">).</code><code class="nf">id </code><code class="k">AS </code><code class="n">destination,</code>
+        <code class="n">       </code><code class="k">rel</code><code class="n">.cost </code><code class="k">AS </code><code class="n">cost;</code></pre>
+        
+        <p>And this is the output of the query:</p>
+        <table>
+        
+        <thead>
+        <tr>
+        <th>source</th>
+        <th>destination</th>
+        <th>cost</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Amsterdam</p></td>
+        <td><p>Utrecht</p></td>
+        <td><p>46.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Utrecht</p></td>
+        <td><p>Gouda</p></td>
+        <td><p>35.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Gouda</p></td>
+        <td><p>Rotterdam</p></td>
+        <td><p>25.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Rotterdam</p></td>
+        <td><p>Den Haag</p></td>
+        <td><p>26.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Den Haag</p></td>
+        <td><p>Hoek van Holland</p></td>
+        <td><p>27.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Hoek van Holland</p></td>
+        <td><p>Felixstowe</p></td>
+        <td><p>207.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Felixstowe</p></td>
+        <td><p>Ipswich</p></td>
+        <td><p>22.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Ipswich</p></td>
+        <td><p>Colchester</p></td>
+        <td><p>32.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Colchester</p></td>
+        <td><p>London</p></td>
+        <td><p>106.0</p></td>
+        </tr>
+        <tr>
+        <td><p>London</p></td>
+        <td><p>Doncaster</p></td>
+        <td><p>277.0</p></td>
+        </tr>
+        <tr>
+        <td><p>Doncaster</p></td>
+        <td><p>Immingham</p></td>
+        <td><p>74.0</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>If we were in Amsterdam and wanted to visit every other place in our dataset during the same trip, <a data-type="xref" href="#mst-image">Figure&nbsp;4-11</a> demonstrates the shortest continuous route to do so.<a data-type="indexterm" data-startref="ix_ch04-adoc33" id="idm46681369230472"></a><a data-type="indexterm" data-startref="ix_ch04-adoc32" id="idm46681369229800"></a></p>
+        
+        <figure><div id="mst-image" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/gral_rr_0411.png" alt="gral rr 0411" width="1428" height="1339">
+        <h6><span class="label">Figure 4-11. </span>A minimum weight spanning tree from Amsterdam</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Random Walk"><div class="sect1" id="random_walk">
+        <h1>Random Walk</h1>
+        
+        <p><a data-type="indexterm" data-primary="Pathfinding algorithms" data-secondary="Random Walk algorithm" id="ix_ch04-adoc34"></a><a data-type="indexterm" data-primary="Random Walk algorithm" id="ix_ch04-adoc35"></a>The Random Walk algorithm provides a set of nodes on a random path in a graph.
+        <a data-type="indexterm" data-primary="Pearson, Karl" id="idm46681369223304"></a>The term was first mentioned by Karl Pearson in 1905 in a letter to <em>Nature</em> magazine titled <a href="https://go.nature.com/2Fy15em">“The Problem of the Random Walk”</a>. Although the concept goes back even further, it’s only more recently that random walks have been applied to network science.</p>
+        
+        <p>A random walk, in general, is sometimes described as being similar to how a drunk person traverses a city.
+        They know what direction or end point they want to reach but may take a very circuitous route to get there.</p>
+        
+        <p>The algorithm starts at one node and somewhat randomly follows one of the relationships forward or backward to a neighbor node.
+        It then does the same from that node and so on, until it reaches the set path length.
+        (We say somewhat randomly because the number of relationships a node has, and its neighbors have, influences the probability a node will be walked through.)</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="When Should I Use Random Walk?"><div class="sect2" id="idm46681369219752">
+        <h2>When Should I Use Random Walk?</h2>
+        
+        <p><a data-type="indexterm" data-primary="Random Walk algorithm" data-secondary="when to use" id="idm46681369218344"></a>Use the Random Walk algorithm as part of other algorithms or data pipelines when you need to generate a mostly random set of connected nodes.</p>
+        
+        <p>Example use cases include:</p>
+        
+        <ul>
+        <li>
+        <p>As part of the node2vec and graph2vec algorithms, that create node embeddings.
+        These node embeddings could then be used as the input to a neural network.</p>
+        </li>
+        <li>
+        <p>As part of the Walktrap and Infomap community detection.
+        If a random walk returns a small set of nodes repeatedly, then it indicates that node set may have a community structure.</p>
+        </li>
+        <li>
+        <p>As part of the training process of machine learning models.
+        This is described further in David Mack’s article <a href="https://bit.ly/2Cx14ph">“Review Prediction with Neo4j and TensorFlow”</a>.</p>
+        </li>
+        </ul>
+        
+        <p>You can read about more use cases in a paper by N. Masuda, M. A. Porter, and R. Lambiotte, <a href="https://bit.ly/2JDvlJ0">“Random Walks and Diffusion on Networks”</a>.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Random Walk with Neo4j"><div class="sect2" id="idm46681369197000">
+        <h2>Random Walk with Neo4j</h2>
+        
+        <p><a data-type="indexterm" data-primary="Neo4j" data-secondary="Random Walk algorithm with" id="idm46681369195464"></a><a data-type="indexterm" data-primary="Random Walk algorithm" data-secondary="with Neo4j" id="idm46681369194520"></a>Neo4j has an implementation of the Random Walk algorithm.
+        It supports two modes for choosing the next relationship to follow at each stage of the algorithm:</p>
+        <dl>
+        <dt><code>random</code></dt>
+        <dd>
+        <p>Randomly chooses a relationship to follow</p>
+        </dd>
+        <dt><code>node2vec</code></dt>
+        <dd>
+        <p>Chooses relationship to follow based on computing a probability distribution of the previous neighbors</p>
+        </dd>
+        </dl>
+        
+        <p>The Random Walk procedure takes in a config map with the following keys:</p>
+        <dl>
+        <dt><code>start</code></dt>
+        <dd>
+        <p>The id of the node where our shortest path search begins.</p>
+        </dd>
+        <dt><code>nodeProjection</code></dt>
+        <dd>
+        <p>Enables the mapping of specific kinds of nodes into the in-memory graph. We can declare one or more node labels.</p>
+        </dd>
+        <dt><code>relationshipProjection</code></dt>
+        <dd>
+        <p>Enables the mapping of relationship types into the in-memory graph. We can declare one or more relationship types along with direction and properties.</p>
+        </dd>
+        <dt><code>walks</code></dt>
+        <dd>
+        <p>The number of paths returned
+        ``</p>
+        </dd>
+        </dl>
+        
+        <p>The following performs a random walk starting from London:</p>
+        
+        <pre data-type="programlisting" data-code-language="cypher"><code class="k">MATCH</code><code class="n"> (source:Place {</code><code class="nf">id</code><code class="n">: </code><code class="s2">"London"</code><code class="n">})</code>
+        <code class="n">CALL gds.alpha.randomWalk.stream({</code>
+        <code class="n">  </code><code class="k">start</code><code class="n">: </code><code class="nf">id</code><code class="n">(source),</code>
+        <code class="n">  nodeProjection: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">  relationshipProjection: {</code>
+        <code class="n">    </code><code class="nf">all</code><code class="n">: {</code>
+        <code class="n">      </code><code class="nf">type</code><code class="n">: </code><code class="s2">"*"</code><code class="n">,</code>
+        <code class="n">      properties: </code><code class="s2">"distance"</code><code class="n">,</code>
+        <code class="n">      orientation:  </code><code class="s2">"UNDIRECTED"</code><code class="n"></code>
+        <code class="n">    }</code>
+        <code class="n">  },</code>
+        <code class="n">  steps: 5,</code>
+        <code class="n">  walks: 1</code>
+        <code class="n">})</code>
+        <code class="n">YIELD nodeIds</code>
+        <code class="n">UNWIND gds.util.asNodes(nodeIds) </code><code class="k">as </code><code class="n">place</code>
+        <code class="k">RETURN </code><code class="n">place.</code><code class="nf">id </code><code class="k">AS </code><code class="n">place</code></pre>
+        
+        <p>It returns the following result:</p>
+        <table>
+        
+        <thead>
+        <tr>
+        <th>place</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>London</p></td>
+        </tr>
+        <tr>
+        <td><p>Doncaster</p></td>
+        </tr>
+        <tr>
+        <td><p>Immingham</p></td>
+        </tr>
+        <tr>
+        <td><p>Amsterdam</p></td>
+        </tr>
+        <tr>
+        <td><p>Utrecht</p></td>
+        </tr>
+        <tr>
+        <td><p>Amsterdam</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>At each stage of the random walk the next relationship is chosen randomly.
+        This means that if we rerun the algorithm, even with the same parameters, we likely won’t get the same result.
+        It’s also possible for a walk to go back on itself, as we can see in <a data-type="xref" href="#randomwalk-image">Figure&nbsp;4-12</a> where we go from Amsterdam to Den Haag and back.<a data-type="indexterm" data-startref="ix_ch04-adoc35" id="idm46681369131320"></a><a data-type="indexterm" data-startref="ix_ch04-adoc34" id="idm46681369130648"></a></p>
+        
+        <figure><div id="randomwalk-image" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492047674/files/assets/gral_0412.png" alt="gral 0412" width="3002" height="493">
+        <h6><span class="label">Figure 4-12. </span>A random walk starting from London</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Summary"><div class="sect1" id="idm46681369196408">
+        <h1>Summary</h1>
+        
+        <p>Pathfinding algorithms are useful for understanding the way that our data is connected.
+        In this chapter we started out with the fundamental Breadth and Depth First algorithms, before moving onto Dijkstra and other shortest path algorithms. We also looked at variants of the shortest path algorithms optimized for finding the shortest path from one node to all other nodes or between all pairs of nodes in a graph. We finished with the Random Walk algorithm, which can be used to find arbitrary sets of paths.<a data-type="indexterm" data-startref="ix_ch04-adoc11" id="idm46681369126216"></a></p>
+        
+        <p>Next we’ll learn about Centrality algorithms that can be used to find influential nodes in a graph.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm46681369124888">
+        <h5>Algorithm Resource</h5>
+        <p>There are many algorithm books, but one stands out for its coverage of fundamental concepts and graph algorithms: <em>The Algorithm Design Manual</em>, by Steven S. Skiena (Springer). We highly recommend this textbook to those seeking a comprehensive resource on classic algorithms and design techniques, or who simply want to dig deeper into how various algorithms operate.</p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        </div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492047674/files/epub.css" crossorigin="anonymous"><script src="https://learning.oreilly.comhttps://cdn.jsdelivr.net/npm/mathjax@3/es5/mml-svg.js"></script></div></div></section>
+</div>
+
+https://learning.oreilly.com

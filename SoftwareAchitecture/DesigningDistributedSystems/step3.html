@@ -1,0 +1,498 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 3. Ambassadors"><div class="chapter" id="ambassadors_id">
+        <h1><span class="label">Chapter 3. </span>Ambassadors</h1>
+        
+        
+        <p><a data-type="indexterm" data-primary="ambassador patterns" id="ix_ch04-asciidoc0"></a><a data-type="indexterm" data-primary="single-node container patterns" data-secondary="ambassadors" id="ix_ch04-asciidoc1"></a>The previous chapter introduced the sidecar pattern, where one container augments a pre-existing container to add functionality. <a data-type="indexterm" data-primary="ambassador patterns" data-secondary="basics" id="idm139824739647504"></a>This chapter introduces the ambassador pattern, where an ambassador container brokers interactions between the application container and the rest of the world. As with other single-node patterns, the two containers are tightly linked in a symbiotic pairing that is scheduled to a single machine. A canonical diagram of this pattern is shown in <a data-type="xref" href="#fig-generic-ambassador">Figure&nbsp;3-1</a>.</p>
+        
+        <figure><div id="fig-generic-ambassador" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781491983638/files/assets/ddis_04in01.png" alt="Generic Ambassador Pattern" width="986" height="306">
+        <h6><span class="label">Figure 3-1. </span>Generic ambassador pattern</h6>
+        </div></figure>
+        
+        <p><a data-type="indexterm" data-primary="ambassador patterns" data-secondary="value of" id="idm139824739643040"></a>The value of the ambassador pattern is twofold. First, as with the other
+        single-node patterns, there is inherent value in building modular, reusable containers. The separation of concerns makes the containers easier to build and maintain. Likewise, the ambassador container can
+        be reused with a number of different application containers. This reuse speeds up application development because the container’s code can
+        be reused in a number of places. Additionally the implementation is
+        both more consistent and of a higher quality because it is built once
+        and used in many different contexts.</p>
+        
+        <p>The rest of this chapter provides a number of examples of using
+        the ambassador pattern to implement a series of real-world applications.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Using an Ambassador to Shard a Service"><div class="sect1" id="idm139824739640656">
+        <h1>Using an Ambassador to Shard a Service</h1>
+        
+        <p><a data-type="indexterm" data-primary="ambassador patterns" data-secondary="sharding a service with" id="ix_ch04-asciidoc2"></a><a data-type="indexterm" data-primary="sharding" data-secondary="with ambassador patterns" id="ix_ch04-asciidoc3"></a><a data-type="indexterm" data-primary="storage layer sharding" id="ix_ch04-asciidoc4"></a>Sometimes the data that you want to store in a storage layer becomes
+        too big for a single machine to handle. In such situations, you need
+        to <em>shard</em> your storage layer. Sharding splits up the layer
+        into multiple disjoint pieces, each hosted by a separate machine.
+        This chapter focuses on a single-node
+        pattern for adapting an existing service to talk to a sharded service
+        that exists somewhere in the world. It does not discuss how the
+        sharded service came to exist. Sharding and a multi-node sharded service design pattern are discussed in great
+        detail in <a data-type="xref" href="ch06.html#sharded_id">Chapter&nbsp;6</a>. A diagram of a sharded service is shown
+        in <a data-type="xref" href="#fig-generic-sharded-service">Figure&nbsp;3-2</a>.</p>
+        
+        <figure><div id="fig-generic-sharded-service" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781491983638/files/assets/ddis_04in02.png" alt="A generic sharded service" width="493" height="382">
+        <h6><span class="label">Figure 3-2. </span>A generic sharded service</h6>
+        </div></figure>
+        
+        <p>When deploying a sharded service, one question that arises is how
+        to integrate it with the frontend or middleware
+        code that stores data. Clearly there needs to be
+        logic that routes a particular request to a particular shard, but
+        often it is difficult to retrofit such a sharded client into existing
+        source code that expects to connect to a single storage backend. Additionally, sharded services make it difficult to share configuration
+        between development environments (where there
+        is often only a single storage shard) and production environments
+        (where there are often many storage shards).</p>
+        
+        <p>One approach is to build all of the sharding logic into the sharded
+        service itself. In this approach, the sharded service also
+        has a stateless load balancer that directs traffic to the appropriate
+        shard. Effectively, this load balancer is a distributed ambassador
+        as a service. This makes a client-side ambassador unnecessary at
+        the expense of a more complicated deployment for the sharded service.
+        The alternative is to integrate a single-node ambassador on the
+        client side to route traffic to the appropriate shard. This makes
+        deploying the client somewhat more complicated but simplifies the
+        deployment of the sharded service. As is always the case with trade-offs, it is up to the particulars of your specific
+        application to determine which approach makes the most sense. Some
+        factors to consider include where team lines fall in your architecture,
+        as well as where you are writing code versus simply deploying
+        off-the-shelf software. Ultimately, either choice is valid. The following section describes how to use the single-node ambassador pattern for
+        client-side sharding.</p>
+        
+        <p>When adapting an existing application to a sharded backend,
+        you can introduce an ambassador container that contains
+        all of the logic needed to route requests to the appropriate storage
+        shard. Thus, your frontend or middleware application only connects
+        to what appears to be a single storage backend running on localhost.
+        However, this server is in fact actually a <a data-type="indexterm" data-primary="sharding ambassador proxy" id="idm139824739579984"></a><em>sharding ambassador proxy</em>,
+        which receives all of the requests from your application code, sends
+        a request to the appropriate storage shard, and then returns the
+        result to your application. This use of an ambassador is diagrammed
+        in <a data-type="xref" href="#fig-service-broker-ambassador">Figure&nbsp;3-3</a>.</p>
+        
+        <p>The net result of applying the ambassador pattern to sharded services
+        is a <a data-type="indexterm" data-primary="separation of concerns" data-secondary="ambassador pattern" id="idm139824739577328"></a>separation of concerns between the application container, which
+        simply knows it needs to talk to a storage service and discovers that
+        service on localhost, and the sharding ambassador proxy, which
+        only contains the code necessary to perform appropriate sharding.
+        As with all good single-node patterns, this ambassador can be reused
+        between many different applications. Or, as we’ll see in the following
+        hands-on example, an off-the shelf open source implementation can
+        be used for the ambassador, speeding up the development of the overall
+        distributed system.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Hands On: Implementing a Sharded Redis"><div class="sect2" id="idm139824739575520">
+        <h2>Hands On: Implementing a Sharded Redis</h2>
+        
+        <p><a data-type="indexterm" data-primary="ambassador patterns" data-secondary="implementing sharded Redis" id="ix_ch04-asciidoc5"></a><a data-type="indexterm" data-primary="Kubernetes" data-secondary="sharded Redis service deployment" id="ix_ch04-asciidoc6"></a><a data-type="indexterm" data-primary="Redis" data-secondary="sharded" id="ix_ch04-asciidoc7"></a><a data-type="indexterm" data-primary="sharding" data-secondary="Redis" id="ix_ch04-asciidoc8"></a>Redis is a fast key-value store that can be used as a cache or
+        for more persistent storage. In this example, we’ll be using it as
+        a cache. We’ll begin by deploying a sharded Redis service to a
+        Kubernetes cluster. We’ll use the <code>StatefulSet</code> API object to
+        deploy it, since it will give us unique DNS names
+        for each shard that we can use when configuring the proxy.</p>
+        
+        <p>The <code>StatefulSet</code> for Redis looks like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="yaml"><code class="l-Scalar-Plain">apiVersion</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">apps/v1beta1</code>
+        <code class="l-Scalar-Plain">kind</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">StatefulSet</code>
+        <code class="l-Scalar-Plain">metadata</code><code class="p-Indicator">:</code>
+          <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">sharded-redis</code>
+        <code class="l-Scalar-Plain">spec</code><code class="p-Indicator">:</code>
+          <code class="l-Scalar-Plain">serviceName</code><code class="p-Indicator">:</code> <code class="s">"redis"</code>
+          <code class="l-Scalar-Plain">replicas</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">3</code>
+          <code class="l-Scalar-Plain">template</code><code class="p-Indicator">:</code>
+            <code class="l-Scalar-Plain">metadata</code><code class="p-Indicator">:</code>
+              <code class="l-Scalar-Plain">labels</code><code class="p-Indicator">:</code>
+                <code class="l-Scalar-Plain">app</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">redis</code>
+            <code class="l-Scalar-Plain">spec</code><code class="p-Indicator">:</code>
+              <code class="l-Scalar-Plain">terminationGracePeriodSeconds</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">10</code>
+              <code class="l-Scalar-Plain">containers</code><code class="p-Indicator">:</code>
+              <code class="p-Indicator">-</code> <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">redis</code>
+                <code class="l-Scalar-Plain">image</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">redis</code>
+                <code class="l-Scalar-Plain">ports</code><code class="p-Indicator">:</code>
+                <code class="p-Indicator">-</code> <code class="l-Scalar-Plain">containerPort</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">6379</code>
+                  <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">redis</code></pre>
+        
+        <p>Save this to a file named <em>redis-shards.yaml</em> and you can deploy this
+        with <code>kubectl <span class="keep-together">create</span> -f redis-shards.yaml</code>. This will create three
+        containers running redis. You can see these by running
+        <code>kubectl get pods</code>; you should see <code>sharded-redis-[0,1,2]</code>.</p>
+        
+        <p>Of course, just running the replicas isn’t sufficient; we also need
+        names by which we can refer to the replicas. In this case, we’ll use
+        a Kubernetes <code>Service</code>, which will create DNS names for the replicas
+        we have created. The <code>Service</code> looks like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="yaml"><code class="l-Scalar-Plain">apiVersion</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">v1</code>
+        <code class="l-Scalar-Plain">kind</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">Service</code>
+        <code class="l-Scalar-Plain">metadata</code><code class="p-Indicator">:</code>
+          <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">redis</code>
+          <code class="l-Scalar-Plain">labels</code><code class="p-Indicator">:</code>
+            <code class="l-Scalar-Plain">app</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">redis</code>
+        <code class="l-Scalar-Plain">spec</code><code class="p-Indicator">:</code>
+          <code class="l-Scalar-Plain">ports</code><code class="p-Indicator">:</code>
+          <code class="p-Indicator">-</code> <code class="l-Scalar-Plain">port</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">6379</code>
+            <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">redis</code>
+          <code class="l-Scalar-Plain">clusterIP</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">None</code>
+          <code class="l-Scalar-Plain">selector</code><code class="p-Indicator">:</code>
+            <code class="l-Scalar-Plain">app</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">redis</code></pre>
+        
+        <p>Save this to a file named <em>redis-service.yaml</em> and deploy with <code>kubectl create -f redis-service.yaml</code>. You should now have DNS entries for
+        <code>sharded-redis-0.redis</code>, <code>sharded-redis-1.redis</code>, etc. <a data-type="indexterm" data-primary="twemproxy" id="idm139824739293104"></a>We can use these
+        names to configure <code>twemproxy</code>. <code>twemproxy</code> is a lightweight, highly
+        performant proxy for <code>memcached</code> and <code>Redis</code>, which was originally
+        developed by Twitter and is open source and available on <a href="https://github.com/twitter/twemproxy">GitHub</a>. We can configure <code>twemproxy</code>
+        to point to the replicas we created by using the following configuration:</p>
+        
+        <pre data-type="programlisting" data-code-language="yaml"><code class="l-Scalar-Plain">redis</code><code class="p-Indicator">:</code>
+          <code class="l-Scalar-Plain">listen</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">127.0.0.1:6379</code>
+          <code class="l-Scalar-Plain">hash</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">fnv1a_64</code>
+          <code class="l-Scalar-Plain">distribution</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">ketama</code>
+          <code class="l-Scalar-Plain">auto_eject_hosts</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">true</code>
+          <code class="l-Scalar-Plain">redis</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">true</code>
+          <code class="l-Scalar-Plain">timeout</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">400</code>
+          <code class="l-Scalar-Plain">server_retry_timeout</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">2000</code>
+          <code class="l-Scalar-Plain">server_failure_limit</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">1</code>
+          <code class="l-Scalar-Plain">servers</code><code class="p-Indicator">:</code>
+           <code class="p-Indicator">-</code> <code class="l-Scalar-Plain">sharded-redis-0.redis:6379:1</code>
+           <code class="p-Indicator">-</code> <code class="l-Scalar-Plain">sharded-redis-1.redis:6379:1</code>
+           <code class="p-Indicator">-</code> <code class="l-Scalar-Plain">sharded-redis-2.redis:6379:1</code></pre>
+        
+        <p>In this config, you can see that we are serving the Redis protocol on
+        <code>localhost:6379</code> so that the application container can access the
+        ambassador. We will deploy this into our ambassador pod using a Kubernetes <code>ConfigMap</code> object that we can create with:</p>
+        
+        <pre data-type="programlisting" data-code-language="yaml"><code class="l-Scalar-Plain">kubectl create configmap twem-config --from-file=./nutcracker.yaml</code></pre>
+        
+        <p>Finally, all of the preparations are done and we can deploy our
+        ambasssador example. We define a pod that looks like:</p>
+        
+        <pre data-type="programlisting" data-code-language="yaml"><code class="l-Scalar-Plain">apiVersion</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">v1</code>
+        <code class="l-Scalar-Plain">kind</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">Pod</code>
+        <code class="l-Scalar-Plain">metadata</code><code class="p-Indicator">:</code>
+          <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">ambassador-example</code>
+        <code class="l-Scalar-Plain">spec</code><code class="p-Indicator">:</code>
+          <code class="l-Scalar-Plain">containers</code><code class="p-Indicator">:</code>
+            <code class="c1"># This is where the application container would go, for example</code>
+            <code class="c1"># - name: nginx</code>
+            <code class="c1">#   image: nginx</code>
+            <code class="c1"># This is the ambassador container</code>
+            <code class="p-Indicator">-</code> <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">twemproxy</code>
+              <code class="l-Scalar-Plain">image</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">ganomede/twemproxy</code>
+              <code class="l-Scalar-Plain">command</code><code class="p-Indicator">:</code>
+              <code class="p-Indicator">-</code> <code class="s">"nutcracker"</code>
+              <code class="p-Indicator">-</code> <code class="s">"-c"</code>
+              <code class="p-Indicator">-</code> <code class="s">"/etc/config/nutcracker.yaml"</code>
+              <code class="p-Indicator">-</code> <code class="s">"-v"</code>
+              <code class="p-Indicator">-</code> <code class="s">"7"</code>
+              <code class="p-Indicator">-</code> <code class="s">"-s"</code>
+              <code class="p-Indicator">-</code> <code class="s">"6222"</code>
+              <code class="l-Scalar-Plain">volumeMounts</code><code class="p-Indicator">:</code>
+              <code class="p-Indicator">-</code> <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">config-volume</code>
+                <code class="l-Scalar-Plain">mountPath</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">/etc/config</code>
+          <code class="l-Scalar-Plain">volumes</code><code class="p-Indicator">:</code>
+            <code class="p-Indicator">-</code> <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">config-volume</code>
+              <code class="l-Scalar-Plain">configMap</code><code class="p-Indicator">:</code>
+                <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">twem-config</code></pre>
+        
+        <p>This pod defines the ambassador; then the specific user’s
+        application container can be injected to complete the pod<a data-type="indexterm" data-startref="ix_ch04-asciidoc8" id="idm139824739407536"></a><a data-type="indexterm" data-startref="ix_ch04-asciidoc7" id="idm139824739406928"></a><a data-type="indexterm" data-startref="ix_ch04-asciidoc6" id="idm139824739164496"></a><a data-type="indexterm" data-startref="ix_ch04-asciidoc5" id="idm139824739163824"></a>.<a data-type="indexterm" data-startref="ix_ch04-asciidoc4" id="idm139824739163024"></a><a data-type="indexterm" data-startref="ix_ch04-asciidoc3" id="idm139824739162320"></a><a data-type="indexterm" data-startref="ix_ch04-asciidoc2" id="idm139824739161648"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Using an Ambassador for Service Brokering"><div class="sect1" id="idm139824739574928">
+        <h1>Using an Ambassador for Service Brokering</h1>
+        
+        <p><a data-type="indexterm" data-primary="ambassador patterns" data-secondary="for service brokering" id="idm139824739159840"></a><a data-type="indexterm" data-primary="MySQL database" data-secondary="ambassador patterns for service brokering with" id="idm139824739158864"></a><a data-type="indexterm" data-primary="service brokering, ambassador for" id="idm139824739157824"></a>When trying to render an application portable across multiple
+        environments (e.g., public cloud, physical datacenter, or private cloud),
+        one of the primary challenges is service discovery and configuration.
+        To understand what this means, imagine a frontend that relies on a
+        MySQL database to store its data. In the public cloud, this MySQL service
+        might be provided as software-as-a-service (SaaS), whereas in a private
+        cloud it might be necessary to dynamically spin up a new virtual machine
+        or container running MySQL.</p>
+        
+        <p>Consequently, building a portable application requires that the
+        application know how to introspect its environment and find the
+        appropriate MySQL service to connect to. <a data-type="indexterm" data-primary="service discovery" id="idm139824739155952"></a>This process is called
+        <em>service discovery</em>, and the system that performs this discovery
+        and linking is commonly called a <a data-type="indexterm" data-primary="service broker, defined" id="idm139824739154704"></a><em>service broker</em>. As with previous
+        examples, the ambassador pattern enables a system to separate the logic of the application container from the logic of
+        the service broker ambassador. The application simply always
+        connects to an instance of the service (e.g., MySQL) running on
+        localhost. It is the responsibility of the service broker ambassador
+        to introspect its environment and broker the appropriate connection.
+        This process is shown in <a data-type="xref" href="#fig-service-broker-ambassador">Figure&nbsp;3-3</a>.</p>
+        
+        <figure><div id="fig-service-broker-ambassador" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781491983638/files/assets/ddis_04in03.png" alt="An illustration of a service broker ambassador creating a MySQL service" width="1072" height="654">
+        <h6><span class="label">Figure 3-3. </span>A service broker ambassador creating a MySQL service</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Using an Ambassador to Do Experimentation or Request Splitting"><div class="sect1" id="idm139824739150208">
+        <h1>Using an Ambassador to Do Experimentation or Request Splitting</h1>
+        
+        <p><a data-type="indexterm" data-primary="ambassador patterns" data-secondary="for experimentation" id="ix_ch04-asciidoc9"></a><a data-type="indexterm" data-primary="ambassador patterns" data-secondary="for request splitting" id="ix_ch04-asciidoc10"></a><a data-type="indexterm" data-primary="experimentation" data-secondary="ambassador patterns for" id="ix_ch04-asciidoc11"></a><a data-type="indexterm" data-primary="request splitting" data-secondary="ambassador patterns for" id="ix_ch04-asciidoc12"></a>A final example application of the ambassador pattern is to perform
+        experimentation or other forms of request splitting. In many
+        production systems, it is advantageous to be able to perform request
+        splitting, where some fraction of all requests are not serviced
+        by the main production service but rather are redirected to a
+        different implementation of the service. Most often, this is used
+        to perform experiments with new, beta versions of the service to
+        determine if the new version of the software is reliable or
+        comparable in performance to the currently deployed version.</p>
+        
+        <p><a data-type="indexterm" data-primary="teeing" id="idm139824739142928"></a>Additionally, request splitting is sometimes used to <code>tee</code> or split
+        traffic such that all traffic goes to both the production system
+        as well as a newer, undeployed version. The responses from the
+        production system are returned to the user, while the responses from
+        the <code>tee-d</code> service are ignored. Most often, this form of request
+        splitting is used to simulate production load on the new version of
+        the service without risking impact to existing production users.</p>
+        
+        <p>Given the previous examples, it is straightforward to see how a
+        request-splitting ambassador can interact with an application
+        container to implement request splitting. As before, the application
+        container simply connects to the service on localhost, while the
+        ambassador container receives the requests, proxies responses to
+        both the production and experimental systems, and then returns
+        the production responses back as if it had performed the work
+        itself.</p>
+        
+        <p>This separation of concerns keeps the code in each container slim and focused, and the modular factoring of the application
+        ensures that the request-splitting ambassador can be reused for
+        a variety of different applications and settings.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Hands On: Implementing 10% Experiments"><div class="sect2" id="idm139824739139168">
+        <h2>Hands On: Implementing 10% Experiments</h2>
+        
+        <p><a data-type="indexterm" data-primary="ambassador patterns" data-secondary="implementing 10% experiments" id="ix_ch04-asciidoc13"></a><a data-type="indexterm" data-primary="experimentation" data-secondary="implementing 10% experiments" id="ix_ch04-asciidoc14"></a><a data-type="indexterm" data-primary="nginx server" data-secondary="as ambassador" id="ix_ch04-asciidoc15"></a><a data-type="indexterm" data-primary="request splitting" data-secondary="implementing 10% experiments" id="ix_ch04-asciidoc16"></a>To implement our request-splitting experiment, we’re going to use
+        the nginx web server. Nginx is a powerful, richly featured open
+        source server.  To configure nginx as the ambassador, we’ll use
+        the following configuration (note that this is for HTTP but it
+        could easily be adapted for HTTPS as well).</p>
+        
+        <pre data-type="programlisting" data-code-language="yaml"><code class="l-Scalar-Plain">worker_processes  5;</code>
+        <code class="l-Scalar-Plain">error_log  error.log;</code>
+        <code class="l-Scalar-Plain">pid        nginx.pid;</code>
+        <code class="l-Scalar-Plain">worker_rlimit_nofile 8192;</code>
+        
+        <code class="l-Scalar-Plain">events {</code>
+          <code class="l-Scalar-Plain">worker_connections  1024;</code>
+        <code class="l-Scalar-Plain">}</code>
+        
+        <code class="l-Scalar-Plain">http {</code>
+            <code class="l-Scalar-Plain">upstream backend {</code>
+                <code class="l-Scalar-Plain">ip_hash;</code>
+                <code class="l-Scalar-Plain">server web weight=9;</code>
+                <code class="l-Scalar-Plain">server experiment;</code>
+            <code class="l-Scalar-Plain">}</code>
+        
+            <code class="l-Scalar-Plain">server {</code>
+                <code class="l-Scalar-Plain">listen localhost:80;</code>
+                <code class="l-Scalar-Plain">location / {</code>
+                    <code class="l-Scalar-Plain">proxy_pass http://backend;</code>
+                <code class="l-Scalar-Plain">}</code>
+            <code class="l-Scalar-Plain">}</code>
+        <code class="l-Scalar-Plain">}</code></pre>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p><a data-type="indexterm" data-primary="microservices" data-secondary="deploying experiment framework as" id="idm139824739122336"></a>As with the previous discussion of sharded services,
+        it’s also possible to deploy the experiment framework as a separate
+        microservice in front of your application instead of integrating it
+        as a part of your client pods. Of course, by doing this you are
+        introducing another service that needs to be maintained, scaled,
+        monitored, etc. If experimentation is likely to be a longstanding
+        component in your architecture, this might be worthwhile. If it is used
+        more occasionally, then a client-side ambassador might make more sense.</p>
+        </div>
+        
+        <p>You’ll note that I’m using IP hashing in this configuration. This is
+        important because it ensures that the user doesn’t flip-flop
+        back and forth between the experiment and the main site. This assures
+        that every user has a consistent experience with the application.</p>
+        
+        <p>The <code>weight</code> parameter is used to send 90% of the traffic to the
+        main existing application, while 10% of the traffic is redirected
+        to the experiment.</p>
+        
+        <p>As with other examples, we’ll deploy this configuration as a <code>ConfigMap</code>
+        object in Kubernetes:</p>
+        
+        <pre data-type="programlisting" data-code-language="yaml"><code class="l-Scalar-Plain">kubectl create configmaps --from-file=nginx.conf</code></pre>
+        
+        <p>Of course, this assumes that you have both a <code>web</code> and <code>experiment</code>
+        service defined. If you don’t, you need to create them now before you
+        try to create the ambassador container, since nginx doesn’t like to
+        start if it can’t find the services it is proxying to.  Here are
+        some example service configs:</p>
+        
+        <pre data-type="programlisting" data-code-language="yaml"><code class="c1"># This is the 'experiment' service</code>
+        <code class="l-Scalar-Plain">apiVersion</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">v1</code>
+        <code class="l-Scalar-Plain">kind</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">Service</code>
+        <code class="l-Scalar-Plain">metadata</code><code class="p-Indicator">:</code>
+          <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">experiment</code>
+          <code class="l-Scalar-Plain">labels</code><code class="p-Indicator">:</code>
+            <code class="l-Scalar-Plain">app</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">experiment</code>
+        <code class="l-Scalar-Plain">spec</code><code class="p-Indicator">:</code>
+          <code class="l-Scalar-Plain">ports</code><code class="p-Indicator">:</code>
+          <code class="p-Indicator">-</code> <code class="l-Scalar-Plain">port</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">80</code>
+            <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">web</code>
+          <code class="l-Scalar-Plain">selector</code><code class="p-Indicator">:</code>
+            <code class="c1"># Change this selector to match your application's labels</code>
+            <code class="l-Scalar-Plain">app</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">experiment</code>
+        <code class="nn">---</code>
+        <code class="c1"># This is the 'prod' service</code>
+        <code class="l-Scalar-Plain">apiVersion</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">v1</code>
+        <code class="l-Scalar-Plain">kind</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">Service</code>
+        <code class="l-Scalar-Plain">metadata</code><code class="p-Indicator">:</code>
+          <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">web</code>
+          <code class="l-Scalar-Plain">labels</code><code class="p-Indicator">:</code>
+            <code class="l-Scalar-Plain">app</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">web</code>
+        <code class="l-Scalar-Plain">spec</code><code class="p-Indicator">:</code>
+          <code class="l-Scalar-Plain">ports</code><code class="p-Indicator">:</code>
+          <code class="p-Indicator">-</code> <code class="l-Scalar-Plain">port</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">80</code>
+            <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">web</code>
+          <code class="l-Scalar-Plain">selector</code><code class="p-Indicator">:</code>
+            <code class="c1"># Change this selector to match your application's labels</code>
+            <code class="l-Scalar-Plain">app</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">web</code></pre>
+        
+        <p>And then we will deploy nginx itself as the ambassador container
+        within a pod:</p>
+        
+        <pre data-type="programlisting" data-code-language="yaml"><code class="l-Scalar-Plain">apiVersion</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">v1</code>
+        <code class="l-Scalar-Plain">kind</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">Pod</code>
+        <code class="l-Scalar-Plain">metadata</code><code class="p-Indicator">:</code>
+          <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">experiment-example</code>
+        <code class="l-Scalar-Plain">spec</code><code class="p-Indicator">:</code>
+          <code class="l-Scalar-Plain">containers</code><code class="p-Indicator">:</code>
+            <code class="c1"># This is where the application container would go, for example</code>
+            <code class="c1"># - name: some-name</code>
+            <code class="c1">#   image: some-image</code>
+            <code class="c1"># This is the ambassador container</code>
+            <code class="p-Indicator">-</code> <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">nginx</code>
+              <code class="l-Scalar-Plain">image</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">nginx</code>
+              <code class="l-Scalar-Plain">volumeMounts</code><code class="p-Indicator">:</code>
+              <code class="p-Indicator">-</code> <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">config-volume</code>
+                <code class="l-Scalar-Plain">mountPath</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">/etc/nginx</code>
+          <code class="l-Scalar-Plain">volumes</code><code class="p-Indicator">:</code>
+            <code class="p-Indicator">-</code> <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">config-volume</code>
+              <code class="l-Scalar-Plain">configMap</code><code class="p-Indicator">:</code>
+                <code class="l-Scalar-Plain">name</code><code class="p-Indicator">:</code> <code class="l-Scalar-Plain">experiment-config</code></pre>
+        
+        <p>You can add a second (or third, or fourth) container to the pod to take
+        advantage of the<a data-type="indexterm" data-startref="ix_ch04-asciidoc16" id="idm139824738767760"></a><a data-type="indexterm" data-startref="ix_ch04-asciidoc15" id="idm139824738775840"></a><a data-type="indexterm" data-startref="ix_ch04-asciidoc14" id="idm139824738775232"></a><a data-type="indexterm" data-startref="ix_ch04-asciidoc13" id="idm139824738774560"></a> ambassador<a data-type="indexterm" data-startref="ix_ch04-asciidoc12" id="idm139824738773760"></a><a data-type="indexterm" data-startref="ix_ch04-asciidoc11" id="idm139824738773056"></a><a data-type="indexterm" data-startref="ix_ch04-asciidoc10" id="idm139824738772384"></a><a data-type="indexterm" data-startref="ix_ch04-asciidoc9" id="idm139824738771712"></a>.<a data-type="indexterm" data-startref="ix_ch04-asciidoc1" id="idm139824738770912"></a><a data-type="indexterm" data-startref="ix_ch04-asciidoc0" id="idm139824738770208"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        </div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781491983638/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

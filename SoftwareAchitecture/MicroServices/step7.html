@@ -1,0 +1,660 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 7. Build"><div class="chapter" id="build-chapter">
+        <h1><span class="label">Chapter 7. </span>Build</h1>
+        
+        
+        <p>We’ve spent a lot of time covering the design aspects of microservices, but we need to start getting a bit deeper into how your development process may need to change to accommodate this new style of architecture. In the following chapters, we’ll look at how we deploy and test our microservices, but before that we need to look at what comes first—what happens when a developer has a change ready to check in?</p>
+        
+        <p>We’ll start this exploration by reviewing  some foundational concepts—continuous integration and continuous delivery. They’re important concepts no matter what kind of systems architecture you might be using, but microservices open up a host of unique questions. From there we’ll look at pipelines and at different ways of managing source code for your services.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="A Brief Introduction to Continuous Integration"><div class="sect1" id="idm45699528584688">
+        <h1>A Brief Introduction to Continuous Integration</h1>
+        
+        <p><em>Continuous integration</em> (CI) has<a data-type="indexterm" data-primary="development" data-secondary="continuous integration (CI)" id="Dci07"></a><a data-type="indexterm" data-primary="continuous integration (CI)" id="conint07"></a> been around for a number of years. However, it’s worth spending a bit of time going over the basics, as there are some different options to consider, especially when we think about the mapping between microservices, builds, and version control repositories.</p>
+        
+        <p>With CI, the core goal is to keep everyone in sync with each other, which we achieve by frequently making sure that newly checked-in code properly integrates with existing code. To do this, a CI server detects that the code has been committed, checks it out, and carries out some verification such as making sure that the code compiles and that tests pass. As a bare minimum, we expect this integration to be done on a daily basis, although in practice I’ve worked in multiple teams in which a developer has in fact integrated their changes multiple times per day.</p>
+        
+        <p>As part of this process, we often create artifacts that are used for further validation, such as deploying a running service to run tests against it (we’ll explore testing in depth in <a data-type="xref" href="ch09.html#testing-chapter">Chapter&nbsp;9</a>). Ideally, we want to build these artifacts once and once only and use them for all deployments of that version of the code. This is so we can avoid doing the same thing over and over again, and so we can confirm that the artifacts we deploy are the ones we tested. To enable these artifacts to be reused, we place them in a repository of some sort, either provided by the CI tool itself or in a separate system.</p>
+        
+        <p>We’ll be looking at the role of artifacts in more depth shortly, and we’ll look in depth at testing in <a data-type="xref" href="ch09.html#testing-chapter">Chapter&nbsp;9</a>.</p>
+        
+        <p>CI has a number of benefits. We get fast feedback as to the quality of our code, through the use of static analysis and testing. CI also allows us to automate the creation of our binary artifacts. All the code required to build the artifact is itself version controlled, so we can re-create the artifact if needed. We can also trace from a deployed artifact back to the code, and, depending on the capabilities of the CI tool itself, we can see what tests were run on the code and artifact too. If embracing infrastructure as code, we can also version control all the code needed to configure the infrastructure for our microservice alongside the code for the microservice itself, improving transparency around changes and making it even easier to reproduce builds. It’s for these reasons that CI has been so successful.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Are You Really Doing CI?"><div class="sect2" id="idm45699528576096">
+        <h2>Are You Really Doing CI?</h2>
+        
+        <p>CI is a key practice that allows us to make changes quickly and easily, and without which the journey into microservices will be painful. I suspect you are probably using a CI tool in your own organization, but that might not be the same thing as actually doing CI.  I’ve seen many people confuse adopting a CI tool with actually embracing CI. A CI tool, used well, will help you do CI—but using a tool like Jenkins, CircleCI, Travis, or one of the many other options out there doesn’t guarantee you’re actually doing CI right.</p>
+        
+        <p>So how do you know if you’re actually practicing CI? I really like Jez Humble’s three questions he asks people to test if they really understand what CI is about—it might be interesting to ask yourself these same questions:</p>
+        <dl>
+        <dt>Do you check in to mainline once per day?</dt>
+        <dd>
+        <p>You need to make sure your code integrates. If you don’t check your code together with everyone else’s changes frequently, you end up making future integration harder. Even if you are using short-lived branches to manage changes, integrate as frequently as you can into a single mainline branch—at least once a day.</p>
+        </dd>
+        <dt>Do you have a suite of tests to validate your changes?</dt>
+        <dd>
+        <p>Without tests, we just know that syntactically our integration has worked, but we don’t know if we have broken the behavior of the system. CI without some verification that our code behaves as expected isn’t CI.</p>
+        </dd>
+        <dt>When the build is broken, is it the #1 priority of the team to fix it?</dt>
+        <dd>
+        <p>A passing green build means our changes have safely been integrated. A red build means the last change possibly did not integrate. You need to stop all further check-ins that aren’t involved in fixing the builds to get it passing again. If you let more changes pile up, the time it takes to fix the build will increase drastically. I’ve worked with teams where the build has been broken for days, resulting in substantial efforts to eventually get a passing build.</p>
+        </dd>
+        </dl>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Branching Models"><div class="sect2" id="idm45699528568288">
+        <h2>Branching Models</h2>
+        
+        <p>Few<a data-type="indexterm" data-primary="models" data-secondary="branching during development" id="idm45699528566288"></a><a data-type="indexterm" data-primary="feature branching" id="idm45699528565312"></a><a data-type="indexterm" data-primary="branching" id="idm45699528564640"></a><a data-type="indexterm" data-primary="code branching" id="idm45699528563968"></a><a data-type="indexterm" data-primary="source code branching" id="idm45699528563296"></a> topics around build and deployment seem to cause as much of a controversy as that of using source code branching for feature development. Branching in source code allows for development to be done in isolation without disrupting the work being done by others. On the surface, creating a source code branch for each feature being worked on—otherwise known as feature branching—seems like a useful 
+        <span class="keep-together">concept.</span></p>
+        
+        <p>The problem is that when you work on a feature branch, you aren’t regularly integrating your changes with everyone else. Fundamentally, you are <em>delaying</em> integration. And when you finally decide to integrate your changes with everyone else, you’ll have a much more complex merge.</p>
+        
+        <p>The<a data-type="indexterm" data-primary="trunk-based development" id="idm45699528560000"></a> alternative approach is to have everyone check in to the same “trunk” of source code. To keep changes from impacting other people, techniques like feature flags are used to “hide” incomplete work. This technique of everyone working off the same trunk is called <em>trunk-based development</em>.</p>
+        
+        <p>The discussion around this topic is nuanced, but my own take is that the benefits of frequent integration—and validation of that integration—are significant enough that trunk-based development is my preferred style of development. Moreover, the work to implement feature flags is frequently beneficial in terms of progressive delivery, a concept we’ll explore in <a data-type="xref" href="ch08.html#deployment_chapter">Chapter&nbsp;8</a>.</p>
+        <div data-type="tip"><h1>Be Careful About Branches</h1>
+        <p>Integrate early, and integrate often. Avoid the use of long-lived branches for feature development, and consider trunk-based development instead. If you really have to use branches, keep them short!</p>
+        </div>
+        
+        <p class="pagebreak-before">Quite aside from my own anecdotal experience, there is a growing body of research that shows the efficacy of reducing the number of branches and adopting trunk-based development. The 2016 State of DevOps report by DORA and Puppet<sup><a data-type="noteref" id="idm45699528554272-marker" href="ch07.html#idm45699528554272">1</a></sup> carries out rigorous research into the delivery practices of organizations around the world and studies which practices are commonly used by high-performing teams:</p>
+        <blockquote>
+        <p>We found that having branches or forks with very short lifetimes (less than a day) before being merged into trunk, and less than three active branches in total, are important aspects of continuous delivery, and all contribute to higher performance. So does merging code into trunk or master on a daily basis.</p>
+        </blockquote>
+        
+        <p>The State of DevOps report has continued to explore this topic in more depth in subsequent years, and has continued to find evidence for the efficacy of this approach.</p>
+        
+        <p>A<a data-type="indexterm" data-primary="GitFlow development model" id="idm45699528550016"></a><a data-type="indexterm" data-primary="open source development" id="idm45699528549216"></a><a data-type="indexterm" data-primary="closed source development" id="idm45699528548544"></a> branch-heavy approach is still common in open source development, often through adopting the “GitFlow” development model. It’s worth noting that open source development is not the same as normal day-to-day development. Open source development is characterized by a large number of ad hoc contributions from time-poor “untrusted” committers, whose changes require vetting by a smaller number of “trusted” contributors. Typical day-to-day closed source development is normally done by a tight-knit team whose members all have commit rights, even if they decide to adopt some form of code review process. So what might work for open source development may not work for your day job. Even then, the State of DevOps report for 2019,<sup><a data-type="noteref" id="idm45699528547728-marker" href="ch07.html#idm45699528547728">2</a></sup> further exploring this topic, found some interesting insights into open source development and the impact of “long lived” <a data-type="indexterm" data-primary="" data-startref="Dci07" id="idm45699528545312"></a><a data-type="indexterm" data-primary="" data-startref="conint07" id="idm45699528544368"></a>branches:</p>
+        <blockquote>
+        <p>Our research findings extend to open source development in some areas:</p>
+        
+        <ul>
+        <li>Committing code sooner is better: In open source projects, many have observed that merging patches faster to prevent rebases helps developers move faster.</li>
+        <li>Working in small batches is better: Large “patch bombs” are harder and slower to merge into a project than smaller, more readable patchsets since maintainers need more time to review the changes.</li>
+        </ul>
+        
+        <p>Whether you are working on a closed-source code base or an open source project, short-lived branches; small, readable patches; and automatic testing of changes make everyone more productive.</p>
+        </blockquote>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Build Pipelines and Continuous Delivery"><div class="sect1" id="idm45699528540112">
+        <h1>Build Pipelines and Continuous Delivery</h1>
+        
+        <p>Very<a data-type="indexterm" data-primary="development" data-secondary="build pipelines" id="Dpipe07"></a><a data-type="indexterm" data-primary="build pipelines" id="buildp07"></a> early on in doing CI, my then-colleagues at Thoughtworks and I realized the value in sometimes having multiple stages inside a build. Tests are a very common case in which this comes into play. I may have a lot of fast, small-scoped tests, and a small number of slow, large-scoped tests. If we run all the tests together, and if we’re  waiting for our large-scoped slow tests to finish, we may not be able to get fast feedback when our fast tests fail. And if the fast tests fail, there probably isn’t much sense in running the slower tests anyway! A solution to this problem is to have different stages in our build, creating what is known as a <em>build pipeline</em>. So we can have a dedicated stage for all the fast tests, which we run first, and if they all pass, we then run a separate stage for the slower tests.</p>
+        
+        <p>This build pipeline concept gives us a nice way of tracking the progress of our software as it clears each stage, helping give us insight into the quality of our software. We create a deployable artifact, the thing that will ultimately be deployed into production, and use this artifact throughout the pipeline. In our context, this artifact will relate to a microservice we want to deploy. In <a data-type="xref" href="#sample-pipeline">Figure&nbsp;7-1</a>, we see this happening—the same artifact is used in each stage of the pipeline, giving us more and more confidence that the software will work in production.<a data-type="indexterm" data-primary="" data-startref="Dpipe07" id="idm45699528533520"></a><a data-type="indexterm" data-primary="" data-startref="buildp07" id="idm45699528532672"></a></p>
+        
+        <figure><div id="sample-pipeline" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_0701.png" alt="A simple release process for our Catalog service modeled as a build pipeline" width="600" height="202">
+        <h6><span class="label">Figure 7-1. </span>A simple release process for our <code>Catalog</code> service modeled as a build pipeline</h6>
+        </div></figure>
+        
+        <p><em>Continuous delivery</em> (CD) builds<a data-type="indexterm" data-primary="development" data-secondary="continuous delivery (CD)" id="Ddeliv07"></a><a data-type="indexterm" data-primary="continuous delivery (CD)" id="contdelv07"></a> on this concept, and then some. As outlined in Jez Humble and Dave Farley’s book of the same name,<sup><a data-type="noteref" id="idm45699528526208-marker" href="ch07.html#idm45699528526208">3</a></sup> CD is the approach whereby we get constant feedback on the production readiness of each and every check-in, and furthermore treat each and every check-in as a release candidate.</p>
+        
+        <p>To fully embrace this concept, we need to model all the processes involved in getting our software from check-in to production, and we need to know where any given version of the software is in terms of being cleared for release. In CD, we do this by modeling each and every stage our software has to go through, both manual and automated, an example of which I shared for our <code>Catalog</code> service in <a data-type="xref" href="#sample-pipeline">Figure&nbsp;7-1</a>. Most CI tools nowadays provide some support for defining and visualizing the state of build pipelines like this.</p>
+        
+        <p>If the new <code>Catalog</code> service passes whatever checks are carried out at a stage in the pipeline, it can then move on to the next step. If it doesn’t pass a stage, our CI tool can let us know which stages the build has passed and can get visibility about what failed. If we need to do something to fix it, we’d make a change and check it in, allowing the new version of our microservice to try and pass all the stages before being available for deployment. In <a data-type="xref" href="#failing-pipeline">Figure&nbsp;7-2</a>, we see an example of this: <code>build-120</code> failed the fast test stage, <code>build-121</code> failed at the performance tests, but <code>build-122</code> made it all the way to production.</p>
+        
+        <figure><div id="failing-pipeline" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_0702.png" alt="Our Catalog microservice can only get deployed if it passes each step in our pipeline" width="600" height="153">
+        <h6><span class="label">Figure 7-2. </span>Our <code>Catalog</code> microservice can get deployed only if it passes each step in our pipeline</h6>
+        </div></figure>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45699528516096">
+        <h5>Continuous Delivery Versus Continuous Deployment</h5>
+        <p>I<a data-type="indexterm" data-primary="continuous deployment" id="idm45699528514384"></a><a data-type="indexterm" data-primary="deployment" data-secondary="continuous deployment" id="idm45699528513648"></a> have on occasion seen some confusion around the terms <em>continuous delivery</em> and <em>continuous deployment</em>. As we’ve already discussed, continuous delivery is the concept whereby each check-in is treated as a release candidate, and whereby we can assess the quality of each release candidate to decide if it’s ready to be deployed. With continuous deployment on the other hand, all check-ins have to be validated using automated mechanisms (tests for example), and any software that passes these verification checks is deployed automatically, without human intervention. Continuous deployment can therefore be considered an extention of continuous delivery. Without continuous delivery, you can’t do continuous deployment. But you <em>can</em> do continuous delivery <em>without</em> doing continuous deployment.</p>
+        
+        <p>Continuous deployment isn’t right for everyone—many people want some human interaction to decide whether software should be deployed, something that is totally compatible with continuous delivery. However, adopting continuous delivery does imply continual focus on optimizing your path to production, the increased visibility making it easier to see where optimizations should be made. Often human involvement in the post-check-in process is a bottleneck that needs addressing—see the shift from manual regression testing to automated functional testing, for example. As a result, as you automate more and more of your build, deployment, and release process, you may find yourself getting closer and closer to continuous deployment.<a data-type="indexterm" data-primary="" data-startref="contdelv07" id="idm45699528509856"></a><a data-type="indexterm" data-primary="" data-startref="Ddeliv07" id="idm45699528508848"></a></p>
+        </div></aside>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Tooling"><div class="sect2" id="idm45699528507648">
+        <h2>Tooling</h2>
+        
+        <p>Ideally, you<a data-type="indexterm" data-primary="development" data-secondary="tooling" id="idm45699528506352"></a><a data-type="indexterm" data-primary="tooling" id="idm45699528505344"></a> want a tool that embraces continuous delivery as a first-class concept. I have seen many people try to hack and extend CI tools to make them do CD, often resulting in complex systems that are nowhere near as easy to use as tools that build in CD from the beginning. Tools that fully support CD allow you to define and visualize these pipelines, modeling the entire path to production for your software. As a version of our code moves through the pipeline, if it passes one of these automated verification stages, it moves to the next stage.</p>
+        
+        <p>Some stages may be manual. For example, if we have a manual user acceptance testing (UAT) process, I should be able to use a CD tool to model it. I can see the next available build ready to be deployed into our UAT environment and then deploy it, and then if it passes our manual checks, mark that stage as being successful so it can move to the next one. If the subsequent stage is automated, it will then get triggered 
+        <span class="keep-together">automatically.</span></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Trade-Offs and Environments"><div class="sect2" id="environment-tradeoff">
+        <h2>Trade-Offs and Environments</h2>
+        
+        <p>As<a data-type="indexterm" data-primary="development" data-secondary="trade-offs and environments" id="idm45699528500512"></a><a data-type="indexterm" data-primary="environments" data-secondary="during development" id="idm45699528499440"></a> we move our microservice artifact through this pipeline, our microservice gets deployed into different environments. Different environments serve different purposes, and they may have different characteristics.</p>
+        
+        <p>Structuring a pipeline, and therefore working out what environments you’ll need, is in and of itself a balancing act. Early on in the pipeline, we’re looking for fast feedback on the production readiness of our software. We want to let developers know as soon as possible if there is a problem—the sooner we get feedback about a problem occurring, the quicker it is to fix it. As our software gets closer to production, we want more certainty that the software will work, and we’ll therefore be deploying into increasingly production-like environments—we can see this trade-off in <a data-type="xref" href="#balance-pipeline">Figure&nbsp;7-3</a>.</p>
+        
+        <figure><div id="balance-pipeline" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_0703.png" alt="Balancing a build pipeline for fast feedback and production-like execution environments" width="600" height="167">
+        <h6><span class="label">Figure 7-3. </span>Balancing a build pipeline for fast feedback and production-like execution environments</h6>
+        </div></figure>
+        
+        <p>You get the fastest feedback on your development laptop—but that is far from production-like. You could roll out every commit to an environment that is a faithful reproduction of your actual production environment, but that will likely take longer and cost more. So finding the balance is key, and continuing to review the trade-off between fast feedback and the need for production-like environments can be an incredibly important ongoing activity.</p>
+        
+        <p>The challenges of creating a production-like environment are also part of why more people are doing forms of testing in production, including techniques such as smoke testing and parallel runs. We’ll come back to this topic in <a data-type="xref" href="ch08.html#deployment_chapter">Chapter&nbsp;8</a>.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Artifact Creation"><div class="sect2" id="idm45699528491888">
+        <h2>Artifact Creation</h2>
+        
+        <p>As<a data-type="indexterm" data-primary="development" data-secondary="artifact creation" id="idm45699528490384"></a><a data-type="indexterm" data-primary="artifact creation" id="idm45699528489376"></a> we move our microservice into different environments, we actually have to have something to deploy. It turns out there are a number of different options for what type of deployment artifact you can use. In general, which artifact you create will depend greatly on the technology you have chosen to adopt for deployment. We’ll be looking at that in depth in the next chapter, but I wanted to give you some very important tips about how artifact creation should fit into your CI/CD build process.</p>
+        
+        <p>To keep things simple, we’ll sidestep exactly what type of artifact we are creating—just consider it a single deployable blob for the moment. Now, there are two important rules we need to consider. Firstly, as I mentioned earlier, we should build an artifact once and once only. Building the same thing over and over again is a waste of time and bad for the planet, and it can theoretically introduce problems if the build configuration isn’t exactly the same each time. On some programming languages, a different build flag can make the software behave quite differently. Secondly, the artifact you verify should be the artifact you deploy! If you build a microservice, test it, say “yes, it’s working,” and then build it again for deployment into production, how do you know that the software you validated is the same software you deployed?</p>
+        
+        <p>Taking these two ideas together, we have a pretty simple approach. Build your deployable artifact once and once only, and ideally do it pretty early in the pipeline. I would typically do this after compiling the code (if required) and running my fast tests. Once created, this artifact is stored in an appropriate repository—this could be something like Artifactory or Nexus, or perhaps a container registry. Your choice of deployment artifact likely dictates the nature of the artifact store. This same artifact can then be used for all stages in the pipeline that follow, up to and including deployment into production. So coming back to our earlier pipeline, we can see in <a data-type="xref" href="#same-artifact">Figure&nbsp;7-4</a> that we create an artifact for our <code>Catalog</code> service during the first stage of the pipeline and then deploy the same <code>build-123</code> artifact as part of the slow tests, performance tests, and production stages.</p>
+        
+        <figure><div id="same-artifact" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_0704.png" alt="The same artifact is deployed into each environment" width="600" height="272">
+        <h6><span class="label">Figure 7-4. </span>The same artifact is deployed into each environment</h6>
+        </div></figure>
+        
+        <p>If the same artifact is going to be used across multiple environments, any aspects of configuration that vary from environment to environment need to be kept outside the artifact itself. As a simple example, I might want to configure application logs so that everything at <code>DEBUG</code> level and above is logged when running the Slow Tests stage, giving me more information to diagnose why a test fails. I might decide, though, to change this to <code>INFO</code> to reduce the log volume for the Performance Tests and Production deployment.</p>
+        <div data-type="tip"><h1>Artifact Creation Tips</h1>
+        <p>Build a deployment artifact for your microservice once. Reuse this artifact everywhere you want to deploy that version of your microservice. Keep your deployment artifact environment-agnostic—store environment-specific configuration elsewhere.</p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Mapping Source Code and Builds to Microservices"><div class="sect1" id="build-mapping">
+        <h1>Mapping Source Code and Builds to Microservices</h1>
+        
+        <p>We’ve<a data-type="indexterm" data-primary="development" data-secondary="code organization" id="Dcode07"></a> already looked at one topic that can excite warring factions—feature branching versus trunk-based development—but it turns out that the controversy isn’t over for this chapter. Another topic that is likely to elicit some pretty diverse opinions is the organization of code for our microservices. I have my own preferences, but before we get to those, let’s explore the main options for how we organize code for our microservices.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="One Giant Repo, One Giant Build"><div class="sect2" id="idm45699528474560">
+        <h2>One Giant Repo, One Giant Build</h2>
+        
+        <p>If<a data-type="indexterm" data-primary="code organization" data-secondary="single, giant repository" id="COsingle07"></a> we start with the simplest option, we could lump everything in together. We have a single, giant repository storing all our code, and we have a single build, as we see in <a data-type="xref" href="#a61-one-build-for-all-ms">Figure&nbsp;7-5</a>. Any check-in to this source code repository will cause our build to trigger, where we will run all the verification steps associated with all our microservices and produce multiple artifacts, all tied back to the same build.</p>
+        
+        <figure><div id="a61-one-build-for-all-ms" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_0705.png" alt="Using a single source code repository and CI build for all microservice" width="600" height="326">
+        <h6><span class="label">Figure 7-5. </span>Using a single source code repository and CI build for all microservices</h6>
+        </div></figure>
+        
+        <p>Compared to other approaches, this seems much simpler on the surface: fewer repositories to be concerned about, and a conceptually simpler build. From a developer point of view, things are pretty straightforward too. I just check code in. If I have to work on multiple services at once, I just have to worry about one commit.</p>
+        
+        <p>This model can work perfectly well if you buy into the idea of lockstep releases, where you don’t mind deploying multiple services at once. In general, this is absolutely a pattern to avoid, but very early on in a project, especially if only one team is working on everything, this model might make sense for short periods of time.</p>
+        
+        <p>Now let me explain some of the significant downsides to this approach. If I make a one-line change to a single service—for example, changing behavior in the <code>User</code> service in <a data-type="xref" href="#a61-one-build-for-all-ms">Figure&nbsp;7-5</a>—<em>all</em> the other services get verified and built. This could take more time than needed—I’m waiting for things that probably don’t need to be tested. This impacts our cycle time, the speed at which we can move a single change from development to live. More troubling, though, is knowing what artifacts should or shouldn’t be deployed. Do I now need to deploy all the build services to push my small change into production? It can be hard to tell; trying to guess which services <em>really</em> changed just by reading the commit messages is difficult. Organizations using this approach often fall back to just deploying everything together, which we really want to avoid.</p>
+        
+        <p>Furthermore, if my one-line change to the <code>User</code> service breaks the build, no other changes can be made to the other services until that break is fixed. And think about a scenario in which you have multiple teams all sharing this giant build. Who is in charge?</p>
+        
+        <p>Arguably, this approach is a form of monorepo. In practice, however, most of the monorepo implementations I’ve seen map multiple builds to different parts of the repo, something we’ll explore in more depth shortly. So you could see this pattern of one repo mapping to a single build as the <em>worst</em> form of monorepo for those wanting to build multiple independently deployable microservices.</p>
+        
+        <p>In practice, I almost never see this approach used, except in the earliest stages of projects. To be honest, either of the two following approaches are significantly preferable, so we’ll focus on those instead.<a data-type="indexterm" data-primary="" data-startref="COsingle07" id="idm45699528460880"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Pattern: One Repository per Microservice (aka Multirepo)"><div class="sect2" id="idm45699528459648">
+        <h2>Pattern: One Repository per Microservice (aka Multirepo)</h2>
+        
+        <p>With<a data-type="indexterm" data-primary="code organization" data-secondary="one repository per microservice" id="COperm07"></a><a data-type="indexterm" data-primary="multirepo approach" id="mulrep07"></a> the one repository per microservice pattern (more commonly referred to as the <em>multirepo</em> pattern when being compared to the monorepo pattern), the code for each microservice is stored in its own source code repository, as we see in <a data-type="xref" href="#one-repo-per-microservice">Figure&nbsp;7-6</a>. This approach leads to a straightforward mapping between source code changes and CI builds.</p>
+        
+        <figure><div id="one-repo-per-microservice" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_0706.png" alt="The source code for each microservice is stored in a separate source code repository" width="600" height="346">
+        <h6><span class="label">Figure 7-6. </span>The source code for each microservice is stored in a separate source code repository</h6>
+        </div></figure>
+        
+        <p>Any change to the <code>User</code> source code repository triggers the matching build, and if that passes, I’ll have a new version of my <code>User</code> microservice available for deployment. Having a separate repository for each microservice also allows you to change ownership on a per-repository basis, something that makes sense if you want to consider a strong ownership model for your microservices (more on that shortly).</p>
+        
+        <p>The straightforward nature of this pattern does create some challenges, however. Specifically, developers may find themselves working with multiple repositories at a time, which is especially painful if they are trying to make changes across multiple repositories at once. Additionally, changes cannot be made in an atomic fashion across separate repositories, at least not with Git.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Reusing code across repositories"><div class="sect3" id="idm45699528449408">
+        <h3>Reusing code across repositories</h3>
+        
+        <p>When<a data-type="indexterm" data-primary="code reuse" id="idm45699528447712"></a> using this pattern, there is nothing to stop a microservice from depending on other code that is managed in different repositories. A simple mechanism for doing this is to have the code you want to reuse packaged into a library that then becomes an explicit dependency of the downstream microservices. We can see an example of that in <a data-type="xref" href="#reusing-code-across-repos">Figure&nbsp;7-7</a>, where the <code>Invoice</code> and <code>Payroll</code> services both make use of the <span class="keep-together"><code>Connection</code></span> library.</p>
+        
+        <figure><div id="reusing-code-across-repos" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_0707.png" alt="bms2 0707" width="600" height="334">
+        <h6><span class="label">Figure 7-7. </span>Reusing code across different repositories</h6>
+        </div></figure>
+        
+        <p>If you wanted to roll out a change to the <code>Connection</code> library, you’d have to make the changes in the matching source code repository and wait for its build to complete, giving you a new versioned artifact. To actually deploy new versions of the <code>Invoice</code> or <code>Payroll</code> services using this new version of the library, you’d need to change the version of the <code>Connection</code> library they use. This might require a manual change (if you are depending on a specific version), or it could be configured to happen dynamically, depending on the nature of the CI tooling you are using. The concepts behind this are outlined in more detail in the book <em>Continuous Delivery</em> by Jez Humble and Dave Farley.<sup><a data-type="noteref" id="idm45699528438624-marker" href="ch07.html#idm45699528438624">4</a></sup></p>
+        
+        <p>The important thing to remember, of course, is that if you want to roll out the new version of the <code>Connection</code> library, then you also need to deploy the newly built <code>Invoice</code> and <code>Payroll</code> services. Remember, all the caveats we explored in <a data-type="xref" href="ch05.html#a50-dry">“DRY and the Perils of Code Reuse in a Microservice World”</a> regarding reuse and microservices still apply—if you choose to reuse code via libraries, then you must be OK with the fact that these changes cannot be rolled out in an atomic fashion, or else we undermine our goal of independent deployability. You also have to be aware that it can be more challenging to know if some microservices are using a specific version of a library, which may be problematic if you’re trying to deprecate the use of an old version of the library.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Working across multiple repositories"><div class="sect3" id="idm45699528434320">
+        <h3>Working across multiple repositories</h3>
+        
+        <p>So, aside from reusing code via libraries, how else can we make a change across more than one repository? Let’s look at another example.  In <a data-type="xref" href="#commit-across-repos">Figure&nbsp;7-8</a>, I want to change the API exposed by the <code>Inventory</code> service, and I also need to update the <code>Shipping</code> service so it can make use of the new change. If the code for both <code>Inventory</code> and <code>Shipping</code> was in the same repository, I could commit the code once. Instead, I’ll have to break the changes into two commits—one for <code>Inventory</code> and another for 
+        <span class="keep-together"><code>Shipping</code>.</span></p>
+        
+        <figure><div id="commit-across-repos" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_0708.png" alt="Changes across repository boundaries require multiple commits" width="600" height="340">
+        <h6><span class="label">Figure 7-8. </span>Changes across repository boundaries require multiple commits</h6>
+        </div></figure>
+        
+        <p>Having these changes split could cause problems if one commit fails but the other works—I may need to make two changes to roll back the change, for example, and that could be complicated if other people have checked in in the meantime. The reality is that in this specific situation, I’d likely want to stage the commits somewhat, in any case. I’d want to make sure the commit to change the <code>Inventory</code> service worked before I change any client code in the <code>Shipping</code> service—if the new functionality in the API isn’t present, there is no point having client code that makes use of it.</p>
+        
+        <p>I’ve spoken to multiple people who find the lack of atomic deployment with this to be a significant problem. I can certainly appreciate the complexity this brings, but I think that in most cases it points to a bigger underlying issue. If you are continually making changes across multiple microservices, then your service boundaries might not be in the right place, and it could imply too much coupling between your services. As we’ve already discussed, we’re trying to optimize our architecture, and our microservice boundaries, so that changes are more likely going to apply within a microservice boundary. Cross-cutting changes should be the exception, not the norm.</p>
+        
+        <p>In fact, I’d argue that the pain of working across multiple repos can be useful in helping enforce microservice boundaries, as it forces you to think carefully about where these boundaries are, and about the nature of the interactions between them.</p>
+        <div data-type="tip"><h6>Tip</h6>
+        <p>If you are constantly making changes across multiple microservices, it’s likely that your microservice boundaries are in the wrong place. It may be worth considering merging microservices back together if you spot this happening.</p>
+        </div>
+        
+        <p>Then there is the hassle of having to pull from multiple repos and push to multiple repos as part of your normal workflow. In my experience, this can be simplified either by using an IDE that supports multiple repositories (this is something that all IDEs I’ve used over the last five years can handle) or by writing simple wrapper scripts to simplify things when working on the command line.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Where to use this pattern"><div class="sect3" id="idm45699528420416">
+        <h3>Where to use this pattern</h3>
+        
+        <p>Using the one repository per microservice approach works just as well for small teams as it does for large teams, but if you find yourself making lots of changes across microservice boundaries, then it may not be for you, and the monorepo pattern we discuss next may be a better fit—although making lots of changes across service boundaries can be considered a warning sign that something isn’t right, as we’ve discussed previously. It can also make code reuse more complex than using a monorepo approach, as you need to depend on code being packaged into version artifacts.<a data-type="indexterm" data-primary="" data-startref="COperm07" id="idm45699528419120"></a><a data-type="indexterm" data-primary="" data-startref="mulrep07" id="idm45699528418144"></a></p>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Pattern: Monorepo"><div class="sect2" id="idm45699528416944">
+        <h2>Pattern: Monorepo</h2>
+        
+        <p>With<a data-type="indexterm" data-primary="code organization" data-secondary="one repository for multiple microservices" id="COmulti07"></a><a data-type="indexterm" data-primary="monorepo approach" id="monorep07"></a> a monorepo approach, code for multiple microservices (or other types of projects) is stored in the same source code repository. I have seen situations in which a monorepo is used just by one team to manage source control for all its services, although the concept has been popularized by some very large tech companies where multiple teams and hundreds if not thousands of developers can all work on the same source code repository.</p>
+        
+        <p>By having all the source code in the same repository, you allow for source code changes to be made across multiple projects in an atomic fashion, and for finer-grained reuse of code from one project to the next. Google is probably the <span class="keep-together">best-known</span> example of a company using a monorepo approach, although it’s far from the only one. Although there are some other benefits to this approach, such as improved visibility of other people’s code, the ability to reuse code easily and to make changes that impact multiple different projects is often cited as the major reason for adopting this pattern.</p>
+        
+        <p>If we take the example we just discussed, where we want to make a change to the <code>Inventory</code> so that it exposes some new behavior and also update the <code>Shipping</code> service to make use of this new functionality that we’ve exposed, then these changes can be made in a single commit, as we see in <a data-type="xref" href="#atomic-commit-across-microservices">Figure&nbsp;7-9</a>.</p>
+        
+        <figure><div id="atomic-commit-across-microservices" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_0709.png" alt="Using a single commit to make changes across two microservices using a monorepo" width="600" height="392">
+        <h6><span class="label">Figure 7-9. </span>Using a single commit to make changes across two microservices using a monorepo</h6>
+        </div></figure>
+        
+        <p>Of course, as with the multirepo pattern discussed previously, we still need to deal with the deployment side of this. We’d likely need to carefully consider the order of deployment if we want to avoid a lockstep deployment.</p>
+        <div data-type="warning" epub:type="warning"><h1>Atomic Commits Versus Atomic Deploy</h1>
+        <p>Being<a data-type="indexterm" data-primary="atomic commits, versus atomic deployment" id="idm45699528404032"></a> able to make an atomic commit across multiple services doesn’t give you atomic rollout. If you find yourself wanting to change code across multiple services at once and roll it out into production all at the same time, this violates the core principle of independent deployability. For more on this, see <a data-type="xref" href="ch05.html#a50-dry">“DRY and the Perils of Code Reuse in a Microservice World”</a>.</p>
+        </div>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Mapping to build"><div class="sect3" id="idm45699528401760">
+        <h3>Mapping to build</h3>
+        
+        <p>With a single source code repository per microservice, mapping from the source code to a build process is straightforward. Any change in that source code repository can trigger a matching CI build. With a monorepo, it gets a bit more complex.</p>
+        
+        <p>A simple starting point is to map folders inside the monorepo to a build, as shown in <a data-type="xref" href="#a61-single-repo-multi-builds">Figure&nbsp;7-10</a>. A change made to the <code>user-service</code> folder would trigger the <code>User</code> service build, for example. If you checked in code that changed files both in the <code>user-service</code> folder and the <code>catalog-service</code> folder, then both the <code>User</code> build and the <code>Catalog</code> build would get triggered.</p>
+        
+        <figure><div id="a61-single-repo-multi-builds" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_0710.png" alt="A single source repo with subdirectories mapped to independent builds" width="600" height="345">
+        <h6><span class="label">Figure 7-10. </span>A single source repo with subdirectories mapped to independent builds</h6>
+        </div></figure>
+        
+        <p>This gets more complex as you have more involved folder structures. On larger projects you can end up with multiple different folders wanting to trigger the same build, and with some folders triggering more than one build. At the simple end of the spectrum, you might have a “common” folder used by all microservices, a change to which causes all microservices to be rebuilt. At the more complex end, teams end up needing to adopt more graph-based build tools like the open source <a href="https://bazel.build">Bazel</a> tool to manage these dependencies more effectively (Bazel is an open source version of <span class="keep-together">Google’s</span> own internal build tool). Implementing a new build system can be a significant undertaking, so it is not something to be done lightly—but Google’s own monorepo would be impossible without tools like this.</p>
+        
+        <p>One of the benefits of a monorepo approach is that we can practice finer-grained reuse across projects. With a multirepo model, if I want to reuse someone else’s code, it will likely have to be packaged as a versioned artifact that I can then include as part of my build (such as a Nuget package, a JAR file, or an NPM). With our unit of reuse being a library, we are potentially pulling in more code than we really want. Theoretically, with a monorepo I could just depend on a single source file from another project—although this of course will cause me to have a more complex build <span class="keep-together">mapping</span>.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Defining ownership"><div class="sect3" id="code-ownership">
+        <h3>Defining ownership</h3>
+        
+        <p>With smaller team sizes and small codebase sizes, monorepos can likely work well with the traditional build and source code management tools that you are used to. However, as your monorepo gets bigger, you’ll likely need to start looking at different types of tools. We’ll explore ownership models in more detail in <a data-type="xref" href="ch15.html#conways-chapter">Chapter&nbsp;15</a>, but in the meantime it’s worth exploring briefly how this plays out when we think about source control.</p>
+        
+        <p>Martin Fowler has <a href="https://oreil.ly/nNNWd">previously written</a> about different ownership models, outlining a sliding scale of ownership from <em>strong ownership</em> through <em>weak ownership</em> and on to <em>collective ownership</em>. Since Martin captured those terms, development practices have changed, so it’s perhaps worth revisiting and redefining these terms.</p>
+        
+        <p>With strong ownership, some code is owned by a specific group of people. If someone from outside that group wants to make a change, they have to ask the owners to make the change for them. Weak ownership still has the concept of defined owners, but people outside the ownership group are allowed to make changes, although any of these changes must be reviewed and accepted by someone in the ownership group. This would cover a pull request being sent to the core ownership team for review, before the pull request is merged. With collective ownership, any developer can change any piece of code.</p>
+        
+        <p>With a small number of developers (20 or fewer, as a general guide), you can afford to practice collective ownership—where any developer can change any other microservice. As you have more people, though, you’re more likely to want to move toward either a strong or weak ownership model to create more defined boundaries of responsibility. This can cause a challenge for teams using monorepos if their source control tool doesn’t support finer-grained ownership controls.</p>
+        
+        <p>Some source code tools allow you to specify ownership of specific directories or even specific filepaths inside a single repository. Google initially implemented this system on top of Perforce for its own monorepo before developing its own source control system, and it’s also <a href="https://oreil.ly/zxmXn">something that GitHub has supported</a> since 2016. With GitHub, you create a <code>CODEOWNERS</code> file, which lets you map owners to directories or filepaths. You can see some examples in <a data-type="xref" href="#codeowners-file">Example&nbsp;7-1</a>, drawn from <span class="keep-together">GitHub’s</span> own documentation, that show the kinds of flexibility these systems can bring.</p>
+        <div id="codeowners-file" data-type="example">
+        <h5><span class="label">Example 7-1. </span>Examples of how to specify ownership in specific directories in a GitHub <code>CODEOWNERS</code> file</h5>
+        
+        <pre data-type="programlisting"># In this example, @doctocat owns any files in the build/logs
+        # directory at the root of the repository and any of its
+        # subdirectories.
+        /build/logs/ @doctocat
+        
+        # In this example, @octocat owns any file in an apps directory
+        # anywhere in your repository.
+        apps/ @octocat
+        
+        # In this example, @doctocat owns any file in the `/docs`
+        # directory in the root of your repository.
+        /docs/ @doctocat</pre></div>
+        
+        <p>GitHub’s own code ownership concept ensures that code owners for source files are requested for review whenever a pull request is raised for the relevant files. This could be a problem with larger pull requests, as you could end up needing sign-off from multiple reviewers, but there are lots of good reasons to aim for smaller pull requests, in any case.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Tooling"><div class="sect3" id="idm45699528374464">
+        <h3>Tooling</h3>
+        
+        <p>Google’s own monorepo is massive, and it takes significant amounts of engineering to make it work at scale. Consider things like a graph-based build system that has gone through multiple generations, a distributed object linker to speed up build times, plug-ins for IDEs and text editors that can dynamically keep dependency files in check—it’s an enormous amount of work. As Google grew, it increasingly hit limitations on its use of Perforce and ended up having to create its own proprietary source control tool called Piper. When I worked in this part of Google back in 2007–2008, there were over a hundred people maintaining various developer tools, with a significant part of this effort given over to dealing with implications of the monorepo approach. That’s something that you can justify if you have tens of thousands of engineers, of course.</p>
+        
+        <p>For a more detailed overview of the rationale behind Google’s use of a monorepo, I recommend <a href="https://oreil.ly/wMyH3">“Why Google Stores Billions of Lines of Code in a Single Repository”</a> by Rachel Potvin and Josh Levenberg.<sup><a data-type="noteref" id="idm45699528371744-marker" href="ch07.html#idm45699528371744">5</a></sup> In fact, I’d suggest it is required reading for anyone thinking, “We should use a monorepo, because Google does!” Your organization probably isn’t Google and probably doesn’t have Google-type problems, constraints, or resources. Put another way, whatever monorepo you end up with probably won’t be Google’s.</p>
+        
+        <p>Microsoft experienced similar issues with scale. It adopted Git to help manage the main source code repository for Windows. A full working directory for this codebase is around 270 GB of source files.<sup><a data-type="noteref" id="idm45699528369744-marker" href="ch07.html#idm45699528369744">6</a></sup> Downloading all of that would take an age, and it’s also not necessary—developers will end up working on just one small part of the overall system. So Microsoft had to create a dedicated virtual file system, VFS for Git (previously known as GVFS), that ensures only the source files that a developer needs are actually downloaded.</p>
+        
+        <p>VFS for Git<a data-type="indexterm" data-primary="VFS for Git" id="idm45699528367584"></a> is an impressive achievement, as is Google’s own toolchain, although justifying these kinds of investments in this sort of technology is much easier for companies like this. It’s also worth pointing out that although VFS for Git is open source, I’ve yet to meet a team outside Microsoft using it—and the vast bulk of Google’s own toolchain supporting its monorepo is closed source (Bazel is a notable exception, but it’s unclear to what extent the open source Bazel actually mirrors what is used inside Google itself).</p>
+        
+        <p>Markus Oberlehner’s piece <a href="https://oreil.ly/1SR0A">“Monorepos in the Wild”</a> introduced me to <a href="https://lerna.js.org">Lerna</a>, a tool created by the team behind the Babel JavaScript compiler. Lerna is designed to make it easier to produce multiple versioned artifacts from the same source code repository. I can’t speak directly to how effective Lerna is at this task (in addition to a number of other notable deficiencies, I am not an experienced JavaScript developer), but it seems from a surface examination to simplify this approach somewhat.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="How “mono” is mono?"><div class="sect3" id="idm45699528363760">
+        <h3>How “mono” is mono?</h3>
+        
+        <p>Google doesn’t store <em>all</em> of its code in a monorepo. There are some projects, especially those being developed in the open, that are held elsewhere. Nonetheless, at least based on the previously mentioned ACM article, 95% of Google’s code was stored in the monorepo as of 2016. In other organizations, a monorepo may be scoped to only one system, or to a small number of systems. This means a company could have a small number of monorepos for different parts of the organization.</p>
+        
+        <p>I’ve also spoken to teams that practice per-team monorepos. While technically speaking this probably doesn’t match up to the original definition of this pattern (which typically talks in terms of multiple teams sharing the same repository), I still think it’s more “monorepo” than anything else. In this situation, each team has its own monorepo that is fully under its control. All microservices owned by that team have their code stored in that team’s monorepo, as shown in <a data-type="xref" href="#per-team-mono-repo">Figure&nbsp;7-11</a>.</p>
+        
+        <figure><div id="per-team-mono-repo" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492034018/files/assets/bms2_0711.png" alt="A pattern variation where each team has its own monorepo" width="600" height="532">
+        <h6><span class="label">Figure 7-11. </span>A pattern variation in which each team has its own monorepo</h6>
+        </div></figure>
+        
+        <p>For teams practicing collective ownership, this model has a lot of benefits, arguably providing most of the advantages of a monorepo approach while sidestepping some of the challenges that occur at larger scale. This halfway house can make a lot of sense in terms of working within existing organizational ownership boundaries, and it can somewhat mitigate the concerns about the use of this pattern at larger scale.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Where to use this pattern"><div class="sect3" id="idm45699528356576">
+        <h3>Where to use this pattern</h3>
+        
+        <p>Some organizations working at very large scale have found the monorepo approach to work very well for them. We’ve already mentioned Google and Microsoft, and we can add Facebook, Twitter, and Uber to the list. These organizations all have one thing in common—they are big, tech-focused companies that are able to dedicate significant resources to getting the best out of this pattern. Where I see monorepos work well is at the other end of the spectrum, with smaller numbers of developers and teams. With 10 to 20 developers, it is easier to manage ownership boundaries and keep the build process simple with the monorepo approach. Pain points seem to emerge for organizations in the middle—those with the scale to start hitting issues that require new tooling or ways of working, but without the spare bandwidth to invest in these ideas.<a data-type="indexterm" data-primary="" data-startref="COmulti07" id="idm45699528354416"></a><a data-type="indexterm" data-primary="" data-startref="monorep07" id="idm45699528353440"></a></p>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Which Approach Would I Use?"><div class="sect2" id="idm45699528352112">
+        <h2>Which Approach Would I Use?</h2>
+        
+        <p>In my experience, the main advantages of a monorepo approach—finer-grained reuse and atomic commits—don’t seem to outweigh the challenges that emerge at scale. For smaller teams, either approach is fine, but as you scale, I feel that the one repository per microservice (multirepos) approach is more straightforward. Fundamentally, I’m concerned about the encouragement of cross-service changes, the more confused lines of ownership, and the need for new tooling that monorepos can bring.</p>
+        
+        <p>A problem I’ve seen repeatedly is that organizations that started small, where collective ownership (and therefore monorepos) worked well initially, have struggled to move to different models later on, as the concept of the monorepo is so ingrained. As the delivery organization grows, the pain of the monorepo increases, but so too does the cost of migrating to an alternative approach. This is even more challenging for organizations that grew rapidly, as it’s often only after that rapid growth has occurred that the problems become evident, at which point the cost of migration to a multirepo approach looks too high. This can lead to the sunk cost fallacy: you’ve invested so much in making the monorepo work up to this point—just a bit more investment will make it work as well as it used to, right? Perhaps not—but it’s a brave soul who can recognize that they are throwing good money after bad and make a decision to change course.</p>
+        
+        <p>The concerns about ownership and monorepos can be alleviated through the use of fine-grained ownership controls, but that tends to require tooling and/or an increased level of diligence. My opinion on this might change as the maturity of tooling around monorepos improves, but despite a lot of work being done in regard to the open source development of graph-based build tools, I’m still seeing very low take-up of these toolchains. So it’s multirepos for me.<a data-type="indexterm" data-primary="" data-startref="Dcode07" id="idm45699528348992"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Summary"><div class="sect1" id="idm45699528347760">
+        <h1>Summary</h1>
+        
+        <p>We’ve covered some important ideas in this chapter that should stand you in good stead whether or not you end up using microservices. There are many more aspects to explore around these ideas, from continuous delivery to trunk-based development, monorepos to multirepos. I’ve given you a host of resources and further reading, but it’s time for us to move on to a subject that is important to explore in some depth—deployment.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        <div data-type="footnotes"><p data-type="footnote" id="idm45699528554272"><sup><a href="ch07.html#idm45699528554272-marker">1</a></sup> Alanna Brown, Nicole Forsgren, Jez Humble, Nigel Kersten, and Gene Kim, <em>2016 State of DevOps Report</em>, <a href="https://oreil.ly/YqEEh"><em class="hyperlink">https://oreil.ly/YqEEh</em></a>.</p><p data-type="footnote" id="idm45699528547728"><sup><a href="ch07.html#idm45699528547728-marker">2</a></sup> Nicole Forsgren, Dustin Smith, Jez Humble, and Jessie Frazelle, <em>Accelerate: State of DevOps</em> 2019, <a href="https://oreil.ly/mfkIJ"><em class="hyperlink">https://oreil.ly/mfkIJ</em></a>.</p><p data-type="footnote" id="idm45699528526208"><sup><a href="ch07.html#idm45699528526208-marker">3</a></sup> For more details, see Jez Humble and David Farley, <em>Continuous Delivery: Reliable Software Releases Through Build, Test, and Deployment Automation</em> (Upper Saddle River, NJ: Addison-Wesley, 2010).</p><p data-type="footnote" id="idm45699528438624"><sup><a href="ch07.html#idm45699528438624-marker">4</a></sup> See “Managing Dependency Graphs” in <em>Continuous Delivery</em>, pp. 363–73.</p><p data-type="footnote" id="idm45699528371744"><sup><a href="ch07.html#idm45699528371744-marker">5</a></sup> Rachel Potvin and Josh Levenberg, “Why Google Stores Billions of Lines of Code in a Single Repository,” <em>Communications of the ACM</em> 59, no. 7 (July 2016): 78–87.</p><p data-type="footnote" id="idm45699528369744"><sup><a href="ch07.html#idm45699528369744-marker">6</a></sup> See  <a href="https://oreil.ly/SM7d4">Git Virtual File System Design History</a>.</p></div></div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492034018/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

@@ -1,0 +1,661 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 13. Contracts"><div class="chapter" id="ch13-contracts">
+        <h1><span class="label">Chapter 13. </span>Contracts</h1>
+        
+        
+        <p><code>Friday, April 15, 12:01</code></p>
+        <div class="story">
+        
+        <p>Addison met with Sydney over lunch in the cafeteria to chat about coordination<a data-type="indexterm" data-primary="contracts" data-secondary="Sysops Squad saga" id="idm45978841430896"></a><a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="contracts" id="idm45978841429920"></a> between the Ticket Orchestrator and the services it integrated with for the ticket management workflow.</p>
+        
+        <p>“Why not just use gRPC for all the communication? I heard it’s really fast,” said Sydney.</p>
+        
+        <p>“Well, that’s an implementation, not an architecture,” Addison said. “We need to decide what types of contracts we want before we choose how to implement them. First, we need to decide between tight or loose contracts. Once we decide on the type, I’ll leave it to you to decide how to implement them, as long as they pass our fitness functions.”</p>
+        
+        <p>“What determines what kind of contract we need?” Sydney said.</p>
+        <hr>
+        </div>
+        
+        <p>In <a data-type="xref" href="ch02.html#ch02-discerning">Chapter&nbsp;2</a>, we began discussing the intersection of three<a data-type="indexterm" data-primary="contracts" data-secondary="about" id="idm45978841425696"></a> important forces—communication, consistency, and coordination—and how to develop trade-offs for them.  We modeled the intersectional space of the three forces in a joined three-dimensional space, shown again in <a data-type="xref" href="#fig-contracts-dimensions">Figure 13-1</a>. In <a data-type="xref" href="ch12.html#ch12-transactional-sagas">Chapter&nbsp;12</a>, we revisited these three forces with a discussion of the various communication styles and their trade-offs.</p>
+        
+        <p>However much an architecture can discern a relationship like this one, some forces cut across the conceptual space and affect all of the other dimensions equally. If pursuing the visual three-dimensional metaphor, these cross-cutting forces act as an additional dimension, much as <em>time</em> is orthogonal to the three physical dimensions.</p>
+        
+        <figure><div id="fig-contracts-dimensions" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0213.png" alt="3d space showing three dimensions of messaging" width="600" height="592">
+        <h6><span class="label">Figure 13-1. </span>Three-dimensional intersecting space for messaging forces in distributed architectures</h6>
+        </div></figure>
+        
+        <p>One constant factor in software architecture that cuts across and affects virtually every aspect of architect decision making is <em>contracts</em>, broadly defined as how disparate parts of an architecture connect with one another. The dictionary definition of a contract is as follows:</p>
+        <dl>
+        <dt>contract</dt>
+        <dd>
+        <p>A written or spoken agreement, especially one concerning employment, sales, or tenancy, that is intended to be enforceable by law.</p>
+        </dd>
+        </dl>
+        
+        <p>In software, we use contracts broadly to describe things like integration points in architecture, and many contract formats are part of the design process of software development: SOAP, REST, gRPC, XMLRPC, and an alphabet soup of other acronyms. However, we broaden that definition and make it more consistent:</p>
+        <dl>
+        <dt>hard parts contract</dt>
+        <dd>
+        <p>The format used by parts of an architecture to convey information or 
+        <span class="keep-together">dependencies</span>.</p>
+        </dd>
+        </dl>
+        
+        <p>This definition of <em>contract</em> encompasses all techniques used to “wire together” parts of a system, including transitive dependencies for frameworks and libraries, internal and external integration points, caches, and any other communication among parts.</p>
+        
+        <p>This chapter illustrates the effects of contracts on many parts of architecture, including static and dynamic quantum coupling, as well as ways to improve (or harm) the effectiveness of workflows.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Strict Versus Loose Contracts"><div class="sect1" id="idm45978841411952">
+        <h1>Strict Versus Loose Contracts</h1>
+        
+        <p>Like many things in software architecture, contracts don’t exist<a data-type="indexterm" data-primary="contracts" data-secondary="strict contracts" id="idm45978841409968"></a><a data-type="indexterm" data-primary="strict contracts" id="idm45978841408944"></a> within a binary but rather on a broad spectrum, from strict to loose. <a data-type="xref" href="#fig-contracts-spectrum">Figure 13-2</a> illustrates this spectrum, using example contract types.</p>
+        
+        <figure><div id="fig-contracts-spectrum" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1302.png" alt="spectrum of contract types" width="600" height="171">
+        <h6><span class="label">Figure 13-2. </span>The spectrum of contract types, from strict to loose</h6>
+        </div></figure>
+        
+        <p>A strict contract requires adherence to names, types, ordering, and all other details, leaving no ambiguity. An example of the strictest possible contract in software is a remote method call, using a platform mechanism such as RMI in Java. In that case, the remote call mimics an internal method call, matching name, parameters, types, and all other details.</p>
+        
+        <p>Many strict contract formats mimic the semantics of method calls. <a data-type="indexterm" data-primary="gRPC protocol" data-secondary="strict contracts by default" id="idm45978841403984"></a>For example, developers see a host of protocols that include some variation of the RPC, traditionally an acronym for <em>Remote Procedure Call</em>. <a href="https://grpc.io">gRPC</a> is an example of a popular remote invocation framework that defaults to strict contracts.</p>
+        
+        <p>Many architects like strict contracts because they model the identical semantic behavior of internal method calls. <a data-type="indexterm" data-primary="brittleness in architecture" data-secondary="strict contracts creating" id="idm45978841400896"></a><a data-type="indexterm" data-primary="architecture" data-secondary="brittleness" data-tertiary="strict contracts creating" id="idm45978841399888"></a><a data-type="indexterm" data-primary="code reuse patterns" data-secondary="strict contracts and" id="idm45978841398656"></a>However, strict contracts create brittleness in integration architecture—something to avoid. As discussed in <a data-type="xref" href="ch08.html#ch08-reuse-patterns">Chapter&nbsp;8</a>, something that is simultaneously changing frequently and used by several distinct architecture parts creates problems in architecture. Contracts fit that description because they form the glue within a distributed architecture: the more frequently they must change, the more rippling problems they cause for other services. However, architects aren’t forced to use strict contracts and should do so only when advantageous.</p>
+        
+        <p>Even an ostensibly loose format such as<a data-type="indexterm" data-primary="contracts" data-secondary="strict contracts" data-tertiary="JSON example" id="idm45978841395824"></a><a data-type="indexterm" data-primary="strict contracts" data-secondary="JSON example" id="idm45978841394576"></a> <a href="https://www.json.org">JSON</a> offers ways to selectively add schema information to simple name-value pairs. <a data-type="xref" href="#lst-json-strict">Example&nbsp;13-1</a> shows a strict JSON contract with schema information attached.</p>
+        <div id="lst-json-strict" data-type="example" class="pagebreak-before less_space">
+        <h5><span class="label">Example 13-1. </span>Strict JSON contract</h5>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="p">{</code>
+            <code class="s2">"$schema"</code><code class="o">:</code> <code class="s2">"http://json-schema.org/draft-04/schema#"</code><code class="p">,</code>
+            <code class="s2">"properties"</code><code class="o">:</code> <code class="p">{</code>
+              <code class="s2">"acct"</code><code class="o">:</code> <code class="p">{</code><code class="s2">"type"</code><code class="o">:</code> <code class="s2">"number"</code><code class="p">},</code>
+              <code class="s2">"cusip"</code><code class="o">:</code> <code class="p">{</code><code class="s2">"type"</code><code class="o">:</code> <code class="s2">"string"</code><code class="p">},</code>
+              <code class="s2">"shares"</code><code class="o">:</code> <code class="p">{</code><code class="s2">"type"</code><code class="o">:</code> <code class="err">“</code><code class="nx">number</code><code class="s2">", "</code><code class="nx">minimum</code><code class="s2">": 100}</code>
+        <code class="s2">   },</code>
+        <code class="s2">    "</code><code class="nx">required</code><code class="s2">": ["</code><code class="nx">acct</code><code class="s2">", "</code><code class="nx">cusip</code><code class="s2">", "</code><code class="nx">shares</code><code class="err">"</code><code class="p">]</code>
+        <code class="p">}</code></pre></div>
+        
+        <p>The first line references the schema definition we use and will validate against. We define three properties (<code>acct</code>, <code>cusip</code>, and <code>shares</code>), along with their types and, on the last line, which ones are required. This creates a strict contract, with required fields and types specified.</p>
+        
+        <p>Examples of looser contracts include formats such<a data-type="indexterm" data-primary="contracts" data-secondary="loose contracts" id="idm45978841348208"></a><a data-type="indexterm" data-primary="loose contracts" data-secondary="REST and GraphQL" id="idm45978841274656"></a><a data-type="indexterm" data-primary="REST (representational state transfer) loose contracts" id="idm45978841273712"></a><a data-type="indexterm" data-primary="GraphQL loose contracts" id="idm45978841273072"></a> as <a href="https://oreil.ly/tzoUg">REST</a> and <a href="https://graphql.org">GraphQL</a>, very different formats but similar in demonstrating looser coupling than RPC-based formats. For REST, the architect models resources rather than method or procedure endpoints, making for less brittle contracts. For example, if an architect builds a RESTful resource that describes parts of an airplane to support queries about seats, that query won’t break in the future if someone adds details about engines to the resource—adding more information doesn’t break what’s there.</p>
+        
+        <p>Similarly, GraphQL is used by distributed architectures to provide<a data-type="indexterm" data-primary="aggregate orientation" data-secondary="GraphQL read-only aggregated data" id="idm45978841270448"></a> read-only aggregated data rather than perform costly orchestration calls across a wide variety of services. Consider the two GraphQL representations in Examples <a href="#lst-graphql">13-2</a> and <a href="#lst-graphql-customer">13-3</a>, providing two different but capable views of the Profile contract.</p>
+        <div id="lst-graphql" data-type="example">
+        <h5><span class="label">Example 13-2. </span>Customer Wishlist <code>Profile</code> representation</h5>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">type</code> <code class="nx">Profile</code> <code class="p">{</code>
+            <code class="nx">name</code><code class="o">:</code> <code class="nb">String</code>
+        <code class="p">}</code></pre></div>
+        <div id="lst-graphql-customer" data-type="example">
+        <h5><span class="label">Example 13-3. </span>Customer <code>Profile</code> representation</h5>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="nx">type</code> <code class="nx">Profile</code> <code class="p">{</code>
+            <code class="nx">name</code><code class="o">:</code> <code class="nb">String</code>
+            <code class="nx">addr1</code><code class="o">:</code> <code class="nb">String</code>
+            <code class="nx">addr2</code><code class="o">:</code> <code class="nb">String</code>
+            <code class="nx">country</code><code class="o">:</code> <code class="nb">String</code>
+            <code class="p">.</code> <code class="p">.</code> <code class="p">.</code>
+        <code class="p">}</code></pre></div>
+        
+        <p>The concept of <em>profile</em> appears in both examples but with different values. In this scenario, the Customer Wishlist doesn’t have internal access to the customer’s name, only a unique identifier. Thus, it needs access to a Customer Profile that maps the identifier to the customer name. The Customer Profile, on the other hand, includes a large amount of information about the customer in addition to the name. As far as Wishlist is concerned, the only interesting thing in Profile is the name.</p>
+        
+        <p>A common anti-pattern that some architects fall victim to is to assume that Wishlist might eventually need all the other parts, so the architects include them in the contract from the outset. This is an example of stamp coupling and an anti-pattern in most cases, because it introduces breaking changes where they aren’t needed, making the architecture fragile yet providing little benefit. For example, if the Wishlist cares about only the customer name from Profile, but the contract specifies every field in Profile (just in case), then a change in Profile that Wishlist doesn’t care about causes a contract breakage and coordination to fix. Keeping contracts at a “need to know” level strikes a balance between semantic coupling and necessary information without creating needless fragility in integration architecture.</p>
+        
+        <p>At the far end of the spectrum of contract coupling lie extremely loose contracts, often expressed as name-value pairs in formats like <a href="https://yaml.org">YAML</a> or JSON, as illustrated in <a data-type="xref" href="#lst-nv-json">Example&nbsp;13-4</a>.</p>
+        <div id="lst-nv-json" data-type="example">
+        <h5><span class="label">Example 13-4. </span>Name-value pairs in JSON</h5>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="p">{</code>
+          <code class="s2">"name"</code><code class="o">:</code> <code class="s2">"Mark"</code><code class="p">,</code>
+          <code class="s2">"status"</code><code class="o">:</code> <code class="s2">"active"</code><code class="p">,</code>
+          <code class="s2">"joined"</code><code class="o">:</code> <code class="s2">"2003"</code>
+        <code class="p">}</code></pre></div>
+        
+        <p>Nothing but the raw facts in this example! No additional metadata, type information, or anything else, just name-value pairs.</p>
+        
+        <p>Using such loose contracts allows for extremely decoupled<a data-type="indexterm" data-primary="coupling" data-secondary="loose contracts for decoupling" id="idm45978841182400"></a><a data-type="indexterm" data-primary="loose contracts" data-secondary="decoupling via" id="idm45978841181552"></a><a data-type="indexterm" data-primary="contracts" data-secondary="loose contracts" data-tertiary="decoupling via" id="idm45978841180672"></a> systems, often one of the goals in architectures, such as microservices. However, the looseness of the contract comes with trade-offs such as lack of contract certainty,  verification, and increased application logic. We illustrate in <a data-type="xref" href="#sec-contracts-in-ms">“Contracts in Microservices”</a> how architects resolve this problem by using contract fitness functions.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before less_space" data-pdf-bookmark="Trade-Offs Between Strict and Loose Contracts"><div class="sect2" id="idm45978841178400">
+        <h2>Trade-Offs Between Strict and Loose Contracts</h2>
+        
+        <p>When should an architect use strict contracts and when should they use looser ones? Like all the hard parts of architecture, no generic answer exists for this question, so it is important for architects to understand when each is most suitable.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Strict contracts"><div class="sect3" id="idm45978841176336">
+        <h3>Strict contracts</h3>
+        
+        <p>Stricter contracts have a number of advantages, including these:<a data-type="indexterm" data-primary="contracts" data-secondary="strict contracts" data-tertiary="trade-offs" id="idm45978841145824"></a><a data-type="indexterm" data-primary="strict contracts" data-secondary="trade-offs" id="idm45978841144736"></a><a data-type="indexterm" data-primary="trade-off analysis" data-secondary="strict contracts" id="idm45978841143792"></a></p>
+        <dl>
+        <dt>Guaranteed contact fidelity</dt>
+        <dd>
+        <p>Building schema verification within contracts ensures exact adherence to the values, types, and other governed metadata. Some problem spaces benefit from tight coupling for contract changes.</p>
+        </dd>
+        <dt>Versioned</dt>
+        <dd>
+        <p>Strict contracts generally require a versioning strategy to support<a data-type="indexterm" data-primary="version control systems" data-secondary="strict contracts requiring" id="idm45978841139872"></a> two endpoints that accept different values or to manage domain evolution over time. This allows gradual changes to integration points while supporting a selective number of past versions to make integration collaboration easier.</p>
+        </dd>
+        <dt>Easier to verify at build time</dt>
+        <dd>
+        <p>Many schema tools provide mechanisms to verify contracts at build time, adding a level of type checking for integration points.</p>
+        </dd>
+        <dt>Better documentation</dt>
+        <dd>
+        <p>Distinct parameters and types provide excellent documentation with no 
+        <span class="keep-together">ambiguity</span>.</p>
+        </dd>
+        </dl>
+        
+        <p>Strict contracts also have a few disadvantages:</p>
+        <dl>
+        <dt>Tight coupling</dt>
+        <dd>
+        <p>By our general definition of coupling, strict contracts create tight<a data-type="indexterm" data-primary="coupling" data-secondary="loose contracts for decoupling" data-tertiary="strict contract tight coupling" id="idm45978841133232"></a> coupling points. If two services share a strict contract and the contract changes, both services must change.</p>
+        </dd>
+        <dt>Versioned</dt>
+        <dd>
+        <p>This appears in both advantages and disadvantages. While keeping distinct versions allows for precision, it can become an integration nightmare if the team doesn’t have a clear deprecation strategy or tries to support too many versions.</p>
+        </dd>
+        </dl>
+        
+        <p class="pagebreak-before">The trade-offs for strict contracts are summarized in <a data-type="xref" href="#totbl-strict-loose">Table 13-1</a>.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978841128352">
+        <h5>Trade-Offs</h5><table id="totbl-strict-loose" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 13-1. </span>Trade-offs for strict contracts</caption>
+        <thead>
+        <tr>
+        <th>Advantage</th>
+        <th>Disadvantage</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Guaranteed contract fidelity</p></td>
+        <td><p>Tight coupling</p></td>
+        </tr>
+        <tr>
+        <td><p>Versioned</p></td>
+        <td><p>Versioned</p></td>
+        </tr>
+        <tr>
+        <td><p>Easier to verify at build time</p></td>
+        <td></td>
+        </tr>
+        <tr>
+        <td><p>Better documentation</p></td>
+        <td></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Loose contracts"><div class="sect3" id="idm45978841117520">
+        <h3>Loose contracts</h3>
+        
+        <p>Loose contracts, such as name-value pairs, offer the least<a data-type="indexterm" data-primary="contracts" data-secondary="loose contracts" data-tertiary="trade-offs" id="idm45978841116016"></a><a data-type="indexterm" data-primary="loose contracts" data-secondary="trade-offs" id="idm45978841114768"></a><a data-type="indexterm" data-primary="trade-off analysis" data-secondary="loose contracts" id="idm45978841113824"></a> coupled integration points, but they too have trade-offs, as summarized in <a data-type="xref" href="#totbl-loose-contracts">Table 13-2</a>.</p>
+        
+        <p>These are some advantages of loose contracts:</p>
+        <dl>
+        <dt>Highly decoupled</dt>
+        <dd>
+        <p>Many architects have a stated goal for microservices architectures<a data-type="indexterm" data-primary="contracts" data-secondary="loose contracts" data-tertiary="decoupling via" id="idm45978841110032"></a><a data-type="indexterm" data-primary="coupling" data-secondary="loose contracts for decoupling" id="idm45978841108784"></a> that includes high levels of decoupling, and loose contracts provide the most flexibility.</p>
+        </dd>
+        <dt>Easier to evolve</dt>
+        <dd>
+        <p>Because little or no schema information exists, these contracts can evolve more freely. Of course, semantic coupling changes still require coordination across all interested parties—implementation cannot reduce semantic coupling—but loose contracts allow easier implementation evolution.</p>
+        </dd>
+        </dl>
+        
+        <p>Loose contracts also have a few disadvantages:</p>
+        <dl>
+        <dt>Contract management</dt>
+        <dd>
+        <p>Loose contracts by definition don’t have strict contract features, which may cause problems such as misspelled names, missing name-value pairs, and other deficiencies that schemas would fix.</p>
+        </dd>
+        <dt>Requires fitness functions</dt>
+        <dd>
+        <p>To solve the contract issues just described, many teams use<a data-type="indexterm" data-primary="fitness functions for governance" data-secondary="loose coupling requiring" id="idm45978841102544"></a><a data-type="indexterm" data-primary="loose contracts" data-secondary="fitness functions required" id="idm45978841101488"></a><a data-type="indexterm" data-primary="contracts" data-secondary="loose contracts" data-tertiary="fitness functions required" id="idm45978841100528"></a> consumer-driven contracts as an architecture fitness function to make sure that loose contracts still contain sufficient information for the contract to function.</p>
+        </dd>
+        </dl>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978841098784">
+        <h5>Trade-Offs</h5><table id="totbl-loose-contracts" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 13-2. </span>Trade-offs for loose contracts</caption>
+        <thead>
+        <tr>
+        <th>Advantage</th>
+        <th>Disadvantage</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Highly decoupled</p></td>
+        <td><p>Contract management</p></td>
+        </tr>
+        <tr>
+        <td><p>Easier to evolve</p></td>
+        <td><p>Requires fitness functions</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        
+        <p>For an example of the common trade-offs encountered by architects, consider the example of contracts in microservice architectures.</p>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Contracts in Microservices"><div class="sect2" id="sec-contracts-in-ms">
+        <h2>Contracts in Microservices</h2>
+        
+        <p>Architects  must constantly make decisions about how services<a data-type="indexterm" data-primary="contracts" data-secondary="microservice contracts" id="idm45978841088144"></a><a data-type="indexterm" data-primary="microservices" data-secondary="contracts" data-tertiary="about" id="idm45978841087088"></a> interact with one another, what information to pass (the semantics), how to pass it (the implementation), and how tightly to couple the services.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Coupling levels"><div class="sect3" id="idm45978841085616">
+        <h3>Coupling levels</h3>
+        
+        <p>Consider two microservices with independent transactionality that<a data-type="indexterm" data-primary="microservices" data-secondary="contracts" data-tertiary="coupling levels" id="idm45978841084144"></a><a data-type="indexterm" data-primary="coupling" data-secondary="loose contracts for decoupling" data-tertiary="microservices" id="idm45978841082816"></a> must share domain information such as <em>Customer Address</em>, shown in <a data-type="xref" href="#fig-contracts-ms-strict">Figure 13-3</a>.</p>
+        
+        <figure><div id="fig-contracts-ms-strict" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1303.png" alt="two services that share information" width="600" height="194">
+        <h6><span class="label">Figure 13-3. </span>Two services that must share domain information about the customer</h6>
+        </div></figure>
+        
+        <p>The architect could implement both services in the same technology stack and use a strictly typed contract, either a platform-specific remote procedure protocol (such as RMI) or an implementation-independent one like gRPC, and pass the customer information from one to another with high confidence of contract fidelity. However, this tight coupling violates one of the aspirational goals of microservices architectures, where architects try to create decoupled services.</p>
+        
+        <p>Consider the alternative approach, where each service has its own internal representation of Customer, and the integration uses name-value pairs to pass information from one service to another, as illustrated in <a data-type="xref" href="#fig-contracts-ms-loose">Figure 13-4</a>.</p>
+        
+        <p>Here, each service has its own bounded-context definition of Customer. When passing information, the architect utilizes name-value pairs in JSON to pass the relevant information in a loose contract.</p>
+        
+        <figure><div id="fig-contracts-ms-loose" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1304.png" alt="microservices with separate representations" width="600" height="228">
+        <h6><span class="label">Figure 13-4. </span>Microservices with their own internal semantic representation can pass 
+        <span class="keep-together">values</span> in simple messages</h6>
+        </div></figure>
+        
+        <p>This loose coupling satisfies many of the overarching goals of microservices. First, it creates highly decoupled services modeled after bounded contexts, allowing each team to evolve internal representations as aggressively as needed. Second, it creates implementation decoupling. If both services start in the same technology stack, but the team in the second decides to move to another platform, it likely won’t affect the first service at all. All platforms in common use can produce and consume name-value pairs, making them the lingua franca of integration architecture.</p>
+        
+        <p>The biggest downside of loose contracts is contract fidelity—as an <a data-type="indexterm" data-primary="coupling" data-secondary="loose contracts for decoupling" data-tertiary="microservices and contract fidelity" id="idm45978841071632"></a><a data-type="indexterm" data-primary="contracts" data-secondary="contract fidelity and microservices" id="idm45978841070272"></a><a data-type="indexterm" data-primary="microservices" data-secondary="contracts" data-tertiary="contract fidelity" id="idm45978841069312"></a>architect, how can I know that developers pass the correct number and type of parameters for integration calls? Some protocols, such as JSON, include schema tools to allow architects to overlay loose contracts with more metadata. Architects can also use a style of architect fitness function called a <em>consumer-driven contract</em>.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Consumer-driven contracts"><div class="sect3" id="idm45978841067136">
+        <h3>Consumer-driven contracts</h3>
+        
+        <p>A common problem in microservices architectures is the<a data-type="indexterm" data-primary="contracts" data-secondary="contract fidelity and microservices" data-tertiary="consumer-driven contracts" id="idm45978841065504"></a><a data-type="indexterm" data-primary="coupling" data-secondary="loose contracts for decoupling" data-tertiary="consumer-driven contracts" id="idm45978841064176"></a><a data-type="indexterm" data-primary="microservices" data-secondary="contracts" data-tertiary="consumer-driven contracts" id="idm45978841062928"></a><a data-type="indexterm" data-primary="consumer-driven contracts" id="idm45978841061696"></a> seemingly contradictory goals of loose coupling yet contract fidelity. One innovative approach that utilizes advances in software development is a <em>consumer-driven contract</em>, common in microservices architectures.</p>
+        
+        <p>In many architecture integration scenarios, a service decides <a data-type="indexterm" data-primary="push model definition" id="idm45978841059888"></a><a data-type="indexterm" data-primary="pull model consumer-driven contracts" id="idm45978841059104"></a>what information to emit to other integration partners (a <em>push</em> model—the service provider pushes a contract to consumers). The concept of a consumer-driven contract inverses that relationship into a <em>pull</em> model; here, the consumer puts together a contract for the items they need from the provider, and passes the contract to the provider, who includes it in their build and keeps the contract test green at all times. The contract encapsulates the information the consumer needs from the provider. This may work for a network of interlocking requests that the Provider must honor, as illustrated in <a data-type="xref" href="#fig-contracts-cdc">Figure 13-5</a>.</p>
+        
+        <figure><div id="fig-contracts-cdc" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1305.png" alt="a provider and three consumers with contracts" width="600" height="382">
+        <h6><span class="label">Figure 13-5. </span>Consumer-driven contracts allow the provider and consumers to stay in sync via automated architectural governance</h6>
+        </div></figure>
+        
+        <p>In this example, the team on the left provides bits of (likely) overlapping information to each of the consumer teams on the right. Each consumer creates a contract specifying required information and passes it to the provider, who includes their tests as part of a continuous integration or deployment pipeline. This allows each team to specify the contract as strictly or loosely as needed while guaranteeing contract fidelity as part of the build process. Many consumer-driven contract testing tools provide facilities to automate build-time checks of contracts, providing another layer of benefit similar to stricter contracts.</p>
+        
+        <p>Consumer-driven contracts are quite common in microservices architecture because they allow architects to solve the dual problems of loose coupling and governed integration. Trade-offs of consumer-driven contracts are shown in <a data-type="xref" href="#totbl-cdc">Table 13-3</a>.</p>
+        
+        <p>Advantages of consumer-driven contracts are as follows:</p>
+        <dl>
+        <dt>Allow loose contract coupling between services</dt>
+        <dd>
+        <p>Using name-value pairs is the loosest possible coupling between two services, allowing implementation changes with the least chance of breakage.</p>
+        </dd>
+        <dt>Allow variability in strictness</dt>
+        <dd>
+        <p>If teams use architecture fitness functions, architects can build stricter verifications than typically offered by schemas or other type-additive tools. For example, most schemas allow architects to specify things like numeric type but not acceptable ranges of values. Building fitness functions allows architects to build as much specificity as they like.</p>
+        </dd>
+        <dt>Evolvable</dt>
+        <dd>
+        <p>Loose coupling implies evolvability. Using simple name-value pairs allows integration points to change implementation details without breaking the semantics of the information passed between services.</p>
+        </dd>
+        </dl>
+        
+        <p>These are disadvantages of consumer-driven contracts:</p>
+        <dl>
+        <dt>Require engineering maturity</dt>
+        <dd>
+        <p>Architecture fitness functions are a great example of a capability that really works well only when well-disciplined teams have good practices and don’t skip steps. For example, if all teams run continuous integration that includes contract tests, then fitness functions provide a good verification mechanism. On the other hand, if many teams ignore failed tests or are not timely in running contract tests, integration points may be broken in architecture longer than desired.</p>
+        </dd>
+        <dt>Two interlocking mechanisms rather than one</dt>
+        <dd>
+        <p>Architects often look for a single mechanism to solve problems, and many of the schema tools have elaborate capabilities to create end-to-end connectivity. However, sometimes two simple interlocking mechanisms can solve the problem more simply. Thus, many architects use the combination of name-value pairs and consumer-driven contracts to validate contracts. However, this means that teams require two mechanisms rather than one.</p>
+        
+        <p>The architect’s best solution for this trade-off comes down to team maturity and decoupling with loose contracts versus complexity plus certainty with stricter contracts.</p>
+        </dd>
+        </dl>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978841041584">
+        <h5>Trade-Offs</h5><table id="totbl-cdc" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 13-3. </span>Trade-offs for consumer-driven contracts</caption>
+        <thead>
+        <tr>
+        <th>Advantage</th>
+        <th>Disadvantage</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Allows loose contract coupling between services</p></td>
+        <td><p>Requires engineering maturity</p></td>
+        </tr>
+        <tr>
+        <td><p>Allows variability in strictness</p></td>
+        <td><p>Two interlocking mechanisms rather than one</p></td>
+        </tr>
+        <tr>
+        <td><p>Evolvable</p></td>
+        <td></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" class="pagebreak-before less_space" data-pdf-bookmark="Stamp Coupling"><div class="sect1" id="idm45978841411136">
+        <h1>Stamp Coupling</h1>
+        
+        <p>A common pattern and sometimes anti-pattern in distributed<a data-type="indexterm" data-primary="contracts" data-secondary="stamp coupling" data-tertiary="about" id="idm45978841030640"></a><a data-type="indexterm" data-primary="stamp coupling" data-secondary="about" id="idm45978841029312"></a><a data-type="indexterm" data-primary="resources online" data-secondary="stamp coupling information" id="idm45978841028368"></a> architectures is <a href="https://oreil.ly/Jau2N">stamp coupling</a>, which describes passing a large data structure between services, but each service interacts with only a small part of the data structure. Consider the example of four services shown in <a data-type="xref" href="#fig-contracts-stamp-coupling">Figure 13-6</a>.</p>
+        
+        <figure><div id="fig-contracts-stamp-coupling" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1306.png" alt="stamp coupling illustration between four services" width="600" height="251">
+        <h6><span class="label">Figure 13-6. </span>Stamp coupling between four services</h6>
+        </div></figure>
+        
+        <p>Each service accesses (either reads, writes, or both) only a small portion of the data structure passed between each service. This pattern is common when an industry-standard document format exists, typically in XML. For example, the travel industry has a global standard XML document format that specifies details about travel itineraries. Several systems that work with travel-related services pass the entire document around, updating only their relevant sections.</p>
+        
+        <p>Stamp coupling, however, is often an accidental anti-pattern, where an architect has over-specified the details in a contract that aren’t needed or accidentally consumes far too much bandwidth for mundane calls.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Over-Coupling via Stamp Coupling"><div class="sect2" id="idm45978841022048">
+        <h2>Over-Coupling via Stamp Coupling</h2>
+        
+        <p>Going back to our Wishlist and Profile Services, consider<a data-type="indexterm" data-primary="stamp coupling" data-secondary="over-coupling via" id="idm45978841020528"></a><a data-type="indexterm" data-primary="contracts" data-secondary="stamp coupling" data-tertiary="over-coupling via" id="idm45978841019472"></a><a data-type="indexterm" data-primary="coupling" data-secondary="stamp coupling" data-tertiary="over-coupling via" id="idm45978841018256"></a> tying the two together with a strict contract combined with stamp coupling, as illustrated in <a data-type="xref" href="#fig-contracts-stamp-cust-wishlist">Figure 13-7</a>.</p>
+        
+        <p>In this example, even though the Wishlist Service needs only the name (accessed via a unique ID), the architect has coupled Profile’s entire data structure as the contract, perhaps in a misguided effort for future proofing. However, the negative side effect of too much coupling in contracts is brittleness. If Profile changes a field that Wishlist doesn’t care about, such as <code>state</code>, it still breaks the contract.</p>
+        
+        <figure><div id="fig-contracts-stamp-cust-wishlist" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1307.png" alt="The +Wishlist+ service is stamp coupled to the +Profile+ Service" width="600" height="496">
+        <h6><span class="label">Figure 13-7. </span>The Wishlist Service is stamp coupled to the Profile Service</h6>
+        </div></figure>
+        
+        <p>Over-specifying details in contracts is generally an anti-pattern but easy to fall into when also using stamp coupling for legitimate concerns, including uses such as workflow management (see <a data-type="xref" href="#sec-stamp-coupling">“Stamp Coupling for Workflow Management”</a>).</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Bandwidth"><div class="sect2" id="idm45978841011168">
+        <h2>Bandwidth</h2>
+        
+        <p>The other inadvertent anti-pattern that some architects fall into<a data-type="indexterm" data-primary="stamp coupling" data-secondary="bandwidth" id="idm45978841009840"></a><a data-type="indexterm" data-primary="coupling" data-secondary="stamp coupling" data-tertiary="bandwidth" id="idm45978841008784"></a><a data-type="indexterm" data-primary="contracts" data-secondary="stamp coupling" data-tertiary="bandwidth" id="idm45978841007568"></a><a data-type="indexterm" data-primary="bandwidth and stamp coupling" id="idm45978841006352"></a> is one of the famous fallacies of distributed computing: <em>bandwidth is infinite</em>. Architects and developers rarely have to consider the cumulative size of the number of method calls they make within a monolith because natural barriers exist. However, many of those barriers disappear in distributed architectures, inadvertently creating problems.</p>
+        
+        <p>Consider the previous example for 2,000 requests per second. If each payload is 500 KB, then the bandwidth required for this single request equals 1,000,000 KB per second! This is obviously an egregious use of bandwidth for no good reason. Alternatively, if the coupling between Wishlist and Profile contained only the necessary information, <code>name</code>, the overhead changes to 200 <em>bytes</em> per second, for a perfectly reasonable 400 KB.</p>
+        
+        <p>Stamp coupling can create problems when overused, including issues caused by coupling too tightly to bandwidth. However, like all things in architecture, it has beneficial uses as well.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Stamp Coupling for Workflow Management"><div class="sect2" id="sec-stamp-coupling">
+        <h2>Stamp Coupling for Workflow Management</h2>
+        
+        <p>In <a data-type="xref" href="ch12.html#ch12-transactional-sagas">Chapter&nbsp;12</a>, <a data-type="indexterm" data-primary="stamp coupling" data-secondary="workflow management" id="idm45978840999936"></a><a data-type="indexterm" data-primary="coupling" data-secondary="stamp coupling" data-tertiary="workflow management" id="idm45978840998928"></a><a data-type="indexterm" data-primary="contracts" data-secondary="stamp coupling" data-tertiary="workflow management" id="idm45978840997712"></a><a data-type="indexterm" data-primary="distributed workflows" data-secondary="stamp coupling for management" id="idm45978840996496"></a><a data-type="indexterm" data-primary="coordination of workflow" data-secondary="stamp coupling for management" id="idm45978840995584"></a><a data-type="indexterm" data-primary="choreographed coordination" data-secondary="stamp coupling for management" id="idm45978840994608"></a><a data-type="indexterm" data-primary="coordination of workflow" data-secondary="choreographed coordination" data-tertiary="stamp coupling for management" id="idm45978840993632"></a><a data-type="indexterm" data-primary="state management" data-secondary="stamp coupling for workflow management" id="idm45978840992368"></a>we covered a number of dynamic quantum communication patterns, including several that featured the <em>coordination</em> style of <em>choreography</em>. Architects tend toward mediation for complex workflows for the many reasons we’ve delineated. However, what if other factors, such as scalability, drive an architect toward a solution that is both choreographed and complex?</p>
+        
+        <p>Architects can use stamp coupling to manage the workflow state between services, passing both domain knowledge and workflow state as part of the contract, as illustrated in <a data-type="xref" href="#fig-contracts-sc-for-workflow">Figure 13-8</a>.</p>
+        
+        <figure><div id="fig-contracts-sc-for-workflow" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1308.png" alt="Using stamp coupling for workflow management" width="600" height="447">
+        <h6><span class="label">Figure 13-8. </span>Using stamp coupling for workflow management</h6>
+        </div></figure>
+        
+        <p>In this example, an architect designs the contract to include workflow information: status of the workflow, transactional state, and so on. As each domain service accepts the contract, it updates its portion of the contract and state for the workflow, then passes it along. At the end of the workflow, the receiver can query the contract to determine success or failure, along with status and information such as error messages. If the system needs to implement transactional consistency throughout, then domain services should rebroadcast the contract to previously visited services to restore atomic consistency.</p>
+        
+        <p>Using stamp coupling to manage workflow does create higher<a data-type="indexterm" data-primary="coupling" data-secondary="semantic coupling" data-tertiary="stamp coupling" id="idm45978840985904"></a><a data-type="indexterm" data-primary="semantic coupling" data-secondary="stamp coupling to manage workflow" id="idm45978840984576"></a> coupling between services than nominal, but the semantic coupling must go somewhere—remember, an architect cannot reduce semantic coupling via implementation. However, in many cases, switching to choreography can improve throughput and scalability, making the choice of stamp coupling over mediation an attractive one. <a data-type="xref" href="#totbl-stamp-coupling">Table 13-4</a> shows the trade-offs for stamp coupling.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978840982496">
+        <h5>Trade-Offs</h5><table id="totbl-stamp-coupling" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 13-4. </span>Trade-offs for stamp coupling</caption>
+        <thead>
+        <tr>
+        <th>Advantage</th>
+        <th>Disadvantage</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Allows complex workflows within choreographed solutions</p></td>
+        <td><p>Creates (sometimes artificially) high coupling between collaborators</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td><p>Can create bandwidth issues at high scale</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Sysops Squad Saga: Managing Ticketing Contracts"><div class="sect1" id="idm45978840974544">
+        <h1>Sysops Squad Saga: Managing Ticketing Contracts</h1>
+        
+        <p><code>Tuesday, May 10, 10:10</code></p>
+        <div class="story">
+        
+        <p>Sydney and Addison met again in the cafeteria over coffee to discuss the contracts in the ticket management workflow.<a data-type="indexterm" data-primary="contracts" data-secondary="Sysops Squad saga" id="idm45978840971776"></a><a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="contracts" id="idm45978840970800"></a></p>
+        
+        <p>Addison said, “Let’s look at the workflow under discussion, the ticket management workflow. I’ve sketched out the types of contracts we should use, and wanted to run it by you to make sure I wasn’t missing anything. It’s illustrated in <a data-type="xref" href="#fig-contracts-ss-contracts">Figure 13-9</a>.”</p>
+        
+        <p>“The contracts between the orchestrator and the two ticket services, Ticket Management and Ticket Assignment, are tight; that information is highly semantically coupled and likely to change together,” Addison said. “For example, if we add new types of things to manage, the assignment must sync up. The Notification and Survey Service can be much looser—the information changes more slowly, and doesn’t benefit from brittle coupling.”</p>
+        
+        <p>Sydney said, “All those decisions make sense—but what about the contract between the orchestrator and the Sysops Squad expert application? It seems that would need as tight a contract as 
+        <span class="keep-together">assignment</span>.”</p>
+        
+        <p>“Good catch—nominally, we would like the contract with the mobile application to match ticket assignment. However, we deploy the mobile application through a public app store, and their approval process sometimes takes a long time. If we keep the contracts looser, we gain flexibility and slower rate of change.”</p>
+        
+        <figure><div id="fig-contracts-ss-contracts" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1309.png" alt="Types of contracts between collaborators in the ticket management workflow" width="600" height="340">
+        <h6><span class="label">Figure 13-9. </span>Types of contracts between collaborators in the ticket management 
+        <span class="keep-together">workflow</span></h6>
+        </div></figure>
+        
+        <p>They both wrote an ADR for this:</p>
+        <blockquote>
+        <p class="adr" id="adr_14"><em>ADR: Loose Contract for Sysops Squad Expert Mobile Application</em></p>
+        
+        <p><em>Context</em><br>
+        The mobile application used by Sysops Squad experts must be deployed through the public app store, imposing delays on the ability to update contracts.</p>
+        
+        <p><em>Decision</em><br>
+        We will use a loose, name-value pair contract to pass information to and from the orchestrator and the mobile application.</p>
+        
+        <p>We will build an extension mechanism to allow temporary extensions for short-term 
+        <span class="keep-together">flexibility</span>.</p>
+        
+        <p><em>Consequences</em><br>
+        The decision should be revisited if the app store policy allows for faster (or continuous) deployment.</p>
+        
+        <p>More logic to validate contracts must reside in the orchestrator and mobile application.</p></blockquote>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        </div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492086888/files/epub.css" crossorigin="anonymous"><script src="https://learning.oreilly.comhttps://cdn.jsdelivr.net/npm/mathjax@3/es5/mml-svg.js"></script></div></div></section>
+</div>
+
+https://learning.oreilly.com

@@ -1,0 +1,729 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 14. The Future of Context Propagation"><div class="chapter" id="chapter_16">
+        <h1><span class="label">Chapter 14. </span>The Future of Context Propagation</h1>
+        
+        
+        <p>In this chapter, we’re going to home in on context propagation, a powerful mechanism for <em>many</em> different use cases beyond just profiling, debugging, and monitoring. We’ll refer to this wider class of tools as <a data-type="indexterm" data-primary="cross-cutting tools" data-secondary="about" id="idm45356998062712"></a><em>cross-cutting tools</em>—tools designed for distributed architectures. <a data-type="indexterm" data-primary="distributed tracing" data-secondary="as cross-cutting tool" data-secondary-sortas="cross-cutting tool" id="idm45356998061288"></a><a data-type="indexterm" data-primary="OpenCensus" data-secondary="as cross-cutting tool" data-secondary-sortas="cross-cutting tool" id="OCcc"></a><a data-type="indexterm" data-primary="Pivot Tracing" data-secondary="as cross-cutting tool" data-secondary-sortas="cross-cutting tool" id="idm45356998058552"></a><a data-type="indexterm" data-primary="Pythia" data-secondary="as cross-cutting tool" data-secondary-sortas="cross-cutting tool" id="idm45356998057336"></a>Distributed tracing, Census, Pivot Tracing, and Pythia are all examples of cross-cutting tools. But, cross-cutting tools don’t need to be about tracing specifically, nor about recording trace data.</p>
+        
+        <p>We’ll wrap up by taking a look at the Tracing Plane, a 2018 research project from Brown University.<sup><a data-type="noteref" id="idm45356998055416-marker" href="ch14.html#idm45356998055416">1</a></sup></p>
+        
+        <p><a data-type="indexterm" data-primary="Tracing Plane" id="idm45356998054024"></a><a data-type="indexterm" data-primary="context propagation" data-secondary="Tracing Plane focus on" id="idm45356998053160"></a>The goal of the Tracing Plane is to abstract and generalize the context propagation used by cross-cutting tools. In Chapters <a href="ch03.html#chapter_4">4</a> and <a href="ch04.html#chapter_5">5</a>, we talked about the importance of abstract instrumentation and interoperability for distributed tracing. Many of these concerns also apply directly to context propagation too. The Tracing Plane project identifies some of the design considerations for context propagation, and proposes a general solution called <a data-type="indexterm" data-primary="Baggage Definition Language (BDL)" data-secondary="BaggageContext" id="idm45356998050232"></a><a data-type="indexterm" data-primary="baggage" data-secondary="BaggageContext" id="idm45356998049288"></a><em>BaggageContexts</em>. In the future, some of these concepts may materialize as components of our distributed tracing tools.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Cross-Cutting Tools"><div class="sect1" id="idm45356998047848">
+        <h1>Cross-Cutting Tools</h1>
+        
+        <p><a data-type="indexterm" data-primary="distributed tracing" data-secondary="about" id="idm45356998046472"></a>The goal of distributed tracing is to correlate and integrate data across different components and machines. Distributed traces are used for <em>offline</em> analysis—to analyze trace data long after it’s been recorded. Distributed tracing has a distinct division between the application-side components of the tool, for instrumentation and generating traces, and the ex post facto aggregation and trace analysis components.</p>
+        
+        <p>Recently, several academic research projects and industrial prototypes have developed a wider variety of cross-component tools, many of them for <em>online</em> tasks. Some of these tools still focus on profiling, debugging, and monitoring, but a distinct set of them go a step further and consider <em>enforcement</em>, such as resource management. Instead of just offline analysis, these tools observe and analyze events while requests execute, and potentially make immediate decisions about what actions to take.</p>
+        
+        <p>The Tracing Plane refers to this broader class of tools as <em>cross-cutting tools</em>. Generally speaking, these are tools that deal with end-to-end requests in distributed architectures. Distributed tracing is certainly one in this class of tools, but cross-cutting tools as a whole encompass a broader range of use cases than just recording traces.</p>
+        
+        <p><a data-type="indexterm" data-primary="cross-cutting tools" data-secondary="context propagation as core component" id="idm45356998041304"></a><a data-type="indexterm" data-primary="context propagation" data-secondary="cross-cutting tools" id="idm45356998040456"></a><em>Context propagation</em> is a core component of cross-cutting tools. It’s the mechanism that lets tools combine information across components and machines. Different tools propagate different contexts—for example, distributed tracing tools propagate TraceIDs, but metrics tools like Census propagate tags, and Retro, a tool that we have yet to discuss, propagates tenant identifiers. Not all cross-cutting tools use concepts like spans, which are specific to distributed tracing in particular. Likewise, many cross-cutting tools don’t collect and store data in backend databases, but instead have control loops that interact directly with the system in real time.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Use Cases"><div class="sect1" id="idm45356998038440">
+        <h1>Use Cases</h1>
+        
+        <p><a data-type="indexterm" data-primary="cross-cutting tools" data-secondary="use cases" id="idm45356998036936"></a>Let’s take a look at some example use cases for cross-cutting tools. Some of these are real tools that exist today in production systems; some are research or industry prototypes; others are proposed use cases that have yet to see the light of day. For each tool, we’ll touch on three pieces:</p>
+        
+        <ul>
+        <li>
+        <p>What kind of context propagation the tool uses</p>
+        </li>
+        <li>
+        <p>How you go about using the tool in your application</p>
+        </li>
+        <li>
+        <p>The background or backend components of the tool</p>
+        </li>
+        </ul>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Distributed Tracing"><div class="sect2" id="idm45356998032088">
+        <h2>Distributed Tracing</h2>
+        
+        <p><a data-type="indexterm" data-primary="distributed tracing" data-secondary="as cross-cutting tool" data-secondary-sortas="cross-cutting tool" id="idm45356998030888"></a>Distributed tracing is the core focus of this book, and the most obvious example of a cross-cutting tool. While there are different implementations out there in the wild, they all follow roughly the same design: they use context propagation to pass around TraceIDs; you have to instrument your systems to record and annotate spans, which under the covers also updates the TraceIDs; and background components buffer and send recorded data over the network to backend tracing servers, for indexing and storage.</p>
+        
+        <p><a data-type="indexterm" data-primary="Pythia" data-secondary="as cross-cutting tool" data-secondary-sortas="cross-cutting tool" id="idm45356998028728"></a>In <a data-type="xref" href="ch13.html#chapter_15">Chapter&nbsp;13</a>, we introduced Pythia, which we can view as an extension of distributed tracing. Pythia differs in that as a user, you no longer have to exhaustively decide the instrumentation of your system. In the background, Pythia will automatically analyze traces, predict new instrumentation that might be useful, and send instrumentation commands back to the application.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Cross-Component Metrics"><div class="sect2" id="idm45356998025880">
+        <h2>Cross-Component Metrics</h2>
+        
+        <p>The two main example cross-cutting tools for metrics are Census and Pivot Tracing, both of which we described in <a data-type="xref" href="ch13.html#chapter_15">Chapter&nbsp;13</a>.<a data-type="indexterm" data-startref="OCcc" id="idm45356998023624"></a><a data-type="indexterm" data-primary="OpenCensus" data-secondary="about" id="idm45356998022920"></a> To summarize:</p>
+        <dl>
+        <dt>Census</dt>
+        <dd>
+        <p>Propagates tags with requests. To use Census, your instrumentation will either add tags to the Census context or record a metric. When you record metrics, they are automatically grouped by tags present in the Census context. Census aggregates metrics locally in the background; it only periodically reports its aggregates to the backend servers.</p>
+        </dd>
+        <dt>Pivot Tracing</dt>
+        <dd>
+        <p>Propagates partial query results with requests, which are typically sets of tuples. To use Pivot Tracing you enable a dynamic instrumentation agent in your application. In response to user-supplied queries, the Pivot Tracing agent dynamically inserts the necessary instrumentation, which will add, remove, and transform tuples from Pivot Tracing’s context. <a data-type="indexterm" data-primary="Pivot Tracing" data-secondary="as cross-cutting tool" data-secondary-sortas="cross-cutting tool" id="idm45356998018200"></a><a data-type="indexterm" data-primary="Pivot Tracing" data-secondary="about" id="idm45356998016952"></a>In the background, Pivot Tracing agents receive queries from users, and report query results back to users.</p>
+        </dd>
+        </dl>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Cross-Component Resource Management"><div class="sect2" id="idm45356998015240">
+        <h2>Cross-Component Resource Management</h2>
+        
+        <p><a data-type="indexterm" data-primary="cross-cutting tools" data-secondary="resource management" id="idm45356998013928"></a><a data-type="indexterm" data-primary="resource management" id="idm45356998012952"></a><a data-type="indexterm" data-primary="distributed applications" data-secondary="resource management" id="idm45356998012280"></a>Resource management is a difficult problem in distributed architectures, especially ones where you might have multiple users or multiple tenants. An aggressive tenant might send too many requests, potentially overloading services, to the detriment of all other users. This is also sometimes called “resource isolation” or “performance isolation.” In large distributed applications, it’s useful to coordinate the resource management decisions across services.</p>
+        
+        <p><a data-type="indexterm" data-primary="Retro for resource management" id="idm45356998010504"></a><a data-type="indexterm" data-primary="context propagation" data-secondary="Retro resource management" id="idm45356998009832"></a>In a 2015 project, researchers from Brown University described Retro, a prototype system for end-to-end resource management.<sup><a data-type="noteref" id="idm45356998008600-marker" href="ch14.html#idm45356998008600">2</a></sup> Retro uses context propagation to help attribute resource consumption to requests and tenants. To do this, Retro propagates a tenant ID with every request, to identify the user or task that owns each request. To use Retro, you add a Retro agent to your applications. Retro’s agent automatically hooks into system calls to measure CPU cycles, disk accesses, network bytes, and a few other generic resources. Any time the application tries to use one of these resources, Retro will consult the active tenant ID, and attribute the measurement to the active tenant.</p>
+        
+        <p>A second step is to identify places in your application where tenants can be rate-limited. Normally these are places like RPC request queues, where you can impose fair queuing or rate-limiting logic.</p>
+        
+        <p>Retro has a backend server that makes resource management decisions. It periodically receives resource consumption measurements from all parts of your application, then decides whether any of the tenants should be rate-limited. Retro sends those decisions back to the schedulers in the system.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Managing Data Quality Trade-offs"><div class="sect2" id="idm45356998005384">
+        <h2>Managing Data Quality Trade-offs</h2>
+        
+        <p><a data-type="indexterm" data-primary="cross-cutting tools" data-secondary="data quality trade-offs" id="idm45356998004040"></a><a data-type="indexterm" data-primary="distributed applications" data-secondary="data quality trade-offs" id="idm45356998003064"></a><a data-type="indexterm" data-primary="data quality trade-offs" id="idm45356998002104"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="data quality trade-offs" id="idm45356998001432"></a><a data-type="indexterm" data-primary="latency" data-secondary="data quality trade-offs" id="idm45356998000472"></a><a data-type="indexterm" data-primary="context propagation" data-secondary="data quality trade-offs" id="idm45356997999528"></a>Many modern applications can make <em>data quality trade-offs</em>. A data quality trade-off is when you decide to reduce the accuracy or quality of a result, in exchange for a faster response.</p>
+        
+        <p>A simple example is a distributed search query that fans out to one hundred machines. Here, you would have a data quality trade-off, with three options:</p>
+        
+        <ul>
+        <li>
+        <p>Your application could wait for all one hundred machines to return a result, inheriting the latency of the slowest machine.</p>
+        </li>
+        <li>
+        <p>You could choose to use only the results from the first 50 machines to reply.</p>
+        </li>
+        <li>
+        <p>You might simply use whichever results you have after some period of time has elapsed, such as 80 ms.</p>
+        </li>
+        </ul>
+        
+        <p>In large architectures, there might be many services that can make data quality trade-offs. Each request might hit multiple of these services too. If your goal is to achieve a desired end-to-end request latency, you’d have to decide how to apportion your request latency into latency goals for each service. It’s neither easy nor obvious how to do this.</p>
+        
+        <p><a data-type="indexterm" data-primary="DQBarge (Facebook)" id="idm45356997992968"></a><a data-type="indexterm" data-primary="Facebook" data-secondary="DQBarge" id="idm45356997992264"></a>A 2016 project from Facebook described DQBarge, a prototype system for end-to-end data quality trade-offs.<sup><a data-type="noteref" id="idm45356997991064-marker" href="ch14.html#idm45356997991064">3</a></sup> DQBarge is designed to make these data quality trade-off decisions automatically.</p>
+        
+        <p>The authors of DQBarge found certain request-level data to be useful for making data quality trade-offs. DQBarge propagates this information in its context:</p>
+        
+        <ul>
+        <li>
+        <p>At request ingress, DQBarge predicts which child services will be called and in which order. DQBarge estimates how much slack time is available at each service. DQBarge puts this prediction into its context.</p>
+        </li>
+        <li>
+        <p>As the request runs, each component measures time <em>actually</em> spent in the component and whatever data quality trade-off was made by the component.</p>
+        </li>
+        <li>
+        <p>Each component adds CPU and memory load metrics to the DQBarge context.</p>
+        </li>
+        <li>
+        <p>The preceding three are done automatically by DQBarge; in addition, developers can instrument their services manually to insert key-value tags into the DQBarge context.</p>
+        </li>
+        </ul>
+        
+        <p><a data-type="indexterm" data-primary="machine learning (ML)" data-secondary="DQBarge" id="idm45356997983944"></a>Using this information, DQBarge has machine learning models that run in every service. When a request shows up, data from the DQBarge context is fed into the model to predict an appropriate data quality trade-off (such as an appropriate timeout). These models are created during an offline step using prerecorded distributed traces.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Failure Testing of Microservices"><div class="sect2" id="idm45356997982360">
+        <h2>Failure Testing of Microservices</h2>
+        
+        <p><a data-type="indexterm" data-primary="cross-cutting tools" data-secondary="failure testing of microservices" id="idm45356997981208"></a><a data-type="indexterm" data-primary="context propagation" data-secondary="failure testing of microservices" id="idm45356997980168"></a><a data-type="indexterm" data-primary="failure state" data-secondary="microservice failure testing" id="idm45356997979208"></a><a data-type="indexterm" data-primary="LinkedOut (LinkedIn)" id="idm45356997978248"></a>LinkedOut is a 2018 project from LinkedIn that focuses on failure-testing of microservices.<sup><a data-type="noteref" id="idm45356997977336-marker" href="ch14.html#idm45356997977336">4</a></sup> LinkedOut systematically injects faults into services at the level of requests. Due to the complexity of microservice architectures, LinkedOut needs to be able to target specific points during request flows to inject faults.</p>
+        
+        <ul>
+        <li>
+        <p>LinkedOut injects dummy requests alongside production workloads.</p>
+        </li>
+        <li>
+        <p>LinkedOut propagates fault instructions with each dummy request. A fault instruction is either an error, a delay, or a timeout. Fault instructions can also include filters specifying where and when faults should occur.</p>
+        </li>
+        <li>
+        <p>At each service, LinkedOut inspects the request’s metadata, checks the filters on the fault instructions, and possibly executes a fault instruction. LinkedOut only performs a fault injection action if the filters match.</p>
+        </li>
+        <li>
+        <p>The LinkedOut backend runs fault injection experiments by propagating various fault instructions with dummy requests, and asserting that the system behaves in the correct way when the actions are triggered.</p>
+        </li>
+        </ul>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before less_space" data-pdf-bookmark="Enforcing Cross-System Consistency"><div class="sect2" id="idm45356997970888">
+        <h2>Enforcing Cross-System Consistency</h2>
+        
+        <p><a data-type="indexterm" data-primary="cross-cutting tools" data-secondary="cross-system consistency" id="idm45356997969256"></a><a data-type="indexterm" data-primary="context propagation" data-secondary="cross-system consistency" id="idm45356997968040"></a><a data-type="indexterm" data-primary="microservices" data-secondary="independence of services" id="idm45356997967080"></a><a data-type="indexterm" data-primary="microservices" data-secondary="cross-system consistency" id="idm45356997966120"></a><a data-type="indexterm" data-primary="consistency across system" id="idm45356997965160"></a><em>Independent evolution</em> is one of the key benefits of microservice architectures: you develop, deploy, and scale each service independently. As your system grows in scale, you need to start thinking about things like <em>replication</em> and <em>consistency</em>. Fortunately, these are well-studied topics and a fundamental part of distributed systems. Microservices usually make use of <a data-type="indexterm" data-primary="eventual consistency" id="idm45356997962872"></a><em>eventual consistency</em>, where updates made on one replica will eventually make their way to all other replicas (but not usually immediately). Cross-system consistency becomes a problem when we wire up <em>multiple</em> microservices that use eventual consistency.</p>
+        
+        <p>Consider the following: when a user composes a social media post, the post content is stored in a posts database, then a notification is generated for the user’s followers, and stored in a notifications database. Clearly, followers shouldn’t actually receive the notification until the post is available to be read from the posts database. However, the posts and notifications databases are separate services that can be replicated at different speeds. It’s entirely possible for the follower to be notified of a post that doesn’t exist yet in the local replica.</p>
+        
+        <p>Cross-system consistency problems happen because microservice architectures rapidly grow and evolve in features. Microservices aren’t usually designed at the beginning with replication and consistency in mind; instead, they come about later on when the service needs to scale.</p>
+        
+        <p>Researchers at INESC TEC in Portugal proposed a tool to address this problem.<sup><a data-type="noteref" id="idm45356997959112-marker" href="ch14.html#idm45356997959112">5</a></sup> In the preceding example, the tool would prevent a notification from being delivered to a follower until the post had been replicated. To do this, each time a request writes to an eventually consistent service, the tool generates and propagates a causal timestamp with the request. Using causal timestamps, components can infer any preconditions that must be met before the request may proceed. In the background, components maintain and increment causal timestamps as they execute operations.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Request Duplication"><div class="sect2" id="idm45356997957208">
+        <h2>Request Duplication</h2>
+        
+        <p><a data-type="indexterm" data-primary="requests" data-secondary="request duplication" id="idm45356997956072"></a><a data-type="indexterm" data-primary="distributed applications" data-secondary="request duplication" id="idm45356997955096"></a><a data-type="indexterm" data-primary="context propagation" data-secondary="request duplication" id="idm45356997954184"></a>One popular technique to reduce tail latency is request duplication—that is, sending multiple copies of a request to different worker nodes. It’s difficult to do this in large distributed architectures without blowing up your system with extra requests, because each child service could potentially add further duplication. Researchers at Tufts University have proposed propagating metadata about request duplication choices alongside requests, and having a global external control loop that tweaks when and where duplication decisions should happen.<sup><a data-type="noteref" id="idm45356997952536-marker" href="ch14.html#idm45356997952536">6</a></sup></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Record Lineage in Stream Processing Systems"><div class="sect2" id="idm45356997951176">
+        <h2>Record Lineage in Stream Processing Systems</h2>
+        
+        <p><a data-type="indexterm" data-primary="cross-cutting tools" data-secondary="streaming systems" id="idm45356997950008"></a><a data-type="indexterm" data-primary="request-response systems" data-secondary="streaming systems versus" id="idm45356997949032"></a><a data-type="indexterm" data-primary="streaming systems challenges" id="idm45356997948104"></a>In stream processing systems like Spark Streaming or Kafka Streams, the concept of a request is less well defined than in RPC architectures. We might, for example, be interested in the end-to-end flow of a record through the system; however, intermediate processing stages might combine multiple input records into a single output record. Distributed tracing would be capable of capturing this by simply combining the input traces with the output traces; however, when sampling comes into play, it would require every input record to have been sampled. Researchers from the Hungarian Academy of Sciences proposed a hybrid approach, whereby instead of sending trace data to the tracing backends, the trace data is instead written directly to the trace context and propagated with the request (or in this case, record).<sup><a data-type="noteref" id="idm45356997946456-marker" href="ch14.html#idm45356997946456">7</a></sup> This leads very quickly to large contexts as the execution progresses; future work will need to address this.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Auditing Security Policies"><div class="sect2" id="idm45356997944840">
+        <h2>Auditing Security Policies</h2>
+        
+        <p><a data-type="indexterm" data-primary="context propagation" data-secondary="security audits via traces" id="idm45356997943736"></a><a data-type="indexterm" data-primary="security audits via traces" id="idm45356997942696"></a><a data-type="indexterm" data-primary="traces" data-secondary="security audits" id="idm45356997942008"></a><a data-type="indexterm" data-primary="Dapper" data-secondary="security audits via traces" id="idm45356997941064"></a><a data-type="indexterm" data-primary="microservices" data-secondary="security audits via traces" id="idm45356997940104"></a>Security challenges are exacerbated in microservice architectures because of the increased decentralization. Even the original Dapper paper mentions distributed tracing’s useful applications to computer security. The authors used Dapper to verify that services were adhering to authentication and encryption policies, by augmenting traces with security protocol parameters. More generally, distributed tracing is an appealing way to audit security policies. Incorrect authentication repeatedly makes the <a data-type="indexterm" data-primary="Open Web Application Security Project" id="idm45356997938488"></a>Open Web Application Security Project’s top 10 most critical security risks; in microservice architectures it occurs because policies aren’t asserted at the time that privileged actions are executed. Distributed tracing would be a mechanism for auditing security policy enforcement; taken a step further, context propagation would be a good way to enforce security policies at runtime.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Testing in Production"><div class="sect2" id="idm45356997937016">
+        <h2>Testing in Production</h2>
+        
+        <p><a data-type="indexterm" data-primary="context propagation" data-secondary="testing in production" id="idm45356997935848"></a><a data-type="indexterm" data-primary="best practices" data-secondary="testing with traces" id="idm45356997934872"></a><a data-type="indexterm" data-primary="distributed applications" data-secondary="testing with traces" id="idm45356997933928"></a><a data-type="indexterm" data-primary="microservices" data-secondary="testing with traces" id="idm45356997932968"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="traces for testing services" id="idm45356997932024"></a><a data-type="indexterm" data-primary="traces" data-secondary="service testing with" id="idm45356997931048"></a>Integration testing is a big challenge for distributed architectures, because it’s so difficult to replicate production environments and workloads in an offline setting. Testing in production is one way to get around this, but has the added danger of colocating test traffic with real traffic. Context propagation is a simple way of propagating additional metadata with requests, to communicate testing objectives to downstream services. In general, the baggage mechanism of distributed tracing is already an effective way of tagging requests for the benefit of downstream services.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Common Themes"><div class="sect1" id="idm45356998037848">
+        <h1>Common Themes</h1>
+        
+        <p><a data-type="indexterm" data-primary="context propagation" data-secondary="cross-cutting tools" id="idm45356997928104"></a><a data-type="indexterm" data-primary="cross-cutting tools" data-secondary="about" id="idm45356997927128"></a>Cross-cutting tools all use context propagation, and there are a few common themes:</p>
+        <dl>
+        <dt>Contexts are dynamic</dt>
+        <dd>
+        <p>The cross-cutting tools often read and update the context as requests progress.</p>
+        </dd>
+        <dt>Response propagation</dt>
+        <dd>
+        <p>Sometimes, information from downstream services is propagated <em>back</em> to the caller, requiring contexts to be passed back to callers in RPC responses.</p>
+        </dd>
+        <dt>Variable context size</dt>
+        <dd>
+        <p>Distributed tracing usually has fixed-size contexts, since only TraceIDs and flags need to be propagated (excluding baggage). Most cross-cutting tools have variable sized contexts.</p>
+        </dd>
+        <dt>Small context size</dt>
+        <dd>
+        <p>Although contexts are variable in size, most cross-cutting tools factor context size into their design. In particular they aim to minimize context size, since the larger the context, the bigger the runtime cost to propagate it. If the context gets too large, it will introduce unacceptable overheads. For example, <a data-type="indexterm" data-primary="OpenCensus" data-secondary="tags" id="idm45356997918952"></a>Census has hard-coded limits on the size of the tags it’s willing to <span class="keep-together">propagate</span>, and drops tags above that limit.</p>
+        </dd>
+        <dt>Need for instrumentation</dt>
+        <dd>
+        <p>No matter which cross-cutting tool you wish to deploy, you have to go and instrument your entire architecture with context propagation. <a data-type="xref" href="ch02.html#Chapter3">Chapter&nbsp;2</a> outlined how enormous this effort can be.</p>
+        </dd>
+        </dl>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Should You Care?"><div class="sect1" id="idm45356997914424">
+        <h1>Should You Care?</h1>
+        
+        <p><a data-type="indexterm" data-primary="cross-cutting tools" data-secondary="use cases" id="idm45356997913144"></a>For some of the use cases we’ve described, the tools haven’t yet made it beyond alpha-stage prototypes, so you might wonder why this information is relevant. Beyond giving a glimpse of the tools we might have in the future, a more concrete goal is to emphasize reusability of the distributed tracing components we have today.</p>
+        
+        <p><a data-type="indexterm" data-primary="instrumentation" data-secondary="future tool re-instrumentation" id="idm45356997911400"></a><a data-type="indexterm" data-primary="future of distributed tracing" data-secondary="future tool re-instrumentation" id="idm45356997910456"></a>Reusable, interoperable instrumentation is one of the biggest challenges for distributed tracing, and this challenge also extends to cross-cutting tools. Cross-cutting tools all propagate contexts, and they all need instrumentation for propagating contexts. They all follow requests, and the instrumentation needed for propagating contexts always happens <em>in the same places</em> for every tool. Do you really want to re-instrument your applications again in the future if you want to deploy any of these tools?</p>
+        
+        <p><a data-type="indexterm" data-primary="baggage" data-secondary="general-purpose" id="idm45356997908168"></a><a data-type="indexterm" data-primary="OpenTracing" data-secondary="general-purpose baggage" id="idm45356997907192"></a>In the past couple of years, this observation led to the inclusion of general-purpose baggage in the OpenTracing spec, and most distributed tracing frameworks today let you propagate arbitrary key-value pairs with requests. This is suitable for several of the use cases mentioned earlier, including metrics, testing in production, and simple resource management. However, baggage is currently underspecified, primarily because it’s hard for us to anticipate future use cases.</p>
+        
+        <p>The final research project we’ll talk about is an effort to do just this. Called the <a data-type="indexterm" data-primary="context propagation" data-secondary="Tracing Plane focus on" id="idm45356997905368"></a><a data-type="indexterm" data-primary="Tracing Plane" id="idm45356997904392"></a><a data-type="indexterm" data-primary="context propagation" data-secondary="cross-cutting tools sharing" id="idm45356997903640"></a>Tracing Plane, the project focuses specifically on factoring out context propagation as a general-purpose, reusable component for cross-cutting tools. The project shines a light on some of the subtle challenges to getting this right, and proposes one possible implementation.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="The Tracing Plane"><div class="sect1" id="idm45356997902184">
+        <h1>The Tracing Plane</h1>
+        
+        <p>The Tracing Plane is a 2018 research project from Brown University, follow-up on work from their earlier Pivot Tracing project.<sup><a data-type="noteref" id="idm45356997900408-marker" href="ch14.html#idm45356997900408">8</a></sup></p>
+        
+        <p>The idea behind the Tracing Plane is that context propagation is so useful that it should be factored out as a separate component, one that can be reused simultaneously by different cross-cutting tools. The authors proposed an abstraction layering for context propagation, much like <a data-type="indexterm" data-primary="OpenTracing" data-secondary="as abstraction layer" data-secondary-sortas="abstraction layer" id="idm45356997898584"></a>OpenTracing is an abstraction layer for distributed tracing.</p>
+        
+        <p><a data-type="xref" href="#figure_tracingplane_1">Figure&nbsp;14-1</a> illustrates how distributed tracing would interact with the Tracing Plane. Rather than context propagation being an internal component of distributed tracing, tightly integrated with the concept of TraceIDs and spans, it would instead be a general-purpose component to which distributed tracing is but one client.</p>
+        
+        <figure><div id="figure_tracingplane_1" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_1401.png" alt="The Tracing Plane proposes factoring context propagation as a standalone component." width="1108" height="541">
+        <h6><span class="label">Figure 14-1. </span>The Tracing Plane proposes factoring context propagation as a standalone component.</h6>
+        </div></figure>
+        
+        <p>It’s important that context propagation can be shared by multiple tools, because the effort required to add context propagation instrumentation is so high. All cross-cutting tools need instrumentation to propagate contexts alongside requests. This instrumentation is <em>the same</em>, regardless of the cross-cutting tool being deployed. If instrumentation can be reused, you only have to instrument your systems once, rather than every time you want to deploy one of these new tools.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Is Baggage Enough?"><div class="sect2" id="idm45356997892168">
+        <h2>Is Baggage Enough?</h2>
+        
+        <p><a data-type="indexterm" data-primary="context propagation" data-secondary="multiparent causality" id="idm45356997890632"></a><a data-type="indexterm" data-primary="baggage" data-secondary="multiparent causality" id="idm45356997889656"></a><a data-type="indexterm" data-primary="spans" data-secondary="multiparent causality" id="idm45356997888712"></a><a data-type="indexterm" data-primary="multiparent causality" id="idm45356997887768"></a>Distributed tracing already has a notion of baggage, described in <a data-type="xref" href="ch02.html#Chapter3">Chapter&nbsp;2</a> as an array of key-value pairs. Any component can add new key-value pairs to a request’s baggage; later components can query values from baggage too. This has already enabled a few interesting use cases. For example, discussions on the Jaeger message board have included proposals for security auditing, traffic labeling, and testing use cases similar to those described earlier.</p>
+        
+        <p>Unfortunately, this simple definition falls flat whenever we have <em>multiparent causality</em>. Multiparent causality occurs in two main ways (see Figures <a href="#figure_tracingplane_2">15-2</a> and <a href="#figure_tracingplane_3">15-3</a>).</p>
+        
+        <figure><div id="figure_tracingplane_2" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_1402.png" alt="Multi-parent causality needs to be able to merge contexts." width="1090" height="392">
+        <h6><span class="label">Figure 14-2. </span>Multiparent causality needs to be able to merge contexts.</h6>
+        </div></figure>
+        <dl>
+        <dt>Multiple parent spans</dt>
+        <dd>
+        <p>This is when some span of execution is causally dependent on multiple parent or sibling spans completing. When this happens, the contexts from both parents or siblings need to be passed to the new span, and somehow combined together.</p>
+        </dd>
+        </dl>
+        
+        <figure><div id="figure_tracingplane_3" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_1403.png" alt="Response propagation needs to be able to merge contexts." width="1042" height="435">
+        <h6><span class="label">Figure 14-3. </span>Response propagation needs to be able to merge contexts.</h6>
+        </div></figure>
+        <dl>
+        <dt>Response propagation</dt>
+        <dd>
+        <p>Not all distributed tracing implementations need or use response propagation, but many do. In general, it’s reasonable that a cross-cutting tool might modify its context, and pass the modified context <em>back</em> to the parent. When this happens, the parent needs to merge the response context back with its original context. Remember, the parent might have also continued to do work in the meantime, so the parent might also have modified its own context.</p>
+        </dd>
+        </dl>
+        
+        <p><a data-type="indexterm" data-primary="merging two contexts into one" id="idm45356997873944"></a><a data-type="indexterm" data-primary="context propagation" data-secondary="merging two contexts into one" id="idm45356997873272"></a><a data-type="indexterm" data-primary="cross-cutting tools" data-secondary="merging two contexts into one" id="idm45356997872312"></a><a data-type="indexterm" data-primary="baggage" data-secondary="merging two contexts into one" id="idm45356997871352"></a>Put simply, you need to be able to <em>merge</em> two contexts into one. Merging happens anywhere two concurrent branches of a request join. Merging is fundamental to concurrent programs, and distributed architectures are fundamentally concurrent.</p>
+        
+        <p>Let’s return for a moment to the key-value baggage used in distributed tracing. Suppose service B inserted <code>priority:low</code> into the baggage, and service C inserted <code>priority:high</code>. What should you do?  The two baggages now have two different values for the same key. Since keys can only have one value, you’ll need to pick one. Today this happens in a crude way: usually one is selected randomly. Alternatively you could go to your code and add more instrumentation to resolve this conflict manually. Neither choice is appealing, and distributed tracing users have bumped into this problem already. The typical message board response is that distributed tracing won’t help; you must make the decision yourself.</p>
+        
+        <p>In simple systems, it might be acceptable for you to manually add instrumentation to resolve these merge conflicts. But in large architectures, this might be too much effort—there might be too many places where merge conflicts can happen, and you might not even be aware of them all. It’s difficult to even know ahead of time all of the services that might have your application as a dependency.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before less_space" data-pdf-bookmark="Beyond Key-Value Pairs"><div class="sect2" id="idm45356997891544">
+        <h2>Beyond Key-Value Pairs</h2>
+        
+        <p><a data-type="indexterm" data-primary="merging two contexts into one" data-secondary="merge semantics" id="idm45356997865048"></a>We saw how different cross-cutting tools propagate different kinds of data, and that data might also have different <em>merge semantics</em>. For example, when merging <span class="keep-together"><code>priority:low</code></span> with <code>priority:high</code>, you might want to just keep the highest priority level, in this case keep <code>priority:high</code>.</p>
+        
+        <p>Other kinds of data have other merge semantics. For example, Census treats its tags like a <code>set</code>. If this was implemented as keys and values, the ideal result of merging <code>tags:A</code> with <code>tags:B</code> might be the set union <code>tags:A,B</code>.
+        A more elaborate example is a counter. A simple tool that counts RPC invocations might want to add values: merging <code>count:5</code> with <code>count:2</code> should produce <code>count:7</code>.</p>
+        
+        <p>Unfortunately, there is no one correct way of merging contexts. It’s up to the cross-cutting tool to decide how this should happen.
+        Fortunately, it’s usually quite easy to write concisely what data gets propagated and how it should get merged.</p>
+        
+        <p><a data-type="indexterm" data-primary="Baggage Definition Language (BDL)" id="idm45356997856952"></a><a data-type="indexterm" data-primary="Tracing Plane" data-secondary="Baggage Definition Language" id="idm45356997856232"></a><a data-type="indexterm" data-primary="baggage" data-secondary="Baggage Definition Language" id="idm45356997855272"></a>The Tracing Plane introduced a language for this called BDL, or, Baggage Definition Language. For the preceding priority example, we would write:</p>
+        
+        <pre data-type="programlisting">bag PriorityExampleTool {
+            int32 Priority = 0;
+        }</pre>
+        
+        <p>This definition is stating that the <code>PriorityExampleTool</code> wants to propagate a field called “Priority” of type <code>int32</code>. By default in BDL, merging two <code>int32</code> fields will keep the larger one.</p>
+        
+        <p>At this stage, our goal by showing you BDL is to be illustrative rather than exhaustive; for now, it suffices to know that definitions in BDL look and behave a lot like <a data-type="indexterm" data-primary="Google" data-secondary="Protocol Buffers" id="idm45356997850856"></a>Google’s Protocol Buffers (a popular interchange format for structured data).</p>
+        
+        <p>Let’s look at another example:</p>
+        
+        <pre data-type="programlisting">bag Census {
+            set&lt;string&gt; Tags = 0;
+        }</pre>
+        
+        <p>This definition defines Census as propagating a field called <code>Tags</code> that is a set of strings. By default in BDL, merging two sets will perform a set union.</p>
+        
+        <p>As we have mentioned, BDL looks and behaves a lot like Google’s Protocol Buffers. It has the typical built-in primitive types that you would expect, along with some special built-in types: sets, maps, flags, and counters. All types in BDL have explicit merge semantics (such as set union for sets). BDL supports nested definitions and has many of the useful properties offered by other interchange formats, such as support for unknown fields when mixing multiple different versions of a bag definition.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Compiling BDL"><div class="sect2" id="idm45356997866264">
+        <h2>Compiling BDL</h2>
+        
+        <p>BDL is all well and good for <em>declaring</em> data used by cross-cutting tools, but we haven’t said yet what it actually compiles to, or how it’s used. The Tracing Plane project also defines an underlying serialization format for BDL called <em>BaggageContext</em>. This is similar to how Protocol Buffers has a well-defined underlying serialization format.</p>
+        
+        <p>From a BDL definition, a command-line compiler will generate source files that you can include in your projects. For example in Java, compiling the Census declaration would produce a source file <code>Census.java</code>, as shown in <a data-type="xref" href="#EX16-1">Example&nbsp;14-1</a>.</p>
+        <div id="EX16-1" data-type="example">
+        <h5><span class="label">Example 14-1. </span>Command-line compiler</h5>
+        
+        <pre data-type="programlisting" data-code-language="java"><code class="kd">public</code><code> </code><code class="kd">interface</code><code> </code><code class="nc">Census</code><code> </code><code class="o">{</code><code> </code><a class="co" id="co_the_future_of_context_propagation_CO1-1_fixed" href="#callout_the_future_of_context_propagation_CO1-1_fixed"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/1.png" alt="1" width="12" height="12"></a><code>
+        </code><code>
+        </code><code>	</code><code class="kd">public</code><code> </code><code class="n">Set</code><code class="o">&lt;</code><code class="n">String</code><code class="o">&gt;</code><code> </code><code class="nf">getTags</code><code class="o">(</code><code class="o">)</code><code class="o">;</code><code> </code><a class="co" id="co_the_future_of_context_propagation_CO1-2_fixed" href="#callout_the_future_of_context_propagation_CO1-2_fixed"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/2.png" alt="2" width="12" height="12"></a><code>
+        </code><code>	</code><code class="kd">public</code><code> </code><code class="kt">void</code><code> </code><code class="nf">setTags</code><code class="o">(</code><code class="n">Set</code><code class="o">&lt;</code><code class="n">String</code><code class="o">&gt;</code><code> </code><code class="n">tags</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>
+        </code><code>	</code><code class="kd">public</code><code> </code><code class="kt">byte</code><code class="o">[</code><code class="o">]</code><code> </code><code class="nf">writeTo</code><code class="o">(</code><code class="kt">byte</code><code class="o">[</code><code class="o">]</code><code> </code><code class="n">baggageContext</code><code class="o">)</code><code class="o">;</code><code> </code><a class="co" id="co_the_future_of_context_propagation_CO1-3_fixed" href="#callout_the_future_of_context_propagation_CO1-3_fixed"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/3.png" alt="3" width="12" height="12"></a><code>
+        </code><code>	</code><code class="kd">public</code><code> </code><code class="kd">static</code><code> </code><code class="n">Census</code><code> </code><code class="nf">readFrom</code><code class="o">(</code><code class="kt">byte</code><code class="o">[</code><code class="o">]</code><code> </code><code class="n">baggageContext</code><code class="o">)</code><code class="o">;</code><code> </code><a class="co" id="co_the_future_of_context_propagation_CO1-4_fixed" href="#callout_the_future_of_context_propagation_CO1-4_fixed"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/4.png" alt="4" width="12" height="12"></a><code>
+        </code><code>
+        </code><code class="o">}</code></pre></div>
+        
+        <p>The compiled code defines an interface <a class="co" id="callout_the_future_of_context_propagation_CO1-1_fixed" href="#co_the_future_of_context_propagation_CO1-1_fixed"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/1.png" alt="1" width="12" height="12"></a> and an implementation (not shown) representing the Census bag. The code includes methods to get and set values for <code>Tags</code> <a class="co" id="callout_the_future_of_context_propagation_CO1-2_fixed" href="#co_the_future_of_context_propagation_CO1-2_fixed"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/2.png" alt="2" width="12" height="12"></a> and methods to serialize <a class="co" id="callout_the_future_of_context_propagation_CO1-3_fixed" href="#co_the_future_of_context_propagation_CO1-3_fixed"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/3.png" alt="3" width="12" height="12"></a> and deserialize <a class="co" id="callout_the_future_of_context_propagation_CO1-4_fixed" href="#co_the_future_of_context_propagation_CO1-4_fixed"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/4.png" alt="4" width="12" height="12"></a> the data. Notice that <code>baggageContext</code> is simply a byte array. To use the compiled code is straightforward (see <a data-type="xref" href="#EX16-2">Example&nbsp;14-2</a>).</p>
+        <div id="EX16-2" data-type="example">
+        <h5><span class="label">Example 14-2. </span>Using the compiled code</h5>
+        
+        <pre data-type="programlisting" data-code-language="java"><code class="kd">public</code><code> </code><code class="kd">class</code><code> </code><code class="nc">Example</code><code> </code><code class="o">{</code><code>
+        </code><code>
+        </code><code>	</code><code class="kd">public</code><code> </code><code class="kd">static</code><code> </code><code class="kt">void</code><code> </code><code class="nf">main</code><code class="o">(</code><code class="n">String</code><code class="o">[</code><code class="o">]</code><code> </code><code class="n">args</code><code class="o">)</code><code> </code><code class="o">{</code><code>
+        </code><code>		</code><code class="kt">byte</code><code class="o">[</code><code class="o">]</code><code> </code><code class="n">emptyBaggageContext</code><code> </code><code class="o">=</code><code> </code><code class="k">new</code><code> </code><code class="kt">byte</code><code class="o">[</code><code class="mi">0</code><code class="o">]</code><code class="o">;</code><code> </code><a class="co" id="co_the_future_of_context_propagation_CO1-1" href="#callout_the_future_of_context_propagation_CO1-1"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/1.png" alt="1" width="12" height="12"></a><code>
+        </code><code>
+        </code><code>		</code><code class="n">Census</code><code> </code><code class="n">census</code><code> </code><code class="o">=</code><code> </code><code class="n">Census</code><code class="o">.</code><code class="na">readFrom</code><code class="o">(</code><code class="n">emptyBaggageContext</code><code class="o">)</code><code class="o">;</code><code> </code><a class="co" id="co_the_future_of_context_propagation_CO1-2" href="#callout_the_future_of_context_propagation_CO1-2"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/2.png" alt="2" width="12" height="12"></a><code>
+        </code><code>
+        </code><code>		</code><code class="n">Set</code><code class="o">&lt;</code><code class="n">String</code><code class="o">&gt;</code><code> </code><code class="n">tags</code><code> </code><code class="o">=</code><code> </code><code class="k">new</code><code> </code><code class="n">HashSet</code><code class="o">&lt;</code><code class="n">String</code><code class="o">&gt;</code><code class="o">(</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>		</code><code class="n">tags</code><code class="o">.</code><code class="na">add</code><code class="o">(</code><code class="s">"API-A"</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>		</code><code class="n">census</code><code class="o">.</code><code class="na">setTags</code><code class="o">(</code><code class="n">tags</code><code class="o">)</code><code class="o">;</code><code> </code><a class="co" id="co_the_future_of_context_propagation_CO1-3" href="#callout_the_future_of_context_propagation_CO1-3"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/3.png" alt="3" width="12" height="12"></a><code>
+        </code><code>
+        </code><code>		</code><code class="kt">byte</code><code class="o">[</code><code class="o">]</code><code> </code><code class="n">baggageContextWithTag</code><code> </code><code class="o">=</code><code> </code><code class="n">census</code><code class="o">.</code><code class="na">writeTo</code><code class="o">(</code><code class="n">emptyBaggageContext</code><code class="o">)</code><code class="o">;</code><code> </code><a class="co" id="co_the_future_of_context_propagation_CO1-4" href="#callout_the_future_of_context_propagation_CO1-4"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/4.png" alt="4" width="12" height="12"></a><code>
+        </code><code>	</code><code class="o">}</code><code>
+        </code><code class="o">}</code></pre></div>
+        <dl class="calloutlist">
+        <dt><a class="co" id="callout_the_future_of_context_propagation_CO1-1" href="#co_the_future_of_context_propagation_CO1-1"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/1.png" alt="1" width="12" height="12"></a></dt>
+        <dd><p>Initially our <code>baggageContext</code> contains nothing; this is equivalent to an empty array.</p></dd>
+        <dt><a class="co" id="callout_the_future_of_context_propagation_CO1-2" href="#co_the_future_of_context_propagation_CO1-2"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/2.png" alt="2" width="12" height="12"></a></dt>
+        <dd><p>Using <code>readFrom</code> we can extract a Census bag from the empty <code>baggageContext</code>. Since the <code>baggageContext</code> is empty, the Census bag will contain no tags.</p></dd>
+        <dt><a class="co" id="callout_the_future_of_context_propagation_CO1-3" href="#co_the_future_of_context_propagation_CO1-3"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/3.png" alt="3" width="12" height="12"></a></dt>
+        <dd><p>We create a tag “API-A” and add it to the Census bag.</p></dd>
+        <dt><a class="co" id="callout_the_future_of_context_propagation_CO1-4" href="#co_the_future_of_context_propagation_CO1-4"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/4.png" alt="4" width="12" height="12"></a></dt>
+        <dd><p>We use <code>writeTo</code> to inject the Census bag into <code>baggageContext</code>. We receive back a nonempty <code>baggageContext</code> that contains the serialized Census bag.</p></dd>
+        </dl>
+        
+        <p>All of these operations are designed to be quite computationally efficient.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="BaggageContext"><div class="sect2" id="idm45356997570552">
+        <h2>BaggageContext</h2>
+        
+        <p>In the preceding example, <code>baggageContext</code> represented the generic, serialized form of a bag. You can think of BaggageContext as being like our opaque trace contexts in distributed tracing. BaggageContext needs to be passed around with requests, included in RPC headers, and so on. As in the preceding example, distributed tracing would use BaggageContext to store its TraceIDs; then anywhere you create spans, you would read and write tracing data directly to and from the BaggageContext.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Merging"><div class="sect2" id="idm45356997568424">
+        <h2>Merging</h2>
+        
+        <p><a data-type="indexterm" data-primary="merging two contexts into one" data-secondary="Baggage Definition Language" id="idm45356997567416"></a><a data-type="indexterm" data-primary="context propagation" data-secondary="merging two contexts into one" id="idm45356997566568"></a><a data-type="indexterm" data-primary="cross-cutting tools" data-secondary="merging two contexts into one" id="idm45356997565720"></a><a data-type="indexterm" data-primary="baggage" data-secondary="merging two contexts into one" id="idm45356997564872"></a><a data-type="indexterm" data-primary="baggage" data-secondary="BaggageContext" id="idm45356997564024"></a><a data-type="indexterm" data-primary="Baggage Definition Language (BDL)" data-secondary="BaggageContext" id="idm45356997563176"></a>BaggageContext provides one additional extremely useful property: it can be merged. The BaggageContext format is carefully designed such that two <em>serialized</em> instances can be merged together easily and efficiently, without needing to either deserialize the objects or even understand the datatypes contained within. The BaggageContext library has the core interface shown in the following example:</p>
+        
+        <pre id="EX16-3_baggagecontext_api" data-type="programlisting" data-code-language="java"><code class="kd">public</code> <code class="kd">class</code> <code class="nc">BaggageContext</code> <code class="o">{</code>
+        
+            <code class="kd">public</code> <code class="kt">byte</code><code class="o">[]</code> <code class="nf">merge</code><code class="o">(</code><code class="kt">byte</code><code class="o">[]</code> <code class="n">baggageContextA</code><code class="o">,</code> <code class="kt">byte</code><code class="o">[]</code> <code class="n">baggageContextB</code><code class="o">);</code>
+        
+            <code class="kd">public</code> <code class="kt">byte</code><code class="o">[]</code> <code class="nf">trim</code><code class="o">(</code><code class="kt">byte</code><code class="o">[]</code> <code class="n">baggageContext</code><code class="o">,</code> <code class="kt">int</code> <code class="n">size</code><code class="o">);</code>
+        
+        <code class="o">}</code></pre>
+        
+        <p>We won’t get into the details of the implementation here, but at the heart of the BaggageContext is a simple byte-wise comparison scheme. The <code>merge</code> API combines two BaggageContext instances at the byte level, without actually interpreting the values. Duplicating an instance is easy—it can simply be copied.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Overheads"><div class="sect2" id="idm45356997533720">
+        <h2>Overheads</h2>
+        
+        <p><a data-type="indexterm" data-primary="Baggage Definition Language (BDL)" data-secondary="trim API call" id="idm45356997532728"></a>In addition to merging, the BaggageContext library provides a <code>trim</code> API call. This is used for managing overheads. The idea behind trim is to limit the size of the BaggageContext being propagated. For example, a service might only be willing to <span class="keep-together">propagate</span> 1000 bytes; using <code>trim</code>, the service can enforce this limit. This is a lot like how Census operates today, by discarding tags above a given size threshold.</p>
+        
+        <p>Like <code>merge</code>, <code>trim</code> correctly discards data at the byte level, without interpreting the values in the BaggageContext. Trimming has two nice properties. First, when data is discarded, the <code>trim</code> operation adds a small (1-byte) marker to the BaggageContext to indicate that a trim occurred. This can be used by cross-cutting tools later, as a hint that some data was being propagated but at some point had to be thrown away. Second, <code>trim</code> discards data based on an implicit priority ordering that is baked into the serialization format.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" class="notoc" data-pdf-bookmark="Summary"><div class="sect1" id="idm45356997901592">
+        <h1>Summary</h1>
+        
+        <p>BaggageContext and BDL may come across as a heavyweight way of doing context propagation—after all, simple key-value pairs seem so much nicer!  However, BDL used many of the lessons offered by existing approaches to data serialization, specifically Protocol Buffers. As a result, the serialized overhead of BaggageContext is minimal, but we get all sorts of nice properties that are difficult or impossible to achieve with key-value pairs:</p>
+        
+        <ul>
+        <li>
+        <p>All BaggageContext data has explicit merge semantics, making it clear how to resolve merge conflicts.</p>
+        </li>
+        <li>
+        <p>Merge conflicts are resolved automatically, correctly, and without the need for custom instrumentation.</p>
+        </li>
+        <li>
+        <p>Services can propagate BaggageContext instances without needing to be able to interpret them, as BaggageContexts are just bytes.</p>
+        </li>
+        <li>
+        <p>Services only interpret BaggageContext instances when they actually use or manipulate the data contained within.</p>
+        </li>
+        <li>
+        <p>BaggageContext instances can be resized without needing to interpret them.</p>
+        </li>
+        <li>
+        <p>Cross-cutting tools can update their bag definitions, and use multiple versions concurrently, with correct conflict resolution.</p>
+        </li>
+        <li>
+        <p>When you instrument your system, all you need to do is propagate BaggageContexts. The only API you need to use is the <code>merge</code> and <code>trim</code> API. You don’t need to know anything about the tools that might later use the BaggageContext.</p>
+        </li>
+        <li>
+        <p>You don’t need to revisit your instrumentation to deploy new cross-cutting tools.</p>
+        </li>
+        </ul>
+        
+        <p>In the future, a more principled approach to context propagation is quite likely. Whether the approach we described here is the one that gets used is anybody’s guess. Certainly, future context propagation needs to solve the problem of key-conflicts, and BaggageContext provides an elegant solution to this.</p>
+        
+        <p>As we said back in <a data-type="xref" href="ch10.html#chapter_12">Chapter&nbsp;10</a>, distributed tracing is young, and it’s still evolving. The tools we use in the future might not be the same as the tools we use today. The lessons we’ve learned with projects like OpenTracing and OpenTelemetry are ones we can apply to other areas that are less mature, such as context propagation. For now, knowing this might not change the way you choose to use distributed tracing. But we hope we’ve helped to broaden your perspective on what future tracing tools might do.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        <div data-type="footnotes"><p data-type="footnote" id="idm45356998055416"><sup><a href="ch14.html#idm45356998055416-marker">1</a></sup> <a data-type="xref" href="bibliography01.html#Mac18a">[Mac18a]</a></p><p data-type="footnote" id="idm45356998008600"><sup><a href="ch14.html#idm45356998008600-marker">2</a></sup> <a data-type="xref" href="bibliography01.html#Mac15">[Mac15]</a></p><p data-type="footnote" id="idm45356997991064"><sup><a href="ch14.html#idm45356997991064-marker">3</a></sup> <a data-type="xref" href="bibliography01.html#Cho16">[Cho16]</a></p><p data-type="footnote" id="idm45356997977336"><sup><a href="ch14.html#idm45356997977336-marker">4</a></sup> <a data-type="xref" href="bibliography01.html#Ros18">[Ros18]</a></p><p data-type="footnote" id="idm45356997959112"><sup><a href="ch14.html#idm45356997959112-marker">5</a></sup> <a data-type="xref" href="bibliography01.html#Lof17">[Lof17]</a></p><p data-type="footnote" id="idm45356997952536"><sup><a href="ch14.html#idm45356997952536-marker">6</a></sup> <a data-type="xref" href="bibliography01.html#Bas19">[Bas19]</a></p><p data-type="footnote" id="idm45356997946456"><sup><a href="ch14.html#idm45356997946456-marker">7</a></sup> <a data-type="xref" href="bibliography01.html#Zva19">[Zva19]</a></p><p data-type="footnote" id="idm45356997900408"><sup><a href="ch14.html#idm45356997900408-marker">8</a></sup> <a data-type="xref" href="bibliography01.html#Mac18a">[Mac18a]</a></p></div></div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492056621/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

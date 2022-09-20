@@ -1,0 +1,1247 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 4. Best Practices for Instrumentation"><div class="chapter" id="chapter_5">
+        <h1><span class="label">Chapter 4. </span>Best Practices for Instrumentation</h1>
+        
+        
+        <p>The first step of any journey is the hardest—including the journey of instrumenting your applications for distributed tracing. Questions pile upon questions: What should I do first? How do I know I’m doing things right? When am I done? Every application is different, but this chapter offers some general advice and strategies to create best practices for instrumenting applications.</p>
+        
+        <p>Best practices do not exist in a vacuum. The data your instrumentation generates will be collected by a trace analysis system, which will analyze it and process it. As the instrumenter, it’s critical that you provide it with the best data possible!</p>
+        
+        <p>We’ll first discuss an application that lacks instrumentation in order to ground our discussion. Then, we’ll talk about the first steps for instrumenting an existing application—looking at the nodes and edges—and some common ways to accomplish that. We’ll go over best practices for creating spans and the sort of information you’ll want to add to them. We’ll discuss how you’d use tracing as part of application development to validate that your architecture is working the way you expect it to work. Finally, we’ll give you some signals to let you know when you’ve hit “too much” instrumentation.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Tracing by Example"><div class="sect1" id="tracing-by-ex">
+        <h1>Tracing by Example</h1>
+        
+        <p><a data-type="indexterm" data-primary="manual instrumentation" data-secondary="example basic design" id="idm45357010896056"></a><a data-type="indexterm" data-primary="examples" data-secondary="best practices instrumentation" id="idm45357010895080"></a><a data-type="indexterm" data-primary="basic design example" id="idm45357010894120"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="example basic design" id="idm45357010893448"></a>It’s a truism that the best way to learn is by doing. To help make sense of how you should instrument a microservices application for distributed tracing, it stands to reason that you must first have a microservices application. We’ve built a sample application that we will use to illustrate some techniques and best practices. In this section, we’ll describe how you can run the service on your computer in order to follow along with the examples provided, and demonstrate some basic principles of instrumentation that can be applied more generally to instrument your own services.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Installing the Sample Application"><div class="sect2" id="idm45357010891640">
+        <h2>Installing the Sample Application</h2>
+        
+        <p><a data-type="indexterm" data-primary="microservices" data-secondary="best practices example microservice" id="idm45357010890504"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="best practices" data-tertiary="example microservice" id="idm45357010889064"></a><a data-type="indexterm" data-primary="best practices" data-secondary="example microservice" id="idm45357010887848"></a><a data-type="indexterm" data-primary="URLs" data-secondary="best practices example microservice" id="idm45357010886904"></a>We’ve developed a small microservice application to demonstrate the important concepts required to instrument an application. To run it, you’ll need an up-to-date version of the<a data-type="indexterm" data-primary="Go tracing features" data-secondary="runtime URL" id="idm45357010885624"></a> <a href="https://golang.org">Go runtime</a> and <a href="https://nodejs.org">Node.JS</a> installed on your computer. You’ll also need to download a copy of the source code for the application, which can be found at <a href="https://oreil.ly/microcalc">this GitHub repository</a>—you can check it out using the Git version control software, or download and extract a zip archive of the files. Once you’ve got a local copy of the source files, running the software is fairly straightforward: in a terminal window, execute <code>go run cmd/&lt;binary&gt;/main.go</code> from the <code>microcalc</code> directory to run each service. To run the client application, you’ll need to execute <code>npm install</code> in the <code>web</code> subdirectory, then <code>npm start</code>.</p>
+        
+        <p><a data-type="indexterm" data-primary="web clients" data-secondary="best practices example microservice" id="idm45357010879784"></a>The application itself is a basic calculator with three components. The client is a web application for the browser written in HTML and JavaScript that provides an interface to the backend service. The next major component is an API proxy that receives requests from the client and dispatches them to the appropriate worker service. The final component, the operator workers, are services that receive a list of operands, perform the appropriate mathematical operation on those operands, and return the result.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Adding Basic Distributed Tracing"><div class="sect2" id="idm45357010877832">
+        <h2>Adding Basic Distributed Tracing</h2>
+        
+        <p>Before you add tracing, look at the code itself and how it functions. We’ll look at the code in order—first, the web client, then the API service, and finally the workers. Once you have an understanding of what each piece of code does, it becomes easier to understand not only how to instrument the service, but why (see <a data-type="xref" href="#figure_app_basicdesign">Figure&nbsp;4-1</a>).</p>
+        
+        <figure><div id="figure_app_basicdesign" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0401.png" alt="An overview of the application design of MicroCalc." width="1404" height="379">
+        <h6><span class="label">Figure 4-1. </span>The design of MicroCalc.</h6>
+        </div></figure>
+        
+        <p>The client service is very straightforward—a simple HTML and JavaScript frontend. The HTML presents a form, which we intercept in JavaScript and create a <code>XMLHttpRequest</code> that transmits data to the backend services. The uninstrumented version of this code can be seen in <a data-type="xref" href="#EX5-1">Example&nbsp;4-1</a>. As you can see, we’re not doing anything <span class="keep-together">terribly</span> complicated here—we create a hook on the form element and listen for the <code>onClick</code> event that is emitted when the Submit button is pressed.</p>
+        <div id="EX5-1" data-type="example">
+        <h5><span class="label">Example 4-1. </span>Uninstrumented client service</h5>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="kr">const</code> <code class="nx">handleForm</code> <code class="o">=</code> <code class="p">()</code> <code class="o">=&gt;</code> <code class="p">{</code>
+            <code class="kr">const</code> <code class="nx">endpoint</code> <code class="o">=</code> <code class="s1">'http://localhost:3000/calculate'</code>
+            <code class="kd">let</code> <code class="nx">form</code> <code class="o">=</code> <code class="nb">document</code><code class="p">.</code><code class="nx">getElementById</code><code class="p">(</code><code class="s1">'calc'</code><code class="p">)</code>
+        
+            <code class="kr">const</code> <code class="nx">onClick</code> <code class="o">=</code> <code class="p">(</code><code class="nx">event</code><code class="p">)</code> <code class="o">=&gt;</code> <code class="p">{</code>
+                <code class="nx">event</code><code class="p">.</code><code class="nx">preventDefault</code><code class="p">();</code>
+        
+                <code class="kd">let</code> <code class="nx">fd</code> <code class="o">=</code> <code class="k">new</code> <code class="nx">FormData</code><code class="p">(</code><code class="nx">form</code><code class="p">);</code>
+                <code class="kd">let</code> <code class="nx">requestPayload</code> <code class="o">=</code> <code class="p">{</code>
+                    <code class="nx">method</code><code class="o">:</code> <code class="nx">fd</code><code class="p">.</code><code class="nx">get</code><code class="p">(</code><code class="s1">'calcMethod'</code><code class="p">),</code>
+                    <code class="nx">operands</code><code class="o">:</code> <code class="nx">tokenizeOperands</code><code class="p">(</code><code class="nx">fd</code><code class="p">.</code><code class="nx">get</code><code class="p">(</code><code class="s1">'values'</code><code class="p">))</code>
+                <code class="p">};</code>
+        
+                <code class="nx">calculate</code><code class="p">(</code><code class="nx">endpoint</code><code class="p">,</code> <code class="nx">requestPayload</code><code class="p">).</code><code class="nx">then</code><code class="p">((</code><code class="nx">res</code><code class="p">)</code> <code class="o">=&gt;</code> <code class="p">{</code>
+                    <code class="nx">updateResult</code><code class="p">(</code><code class="nx">res</code><code class="p">);</code>
+                <code class="p">});</code>
+            <code class="p">}</code>
+            <code class="nx">form</code><code class="p">.</code><code class="nx">addEventListener</code><code class="p">(</code><code class="s1">'submit'</code><code class="p">,</code> <code class="nx">onClick</code><code class="p">)</code>
+        <code class="p">}</code>
+        
+        <code class="kr">const</code> <code class="nx">calculate</code> <code class="o">=</code> <code class="p">(</code><code class="nx">endpoint</code><code class="p">,</code> <code class="nx">payload</code><code class="p">)</code> <code class="o">=&gt;</code> <code class="p">{</code>
+          <code class="k">return</code> <code class="k">new</code> <code class="nb">Promise</code><code class="p">(</code><code class="nx">async</code> <code class="p">(</code><code class="nx">resolve</code><code class="p">,</code> <code class="nx">reject</code><code class="p">)</code> <code class="o">=&gt;</code> <code class="p">{</code>
+            <code class="kr">const</code> <code class="nx">req</code> <code class="o">=</code> <code class="k">new</code> <code class="nx">XMLHttpRequest</code><code class="p">();</code>
+            <code class="nx">req</code><code class="p">.</code><code class="nx">open</code><code class="p">(</code><code class="s1">'POST'</code><code class="p">,</code> <code class="nx">endpoint</code><code class="p">,</code> <code class="kc">true</code><code class="p">);</code>
+            <code class="nx">req</code><code class="p">.</code><code class="nx">setRequestHeader</code><code class="p">(</code><code class="s1">'Content-Type'</code><code class="p">,</code> <code class="s1">'application/json'</code><code class="p">);</code>
+            <code class="nx">req</code><code class="p">.</code><code class="nx">setRequestHeader</code><code class="p">(</code><code class="s1">'Accept'</code><code class="p">,</code> <code class="s1">'application/json'</code><code class="p">);</code>
+            <code class="nx">req</code><code class="p">.</code><code class="nx">send</code><code class="p">(</code><code class="nx">JSON</code><code class="p">.</code><code class="nx">stringify</code><code class="p">(</code><code class="nx">payload</code><code class="p">))</code>
+            <code class="nx">req</code><code class="p">.</code><code class="nx">onload</code> <code class="o">=</code> <code class="kd">function</code> <code class="p">()</code> <code class="p">{</code>
+              <code class="nx">resolve</code><code class="p">(</code><code class="nx">req</code><code class="p">.</code><code class="nx">response</code><code class="p">);</code>
+            <code class="p">};</code>
+          <code class="p">});</code>
+        <code class="p">};</code></pre></div>
+        
+        <p><a data-type="indexterm" data-primary="best practices" data-secondary="first step in instrumenting" id="idm45357010865336"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="best practices" data-tertiary="first step" id="idm45357010864264"></a><a data-type="indexterm" data-primary="best practices" data-secondary="tracer creation" id="idm45357010863144"></a>Your first step when instrumenting this should be to trace the interaction between this service and our backend services. <a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="instrumentation plug-in" id="idm45357013346904"></a><a data-type="indexterm" data-primary="tracers" data-secondary="OpenTelemetry" id="idm45357013345960"></a><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="best practices tracer creation" id="idm45357013345016"></a>OpenTelemetry helpfully provides an instrumentation plug-in for tracing <code>XMLHttpRequest</code>, so you’ll want to use that for your basic instrumentation. After importing the OpenTelemetry packages, you then need to set up your tracer and plug-ins. Once you’ve accomplished that, wrap your method calls to <code>XMLHttpRequest</code> with some tracing code, as seen in <a data-type="xref" href="#EX5-2">Example&nbsp;4-2</a>.</p>
+        <div id="EX5-2" data-type="example" class="pagebreak-before">
+        <h5><span class="label">Example 4-2. </span>Creating and configuring your tracer</h5>
+        
+        <pre data-type="programlisting" data-code-language="javascript"><code class="c1">// After importing dependencies, create a tracer and configure it
+        </code><code class="kr">const</code><code> </code><code class="nx">webTracerWithZone</code><code> </code><code class="o">=</code><code> </code><code class="k">new</code><code> </code><code class="nx">WebTracer</code><code class="p">(</code><code class="p">{</code><code>
+          </code><code class="nx">scopeManager</code><code class="o">:</code><code> </code><code class="k">new</code><code> </code><code class="nx">ZoneScopeManager</code><code class="p">(</code><code class="p">)</code><code class="p">,</code><code>
+          </code><code class="nx">plugins</code><code class="o">:</code><code> </code><code class="p">[</code><code>
+            </code><code class="k">new</code><code> </code><code class="nx">XMLHttpRequestPlugin</code><code class="p">(</code><code class="p">{</code><code>
+              </code><code class="nx">ignoreUrls</code><code class="o">:</code><code> </code><code class="p">[</code><code class="sr">/localhost:8090\/sockjs-node/</code><code class="p">]</code><code class="p">,</code><code>
+              </code><code class="nx">propagateTraceHeaderCorsUrls</code><code class="o">:</code><code> </code><code class="p">[</code><code>
+                </code><code class="s1">'http://localhost:3000/calculate'</code><code>
+              </code><code class="p">]</code><code>
+            </code><code class="p">}</code><code class="p">)</code><code>
+          </code><code class="p">]</code><code>
+        </code><code class="p">}</code><code class="p">)</code><code class="p">;</code><code>
+        
+        </code><code class="nx">webTracerWithZone</code><code class="p">.</code><code class="nx">addSpanProcessor</code><code class="p">(</code><code>
+            </code><code class="k">new</code><code> </code><code class="nx">SimpleSpanProcessor</code><code class="p">(</code><code class="k">new</code><code> </code><code class="nx">ConsoleSpanExporter</code><code class="p">(</code><code class="p">)</code><code class="p">)</code><code>
+        </code><code class="p">)</code><code class="p">;</code><code>
+        
+        </code><code class="kr">const</code><code> </code><code class="nx">handleForm</code><code> </code><code class="o">=</code><code> </code><code class="p">(</code><code class="p">)</code><code> </code><code class="o">=&gt;</code><code> </code><code class="p">{</code><code>
+            </code><code class="kr">const</code><code> </code><code class="nx">endpoint</code><code> </code><code class="o">=</code><code> </code><code class="s1">'http://localhost:3000/calculate'</code><code>
+            </code><code class="kd">let</code><code> </code><code class="nx">form</code><code> </code><code class="o">=</code><code> </code><code class="nb">document</code><code class="p">.</code><code class="nx">getElementById</code><code class="p">(</code><code class="s1">'calc'</code><code class="p">)</code><code>
+        
+            </code><code class="kr">const</code><code> </code><code class="nx">onClick</code><code> </code><code class="o">=</code><code> </code><code class="p">(</code><code class="nx">event</code><code class="p">)</code><code> </code><code class="o">=&gt;</code><code> </code><code class="p">{</code><code>
+                </code><code class="nx">event</code><code class="p">.</code><code class="nx">preventDefault</code><code class="p">(</code><code class="p">)</code><code class="p">;</code><code> </code><a class="co" id="co_best_practices_for_instrumentation_CO1-1" href="#callout_best_practices_for_instrumentation_CO1-1"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/1.png" alt="1" width="12" height="12"></a><code>
+                </code><code class="kr">const</code><code> </code><code class="nx">span</code><code> </code><code class="o">=</code><code> </code><code class="nx">webTracerWithZone</code><code class="p">.</code><code class="nx">startSpan</code><code class="p">(</code><code>
+                                       </code><code class="s1">'calc-request'</code><code class="p">,</code><code>
+                                       </code><code class="p">{</code><code> </code><code class="nx">parent</code><code class="o">:</code><code> </code><code class="nx">webTracerWithZone</code><code class="p">.</code><code class="nx">getCurrentSpan</code><code class="p">(</code><code class="p">)</code><code> </code><code class="p">}</code><code>
+        </code><code class="p">)</code><code class="p">;</code><code>
+                </code><code class="kd">let</code><code> </code><code class="nx">fd</code><code> </code><code class="o">=</code><code> </code><code class="k">new</code><code> </code><code class="nx">FormData</code><code class="p">(</code><code class="nx">form</code><code class="p">)</code><code class="p">;</code><code>
+                </code><code class="kd">let</code><code> </code><code class="nx">requestPayload</code><code> </code><code class="o">=</code><code> </code><code class="p">{</code><code>
+                    </code><code class="nx">method</code><code class="o">:</code><code> </code><code class="nx">fd</code><code class="p">.</code><code class="nx">get</code><code class="p">(</code><code class="s1">'calcMethod'</code><code class="p">)</code><code class="p">,</code><code>
+                    </code><code class="nx">operands</code><code class="o">:</code><code> </code><code class="nx">tokenizeOperands</code><code class="p">(</code><code class="nx">fd</code><code class="p">.</code><code class="nx">get</code><code class="p">(</code><code class="s1">'values'</code><code class="p">)</code><code class="p">)</code><code>
+                </code><code class="p">}</code><code class="p">;</code><code> </code><a class="co" id="co_best_practices_for_instrumentation_CO1-2" href="#callout_best_practices_for_instrumentation_CO1-2"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/2.png" alt="2" width="12" height="12"></a><code>
+                </code><code class="nx">webTracerWithZone</code><code class="p">.</code><code class="nx">withSpan</code><code class="p">(</code><code class="nx">span</code><code class="p">,</code><code> </code><code class="p">(</code><code class="p">)</code><code> </code><code class="o">=&gt;</code><code> </code><code class="p">{</code><code>
+                  </code><code class="nx">calculate</code><code class="p">(</code><code class="nx">endpoint</code><code class="p">,</code><code> </code><code class="nx">requestPayload</code><code class="p">)</code><code class="p">.</code><code class="nx">then</code><code class="p">(</code><code class="p">(</code><code class="nx">res</code><code class="p">)</code><code> </code><code class="o">=&gt;</code><code> </code><code class="p">{</code><code>
+                    </code><code class="nx">webTracerWithZone</code><code class="p">.</code><code class="nx">getCurrentSpan</code><code class="p">(</code><code class="p">)</code><code class="p">.</code><code class="nx">addEvent</code><code class="p">(</code><code class="s1">'request-complete'</code><code class="p">)</code><code class="p">;</code><code>
+                    </code><code class="nx">span</code><code class="p">.</code><code class="nx">end</code><code class="p">(</code><code class="p">)</code><code class="p">;</code><code>
+                    </code><code class="nx">updateResult</code><code class="p">(</code><code class="nx">res</code><code class="p">)</code><code class="p">;</code><code>
+                  </code><code class="p">}</code><code class="p">)</code><code class="p">;</code><code>
+                </code><code class="p">}</code><code class="p">)</code><code class="p">;</code><code>
+            </code><code class="p">}</code><code>
+            </code><code class="nx">form</code><code class="p">.</code><code class="nx">addEventListener</code><code class="p">(</code><code class="s1">'submit'</code><code class="p">,</code><code> </code><code class="nx">onClick</code><code class="p">)</code><code>
+        </code><code class="p">}</code></pre>
+        <dl class="calloutlist">
+        <dt><a class="co" id="callout_best_practices_for_instrumentation_CO1-1" href="#co_best_practices_for_instrumentation_CO1-1"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/1.png" alt="1" width="12" height="12"></a></dt>
+        <dd><p>Notice that we’re starting a new span here. This encapsulates our entire logical request from client to server; it is the root span of the trace.</p></dd>
+        <dt><a class="co" id="callout_best_practices_for_instrumentation_CO1-2" href="#co_best_practices_for_instrumentation_CO1-2"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/2.png" alt="2" width="12" height="12"></a></dt>
+        <dd><p>Here we wrap our call to <code>calculate</code>, which will automatically create a child span. No additional code is required in <code>calculate</code>.</p></dd>
+        </dl></div>
+        
+        <p>Run the page in <code>web</code> with <code>npm start</code> and click Submit with your browser console open—you should see spans being written to the console output. You’ve now added basic tracing to your client service!</p>
+        
+        <p><a data-type="indexterm" data-primary="Go tracing features" data-secondary="HTTP framework" id="idm45357013133992"></a><a data-type="indexterm" data-primary="HTTP" data-secondary="best practices example framework" id="idm45357013132856"></a><a data-type="indexterm" data-primary="RPCs (remote procedure calls)" data-secondary="best practices example framework" id="idm45357013131896"></a>We’ll now look at the backend services—the API and workers. The API provider service uses the Go <code>net/http</code> library to provide an HTTP framework that we’re using as an RPC framework for passing messages between the client, the <a data-type="indexterm" data-primary="application programming interface" data-see="API services" id="idm45357013130152"></a><a data-type="indexterm" data-primary="API services" data-secondary="best practices example framework" id="idm45357013129160"></a>API service, and the workers. As seen in <a data-type="xref" href="#figure_app_basicdesign">Figure&nbsp;4-1</a>, the API receives messages in JSON format from the client, looks up the appropriate worker in its configuration, dispatches the operands to the appropriate worker service, and returns the result to the client.</p>
+        
+        <p>The API service has two main methods that we care about: <code>Run</code> and <code>calcHandler</code>. The <code>Run</code> method in <a data-type="xref" href="#EX5-3">Example&nbsp;4-3</a> initializes the HTTP router and sets up the HTTP server. <code>calcHandler</code> performs the logic of handling incoming requests by parsing the JSON body from the client, matching it to a worker, then creating a well-formed request to the worker service.</p>
+        <div id="EX5-3" data-type="example">
+        <h5><span class="label">Example 4-3. </span>Run method</h5>
+        
+        <pre data-type="programlisting" data-code-language="go"><code class="kd">func</code> <code class="nx">Run</code><code class="p">()</code> <code class="p">{</code>
+            <code class="nx">mux</code> <code class="o">:=</code> <code class="nx">http</code><code class="p">.</code><code class="nx">NewServeMux</code><code class="p">()</code>
+            <code class="nx">mux</code><code class="p">.</code><code class="nx">Handle</code><code class="p">(</code><code class="s">"/"</code><code class="p">,</code> <code class="nx">http</code><code class="p">.</code><code class="nx">HandlerFunc</code><code class="p">(</code><code class="nx">rootHandler</code><code class="p">))</code>
+            <code class="nx">mux</code><code class="p">.</code><code class="nx">Handle</code><code class="p">(</code><code class="s">"/calculate"</code><code class="p">,</code> <code class="nx">http</code><code class="p">.</code><code class="nx">HandlerFunc</code><code class="p">(</code><code class="nx">calcHandler</code><code class="p">))</code>
+            <code class="nx">services</code> <code class="p">=</code> <code class="nx">GetServices</code><code class="p">()</code>
+        
+            <code class="nx">log</code><code class="p">.</code><code class="nx">Println</code><code class="p">(</code><code class="s">"Initializing server..."</code><code class="p">)</code>
+            <code class="nx">err</code> <code class="o">:=</code> <code class="nx">http</code><code class="p">.</code><code class="nx">ListenAndServe</code><code class="p">(</code><code class="s">":3000"</code><code class="p">,</code> <code class="nx">mux</code><code class="p">)</code>
+            <code class="k">if</code> <code class="nx">err</code> <code class="o">!=</code> <code class="kc">nil</code> <code class="p">{</code>
+                <code class="nx">log</code><code class="p">.</code><code class="nx">Fatalf</code><code class="p">(</code><code class="s">"Could not initialize server: %s"</code><code class="p">,</code> <code class="nx">err</code><code class="p">)</code>
+            <code class="p">}</code>
+        <code class="p">}</code></pre>
+        
+        <pre id="figure_api_calcHandler" data-type="programlisting" data-code-language="go"><code class="kd">func</code> <code class="nx">calcHandler</code><code class="p">(</code><code class="nx">w</code> <code class="nx">http</code><code class="p">.</code><code class="nx">ResponseWriter</code><code class="p">,</code> <code class="nx">req</code> <code class="o">*</code><code class="nx">http</code><code class="p">.</code><code class="nx">Request</code><code class="p">)</code> <code class="p">{</code>
+            <code class="nx">calcRequest</code><code class="p">,</code> <code class="nx">err</code> <code class="o">:=</code> <code class="nx">ParseCalcRequest</code><code class="p">(</code><code class="nx">req</code><code class="p">.</code><code class="nx">Body</code><code class="p">)</code>
+            <code class="k">if</code> <code class="nx">err</code> <code class="o">!=</code> <code class="kc">nil</code> <code class="p">{</code>
+                <code class="nx">http</code><code class="p">.</code><code class="nx">Error</code><code class="p">(</code><code class="nx">w</code><code class="p">,</code> <code class="nx">err</code><code class="p">.</code><code class="nx">Error</code><code class="p">(),</code> <code class="nx">http</code><code class="p">.</code><code class="nx">StatusBadRequest</code><code class="p">)</code>
+                <code class="k">return</code>
+            <code class="p">}</code>
+        
+            <code class="kd">var</code> <code class="nx">url</code> <code class="kt">string</code>
+        
+            <code class="k">for</code> <code class="nx">_</code><code class="p">,</code> <code class="nx">n</code> <code class="o">:=</code> <code class="k">range</code> <code class="nx">services</code><code class="p">.</code><code class="nx">Services</code> <code class="p">{</code>
+                <code class="k">if</code> <code class="nx">strings</code><code class="p">.</code><code class="nx">ToLower</code><code class="p">(</code><code class="nx">calcRequest</code><code class="p">.</code><code class="nx">Method</code><code class="p">)</code> <code class="o">==</code> <code class="nx">strings</code><code class="p">.</code><code class="nx">ToLower</code><code class="p">(</code><code class="nx">n</code><code class="p">.</code><code class="nx">Name</code><code class="p">)</code> <code class="p">{</code>
+                    <code class="nx">j</code><code class="p">,</code> <code class="nx">_</code> <code class="o">:=</code> <code class="nx">json</code><code class="p">.</code><code class="nx">Marshal</code><code class="p">(</code><code class="nx">calcRequest</code><code class="p">.</code><code class="nx">Operands</code><code class="p">)</code>
+                    <code class="nx">url</code> <code class="p">=</code> <code class="nx">fmt</code><code class="p">.</code><code class="nx">Sprintf</code><code class="p">(</code><code class="s">"http://%s:%d/%s?o=%s"</code><code class="p">,</code>
+                                      <code class="nx">n</code><code class="p">.</code><code class="nx">Host</code><code class="p">,</code>
+                                      <code class="nx">n</code><code class="p">.</code><code class="nx">Port</code><code class="p">,</code>
+                                      <code class="nx">strings</code><code class="p">.</code><code class="nx">ToLower</code><code class="p">(</code><code class="nx">n</code><code class="p">.</code><code class="nx">Name</code><code class="p">),</code>
+                                      <code class="nx">strings</code><code class="p">.</code><code class="nx">Trim</code><code class="p">(</code><code class="nb">string</code><code class="p">(</code><code class="nx">j</code><code class="p">),</code>
+                                      <code class="s">"[]"</code><code class="p">))</code>
+                <code class="p">}</code>
+            <code class="p">}</code>
+        
+            <code class="k">if</code> <code class="nx">url</code> <code class="o">==</code> <code class="s">""</code> <code class="p">{</code>
+                <code class="nx">http</code><code class="p">.</code><code class="nx">Error</code><code class="p">(</code><code class="nx">w</code><code class="p">,</code> <code class="s">"could not find requested calculation method"</code><code class="p">,</code>
+                <code class="nx">http</code><code class="p">.</code><code class="nx">StatusBadRequest</code><code class="p">)</code>
+            <code class="p">}</code>
+        
+            <code class="nx">client</code> <code class="o">:=</code> <code class="nx">http</code><code class="p">.</code><code class="nx">DefaultClient</code>
+            <code class="nx">request</code><code class="p">,</code> <code class="nx">_</code> <code class="o">:=</code> <code class="nx">http</code><code class="p">.</code><code class="nx">NewRequest</code><code class="p">(</code><code class="s">"GET"</code><code class="p">,</code> <code class="nx">url</code><code class="p">,</code> <code class="kc">nil</code><code class="p">)</code>
+            <code class="nx">res</code><code class="p">,</code> <code class="nx">err</code> <code class="o">:=</code> <code class="nx">client</code><code class="p">.</code><code class="nx">Do</code><code class="p">(</code><code class="nx">request</code><code class="p">)</code>
+            <code class="k">if</code> <code class="nx">err</code> <code class="o">!=</code> <code class="kc">nil</code> <code class="p">{</code>
+                <code class="nx">http</code><code class="p">.</code><code class="nx">Error</code><code class="p">(</code><code class="nx">w</code><code class="p">,</code> <code class="nx">err</code><code class="p">.</code><code class="nx">Error</code><code class="p">(),</code> <code class="nx">http</code><code class="p">.</code><code class="nx">StatusInternalServerError</code><code class="p">)</code>
+                <code class="k">return</code>
+            <code class="p">}</code>
+            <code class="nx">body</code><code class="p">,</code> <code class="nx">err</code> <code class="o">:=</code> <code class="nx">ioutil</code><code class="p">.</code><code class="nx">ReadAll</code><code class="p">(</code><code class="nx">res</code><code class="p">.</code><code class="nx">Body</code><code class="p">)</code>
+            <code class="nx">res</code><code class="p">.</code><code class="nx">Body</code><code class="p">.</code><code class="nx">Close</code><code class="p">()</code>
+            <code class="k">if</code> <code class="nx">err</code> <code class="o">!=</code> <code class="kc">nil</code> <code class="p">{</code>
+                <code class="nx">http</code><code class="p">.</code><code class="nx">Error</code><code class="p">(</code><code class="nx">w</code><code class="p">,</code> <code class="nx">err</code><code class="p">.</code><code class="nx">Error</code><code class="p">(),</code> <code class="nx">http</code><code class="p">.</code><code class="nx">StatusInternalServerError</code><code class="p">)</code>
+                <code class="k">return</code>
+            <code class="p">}</code>
+        
+            <code class="nx">resp</code><code class="p">,</code> <code class="nx">err</code> <code class="o">:=</code> <code class="nx">strconv</code><code class="p">.</code><code class="nx">Atoi</code><code class="p">(</code><code class="nb">string</code><code class="p">(</code><code class="nx">body</code><code class="p">))</code>
+            <code class="k">if</code> <code class="nx">err</code> <code class="o">!=</code> <code class="kc">nil</code> <code class="p">{</code>
+                <code class="nx">http</code><code class="p">.</code><code class="nx">Error</code><code class="p">(</code><code class="nx">w</code><code class="p">,</code> <code class="nx">err</code><code class="p">.</code><code class="nx">Error</code><code class="p">(),</code> <code class="nx">http</code><code class="p">.</code><code class="nx">StatusInternalServerError</code><code class="p">)</code>
+                <code class="k">return</code>
+            <code class="p">}</code>
+        
+            <code class="nx">fmt</code><code class="p">.</code><code class="nx">Fprintf</code><code class="p">(</code><code class="nx">w</code><code class="p">,</code> <code class="s">"%d"</code><code class="p">,</code> <code class="nx">resp</code><code class="p">)</code>
+        <code class="p">}</code></pre></div>
+        
+        <p><a data-type="indexterm" data-primary="RPCs (remote procedure calls)" data-secondary="best practices example instrumentation" id="idm45357013116568"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="best practices" data-tertiary="first step" id="idm45357013115400"></a><a data-type="indexterm" data-primary="best practices" data-secondary="first step in instrumenting" id="idm45357013114312"></a><a data-type="indexterm" data-primary="HTTP" data-secondary="best practices instrumentation" id="idm45357013113352"></a><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="best practices HTTP instrument" id="idm45357013112392"></a><a data-type="indexterm" data-primary="best practices" data-secondary="OpenTelemetry HTTP instrumentation" id="idm45357002822616"></a><a data-type="indexterm" data-primary="best practices" data-secondary="RPC instrumentation" id="idm45357002821656"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="best practices" data-tertiary="open source instrumentation" id="idm45357002820712"></a>Let’s start at the edge of this service and find instrumentation for the RPC framework. In <a data-type="xref" href="#EX5-4">Example&nbsp;4-4</a>, since we’re using HTTP for communicating between services, you’ll want to instrument the HTTP framework code. Now, you <em>could</em> write this yourself, but it’s generally a better idea to look for open source instrumentation for these common components. In this case, we can utilize the OpenTelemetry project’s existing <code>othttp</code> package to wrap our HTTP routes with tracing instrumentation.</p>
+        <div id="EX5-4" data-type="example">
+        <h5><span class="label">Example 4-4. </span>Using the OpenTelemetry project’s existing <code>othttp</code> package to wrap our HTTP routes with tracing instrumentation</h5>
+        
+        <pre data-type="programlisting" data-code-language="go"><code class="nx">std</code><code class="p">,</code><code> </code><code class="nx">err</code><code> </code><code class="o">:=</code><code> </code><code class="nx">stdout</code><code class="p">.</code><code class="nx">NewExporter</code><code class="p">(</code><code class="nx">stdout</code><code class="p">.</code><code class="nx">Options</code><code class="p">{</code><code class="nx">PrettyPrint</code><code class="p">:</code><code> </code><code class="kc">true</code><code class="p">}</code><code class="p">)</code><code> </code><a class="co" id="co_best_practices_for_instrumentation_CO2-1" href="#callout_best_practices_for_instrumentation_CO2-1"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/1.png" alt="1" width="12" height="12"></a><code> </code><a class="co" id="co_best_practices_for_instrumentation_CO2-2" href="#callout_best_practices_for_instrumentation_CO2-2"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/2.png" alt="2" width="12" height="12"></a><code>
+        
+        </code><code class="nx">traceProvider</code><code class="p">,</code><code> </code><code class="nx">err</code><code> </code><code class="o">:=</code><code> </code><code class="nx">sdktrace</code><code class="p">.</code><code class="nx">NewProvider</code><code class="p">(</code><code> </code><a class="co" id="co_best_practices_for_instrumentation_CO2-3" href="#callout_best_practices_for_instrumentation_CO2-3"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/3.png" alt="3" width="12" height="12"></a><code>
+            </code><code class="nx">sdktrace</code><code class="p">.</code><code class="nx">WithConfig</code><code class="p">(</code><code>
+        </code><code>        </code><code class="nx">sdktrace</code><code class="p">.</code><code class="nx">Config</code><code class="p">{</code><code>
+        </code><code>            </code><code class="nx">DefaultSampler</code><code class="p">:</code><code> </code><code class="nx">sdktrace</code><code class="p">.</code><code class="nx">AlwaysSample</code><code class="p">(</code><code class="p">)</code><code>
+        </code><code>        </code><code class="p">}</code><code>
+        </code><code>    </code><code class="p">)</code><code class="p">,</code><code> </code><code class="nx">sdktrace</code><code class="p">.</code><code class="nx">WithSyncer</code><code class="p">(</code><code class="nx">std</code><code class="p">)</code><code class="p">)</code><code>
+        </code><code>
+        </code><code class="nx">mux</code><code class="p">.</code><code class="nx">Handle</code><code class="p">(</code><code class="s">"/"</code><code class="p">,</code><code>
+        </code><code>           </code><code class="nx">othttp</code><code class="p">.</code><code class="nx">NewHandler</code><code class="p">(</code><code class="nx">http</code><code class="p">.</code><code class="nx">HandlerFunc</code><code class="p">(</code><code class="nx">rootHandler</code><code class="p">)</code><code class="p">,</code><code>
+        </code><code>           </code><code class="s">"root"</code><code class="p">,</code><code> </code><code class="nx">othttp</code><code class="p">.</code><code class="nx">WithPublicEndpoint</code><code class="p">(</code><code class="p">)</code><code class="p">)</code><code>
+        </code><code>          </code><code class="p">)</code><code>
+        </code><code class="nx">mux</code><code class="p">.</code><code class="nx">Handle</code><code class="p">(</code><code class="s">"/calculate"</code><code class="p">,</code><code>
+        </code><code>           </code><code class="nx">othttp</code><code class="p">.</code><code class="nx">NewHandler</code><code class="p">(</code><code class="nx">http</code><code class="p">.</code><code class="nx">HandlerFunc</code><code class="p">(</code><code class="nx">calcHandler</code><code class="p">)</code><code class="p">,</code><code>
+        </code><code>           </code><code class="s">"calculate"</code><code class="p">,</code><code> </code><code class="nx">othttp</code><code class="p">.</code><code class="nx">WithPublicEndpoint</code><code class="p">(</code><code class="p">)</code><code class="p">)</code><code>
+        </code><code>          </code><code class="p">)</code></pre>
+        <dl class="calloutlist">
+        <dt><a class="co" id="callout_best_practices_for_instrumentation_CO2-1" href="#co_best_practices_for_instrumentation_CO2-1"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/1.png" alt="1" width="12" height="12"></a></dt>
+        <dd><p>Handle errors and such appropriately. Some code has been deleted for clarity.</p></dd>
+        <dt><a class="co" id="callout_best_practices_for_instrumentation_CO2-2" href="#co_best_practices_for_instrumentation_CO2-2"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/2.png" alt="2" width="12" height="12"></a></dt>
+        <dd><p><a data-type="indexterm" data-primary="exporters" data-secondary="best practices example HTTP instrument" id="idm45357002662552"></a>First, we need to register an exporter to actually view the telemetry output; this could also be an external analysis backend, but we’ll use <code>stdout</code> for now.</p></dd>
+        <dt><a class="co" id="callout_best_practices_for_instrumentation_CO2-3" href="#co_best_practices_for_instrumentation_CO2-3"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/3.png" alt="3" width="12" height="12"></a></dt>
+        <dd><p>Then, register the exporter with the trace provider and set it to sample 100% of spans.</p></dd>
+        </dl></div>
+        
+        <p>What does this do for us? The instrumentation plug-in will handle quite a bit of “convenience” tasks for us, like propagating spans from incoming requests and adding some useful attributes (seen in <a data-type="xref" href="#EX5-5">Example&nbsp;4-5</a>) such as the HTTP method type, response code, and more. Simply by adding this, we’re able to begin tracing requests to our backend system. Take special note of the parameter we’ve passed into our instrumentation handler, <code>othttp.WithPublicEndpoint</code>—this will slightly modify how the trace context from the client is flowed to our backend services. Rather than persisting the same TraceID from the client, the incoming context will be associated with a new trace as a link.</p>
+        <div id="EX5-5" data-type="example">
+        <h5><span class="label">Example 4-5. </span>JSON span output</h5>
+        
+        <pre data-type="programlisting" data-code-language="json"><code class="p">{</code>
+            <code class="nt">"SpanContext"</code><code class="p">:</code> <code class="p">{</code>
+                <code class="nt">"TraceID"</code><code class="p">:</code> <code class="s2">"060a61155cc12b0a83b625aa1808203a"</code><code class="p">,</code>
+                <code class="nt">"SpanID"</code><code class="p">:</code> <code class="s2">"a6ff374ec6ed5c64"</code><code class="p">,</code>
+                <code class="nt">"TraceFlags"</code><code class="p">:</code> <code class="mi">1</code>
+            <code class="p">},</code>
+            <code class="nt">"ParentSpanID"</code><code class="p">:</code> <code class="s2">"0000000000000000"</code><code class="p">,</code>
+            <code class="nt">"SpanKind"</code><code class="p">:</code> <code class="mi">2</code><code class="p">,</code>
+            <code class="nt">"Name"</code><code class="p">:</code> <code class="s2">"go.opentelemetry.io/plugin/othttp/add"</code><code class="p">,</code>
+            <code class="nt">"StartTime"</code><code class="p">:</code> <code class="s2">"2020-01-02T17:34:01.52675-05:00"</code><code class="p">,</code>
+            <code class="nt">"EndTime"</code><code class="p">:</code> <code class="s2">"2020-01-02T17:34:01.526805742-05:00"</code><code class="p">,</code>
+            <code class="nt">"Attributes"</code><code class="p">:</code> <code class="p">[</code>
+                <code class="p">{</code>
+                    <code class="nt">"Key"</code><code class="p">:</code> <code class="s2">"http.host"</code><code class="p">,</code>
+                    <code class="nt">"Value"</code><code class="p">:</code> <code class="p">{</code>
+                        <code class="nt">"Type"</code><code class="p">:</code> <code class="s2">"STRING"</code><code class="p">,</code>
+                        <code class="nt">"Value"</code><code class="p">:</code> <code class="s2">"localhost:3000"</code>
+                    <code class="p">}</code>
+                <code class="p">},</code>
+                <code class="p">{</code>
+                    <code class="nt">"Key"</code><code class="p">:</code> <code class="s2">"http.method"</code><code class="p">,</code>
+                    <code class="nt">"Value"</code><code class="p">:</code> <code class="p">{</code>
+                        <code class="nt">"Type"</code><code class="p">:</code> <code class="s2">"STRING"</code><code class="p">,</code>
+                        <code class="nt">"Value"</code><code class="p">:</code> <code class="s2">"GET"</code>
+                    <code class="p">}</code>
+                <code class="p">},</code>
+                <code class="p">{</code>
+                    <code class="nt">"Key"</code><code class="p">:</code> <code class="s2">"http.path"</code><code class="p">,</code>
+                    <code class="nt">"Value"</code><code class="p">:</code> <code class="p">{</code>
+                        <code class="nt">"Type"</code><code class="p">:</code> <code class="s2">"STRING"</code><code class="p">,</code>
+                        <code class="nt">"Value"</code><code class="p">:</code> <code class="s2">"/"</code>
+                    <code class="p">}</code>
+                <code class="p">},</code>
+                <code class="p">{</code>
+                    <code class="nt">"Key"</code><code class="p">:</code> <code class="s2">"http.url"</code><code class="p">,</code>
+                    <code class="nt">"Value"</code><code class="p">:</code> <code class="p">{</code>
+                        <code class="nt">"Type"</code><code class="p">:</code> <code class="s2">"STRING"</code><code class="p">,</code>
+                        <code class="nt">"Value"</code><code class="p">:</code> <code class="s2">"/"</code>
+                    <code class="p">}</code>
+                <code class="p">},</code>
+                <code class="p">{</code>
+                    <code class="nt">"Key"</code><code class="p">:</code> <code class="s2">"http.user_agent"</code><code class="p">,</code>
+                    <code class="nt">"Value"</code><code class="p">:</code> <code class="p">{</code>
+                        <code class="nt">"Type"</code><code class="p">:</code> <code class="s2">"STRING"</code><code class="p">,</code>
+                        <code class="nt">"Value"</code><code class="p">:</code> <code class="s2">"HTTPie/1.0.2"</code>
+                    <code class="p">}</code>
+                <code class="p">},</code>
+                <code class="p">{</code>
+                    <code class="nt">"Key"</code><code class="p">:</code> <code class="s2">"http.wrote_bytes"</code><code class="p">,</code>
+                    <code class="nt">"Value"</code><code class="p">:</code> <code class="p">{</code>
+                        <code class="nt">"Type"</code><code class="p">:</code> <code class="s2">"INT64"</code><code class="p">,</code>
+                        <code class="nt">"Value"</code><code class="p">:</code> <code class="mi">27</code>
+                    <code class="p">}</code>
+                <code class="p">},</code>
+                <code class="p">{</code>
+                    <code class="nt">"Key"</code><code class="p">:</code> <code class="s2">"http.status_code"</code><code class="p">,</code>
+                    <code class="nt">"Value"</code><code class="p">:</code> <code class="p">{</code>
+                        <code class="nt">"Type"</code><code class="p">:</code> <code class="s2">"INT64"</code><code class="p">,</code>
+                        <code class="nt">"Value"</code><code class="p">:</code> <code class="mi">200</code>
+                    <code class="p">}</code>
+                <code class="p">}</code>
+            <code class="p">],</code>
+            <code class="nt">"MessageEvents"</code><code class="p">:</code> <code class="kc">null</code><code class="p">,</code>
+            <code class="nt">"Links"</code><code class="p">:</code> <code class="kc">null</code><code class="p">,</code>
+            <code class="nt">"Status"</code><code class="p">:</code> <code class="mi">0</code><code class="p">,</code>
+            <code class="nt">"HasRemoteParent"</code><code class="p">:</code> <code class="kc">false</code><code class="p">,</code>
+            <code class="nt">"DroppedAttributeCount"</code><code class="p">:</code> <code class="mi">0</code><code class="p">,</code>
+            <code class="nt">"DroppedMessageEventCount"</code><code class="p">:</code> <code class="mi">0</code><code class="p">,</code>
+            <code class="nt">"DroppedLinkCount"</code><code class="p">:</code> <code class="mi">0</code><code class="p">,</code>
+            <code class="nt">"ChildSpanCount"</code><code class="p">:</code> <code class="mi">0</code>
+        <code class="p">}</code></pre></div>
+        
+        <p><a data-type="indexterm" data-primary="RPCs (remote procedure calls)" data-secondary="best practices example instrumentation" id="idm45357002675560"></a><a data-type="indexterm" data-primary="best practices" data-secondary="RPC instrumentation" id="idm45357002674488"></a><a data-type="indexterm" data-primary="best practices" data-secondary="OpenTelemetry HTTP instrumentation" id="idm45357002673640"></a><a data-type="indexterm" data-primary="HTTP" data-secondary="best practices instrumentation" id="idm45357002253400"></a><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="best practices HTTP instrument" id="idm45357002252488"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="best practices" data-tertiary="open source instrumentation" id="idm45357002251576"></a>In <code>calcHandler</code>, we’ll want to do something similar to instrument our outgoing RPC to the worker service. Again, OpenTelemetry contains an instrumentation plug-in for <a data-type="indexterm" data-primary="Go tracing features" data-secondary="HTTP framework" id="idm45357002249624"></a>Go’s HTTP client that we can use (see <a data-type="xref" href="#EX5-6">Example&nbsp;4-6</a>).</p>
+        <div id="EX5-6" data-type="example">
+        <h5><span class="label">Example 4-6. </span>API handler</h5>
+        
+        <pre data-type="programlisting" data-code-language="go"><code class="nx">client</code> <code class="o">:=</code> <code class="nx">http</code><code class="p">.</code><code class="nx">DefaultClient</code>
+        <code class="c1">// Get the context from the request in order to pass it to the instrumentation plug-in</code>
+        <code class="nx">ctx</code> <code class="o">:=</code> <code class="nx">req</code><code class="p">.</code><code class="nx">Context</code><code class="p">()</code>
+        <code class="nx">request</code><code class="p">,</code> <code class="nx">_</code> <code class="o">:=</code> <code class="nx">http</code><code class="p">.</code><code class="nx">NewRequestWithContext</code><code class="p">(</code><code class="nx">ctx</code><code class="p">,</code> <code class="s">"GET"</code><code class="p">,</code> <code class="nx">url</code><code class="p">,</code> <code class="kc">nil</code><code class="p">)</code>
+        <code class="c1">// Create a new outgoing trace</code>
+        <code class="nx">ctx</code><code class="p">,</code> <code class="nx">request</code> <code class="p">=</code> <code class="nx">httptrace</code><code class="p">.</code><code class="nx">W3C</code><code class="p">(</code><code class="nx">ctx</code><code class="p">,</code> <code class="nx">request</code><code class="p">)</code>
+        <code class="c1">// Inject the context into the outgoing request</code>
+        <code class="nx">httptrace</code><code class="p">.</code><code class="nx">Inject</code><code class="p">(</code><code class="nx">ctx</code><code class="p">,</code> <code class="nx">request</code><code class="p">)</code>
+        <code class="c1">// Send the request</code>
+        <code class="nx">res</code><code class="p">,</code> <code class="nx">err</code> <code class="o">:=</code> <code class="nx">client</code><code class="p">.</code><code class="nx">Do</code><code class="p">(</code><code class="nx">request</code><code class="p">)</code></pre></div>
+        
+        <p><a data-type="indexterm" data-primary="header formats" data-secondary="W3C" id="idm45357002245144"></a><a data-type="indexterm" data-primary="W3C" data-secondary="best practices example tracing headers" id="idm45357002244296"></a><a data-type="indexterm" data-primary="standards" data-secondary="W3C tracing headers" id="idm45357002179992"></a><a data-type="indexterm" data-primary="trace context" data-secondary="best practices example tracing headers" id="idm45357002179048"></a>This will add W3C tracing headers to the outgoing request, which can be picked up by the worker, propagating the trace context across the wire. This enables us to visualize the relationship between our services very easily, since spans created in the worker service will have the same trace identifier as the parent(s).</p>
+        
+        <p><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="best practices tracer creation" id="idm45357002177368"></a><a data-type="indexterm" data-primary="best practices" data-secondary="tracer creation" id="idm45357002176376"></a><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="best practices trace handler" id="idm45357002175432"></a><a data-type="indexterm" data-primary="tracers" data-secondary="OpenTelemetry" id="idm45357002174472"></a><a data-type="indexterm" data-primary="tracers" data-secondary="OpenTelemetry" id="idm45357002173528"></a>Adding tracing to the worker services is equally straightforward because we’re simply wrapping the router method with the OpenTelemetry trace handler, as shown in <a data-type="xref" href="#EX5-7">Example&nbsp;4-7</a>.</p>
+        <div id="EX5-7" data-type="example">
+        <h5><span class="label">Example 4-7. </span>Adding the handler</h5>
+        
+        <pre data-type="programlisting" data-code-language="go"><code class="c1">// You also need to add an exporter and register it with the trace provider,</code>
+        <code class="c1">// as in the API server, but the code is the same</code>
+        <code class="nx">mux</code><code class="p">.</code><code class="nx">Handle</code><code class="p">(</code><code class="s">"/"</code><code class="p">,</code>
+            <code class="nx">othttp</code><code class="p">.</code><code class="nx">NewHandler</code><code class="p">(</code><code class="nx">http</code><code class="p">.</code><code class="nx">HandlerFunc</code><code class="p">(</code><code class="nx">addHandler</code><code class="p">),</code>
+            <code class="s">"add"</code><code class="p">,</code>
+            <code class="nx">othttp</code><code class="p">.</code><code class="nx">WithPublicEndpoint</code><code class="p">())</code>
+        <code class="p">)</code></pre></div>
+        
+        <p><a data-type="indexterm" data-primary="distributed tracing" data-secondary="open source boilerplates" id="idm45357002168536"></a><a data-type="indexterm" data-primary="open source instrumentation" data-secondary="as boilerplates" data-secondary-sortas="boilerplates" id="idm45357002151832"></a>The instrumentation plug-ins handle a great deal of the boilerplate that we need to be concerned with in this and other languages—things like extracting the span context from the incoming request, creating a new child span (or a new root span, if appropriate), and adding that span to the request context. In the next section, we’ll look at how we can extend this basic instrumentation with custom events and attributes from our business logic in order to enhance the utility of our spans and traces.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before less_space" data-pdf-bookmark="Custom Instrumentation"><div class="sect2" id="custom-instrumentation-sect">
+        <h2>Custom Instrumentation</h2>
+        
+        <p><a data-type="indexterm" data-primary="best practices" data-secondary="custom instrumentation" id="idm45357002147352"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="best practices" data-tertiary="custom instrumentation" id="idm45357002146216"></a>At this point, we’ve got the critical parts of tracing set up in our services; each RPC is traced, allowing us to see a single request as it travels from our client service to all of our backend services. In addition, we have a <a data-type="indexterm" data-primary="spans" data-secondary="best practices example tracing" id="idm45357002144632"></a>span available in our business logic, carried along the request context, that we can enhance with custom attributes or events. What, then, shall we do? In general, this is really up to you, the instrumenter. We’ll discuss this in more detail in <a data-type="xref" href="#ch5_effective_tagging">“Effective Tagging”</a>, but it’s helpful to add custom instrumentation for a few things in your business logic—capturing and logging error states, for example, or creating child spans that further describe the functioning of a service. In our <a data-type="indexterm" data-primary="API services" data-secondary="best practices custom instrumentation" id="idm45357002142296"></a><a data-type="indexterm" data-primary="events" data-secondary="best practices custom instrumentation" id="idm45357002141336"></a>API service, we’ve implemented an example of this by <a data-type="indexterm" data-primary="trace context" data-secondary="best practices custom instrumentation" id="idm45357002140248"></a>passing the local context into a different method (<code>ParseCalcRequest</code>), where we create a new span and enhance it with custom events as shown in <a data-type="xref" href="#EX5-7-2">Example&nbsp;4-8</a>.</p>
+        <div id="EX5-7-2" data-type="example">
+        <h5><span class="label">Example 4-8. </span>Enhancing a span with custom events</h5>
+        
+        <pre data-type="programlisting" data-code-language="go"><code class="kd">var</code> <code class="nx">calcRequest</code> <code class="nx">CalcRequest</code>
+        <code class="nx">err</code> <code class="p">=</code> <code class="nx">tr</code><code class="p">.</code><code class="nx">WithSpan</code><code class="p">(</code><code class="nx">ctx</code><code class="p">,</code> <code class="s">"generateRequest"</code><code class="p">,</code> <code class="kd">func</code><code class="p">(</code><code class="nx">ctx</code> <code class="nx">context</code><code class="p">.</code><code class="nx">Context</code><code class="p">)</code> <code class="kt">error</code> <code class="p">{</code>
+            <code class="nx">calcRequest</code><code class="p">,</code> <code class="nx">err</code> <code class="p">=</code> <code class="nx">ParseCalcRequest</code><code class="p">(</code><code class="nx">ctx</code><code class="p">,</code> <code class="nx">b</code><code class="p">)</code>
+            <code class="k">return</code> <code class="nx">err</code>
+        <code class="p">})</code></pre></div>
+        
+        <p>In <a data-type="xref" href="#EX5-8">Example&nbsp;4-9</a>, you can see what we’re doing with the passed context—we get the current span from the context and add events to it. In this case, we’ve added some informational events around what the function actually does (parsing the body of our incoming request into an object), and changing the span’s status if the operation failed.</p>
+        <div id="EX5-8" data-type="example">
+        <h5><span class="label">Example 4-9. </span>Adding events to the span</h5>
+        
+        <pre data-type="programlisting" data-code-language="go"><code class="kd">func</code> <code class="nx">ParseCalcRequest</code><code class="p">(</code><code class="nx">ctx</code> <code class="nx">context</code><code class="p">.</code><code class="nx">Context</code><code class="p">,</code> <code class="nx">body</code> <code class="p">[]</code><code class="kt">byte</code><code class="p">)</code> <code class="p">(</code><code class="nx">CalcRequest</code><code class="p">,</code> <code class="kt">error</code><code class="p">)</code> <code class="p">{</code>
+            <code class="kd">var</code> <code class="nx">parsedRequest</code> <code class="nx">CalcRequest</code>
+        
+            <code class="nx">trace</code><code class="p">.</code><code class="nx">CurrentSpan</code><code class="p">(</code><code class="nx">ctx</code><code class="p">).</code><code class="nx">AddEvent</code><code class="p">(</code><code class="nx">ctx</code><code class="p">,</code> <code class="s">"attempting to parse body"</code><code class="p">)</code>
+            <code class="nx">trace</code><code class="p">.</code><code class="nx">CurrentSpan</code><code class="p">(</code><code class="nx">ctx</code><code class="p">).</code><code class="nx">AddEvent</code><code class="p">(</code><code class="nx">ctx</code><code class="p">,</code> <code class="nx">fmt</code><code class="p">.</code><code class="nx">Sprintf</code><code class="p">(</code><code class="s">"%s"</code><code class="p">,</code> <code class="nx">body</code><code class="p">))</code>
+            <code class="nx">err</code> <code class="o">:=</code> <code class="nx">json</code><code class="p">.</code><code class="nx">Unmarshal</code><code class="p">(</code><code class="nx">body</code><code class="p">,</code> <code class="o">&amp;</code><code class="nx">parsedRequest</code><code class="p">)</code>
+            <code class="k">if</code> <code class="nx">err</code> <code class="o">!=</code> <code class="kc">nil</code> <code class="p">{</code>
+                <code class="nx">trace</code><code class="p">.</code><code class="nx">CurrentSpan</code><code class="p">(</code><code class="nx">ctx</code><code class="p">).</code><code class="nx">SetStatus</code><code class="p">(</code><code class="nx">codes</code><code class="p">.</code><code class="nx">InvalidArgument</code><code class="p">)</code>
+                <code class="nx">trace</code><code class="p">.</code><code class="nx">CurrentSpan</code><code class="p">(</code><code class="nx">ctx</code><code class="p">).</code><code class="nx">AddEvent</code><code class="p">(</code><code class="nx">ctx</code><code class="p">,</code> <code class="nx">err</code><code class="p">.</code><code class="nx">Error</code><code class="p">())</code>
+                <code class="nx">trace</code><code class="p">.</code><code class="nx">CurrentSpan</code><code class="p">(</code><code class="nx">ctx</code><code class="p">).</code><code class="nx">End</code><code class="p">()</code>
+                <code class="k">return</code> <code class="nx">parsedRequest</code><code class="p">,</code> <code class="nx">err</code>
+            <code class="p">}</code>
+            <code class="nx">trace</code><code class="p">.</code><code class="nx">CurrentSpan</code><code class="p">(</code><code class="nx">ctx</code><code class="p">).</code><code class="nx">End</code><code class="p">()</code>
+            <code class="k">return</code> <code class="nx">parsedRequest</code><code class="p">,</code> <code class="kc">nil</code>
+        <code class="p">}</code></pre></div>
+        
+        <p>Now that you have a basic handle on how to add instrumentation to an application, let’s step back a bit. You might be thinking that “real” applications are obviously more complex and intricate than a purpose-built sample. The good news, however, is that the basic principles we learned and implemented here are generally applicable to instrumenting software of any size or complexity. Let’s take a look at instrumenting software and how to apply these basic principles to microservice applications.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Where to Start—Nodes and Edges"><div class="sect1" id="nodes_edges">
+        <h1>Where to Start—Nodes and Edges</h1>
+        
+        <p><a data-type="indexterm" data-primary="best practices" data-secondary="beginning at nodes and edges" id="idm45357001832472"></a><a data-type="indexterm" data-primary="best practices" data-secondary="first step in instrumenting" id="idm45357001831528"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="best practices" data-tertiary="first step" id="idm45357001830616"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="beginning at nodes and edges" id="idm45357001829400"></a>People tend to start at the outside when solving problems—whether they’re organizational, financial, computational, or even culinary. The easiest place to start is at the place that’s closest to you. The same approach applies to instrumenting services for distributed tracing.</p>
+        
+        <p>Practically, starting from the outside is effective for three major reasons. The first of these is that the edges of your service are the easiest to see—and, thus, manipulate. It’s fairly straightforward to add things that surround a service even if it’s hard to modify the service itself. Second, starting from the outside tends to be organizationally efficient. It can be difficult to convince disparate teams to adopt distributed tracing, especially if the value of that tracing can be hard to see in isolation. Finally, distributed tracing requires context propagation—we need each service to know about the caller’s trace, and each service we call out to needs to know that it’s included in a trace as well. For these reasons, it’s highly useful to begin instrumenting any sort of existing application by starting from the outside and moving in. This can take the form of <a data-type="indexterm" data-primary="framework instrumentation" data-secondary="beginning instrumentation at edges" id="idm45357001826760"></a>framework instrumentation or <a data-type="indexterm" data-primary="service meshes" data-secondary="beginning instrumentation at edges" id="idm45357001825624"></a>service mesh (or equivalent component) instrumentation.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45357001824296">
+        <h5>Trade-offs of Outside-In Instrumentation</h5>
+        <p>In general, changing code or infrastructure outside a process that you’re instrumenting may require more effort than changing it for just that process. In addition, sweeping changes to your infrastructure or framework code are often more difficult to review, as they’re less incremental. If it’s logistically or organizationally difficult to approach instrumentation <em>outside-in</em>, you’ll still get benefits from adding instrumentation to one service at a time at the cost of having <em>broken</em> traces. Make sure to check that other services are transparently forwarding the tracing headers that they’ll be receiving in this case!</p>
+        </div></aside>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before less_space" data-pdf-bookmark="Framework Instrumentation"><div class="sect2" id="idm45357001821208">
+        <h2>Framework Instrumentation</h2>
+        
+        <p><a data-type="indexterm" data-primary="instrumentation" data-secondary="framework instrumentation" id="idm45357001819464"></a><a data-type="indexterm" data-primary="framework instrumentation" data-secondary="best practices" id="idm45357001818424"></a><a data-type="indexterm" data-primary="best practices" data-secondary="framework instrumentation" id="idm45357001817464"></a><a data-type="indexterm" data-primary="RPCs (remote procedure calls)" data-secondary="best practices framework instrumentation" id="idm45357001816504"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="best practices" data-tertiary="framework instrumentation" id="idm45357001815576"></a>In any distributed application, services need to communicate with each other. This RPC traffic can take a variety of protocols and transport methods—structured data over HTTP, Protocol Buffers over gRPC, Apache Thrift, custom protocols over TCP sockets, and more. There must be some equivalency on both sides of this connection. Your services need to be speaking the same language when they talk!</p>
+        
+        <p>There are two critical components when it comes to instrumentation at the framework level. First, our frameworks must allow us to perform <a data-type="indexterm" data-primary="context propagation" data-secondary="framework instrumentation" id="idm45357001813256"></a><a data-type="indexterm" data-primary="framework instrumentation" data-secondary="context propagation" id="idm45357001812264"></a><em>context propagation</em>, the transmission of trace identifiers across the network. Second, our frameworks should aid us in <em>creating spans</em> for each service.</p>
+        
+        <p>Context propagation is perhaps the easier challenge to solve. Let’s take another look at MicroCalc to discuss it. As shown in <a data-type="xref" href="#figure_app_protocol">Figure&nbsp;4-2</a>, we’re only using one transport method (HTTP), but two different ways of passing messages—JSON, and query parameters. You can imagine that some of these links could be done differently; for instance, we could refactor the communication between our API service and the worker services to use gRPC, Thrift, or even graphQL. The transport itself is largely irrelevant, the requirement is simply that we are able to pass the trace context to the next service.</p>
+        
+        <figure><div id="figure_app_protocol" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0402.png" alt="An overview of the protocol design of MicroCalc." width="1404" height="308">
+        <h6><span class="label">Figure 4-2. </span>The protocols used for inter-service communication in MicroCalc.</h6>
+        </div></figure>
+        
+        <p>Once you identify the transport protocols your services use to communicate, consider the critical path for your service calls. In short, identify the path of calls as a request moves through your services. In this stage of analysis, you’ll want to focus on components that act as a <em>hub</em> for requests. Why? Generally, these components are going to logically encapsulate operations on the backend and provide an API for multiple clients (such as browser-based web clients or native applications on a mobile device). Therefore, instrumenting these components first allows for a shorter timeline to derive value from tracing. In the preceding example, our API proxy service meets these criteria—our client communicates directly through it for all downstream actions.</p>
+        
+        <p>After identifying the service you’ll instrument, you should consider the transport method used for requests coming into, and exiting, the service. <a data-type="indexterm" data-primary="HTTP" data-secondary="framework instrumentation" id="idm45357001804312"></a>Our API proxy <span class="keep-together">service</span> exclusively communicates via structured data using HTTP, but this is simply an example for the sake of brevity—in the real world, you’ll often find services that can accept multiple transports and also send outgoing requests through multiple transports. You’ll want to be acutely aware of these complications when instrumenting your own applications.</p>
+        
+        <p>That said, we’ll look at the actual mechanics of instrumenting our service. In framework instrumentation, you’ll want to instrument the transport framework of your service itself. This can often be implemented as some sort of middleware in your request path: code that is run for each incoming request. This is a common pattern for adding logging to your requests, for example. What middlewares would you want to implement for this service? Logically, you’ll need to accomplish the following:</p>
+        
+        <ul>
+        <li>
+        <p>Check whether an incoming request includes a trace context, which would indicate that the request is being traced. If so, add this context to the request.</p>
+        </li>
+        <li>
+        <p>Check whether a context exists in the request. If the context exists, create a new span as a child of the flowed context. Otherwise, create a new root span. Add this span to the request.</p>
+        </li>
+        <li>
+        <p>Check whether a span exists in the request. If a span exists, add other pertinent information available in the request context to it such as the route, user identifiers, etc. Otherwise, do nothing and continue.</p>
+        </li>
+        </ul>
+        
+        <p><a data-type="indexterm" data-primary="library-based instrumentation" data-secondary="framework instrumentation best practices" id="idm45357001797272"></a><a data-type="indexterm" data-primary="framework instrumentation" data-secondary="instrumentation libraries" id="idm45357001796104"></a>These three logical actions can be combined into a single piece of middleware through the use of instrumentation libraries such as the ones we discussed in <a data-type="xref" href="ch03.html#chapter_4">Chapter&nbsp;3</a>. We can implement a straightforward version of this middleware in Golang using the <a data-type="indexterm" data-primary="OpenTracing" data-secondary="framework instrumentation libraries" id="idm45357001794072"></a>OpenTracing library, as <a data-type="xref" href="#EX5-9">Example&nbsp;4-10</a> shows, or by using instrumentation plug-ins bundled with frameworks like OpenTelemetry, as we demonstrated in <a data-type="xref" href="#tracing-by-ex">“Tracing by Example”</a>.</p>
+        <div id="EX5-9" data-type="example">
+        <h5><span class="label">Example 4-10. </span>Tracing middleware</h5>
+        
+        <pre data-type="programlisting" data-code-language="go"><code class="kd">func</code> <code class="nx">TracingMiddleware</code><code class="p">(</code><code class="nx">t</code> <code class="nx">opentracing</code><code class="p">.</code><code class="nx">Tracer</code><code class="p">,</code> <code class="nx">h</code> <code class="nx">http</code><code class="p">.</code><code class="nx">HandlerFunc</code><code class="p">)</code> <code class="nx">http</code><code class="p">.</code><code class="nx">HandlerFunc</code> <code class="p">{</code>
+            <code class="k">return</code> <code class="nx">http</code><code class="p">.</code><code class="nx">HandlerFunc</code><code class="p">(</code><code class="kd">func</code><code class="p">(</code><code class="nx">w</code> <code class="nx">http</code><code class="p">.</code><code class="nx">ResponseWriter</code><code class="p">,</code> <code class="nx">r</code> <code class="o">*</code><code class="nx">http</code><code class="p">.</code><code class="nx">Request</code><code class="p">)</code> <code class="p">{</code>
+                <code class="nx">spanContext</code><code class="p">,</code> <code class="nx">_</code> <code class="o">:=</code> <code class="nx">t</code><code class="p">.</code><code class="nx">Extract</code><code class="p">(</code><code class="nx">opentracing</code><code class="p">.</code><code class="nx">HTTPHeaders</code><code class="p">,</code>
+                                            <code class="nx">opentracing</code><code class="p">.</code><code class="nx">HTTPHeadersCarrier</code><code class="p">(</code><code class="nx">r</code><code class="p">.</code><code class="nx">Header</code><code class="p">))</code>
+                <code class="nx">span</code> <code class="o">:=</code> <code class="nx">t</code><code class="p">.</code><code class="nx">StartSpan</code><code class="p">(</code><code class="nx">r</code><code class="p">.</code><code class="nx">Method</code><code class="p">,</code> <code class="nx">opentracing</code><code class="p">.</code><code class="nx">ChildOf</code><code class="p">(</code><code class="nx">spanContext</code><code class="p">))</code>
+                <code class="nx">span</code><code class="p">.</code><code class="nx">SetTag</code><code class="p">(</code><code class="s">"route"</code><code class="p">,</code> <code class="nx">r</code><code class="p">.</code><code class="nx">URL</code><code class="p">.</code><code class="nx">EscapedPath</code><code class="p">())</code>
+                <code class="nx">r</code> <code class="p">=</code> <code class="nx">r</code><code class="p">.</code><code class="nx">WithContext</code><code class="p">(</code><code class="nx">opentracing</code><code class="p">.</code><code class="nx">ContextWithSpan</code><code class="p">(</code><code class="nx">r</code><code class="p">.</code><code class="nx">Context</code><code class="p">(),</code>
+                                  <code class="nx">span</code><code class="p">.</code><code class="nx">Context</code><code class="p">()))</code>
+                <code class="k">defer</code> <code class="nx">span</code><code class="p">.</code><code class="nx">Finish</code><code class="p">()</code>
+                <code class="nx">h</code><code class="p">(</code><code class="nx">w</code><code class="p">,</code> <code class="nx">r</code><code class="p">)</code>
+                <code class="nx">span</code><code class="p">.</code><code class="nx">SetTag</code><code class="p">(</code><code class="s">"status"</code><code class="p">,</code> <code class="nx">w</code><code class="p">.</code><code class="nx">ResponseCode</code><code class="p">)</code>
+                <code class="p">}</code>
+            <code class="p">)</code>
+        <code class="p">}</code></pre></div>
+        
+        <p>This snippet accomplishes the goals laid out earlier—we first attempt to extract a span context from the request headers. In the preceding sample, we make some assumptions, namely that our span context will be propagated using <a data-type="indexterm" data-primary="OpenTracing" data-secondary="HTTP headers" id="idm45357001787304"></a>HTTP headers and not any sort of binary format. OpenTracing, generally, defines these headers to be of the following formats:</p>
+        <dl>
+        <dt><code>ot-span-id</code></dt>
+        <dd>
+        <p>A 64- or 128-bit unsigned integer</p>
+        </dd>
+        <dt><code>ot-trace-id</code></dt>
+        <dd>
+        <p>A 64- or 128-bit unsigned integer</p>
+        </dd>
+        <dt><code>ot-sampled</code></dt>
+        <dd>
+        <p>A Boolean value indicating if the upstream service has sampled out the trace</p>
+        </dd>
+        </dl>
+        
+        <p>Please note that these are not the only types of headers that can contain a span context. You can learn more about other popular header formats in <a data-type="xref" href="ch03.html#ch4_opentracing_and_opencensus">“OpenTracing and OpenCensus”</a>.</p>
+        
+        <p>As we learned in <a data-type="xref" href="ch02.html#Chapter3">Chapter&nbsp;2</a>, the <a data-type="indexterm" data-primary="spans" data-secondary="span context as critical" id="idm45357001636792"></a><a data-type="indexterm" data-primary="framework instrumentation" data-secondary="span context" id="idm45357001635848"></a><a data-type="indexterm" data-primary="context propagation" data-secondary="span context as critical" id="idm45357001634888"></a><a data-type="indexterm" data-primary="best practices" data-secondary="span context as critical" id="idm45357001633928"></a>span context is critical to propagating a trace throughout our services, which is why we first extract it from the incoming request. After extracting any incoming headers, our middleware then creates a new span, named after the HTTP operation being performed (GET, POST, PUT, etc.), adds a tag indicating the route being requested, then adds the new span to the <a data-type="indexterm" data-primary="Go tracing features" data-secondary="context object" id="idm45357001632456"></a>Go context object. Finally, the middleware continues the request chain. As the request resolves, it adds the response code from the request to the span, which is closed implicitly through our call to <code>defer</code>.</p>
+        
+        <p>Let’s imagine that we stopped here. If you were to add this middleware to the API proxy service along with a tracer and trace analyzer, what would you see? Well, every single incoming HTTP request would be traced, for one. This would give you the ability to monitor your API endpoints for latency on every incoming request, a valuable first step when monitoring your application. The other win here is that you have now propagated your trace into the context, allowing for further function or RPC calls to add information or create new spans based off of it. Meanwhile, you will still be able to access latency information, per API route, and use that to inform you of performance issues and potential hotspots in your codebase.</p>
+        
+        <p><a data-type="indexterm" data-primary="framework instrumentation" data-secondary="challenges of" id="idm45357001629416"></a>There are trade-offs with instrumenting the framework, however. Framework instrumentation heavily relies on the ability to make code changes to your services themselves. If you can’t modify the service code, you can’t really instrument the transport framework. You may find framework instrumentation difficult if your API proxy acts simply as a translation layer—for example, a thin wrapper that translates JSON over HTTP to a proprietary or internal transport—in this case, the general principle would apply, but you may lack the ability to enrich a span with as much data as you would want. Finally, framework instrumentation may be difficult if you do not have components that centralize requests—for example, a client that calls multiple services directly, rather than through some proxy layer. In this case, you could use the client as the <em>centralization</em> point, and add your initial instrumentation there.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Service Mesh Instrumentation"><div class="sect2" id="idm45357001820584">
+        <h2>Service Mesh Instrumentation</h2>
+        
+        <p><a data-type="indexterm" data-primary="best practices" data-secondary="service mesh instrumentation" id="idm45357001625656"></a><a data-type="indexterm" data-primary="service meshes" data-secondary="instrumentation best practices" id="idm45357001624664"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="best practices" data-tertiary="service meshes" id="idm45357001623704"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="service meshes" id="idm45357001622488"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="code that cannot be changed" id="idm45357001621544"></a>When discussing the trade-offs of framework instrumentation, the first consideration we mentioned was “What if you can’t change the code?” This isn’t an unreasonable or outlandish hypothetical. There are a variety of reasons that the person instrumenting software isn’t able to modify the service they’re attempting to instrument. Most commonly this is a challenge for larger organizations to address, where the people monitoring the application are separated from the people making the application by geography, time zone, and so forth.</p>
+        
+        <p>How, then, to instrument code that you can’t touch? In short, you instrument the part of the code that you <em>can</em> touch and go from there.</p>
+        
+        <p>You should first understand what a service mesh is—if you know, feel free to skip ahead a paragraph or so. <a data-type="indexterm" data-primary="service meshes" data-secondary="definition" id="idm45357001618200"></a>A <em>service mesh</em> is a configurable infrastructure layer designed to support interprocess communication among services. It performs this, generally, through <a data-type="indexterm" data-primary="sidecar proxies of service meshes" data-secondary="definition" id="idm45357001616520"></a><em>sidecar proxies</em>, processes that live alongside each service instance and handle all of the interprocess communication for their associated service. In addition to service communications, the service mesh and its sidecars can handle monitoring, security, service discovery, load balancing, encryption, and more. In essence, the service mesh allows for a separation of <em>developer</em> concerns from <em>operations</em> concerns, allowing teams to specialize and focus on writing performant, secure, and reliable software.</p>
+        
+        <p>Now that we’re on the same page, let’s talk about what <em>service mesh</em> instrumentation looks like. As indicated earlier, one of the critical features of the <a data-type="indexterm" data-primary="sidecar proxies of service meshes" data-secondary="tracing" id="idm45357001613096"></a>sidecar proxy is that all interprocess communication flows through the proxy. This allows us to add tracing to the proxy itself. As it happens, this functionality works out of the box in many modern service mesh projects such as <a href="https://istio.io">Istio</a>,<a data-type="indexterm" data-primary="Istio" id="idm45357001611128"></a> but at a more hypothetical level, the mechanics look remarkably similar to how framework instrumentation works. On incoming requests, pull the span context from the headers, create a new span using this context, and add tags that describe the operation—finishing the span when the request resolves.</p>
+        
+        <p>The biggest advantage to this style of instrumentation is that you can get a complete picture of your application. Recall our discussion of framework instrumentation—we started at a centralization point, and then continued outward from there. By instrumenting at the service mesh, all of the services which are managed by the service mesh will be part of the trace, giving you much greater insight into your entire application. In addition, <a data-type="indexterm" data-primary="distributed tracing" data-secondary="agnostic nature of" id="idm45357001609096"></a><a data-type="indexterm" data-primary="agnostic nature of distributed tracing" data-secondary="service mesh transport layers" id="idm45357001608120"></a>service mesh instrumentation is agnostic to the transport layer of each service. As long as the traffic is being passed through the sidecar, it will be traced.</p>
+        
+        <p><a data-type="indexterm" data-primary="service meshes" data-secondary="instrumentation challenges" id="idm45357001606584"></a><a data-type="indexterm" data-primary="black box instrumentation" data-secondary="service mesh instrumentation as" id="idm45357001605592"></a><a data-type="indexterm" data-primary="sidecar proxies of service meshes" data-secondary="tracing challenges" id="idm45357001604616"></a>That said, there are trade-offs and drawbacks to service mesh instrumentation. Primarily, service mesh instrumentation acts as a black box form of instrumentation. You have no idea what’s happening inside the code, and you can’t enrich your spans with data outside of the data that’s already there. Realistically, this means you can achieve some useful implicit findings—tagging spans with HTTP response codes, for example, and presuming that any status code that represents a failed request (like HTTP 500) will be an error—but requires specialized parsing or handling to get explicit information into a span. The other flaw with service mesh instrumentation is that it’s difficult for services to enrich the spans coming from the service mesh. Your sidecar will pass tracing headers into your process, yes—but you will still need to extract those headers, create a span context, and so forth. If each service is creating its own child spans, you can very quickly get into a state where your traces have become extremely large and begin to have a real cost for storage or processing.</p>
+        
+        <p>Ultimately, service mesh instrumentation and framework instrumentation are not an either/or decision. They work best together! Not all of your services, realistically, will need to be instrumented out of the box, or potentially ever. Let’s talk about why.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Creating Your Service Graph"><div class="sect2" id="idm45357001601752">
+        <h2>Creating Your Service Graph</h2>
+        
+        <p><a data-type="indexterm" data-primary="best practices" data-secondary="service graph" id="idm45357001600312"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="service graph" id="idm45357001599336"></a><a data-type="indexterm" data-primary="distributed applications" data-secondary="service graph" id="idm45357001598392"></a><a data-type="indexterm" data-primary="service graph" id="idm45357001597480"></a><a data-type="indexterm" data-primary="microservices" data-secondary="service graph" id="idm45357001596808"></a>Regardless of which methodology you use to begin instrumenting your application, you should consider the first milestone you’d like to achieve. What do you want to measure? We would argue that tracing is primarily a way to measure the performance and health of individual services in the context of a larger application. To understand that context, however, you need to have some idea of the connections between your services and how requests flow through the system. Thus, a good first milestone would be to build a service graph for your complete application or some significant subset of it, as <a data-type="xref" href="#figure_simple_vs_complex">Figure&nbsp;4-3</a> illustrates.</p>
+        
+        <p>This comparison should demonstrate the necessity of understanding your service graph. Even when services are simple, with few dependencies, understanding your service graph can be a critical component of improving your <a data-type="indexterm" data-primary="MTTR (mean time to recovery)" data-secondary="service graph improving" id="idm45357001593640"></a><a data-type="indexterm" data-primary="mean time to recovery" data-see="MTTR" id="idm45357001592648"></a>MTTR (mean time to recovery) for incidents. Since much of this is bound to unrelated factors, such as the amount of time it takes to deploy a new version of a service, reducing the time spent in diagnosis is the best way to reduce overall MTTR. A key benefit of distributed tracing is that it allows you to implicitly map your services and the relationships between them, allowing you to identify errors in other services that contribute to the latency of a particular request. When applications become more complicated and interconnected, understanding these relationships stops being optional and starts becoming fundamental.</p>
+        
+        <figure><div id="figure_simple_vs_complex" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0403.png" alt="Above, MicroCalc's service graph. Below, a more complex microservice application's service graph." width="1440" height="1322">
+        <h6><span class="label">Figure 4-3. </span>A comparison of MicroCalc versus a more complex microservice graph.</h6>
+        </div></figure>
+        
+        <p>In the sample application, you can see that the dependencies between services are fairly straightforward and easy to understand. Even in this simple application, being able to build the entire graph is highly valuable. Let’s imagine that you used a combination of techniques in order to instrument each of our services (API proxy, authentication service, worker services, etc.) and have a trace analyzer that can read and process the spans generated from our application. Using this, you can answer questions that would be difficult if you didn’t have access to these service relationships. These can range from the mundane (“What services contribute most to the latency of this specific operation?”) to the specific (“For this specific customer ID, for this specific transaction, what service is failing?”). However, if you limit yourself to merely tracing the edges of your services, you’re in a bit of a pickle. You can only identify failures very coarsely, such as if a request failed or succeeded.</p>
+        
+        <p>So, how do you fix this? You have several options. Certainly one is to begin adding instrumentation to the service code itself. As we’ll discuss in the next section, there’s an art and a science to creating spans that are useful for profiling and debugging traced code. The other is to leverage the edges you’ve traced, and mine them for more data. We’ll present three more advanced mechanisms that use the concepts of framework and mesh instrumentation to fill in the gaps of your service mesh.</p>
+        
+        <p><a data-type="indexterm" data-primary="framework instrumentation" data-secondary="request detail increased" id="idm45357001586120"></a><a data-type="indexterm" data-primary="best practices" data-secondary="request detail increased" id="idm45357001585080"></a><a data-type="indexterm" data-primary="tags" data-secondary="request detail increased" id="idm45357001584088"></a>The first method is to increase the level of detail in our framework-provided spans. In our example HTTP middleware, we recorded only a small amount of detail about the request such as the HTTP method, route, and status code. In reality, each request would potentially have a great deal more data recorded. Are your incoming requests tied to a user? Consider attaching the user identifier to each request as a tag. <a data-type="indexterm" data-primary="tags" data-secondary="semantic attributes" id="idm45357001582568"></a>Service-to-service requests should be identified with some semantic identifiers provided by your tracing library such as <a data-type="indexterm" data-primary="tags" data-secondary="OpenTelemetry" id="idm45357001581352"></a><a data-type="indexterm" data-primary="tags" data-secondary="span kind field" id="idm45357001580408"></a><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="semantic attributes" id="idm45357001579464"></a>OpenTelemetry’s <code>SpanKind</code> attributes or specific tags that allow you to identify the type of a service (cache, database, and so forth). For database calls, instrumenting the database client allows you to capture a wide variety of information such as the actual database instance being used, the database query, and so forth. All of these enrichments help build your service graph into a semantic representation of your application and the connections between it.</p>
+        
+        <p>The second method is to leverage existing instrumentation and integrations for your services. A variety of<a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="plug-ins registry URL" id="idm45357001576888"></a><a data-type="indexterm" data-primary="OpenTracing" data-secondary="plug-ins registry URL" id="idm45357001575912"></a><a data-type="indexterm" data-primary="OpenCensus" data-secondary="plug-ins registry URL" id="idm45357001574968"></a><a data-type="indexterm" data-primary="URLs" data-secondary="open source instrumentation plug-ins" id="idm45357001574024"></a><a data-type="indexterm" data-primary="open source instrumentation" data-secondary="plug-ins registry" id="idm45357001573112"></a><a data-type="indexterm" data-primary="best practices" data-secondary="plug-ins for existing frameworks" id="idm45357001572200"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="best practices" data-tertiary="plug-ins for existing frameworks" id="idm45357001571240"></a> <a href="https://oreil.ly/OJHDX">plug-ins</a> exist for OpenTelemetry, OpenTracing, and OpenCensus that allow for common open source libraries to emit spans as a part of your existing trace. If you’re facing a daunting instrumentation journey, with a large amount of existing code, you can use these plug-ins to instrument existing frameworks and clients alongside higher-level instrumentation at the service mesh/framework layer. We list a sample of these plug-ins in <a data-type="xref" href="app01.html#appendix_a_distributed_tracing_refs">Appendix&nbsp;A</a>.</p>
+        
+        <p><a data-type="indexterm" data-primary="manual instrumentation" data-secondary="request detail increased" id="idm45357001567736"></a>The third method is through <a data-type="indexterm" data-primary="root span" data-secondary="manual instrumentation" id="idm45357001566664"></a>manual instrumentation, which we covered in <a data-type="xref" href="#custom-instrumentation-sect">“Custom Instrumentation”</a>, and the same principles apply. You’ll want to ensure that a <a data-type="indexterm" data-primary="manual instrumentation" data-secondary="root span propagation" id="idm45357001564664"></a>root span is propagated into each service that you can create child spans from. Depending on the level of detail required for a service, you may not need multiple child spans for a single service; consider the pseudocode in <a data-type="xref" href="#EX5-10">Example&nbsp;4-11</a>.</p>
+        <div id="EX5-10" data-type="example">
+        <h5><span class="label">Example 4-11. </span>A pseudocode method to handle resizing and storing of images</h5>
+        
+        <pre data-type="programlisting">func uploadHandler(request) {
+            image = imageHelper.ParseFile(request.Body())
+            resizedImage = imageHelper.Resize(image)
+            uploadResponse = uploadToBucket(resizedImage)
+            return uploadResponse
+        }</pre></div>
+        
+        <p>In this case, what do we care about tracing? The answer will vary based on your requirements. There’s an argument for having most of the methods being called here have their own child spans, but the real delineation here would be to restrict child calls to methods that are outside the scope of responsibility for a given team. You can imagine a situation where as our service grows we may factor the functions that parse and resize images out of this into another service. As we’ve written, you’ll probably want to simply encase this whole method in a single span and add tags and logs based off the responses to your method calls, something like <a data-type="xref" href="#EX5-11">Example&nbsp;4-12</a>.</p>
+        <div id="EX5-11" data-type="example">
+        <h5><span class="label">Example 4-12. </span>Manually instrumenting a method</h5>
+        
+        <pre data-type="programlisting">func uploadHandler(context, request) {
+            span = getTracer().startSpanFromContext(context)
+            image = imageHelper.ParseFile(request.Body())
+            if image == error {
+                span.setTag("error", true)
+                span.log(image.error)
+            }
+            // Etc.
+        }</pre></div>
+        
+        <p>Any or all of these methods can be intermingled to build a more effective and representative service graph that not only accurately describes the service dependencies of your application but semantically represents the nature of these dependencies. We’ve discussed adding or enriching spans; next, we’ll look at <em>how</em> to create these spans, and how to determine the most important and valuable information you should add to a span.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="What’s in a Span?"><div class="sect1" id="idm45357001601128">
+        <h1>What’s in a Span?</h1>
+        
+        <p><a data-type="indexterm" data-primary="best practices" data-secondary="spans" id="idm45357001553608"></a><a data-type="indexterm" data-primary="spans" data-secondary="best practices" id="idm45357001552632"></a><em>Spans</em> are the building blocks of distributed tracing, but what does that actually mean? A span represents two things: the span of time that your service was working and the mechanism by which data is carried from your service to some analysis system capable of processing and interpreting it. Creating effective spans that unlock insights into the behavior of your service is one part art, one part science. It involves understanding best practices around assigning names to your spans, ensuring that you’re tagging spans with semantically useful information, and logging structured data.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Effective Naming"><div class="sect2" id="idm45357001550568">
+        <h2>Effective Naming</h2>
+        
+        <p><a data-type="indexterm" data-primary="open source instrumentation" data-secondary="span name required" id="idm45357001549128"></a><a data-type="indexterm" data-primary="spans" data-secondary="naming" id="idm45357001548184"></a>What’s in a name? When it comes to a span, this is a very good question! The name of a span, also known as the <a data-type="indexterm" data-primary="operation name" id="idm45357001546984"></a><em>operation name</em>, is a required value in open source tracing libraries, in fact, it is one of the <em>only</em> required values. Why is this the case? As we’ve alluded to, spans are an abstraction over the work of a service. This is a significant difference from the way you might think of a request chain, or a call stack. You should not have a one-to-one mapping between function name and span name.</p>
+        
+        <p>That said, what’s in a span name?</p>
+        
+        <p><a data-type="indexterm" data-primary="data aggregation" data-secondary="span names" id="idm45357001544504"></a>First, names should be aggregable. In short, you want to avoid span names that are unique to each execution of a service. One antipattern we see, especially in HTTP services, is implementers making the span name the same as the fully matched route (such as <code>GET /api/v2/users/1532492</code>). This pattern makes it difficult to aggregate operations across thousands or millions of executions, severely reducing the utility of your data. Instead, make the route more generic and move parameters to tags, such as <code>GET /api/v2/users/{id}</code> with an associated tag of <code>userId: 1532492</code>.</p>
+        
+        <p>Our second piece of advice is that names should describe actions, not resources. To use an example, let’s think back to MicroCalc. We could add a datastore, which could be blob storage, could be SQL, could be anything for any number of purposes, like a user database or a history of previous results. In lieu of naming a span based on the resource it’s accessing, mutating, or otherwise consuming you’ll be far better served by describing the action and tagging the span with the resource type. This allows for queries against your spans across multiple types, allowing for interesting analytical insights. An example would be the difference between the names <code>WriteUserToSQL</code> and <code>WriteUser</code>. You can imagine a situation where these independent components are switched out for testing (suppose we wanted to trial a NoSQL or cloud datastore for our users?); having this less proscriptive name would allow for comparisons between each backing store. Following these two pieces of advice will ensure that your spans are more useful down the line as you analyze them.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Effective Tagging"><div class="sect2" id="ch5_effective_tagging">
+        <h2>Effective Tagging</h2>
+        
+        <p><a data-type="indexterm" data-primary="best practices" data-secondary="tags" id="idm45357001537544"></a><a data-type="indexterm" data-primary="tags" data-secondary="best practices" id="idm45357001536568"></a>You’re not required to tag your spans, but you should. Tags are the main way you can enrich a span with more information about what’s happening for a given operation, and unlock a lot of power for analytics. While names will help you aggregate at a high level (so you can ask questions like “What’s my error rate for looking up users across all services?”), tags will allow you to slice and dice that information to better understand the <em>why</em> of your query. Data with a high <a data-type="indexterm" data-primary="cardinality" data-secondary="tags" id="idm45357001534600"></a><a data-type="indexterm" data-primary="tags" data-secondary="cardinality" id="idm45357001533624"></a>cardinality should be exposed in your span as a tag, rather than something else—placing high-cardinality data in a name reduces your ability to aggregate operations, and placing it inside of log statements often reduces its indexability.</p>
+        
+        <p><a data-type="indexterm" data-primary="tags" data-secondary="important information in" id="idm45357001532040"></a>So, what makes an effective tag? Tags should be <em>externally important</em>, which is to say, they should have meaning to other consumers of your trace data. While there are ways to use tags and traces in development, the tags you emit into a production tracing system should be generally useful to anyone trying to understand what your service is doing.</p>
+        
+        <p><a data-type="indexterm" data-primary="standards" data-secondary="tags" id="idm45357001529912"></a>Tags should be <em>internally consistent</em> as well: using the same keys across multiple services. In our mock application, we could theoretically have each service report the same piece of information (a user ID, let’s say) using different tag keys—<code>userId</code>, <code>UserId</code>, <code>User_ID</code>, <code>USERID</code>, and so forth—but this would be difficult to create queries about in external systems. Consider building helper libraries that standardize these keys, or settle upon a format that comports with your organization’s coding <span class="keep-together">standards</span>.</p>
+        
+        <p>In addition to the consistency of tag keys, ensure that tag data is kept as consistent as possible within a tag key. If some services report the <code>userId</code> key as a string value, and others as an integer value, problems could arise in your analysis system. Furthermore, ensure that if you’re tracking some numerical value, you add the unit of the tag to the key. For example, if you’re measuring the bytes returned on a request, <code>message_size_kb</code> is more useful than <code>message_size</code>. Tags should be <em>succinct</em> rather than verbose—don’t put stack traces in tags, for example. Remember, tags are critical to querying your trace data and building insights, so don’t neglect them!</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Effective Logging"><div class="sect2" id="idm45357001522472">
+        <h2>Effective Logging</h2>
+        
+        <p><a data-type="indexterm" data-primary="best practices" data-secondary="logging" id="idm45357001521032"></a><a data-type="indexterm" data-primary="logs" data-secondary="best practices" id="idm45357001520056"></a><a data-type="indexterm" data-primary="spans" data-secondary="logging with" id="idm45357001519112"></a>Naming and tagging of spans both assist in your ability to derive insights from your traces. They help you build a relational graph of sorts, showing you what happened (through names) and why it happened (through tags). Logs could be thought of as the <em>how it happened</em> piece of this puzzle, offering developers the ability to attach structured or unstructured text strings to a given span.</p>
+        
+        <p>Effective logging with spans has two central components. First, ask yourself what you really should be logging. Named and tagged spans can significantly reduce the amount of logging statements required by your code. When in doubt, make a new span rather than a new logging statement. For example, consider the pseudocode in <a data-type="xref" href="#EX5-12">Example&nbsp;4-13</a>.</p>
+        <div id="EX5-12" data-type="example">
+        <h5><span class="label">Example 4-13. </span>Named and tagged spans</h5>
+        
+        <pre data-type="programlisting">func getAPI(context, request) {
+            value = request.Body()
+            outgoingRequest = new HttpRequest()
+            outgoingRequest.Body = new ValueQuery(value)
+            response = await HttpClient().Get(outgoingRequest)
+            if response != Http.OK {
+                request.error = true
+                return
+            }
+            resValue = response.Body()
+            // Go off and do more work
+        }</pre></div>
+        
+        <p>Without tracing, you would want to log quite a bit here—for example, the incoming parameters, especially the value you care about inspecting. The outgoing request body would possibly be interesting to log. The response code would definitely be something you’d look to log, especially if it’s an exceptional or error case. With a span, however, there’s significantly less that’s valuable as a log statement—the incoming parameter value, if it’s generally useful, could be a tag such as <code>value:foo</code>, the response code would certainly be one, and so forth. That said, you might still be interested in logging the exact error case that’s happening there. In this situation, consider making a new span for that external request instead. The rationale here is twofold: this is an <em>edge</em> of your application code, and, as discussed earlier, it’s a good practice to trace the edges.</p>
+        
+        <p>Another reason is that a log statement would be less interesting in terms of data than another span. HTTP GET may seem like a simple operation, and it often is when we think about using it. Consider what’s happening behind the scenes, though—DNS lookups, routing through who-knows-how-many hops, time spent waiting on socket reads, and so forth. This information, if made available in a span through tags, can provide more fine-grained insight into performance issues and is thus better served by being a new span rather than a discrete log operation.</p>
+        
+        <p><a data-type="indexterm" data-primary="data analysis" data-secondary="structured logs for" id="idm45357001452568"></a><a data-type="indexterm" data-primary="analyzing data" data-see="data analysis" id="idm45357001451656"></a>The second aspect to effective logging in your spans is, when possible, <em>write structured logs</em> and be sure your analysis system is capable of understanding them. This is more about ensuring the usability of your spans down the line than anything else—an analysis system can turn structured logging data into something more readable in a GUI, and provides options for performing complex queries (i.e., “show me all logs from Service X where an event was logged with a particular type of exception” or “are any of my services emitting logs at an INFO level?”).</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45357001449480">
+        <h5>Security and Compliance Considerations</h5>
+        <p><a data-type="indexterm" data-primary="best practices" data-secondary="privacy laws and regulations" id="idm45357001448312"></a><a data-type="indexterm" data-primary="logs" data-secondary="privacy laws and regulations" id="idm45357001447144"></a><a data-type="indexterm" data-primary="privacy laws and regulations" data-secondary="logging and" id="idm45357001446232"></a><a data-type="indexterm" data-primary="privacy laws and regulations" data-secondary="span data" id="idm45357001445320"></a><a data-type="indexterm" data-primary="spans" data-secondary="privacy laws and regulations" id="idm45357001444360"></a><a data-type="indexterm" data-primary="events" data-secondary="privacy laws and regulations" id="idm45357001443400"></a><a data-type="indexterm" data-primary="spans" data-secondary="naming" id="idm45357001442440"></a><a data-type="indexterm" data-primary="tags" data-secondary="privacy laws and regulations" id="idm45357001441496"></a>Attributes, tags, events, logs, and even span names can potentially contain <a data-type="indexterm" data-primary="personally identifiable information (PII)" data-seealso="privacy laws and regulations" id="idm45357001440408"></a>personally identifiable information (PII). This data, depending on local and federal regulations, may be protected by law. You should pay careful attention to exactly what data is being added to your spans, especially if you are using a third-party analysis tool for your trace data. Your organization may also specify certain rules and regulations that pertain to the amount of time that diagnostic data may be retained for legal discovery or other purposes. Consult relevant legal advisers in your organization or locality for more information to determine exactly what can, and can’t, be stored.</p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Understanding Performance Considerations"><div class="sect2" id="idm45357001438472">
+        <h2>Understanding Performance Considerations</h2>
+        
+        <p><a data-type="indexterm" data-primary="best practices" data-secondary="performance considerations" id="idm45357001437000"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="of distributed tracing" data-secondary-sortas="distributed tracing" id="idm45357001435832"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="performance considerations" id="idm45357001434648"></a><a data-type="indexterm" data-primary="spans" data-secondary="performance considerations" id="idm45357001433736"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="performance considerations" id="idm45357001432776"></a><a data-type="indexterm" data-primary="HTTP" data-secondary="trace performance considerations" id="idm45357001431816"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="best practices" data-tertiary="performance considerations" id="idm45357001430856"></a>The undesirable side effect of creating these rich, detailed spans is that they all have to <em>go</em> somewhere, and that takes time. Let’s consider a text representation of a <em>typical</em> span for an HTTP request (see <a data-type="xref" href="#EX5-13">Example&nbsp;4-14</a>).</p>
+        <div id="EX5-13" data-type="example">
+        <h5><span class="label">Example 4-14. </span>Typical span for an HTTP request</h5>
+        
+        <pre data-type="programlisting">{
+            context:
+            {
+                TraceID: 9322f7b2-2435-4f36-acec-f9750e5bd9b7,
+                SpanID: b84da0c2-5b5f-4ecf-90d5-0772c0b5cc18
+            }
+            name: "/api/v1/getCat",
+            startTime: 1559595918,
+            finishTime: 1559595920,
+            endTime:
+            tags:
+            [
+                {
+                    key: "userId",
+                    value: 9876546
+                },
+                {
+                    key: "srcImagePath",
+                    value: "s3://cat-objects/19/06/01/catten-arr-djinn.jpg"
+                },
+                {
+                    key: "voteTotalPositive",
+                    value: 9872658
+                },
+                {
+                    key: "voteTotalNegative",
+                    value: 72
+                },
+                {
+                    key: "http.status_code",
+                    value: 200
+                },
+                {
+                    key: "env",
+                    value: "prod"
+                },
+                {
+                    key: "cache.hit",
+                    value: true
+                }
+        
+            ]
+        }</pre></div>
+        
+        <p>This is less than 1 KB of data—about 600 bytes. Encoding it in base64 brings that up to around 800 bytes. We’re still under 1 KB, so that’s good—but this is just one span. What would it look like for an error case? <a data-type="indexterm" data-primary="stack traces" data-secondary="performance considerations" id="idm45357001424488"></a>A stack trace would probably balloon us up from sub 1 KiB to around 3–4 KiB. Encoding a single span is, again, fractional <span class="keep-together">seconds</span>—(<code>time openssl base64</code> reports <code>cpu 0.006 total</code>)—which isn’t that much when you get down to it.</p>
+        
+        <p>Now multiply that by a thousand, ten thousand, a hundred thousand…eventually, it adds up. You’re never going to get any of this for free, but never fear, it’s not as bad as it might seem. The first thing to keep in mind is that you don’t know until you know—there’s no single rule we can give you to magically make everything perform better. The amount of overhead you’re willing to budget for and accept in your application’s performance is going to vary depending on a vast amount of factors that include:</p>
+        
+        <ul>
+        <li>
+        <p>Language and runtime</p>
+        </li>
+        <li>
+        <p>Deployment profile</p>
+        </li>
+        <li>
+        <p>Resource utilization</p>
+        </li>
+        <li>
+        <p>Horizontal scalability</p>
+        </li>
+        </ul>
+        
+        <p><a data-type="indexterm" data-primary="best practices" data-secondary="safety valves" id="idm45357001416184"></a><a data-type="indexterm" data-primary="safety valves" id="idm45357001415208"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="safety valves" id="idm45357001414536"></a><a data-type="indexterm" data-primary="spans" data-secondary="safety valves" id="idm45357001413592"></a><a data-type="indexterm" data-primary="spans" data-secondary="creation safety valve" id="idm45357001412648"></a><a data-type="indexterm" data-primary="failure state" data-secondary="tracing safety valve" id="idm45357001411704"></a>With that in mind, you should consider these factors carefully as you begin to instrument your application. Keep in mind that the stable use case and the worst-case performance profile will often look <em>extremely</em> different. More than one developer has found themselves in a hairy situation where some external resource was suddenly unexpectedly available for a long period of time, leading to extremely ungraceful and resource-intensive service crash loops or hangs. A strategy you can use to combat this is to build in safety valves to your internal tracing framework. Depending on your sampling strategy, this “tracing safety valve” could be a cutoff on new span creation if the application is in a persistent failing state, or a gradual reduction in span creation to an asymptotic point.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45357001409304">
+        <h5>Graceful Degradation of Span Creation</h5>
+        <p>Traditionally, distributed tracing has ameliorated persistent failure states and garbage data through per-process or per-application sampling strategies around span creation. New dynamic sampling approaches that move this decision out of the process allow you to collect 100% of the trace data from each of your services, but present some unique challenges in how you should handle span creation while in a persistent (non-recoverable) failure. You should consider the span creation rate (and size of those spans) during persistent failure of a service and use that to make a decision—in a low-throughput service where span count is measured in tens or hundreds a minute, you may be OK without a backoff.</p>
+        </div></aside>
+        
+        <p>Additionally, consider building in some sort of method to remotely disable the tracer in your application code. This can be useful in a variety of scenarios beyond the aforementioned unexpected external resource loss; it can also be helpful when wanting to profile your service performance with tracing on versus with tracing off.</p>
+        
+        <p>Ultimately, the biggest resource cost in tracing isn’t really the service-level cost of creating and sending spans. A single span is most likely a fraction of the data that’s being handled in any given RPC in terms of size. You should experiment with the spans you’re creating, the amount of data you’re adding to them, and the rate at which you’re creating them in order to find the right balance between performance and information that’s required to provide value from tracing.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Trace-Driven Development"><div class="sect1" id="trace-driven-dev-sect">
+        <h1>Trace-Driven Development</h1>
+        
+        <p><a data-type="indexterm" data-primary="monitoring" data-secondary="trace-driven development" id="idm45357001403896"></a><a data-type="indexterm" data-primary="distributed applications" data-secondary="trace-driven development" id="idm45357001402856"></a><a data-type="indexterm" data-primary="trace-driven development" id="idm45357001401880"></a><a data-type="indexterm" data-primary="best practices" data-secondary="trace-driven development" id="idm45357001401192"></a>When tracing is discussed as part of an application or service, there’s a tendency to “put it off,” so to speak. In fact, there’s almost a hierarchy of monitoring that is applied, in order, to services as they’re developed. You’ll start off with nothing, but quickly start to add log statements to your code, so you can see what’s going on in a particular method or what parameters are being passed around. Quite often, this is the majority of the monitoring that’s applied to a new service up until it’s about ready to be released, at which point you’ll go back in and identify some metrics that you care about (error rate, for example) and stub those in, right before the whole ball of wax gets shoved into your production deployments.</p>
+        
+        <p>Why is it done this way? For several reasons—some of them good. It can be very difficult to write monitoring code when the code you’re monitoring shifts and churns under your feet—think of how quickly lines of code can be added, removed, or refactored while a project is in development—so it’s something that developers tend not to do, unless there’s a very strong observability practice on their team.</p>
+        
+        <p>There’s another reason, though, and it’s perhaps the more interesting one. It’s hard to write monitoring code in development because you don’t really know what to monitor. The things you do know to care about, such as an error rate, aren’t really that interesting to monitor and often can be observed through another source, such as through a proxy or API gateway. Machine-level metrics such as memory consumption of your process aren’t something most developers have to worry about, and if they do, those metrics are going to be monitored by a different component rather than by their application itself.</p>
+        
+        <p>Neither metrics nor logs do a good job of capturing the things you <em>do</em> know about at the beginning of your service’s development, such as what services it should be communicating with, or how it should call functions internally. <a data-type="indexterm" data-primary="traces" data-secondary="developing application with traces" id="idm45357001396376"></a>Tracing offers an option, allowing for the development of traces as you develop your application that both offer necessary context while developing and testing your code and provide a ready-made toolset for observability within your application code. In this section, we’ll cover the two high-level parts of this concept: developing using traces, and testing using traces.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Developing with Traces"><div class="sect2" id="idm45357001394744">
+        <h2>Developing with Traces</h2>
+        
+        <p>No matter what language, platform, or style of service you write, they’ll all probably start at the same place: a whiteboard. It’s this surface that you’ll use to create the model of your service’s functions, and draw lines that represent the connections between it and other services. It makes a lot of sense, especially in the early prototyping phases of development, to start out in such a malleable place.</p>
+        
+        <p>The problem comes when it’s time to take your model and translate it into code. How do you ensure that what you’ve written on the board matches up with your code? Traditionally the usage of test functions is recommended, but this is perhaps <em>too small</em> of a target to really tell you anything useful. A unit test, by design, should validate the behavior of very small units of functionality—a single method call, for example. You can, of course, write bigger unit tests that begin to validate other suppositions about your functions, such as ensuring that method A calls method B calls method C…but eventually, you’re just writing a test that exercises every code path for spurious <span class="keep-together">reasons</span>.</p>
+        
+        <p>When you try to test the relationship your service has to antecedent and dependent services, it gets even more convoluted. Generally, these would be considered integration tests. The problem with integration tests to verify your model is twofold, however. The first problem is that if you begin to mock services out, you’re not testing against the actual service, just a mock replacement that follows some preordained command. The second, and perhaps larger, problem is that integration tests are necessarily going to be limited to your test environment and have poor support for communicating across process boundaries (at least, without going through a bunch of hoops to set up an integration test framework or write your own).</p>
+        
+        <p>If unit tests and integration tests won’t work, then what will? Well, let’s go back to the original point—it’s important to have a way to validate your mental model of your application. That means you should be able to write your code in a way that allows you to ensure both internal methods and external services are being called in the correct order, with the correct parameters, and that errors are handled sanely. One common mistake we’ve observed, especially in code with significant external service dependencies, is what happens on persistent service failure.</p>
+        
+        <p>You can see examples of this happening in the real world all the time. Consider the outages that occurred as a result of AWS S3 buckets becoming persistently unavailable for hours upon end several years ago. Having trace data available to you, both in test and production, allows you to write tools that quickly compare the desired state of your system with reality. It’s also invaluable when trying to build chaos systems as part of your continuous integration/continuous delivery (CI/CD)—being able to find the differences between your steady-state system and the system under chaos will dramatically improve your ability to build more resilient systems.</p>
+        
+        <p><a data-type="indexterm" data-primary="best practices" data-secondary="beginning at nodes and edges" id="idm45357001386872"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="beginning at nodes and edges" id="idm45357001385880"></a>Tracing as a part of your development process works similarly to tracing anywhere else in your codebase, with a few notable conveniences. First, recall our earlier discussion of how to start tracing a service (<a data-type="xref" href="#nodes_edges">“Where to Start—Nodes and Edges”</a>). The same principle applies to writing a new service and to instrumenting an existing one. You should apply middleware to each incoming request that checks for span data, and if it exists, create a new child span. When your new service emits outbound requests, it too should inject your current span context into the outgoing request so that downstream services that are tracing-aware can take part in the trace. The changes to the process tend to come between these points because you’ll be faced with challenges around how much to trace.</p>
+        
+        <p><a data-type="indexterm" data-primary="best practices" data-secondary="verbosity of traces" id="idm45357001382952"></a><a data-type="indexterm" data-primary="verbosity of traces" id="idm45357001381752"></a><a data-type="indexterm" data-primary="traces" data-secondary="verbosity" id="idm45357001381080"></a>As we’ll discuss at the end of this chapter, there is such a thing as <em>too much</em> tracing. In production especially, you want to limit your traces to the data that matters for external observers and users when they view an end-to-end trace. How, then, to accurately model a single service with multiple internal calls? You’ll want to create some sort of <em>verbosity</em> concept for your tracer. This is extremely common in <a data-type="indexterm" data-primary="logs" data-secondary="verbosity" id="idm45357001378856"></a>logging, where log levels exist such as info, debug, warning, and error. Each verbosity specifies at minimum that the log statement must meet to be printed. The same concept can apply to traces as well. <a data-type="xref" href="#EX5-14">Example&nbsp;4-15</a> demonstrates one method in <a data-type="indexterm" data-primary="Go tracing features" data-secondary="verbose traces" id="idm45357001376728"></a>Golang to create <a data-type="indexterm" data-primary="environment variable for verbosity" id="idm45357001375656"></a>verbose traces, configurable via an environment variable.</p>
+        <div id="EX5-14" data-type="example">
+        <h5><span class="label">Example 4-15. </span>Creating verbose traces</h5>
+        
+        <pre data-type="programlisting" data-code-language="go"><code class="kd">var</code> <code class="nx">traceVerbose</code> <code class="p">=</code> <code class="nx">os</code><code class="p">.</code><code class="nx">Getenv</code><code class="p">(</code><code class="s">"TRACE_LEVEL"</code><code class="p">)</code> <code class="o">==</code> <code class="s">"verbose"</code>
+        
+        <code class="o">...</code>
+        
+        <code class="kd">func</code> <code class="nx">withLocalSpan</code><code class="p">(</code><code class="nx">ctx</code> <code class="nx">context</code><code class="p">.</code><code class="nx">Context</code><code class="p">)</code> <code class="p">(</code><code class="nx">context</code><code class="p">.</code><code class="nx">Context</code><code class="p">,</code> <code class="nx">opentracing</code><code class="p">.</code><code class="nx">Span</code><code class="p">)</code> <code class="p">{</code>
+            <code class="k">if</code> <code class="nx">traceVerbose</code> <code class="p">{</code>
+                <code class="nx">pc</code><code class="p">,</code> <code class="nx">_</code><code class="p">,</code> <code class="nx">_</code><code class="p">,</code> <code class="nx">ok</code> <code class="o">:=</code> <code class="nx">runtime</code><code class="p">.</code><code class="nx">Caller</code><code class="p">(</code><code class="mi">1</code><code class="p">)</code>
+                <code class="nx">callerFn</code> <code class="o">:=</code> <code class="nx">runtime</code><code class="p">.</code><code class="nx">FuncForPC</code><code class="p">(</code><code class="nx">pc</code><code class="p">)</code>
+                <code class="k">if</code> <code class="nx">ok</code> <code class="o">&amp;&amp;</code> <code class="nx">callerFn</code> <code class="o">!=</code> <code class="kc">nil</code> <code class="p">{</code>
+                    <code class="nx">span</code><code class="p">,</code> <code class="nx">ctx</code> <code class="o">:=</code> <code class="nx">opentracing</code><code class="p">.</code><code class="nx">StartSpanFromContext</code><code class="p">(</code>
+                                 <code class="nx">ctx</code><code class="p">,</code> <code class="nx">callerFn</code><code class="p">.</code><code class="nx">Name</code><code class="p">()</code>
+                    <code class="p">)</code>
+                    <code class="k">return</code> <code class="nx">ctx</code><code class="p">,</code> <code class="nx">span</code>
+                <code class="p">}</code>
+            <code class="p">}</code>
+            <code class="k">return</code> <code class="nx">ctx</code><code class="p">,</code> <code class="nx">opentracing</code><code class="p">.</code><code class="nx">SpanFromContext</code><code class="p">(</code><code class="nx">ctx</code><code class="p">)</code>
+        <code class="p">}</code>
+        
+        <code class="kd">func</code> <code class="nx">finishLocalSpan</code><code class="p">(</code><code class="nx">span</code> <code class="nx">opentracing</code><code class="p">.</code><code class="nx">Span</code><code class="p">)</code> <code class="p">{</code>
+            <code class="k">if</code> <code class="nx">traceVerbose</code> <code class="p">{</code>
+                <code class="nx">span</code><code class="p">.</code><code class="nx">Finish</code><code class="p">()</code>
+            <code class="p">}</code>
+        <code class="p">}</code></pre></div>
+        
+        <p>Setting trace verbosity isn’t just limited to Go—aspects, attributes, or other dynamic/metaprogramming techniques can be utilized in languages with support for them. The basic idea is as presented, though. First, ensure that the verbosity level is set appropriately. Then, determine the calling function and start a new span as a child of the current one. Finally, return the span and the language context object as appropriate. Note that in this case, we’re only providing a start/finish method—this means that any logs or tags we introduce will not necessarily be added to the verbose child, but could be added to the parent if the child doesn’t exist. If this isn’t desirable, then consider creating helper functions to log or tag through to avoid this behavior. Using our verbose traces is fairly straightforward as well (see <a data-type="xref" href="#EX5-15">Example&nbsp;4-16</a>).</p>
+        <div id="EX5-15" data-type="example">
+        <h5><span class="label">Example 4-16. </span>Using verbose traces</h5>
+        
+        <pre data-type="programlisting" data-code-language="go"><code class="kn">import</code> <code class="p">(</code>
+            <code class="s">"github.com/opentracing-contrib/go-stdlib/nethttp"</code>
+            <code class="s">"github.com/opentracing/opentracing-go"</code>
+        <code class="p">)</code>
+        
+        <code class="kd">func</code> <code class="nx">main</code><code class="p">()</code> <code class="p">{</code>
+            <code class="c1">// Create and register tracer</code>
+        
+            <code class="nx">mux</code> <code class="o">:=</code> <code class="nx">http</code><code class="p">.</code><code class="nx">NewServeMux</code><code class="p">()</code>
+            <code class="nx">fs</code> <code class="o">:=</code> <code class="nx">http</code><code class="p">.</code><code class="nx">FileServer</code><code class="p">(</code><code class="nx">http</code><code class="p">.</code><code class="nx">Dir</code><code class="p">(</code><code class="s">"../static"</code><code class="p">))</code>
+        
+            <code class="nx">mux</code><code class="p">.</code><code class="nx">HandleFunc</code><code class="p">(</code><code class="s">"/getFoo"</code><code class="p">,</code> <code class="nx">getFooHandler</code><code class="p">)</code>
+            <code class="nx">mux</code><code class="p">.</code><code class="nx">Handle</code><code class="p">(</code><code class="s">"/"</code><code class="p">,</code> <code class="nx">fs</code><code class="p">)</code>
+        
+            <code class="nx">mw</code> <code class="o">:=</code> <code class="nx">nethttp</code><code class="p">.</code><code class="nx">Middleware</code><code class="p">(</code><code class="nx">tracer</code><code class="p">,</code> <code class="nx">mux</code><code class="p">)</code>
+            <code class="nx">log</code><code class="p">.</code><code class="nx">Printf</code><code class="p">(</code><code class="s">"Server listening on port %s"</code><code class="p">,</code> <code class="nx">serverPort</code><code class="p">)</code>
+            <code class="nx">http</code><code class="p">.</code><code class="nx">ListenAndServe</code><code class="p">(</code><code class="nx">serverPort</code><code class="p">,</code> <code class="nx">mw</code><code class="p">)</code>
+        <code class="p">}</code>
+        
+        <code class="kd">func</code> <code class="nx">getFooHandler</code><code class="p">(</code><code class="nx">w</code> <code class="nx">http</code><code class="p">.</code><code class="nx">ResponseWriter</code><code class="p">,</code> <code class="nx">r</code> <code class="o">*</code><code class="nx">http</code><code class="p">.</code><code class="nx">Request</code><code class="p">)</code> <code class="p">{</code>
+            <code class="nx">foo</code> <code class="o">:=</code> <code class="nx">getFoo</code><code class="p">(</code><code class="nx">r</code><code class="p">.</code><code class="nx">Context</code><code class="p">())</code>
+            <code class="c1">// Handle response</code>
+        <code class="p">}</code>
+        
+        <code class="kd">func</code> <code class="nx">getFoo</code><code class="p">(</code><code class="nx">ctx</code> <code class="nx">context</code><code class="p">.</code><code class="nx">Context</code><code class="p">)</code> <code class="p">{</code>
+            <code class="nx">ctx</code><code class="p">,</code> <code class="nx">localSpan</code> <code class="o">:=</code> <code class="nx">withLocalSpan</code><code class="p">(</code><code class="nx">ctx</code><code class="p">)</code>
+            <code class="c1">// Do stuff</code>
+            <code class="nx">finishLocalSpan</code><code class="p">(</code><code class="nx">localSpan</code><code class="p">)</code>
+        <code class="p">}</code></pre></div>
+        
+        <p>In this example, we’re creating a simple <a data-type="indexterm" data-primary="HTTP" data-secondary="trace verbosity" id="idm45357001257720"></a>HTTP server in Golang and tracing it with the <code>go-stdlib</code> package. This will parse incoming HTTP requests for tracing headers and create spans appropriately, so the edges of our service are being handled. By adding the <code>withLocalSpan</code> and <code>finishLocalSpan</code> methods, we can create a span that’s <em>local</em> to a function and only exists when our trace verbosity is set appropriately.</p>
+        
+        <p>These spans could be viewed in a trace analyzer while performing local development, allowing you to accurately assess that calls are happening in the same way that you think they should be, ensuring that you can observe your service as it calls other services (or is called by them), and as a bonus allows you to use open source frameworks as a default choice for questions like, “What logging/metrics/tracing API should I be using?” as these can be performed through your telemetry API. Don’t reinvent the wheel if you don’t need to, after all!</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Testing with Traces"><div class="sect2" id="idm45357001394152">
+        <h2>Testing with Traces</h2>
+        
+        <p><a data-type="indexterm" data-primary="best practices" data-secondary="testing with traces" id="idm45357001082184"></a><a data-type="indexterm" data-primary="traces" data-secondary="service testing with" id="idm45357001080984"></a><a data-type="indexterm" data-primary="distributed applications" data-secondary="testing with traces" id="idm45357001080040"></a><a data-type="indexterm" data-primary="microservices" data-secondary="testing with traces" id="idm45357001079128"></a><a data-type="indexterm" data-primary="directed acyclic graphs (DAGs)" id="idm45357001078184"></a><a data-type="indexterm" data-primary="traces" data-secondary="directed acyclic graphs" id="idm45357001077544"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="traces for testing services" id="idm45357001076600"></a>Trace data can be represented as a directional acyclic graph. While it’s usually represented as a flame graph, traces are simply directional acyclic graphs of a request, as illustrated in <a data-type="xref" href="#figure_flame_vs_dag">Figure&nbsp;4-4</a>. A directed acyclic graph, or DAG, may be extremely familiar to you if you have a computer science or mathematics background; it has several properties that are extremely useful. DAGs are finite (they have an end) and they have no directed cycles (they don’t loop on themselves—those that do are called <a data-type="indexterm" data-primary="cyclical references" id="idm45357001074264"></a><em>cyclical references</em>). One other useful property of DAGs is that they are fairly easy to compare to each other.</p>
+        
+        <figure><div id="figure_flame_vs_dag" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0404.png" alt="The same trace expressed in two different ways." width="1319" height="694">
+        <h6><span class="label">Figure 4-4. </span>Comparison of a flame graph view of a trace versus a DAG view.</h6>
+        </div></figure>
+        
+        <p>Knowing this, what are the possibilities? First, you may be asking, “So what?” As discussed earlier, integration testing and other forms of higher-level tests are sufficient and necessary to ensure the operation of our service as it is deployed. That said, there are several reasons you might want to consider adding trace comparisons to your testing repertoire. The easiest way to think about applied trace data as a form of testing is through simple diffs between environments. Consider a scenario where we deploy a version of our application to a staging or preproduction environment after testing it locally. Further consider that we <a data-type="indexterm" data-primary="exporters" data-secondary="service testing with traces" id="idm45357001070088"></a>export our trace data in some sort of flat file, suitable for processing, as shown in <a data-type="xref" href="#EX5-16">Example&nbsp;4-17</a>.</p>
+        <div id="EX5-16" data-type="example">
+        <h5><span class="label">Example 4-17. </span>Exporting trace data</h5>
+        
+        <pre data-type="programlisting">[
+            {
+                name: "getFoo",
+                spanContext: {
+                    SpanID: 1,
+                    TraceID: 1
+                },
+                parent: nil
+            },
+            {
+                name: "computeFoo",
+                spanContext: {
+                    SpanID: 2,
+                    TraceID: 1
+                },
+                parent: spanContext{
+                    SpanID: 1,
+                    TraceID: 1
+                }
+            },
+            ...
+        ]</pre></div>
+        
+        <p>In a real system, we might expect these to be out of order or otherwise not exist in a sorted state, but we <em>should</em> expect that the call graph for a single API endpoint will be the same between them.</p>
+        
+        <p>One potential application, then, is to perform a topographical sort on each set of trace data, then compare by length or through some other diffing process. If our traces differ, we know we have some sort of problem because the results didn’t match our expectations.</p>
+        
+        <p>Another application of this would be to identify, proactively, when services begin to take dependencies on your service. Consider a situation where our authentication service, or search service, was more widely publicized to other teams. Unbeknownst to us, they start to take a dependency on it in their new services. Automated trace diffing would give us proactive insights into these new consumers, especially if there’s some sort of centralized framework generating and comparing these traces over time.</p>
+        
+        <p>Still another application is simply using tracing as the backbone of gathering <a data-type="indexterm" data-primary="service level indicators (SLIs)" data-secondary="traces for gathering" id="idm45357001062984"></a>service level indicators and <a data-type="indexterm" data-primary="service level objectives (SLOs)" data-secondary="traces for gathering" id="idm45357001061912"></a>objectives for your service, and automatically comparing them as you deploy new versions. Since traces are inherently able to understand the timing of your service, they’re a great way to keep track of performance changes across a wide variety of requests as you iterate and further develop services.</p>
+        
+        <p>Ultimately, a lot of this is speculative—we’re not aware of anyone using distributed tracing heavily as a part of their test suites. That doesn’t mean it isn’t useful, but as a new technology, not every facet of it has been explored and exploited yet. Maybe you’ll be the first!</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Creating an Instrumentation Plan"><div class="sect1" id="idm45357001083032">
+        <h1>Creating an Instrumentation Plan</h1>
+        
+        <p><a data-type="indexterm" data-primary="instrumentation" data-secondary="plan for" id="idm45357001058392"></a><a data-type="indexterm" data-primary="planning for instrumentation" id="idm45357001057416"></a>For better or worse, most people come to distributed tracing and monitoring late in the development of an application or piece of software. Some of this has to do with the nature of iterative development—when you’re creating a product or service, it can be difficult to understand what it is you need to know until you’ve spent some time actually building and running it. Distributed tracing adds a wrinkle to this as well because developers will often come to it as a solution to problems that are cropping up due to scale and growth, be it in terms of service count or organizational complexity. In both of these cases, you’ll often have some large, presumably complicated set of services already deployed and running and need to know how you can leverage distributed tracing in order to improve the reliability and health of not only your software, but also your team. Perhaps you’re starting greenfield development on some new piece of software and are adding distributed tracing out of the gate—you’ll still need to create a plan for how to both add and grow tracing throughout your team and organization. In this section, we’ll discuss how you can make an effective case for instrumentation of either new or existing services in your organization and how to get buy-in from your (and other) teams, signals that indicate when you’ve instrumented enough, and finally how to sustainably grow instrumentation throughout your services.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Making the Case for Instrumentation"><div class="sect2" id="idm45357001055176">
+        <h2>Making the Case for Instrumentation</h2>
+        
+        <p><a data-type="indexterm" data-primary="instrumentation" data-secondary="making the case for" id="idm45357001053832"></a><a data-type="indexterm" data-primary="best practices" data-secondary="making the case for instrumentation" id="idm45357001052856"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="making the case for" id="idm45357001051848"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="benefits of" id="idm45357001050904"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="organizational buy-in" id="idm45357001049960"></a><a data-type="indexterm" data-primary="organizational buy-in" id="idm45357001049016"></a>Let’s assume that you’re already sold on the idea of distributed tracing by virtue of you reading this book. The challenge, then, becomes convincing your colleagues that it’s as good of an idea as you think it is, because they’re going to have to do some work as well to ensure that their services are compatible with tracing.</p>
+        
+        <p>When making the case to other teams about the benefits, and costs, of distributed tracing, it’s important to keep in mind many of the instrumentation lessons that we’ve discussed in this chapter. In short, instrumentation can be valuable even if it’s fairly basic. <a data-type="indexterm" data-primary="performance considerations" data-secondary="making the case for instrumentation" id="idm45357001047192"></a>If every service emits one span with some basic attributes that require no runtime overhead (i.e., string values that can be precalculated at service initialization) then the total added overhead to each request is simply the propagation of trace context headers, a task that adds 25 bytes on the wire and a negligible amount of cycles to decode afterwards.</p>
+        
+        <p>The benefit—end-to-end tracing of a request—is extremely helpful for such a small price. This <a data-type="indexterm" data-primary="distributed tracing" data-secondary="request-centric style" id="idm45357001044968"></a>request-centric style of distributed tracing has found adopters at companies such as Google, which has used <a data-type="indexterm" data-primary="Dapper" data-secondary="request-centric" id="idm45357001043736"></a>Dapper to diagnose anomalies and steady-state performance problems in addition to attribution for resource utilization.<sup><a data-type="noteref" id="idm45357001042536-marker" href="ch04.html#idm45357001042536">1</a></sup> Numerous other engineering teams and organizations, large and small, have adopted distributed tracing in order to reduce <a data-type="indexterm" data-primary="MTTR (mean time to recovery)" data-secondary="distributed tracing to reduce" id="idm45357001041160"></a>MTTR for incidents and other production downtime. In addition, distributed tracing is extremely valuable as part of a larger monitoring and observability practice, where it enables you to reduce the <em>search space</em> of data that you need to investigate in order to diagnose incidents, profile performance, and restore your services to a healthy state.</p>
+        
+        <p>It can be useful to think of distributed tracing as a “level playing field” when it comes to service performance. Especially when interacting in a polyglot environment, or in a globally distributed enterprise, there can be challenges in ensuring that everyone is on the same page in terms of performance data. Some of these challenges are technical, but many are political. The proliferation of vanity metrics is particularly notable here; you can measure quite a few things about your software performance that don’t matter, and you may already be doing so in order to achieve nebulous “quality” goals set for reasons beyond our ken. Distributed tracing data, however, provides critical signals by default in a standardized way for all of your services and does so without requiring synthetic endpoints or approaches to ensuring service health. This trace data can then be used to bring some peace and sanity to a possibly broken process. Of course, the first step to delivering that trace data is service instrumentation, so you’ll need to start there.</p>
+        
+        <p>It doesn’t have to be difficult to instrument your services. Good tools—open source and proprietary—will ease the instrumentation burden. We detail these in <a data-type="xref" href="app01.html#appendix_a_distributed_tracing_refs">Appendix&nbsp;A</a>, with examples of automatic instrumentation as well as library integrations for popular frameworks that enable tracing—sometimes with no code changes required. You should be aware of your frameworks and shared code when making the case for instrumentation so that you can leverage these existing tools. In our experience, one of the most persuasive arguments for distributed tracing is to simply instrument some existing microservice framework already used by your organization and demonstrate how services using it can be traced by simply updating a dependency. If you have an internal hackathon or hack day, this can be a fun and interesting project to tackle!</p>
+        
+        <p>No matter how you do it, the case for instrumentation ultimately comes down to the case for distributed tracing in general. As we’ve mentioned, there are plenty of interesting applications for tracing outside performance monitoring: tracing as part of your development cycle, tracing in testing other applications. You could use <span class="keep-together">distributed</span> tracing as part of your CI and CD framework, timing how long certain parts of your build and deployments take. Tracing could be integrated into task runners for creating virtual machines or provisioning containers, allowing you to understand what parts of your build and deploy life cycle take the most time. Tracing can be used as a value-add for services that provide some sort of API as a service—if you’re already tracing the execution time of your backend, you could make some version of that trace data available to your customers in order to help them profile their software as well. The possibilities for tracing are limitless, and the case for instrumenting your software should reflect that.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Instrumentation Quality Checklist"><div class="sect2" id="idm45357001033656">
+        <h2>Instrumentation Quality Checklist</h2>
+        
+        <p><a data-type="indexterm" data-primary="checklists" data-secondary="instrumentation checklist" id="idm45357001032408"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="best practices" data-tertiary="checklist of important items" id="idm45357001031368"></a><a data-type="indexterm" data-primary="best practices" data-secondary="instrumentation checklist" id="idm45357001030136"></a>When instrumenting an existing service or creating guidelines on how to instrument new services, it can be useful to have a checklist of items that are important to ensuring quality instrumentation throughout your entire application. We’ve included a recommended one in <a href="https://oreil.ly/instrmntn-checklist">the book’s repository</a>, but you’re welcome to use it as a jumping-off point for your own.</p>
+        <aside class="small" data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="figure_instrumentation_checklist">
+        <h5>Instrumentation Checklist</h5>
+        
+        <em>Span Status and Creation</em>
+                <ul>
+                    <li>All error conditions under a given span appropriately set the span status to an error state.</li>
+                    <li>RPC framework result codes are mapped to span status (i.e., Internal Error, Not Found, etc.).</li>
+                    <li>All spans that are started are also finished, even in the case of unrecoverable errors if possible.</li>
+                    <li>Spans should only represent work that is semantically important to the request life cycle of a service; try not to create spans around endpoints only receiving synthetic traffic, like a /status or /health endpoint.</li>
+                </ul>
+        
+            <em>Span Boundaries</em>
+        
+                <ul>
+                    <li>Egress and ingress spans have appropriate labels (SpanKind is set).</li>
+                    <li>Egress and ingress spans have appropriate relationships (client/server, consumer/producer).</li>
+                    <li>Internal spans are appropriately labeled and do not imply a remote call.</li>
+                </ul>
+        
+            <em>Attributes</em>
+        
+                <ul>
+                    <li>Spans include a version attribute for the service they represent.</li>
+                    <li>Spans that represent work by a dependency have an attribute for that dependency’s version.</li>
+                    <li>Spans should include attributes identifying underlying infrastructure:
+                        <ul>
+                            <li>Hostname / FQDN</li>
+                            <li>Container name, if appropriate</li>
+                            <li>Runtime version</li>
+                            <li>Application server version, if appropriate</li>
+                            <li>Region or availability zone</li>
+                        </ul>
+                        </li>
+                    <li>Attributes are namespaced where appropriate (i.e., to prevent collisions between key names where the semantic meaning of the key differs between services in a request).</li>
+                    <li>Attributes with numerical values should include the unit of measurement in the key name (i.e, payload_size_kb versus payload_size).
+        </li>
+                    <li>Attributes should not contain any PII.</li>
+                </ul>
+        
+            <em>Events</em>
+        
+                <ul>
+                    <li>Useful and descriptive event messages that would be useful for upstream or downstream service users should be added:
+                        <ul>
+                            <li>Request-response payloads (sanitized)</li>
+                            <li>Stack traces, exceptions, and error messages</li>
+                        </ul>
+                        </li>
+                    <li>Long-running operations (such as waiting for a mutex) should be wrapped in events; one when the operation begins, and one when it ends.</li>
+                </ul>
+        
+        </div></aside>
+        
+        <p>Much of what’s in our instrumentation checklist is drawn from other parts of this chapter, so we won’t elaborate too much on it. A few notes to call out:</p>
+        
+        <ul>
+        <li>
+        <p><a data-type="indexterm" data-primary="open source instrumentation" data-secondary="extent of instrumentation" id="idm45357001008984"></a><a data-type="indexterm" data-primary="library-based instrumentation" data-secondary="extent of instrumentation" id="idm45357001008040"></a><a data-type="indexterm" data-primary="framework instrumentation" data-secondary="extent of instrumentation" id="idm45357001007064"></a>Many open source instrumentation libraries or framework instrumentation libraries will, by default, instrument every incoming request or endpoint defined in your service code, including diagnostic endpoints. Generally, you’ll want to implement a filter or sampler on your service to prevent spans being created from these endpoints unless you have some pressing need for it.</p>
+        </li>
+        <li>
+        <p><a data-type="indexterm" data-primary="privacy laws and regulations" data-secondary="noncompliance costs high" id="idm45357001004856"></a>Be very careful about exposing PII in your attributes and events; the costs for noncompliance can be severe, especially if you’re transmitting trace data to a third party for analysis and storage.</p>
+        </li>
+        <li>
+        <p><a data-type="indexterm" data-primary="documentation" data-secondary="version attributes" id="idm45357001002808"></a><a data-type="indexterm" data-primary="version attributes" id="idm45357001001832"></a><a data-type="indexterm" data-primary="tags" data-secondary="version attributes" id="idm45357001001160"></a>Version attributes are extremely valuable, especially when doing trace comparisons, as they allow you to easily diff a request across two or more versions of a service in order to discover performance regressions or improvements.</p>
+        </li>
+        <li>
+        <p>Integrating your feature flags and other experiments with your trace data is a useful way to understand how those experiments are changing the performance and reliability of your service.</p>
+        </li>
+        </ul>
+        
+        <p>Feel free to adapt this checklist with specific information that makes it useful for your team, and include it on service rollout checklists.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Knowing When to Stop Instrumenting"><div class="sect2" id="idm45357000997848">
+        <h2>Knowing When to Stop Instrumenting</h2>
+        
+        <p><a data-type="indexterm" data-primary="instrumentation" data-secondary="best practices" data-tertiary="how much" id="idm45357000996280"></a><a data-type="indexterm" data-primary="best practices" data-secondary="how much instrumentation" id="idm45357000995032"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="how much instrumentation" id="idm45357000994072"></a><a data-type="indexterm" data-primary="spans" data-secondary="performance considerations" id="idm45357000993096"></a><a data-type="indexterm" data-primary="best practices" data-secondary="performance considerations" id="idm45357000936936"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="performance considerations" id="idm45357000936040"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="best practices" data-tertiary="performance considerations" id="idm45357000935080"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="performance considerations" id="idm45357000933848"></a>We’ve touched on the costs of instrumentation several times in this chapter; let’s take a deeper look. At a high level, instrumentation is a trade-off like anything else in software. You’re trading some measure of performance for, hopefully, a much higher level of insight into the operation of your service at a level that’s easy to communicate to others in your team or organization. In this section we point out a few notable anti-patterns to watch out for when you’re instrumenting. There’s the risk that the trade-offs become too costly and lead you to stop instrumenting, or to oversample and lose resolution on your traces.</p>
+        
+        <p>One antipattern is implementing <em>too high a default resolution</em>. A good rule is that your service should emit as many spans as logical operations it performs. Does your service handle authentication and authorization for users? Logically, break down this function—it’s handling an incoming request, performing some lookups in a datastore, transforming the result, and returning it. There are two logical operations here—handling the request/response and looking up the data. It’s always valuable to separate out calls to external services; in this example, you might only have a single span if the datastore is some sort of local database), but you may not need to emit a span for marshaling the response into a new format that your caller expects.</p>
+        
+        <p>If your service is more complicated, adding more spans can be OK, but you need to consider how consumers of your trace data will find it valuable, and if it’s collapsible into fewer spans. The corollary to this point is that you may want to have the ability to increase the verbosity of spans emitted by a service—refer back to <a data-type="xref" href="#trace-driven-dev-sect">“Trace-Driven Development”</a> for ideas on how to increase or decrease the resolution of your spans. This is why we say <em>default</em> resolution; you want to ensure that the default amount of information emitted is small enough to integrate well into a larger trace, but large enough to ensure that it contains useful information for consumers that might not be on your team (but might be affected by issues with your service!).</p>
+        
+        <p><a data-type="indexterm" data-primary="header formats" data-secondary="standardization of" id="idm45357000927896"></a><a data-type="indexterm" data-primary="standards" data-secondary="context propagation headers and formats" id="idm45357000926920"></a><a data-type="indexterm" data-primary="context propagation" data-secondary="standard headers and formats" id="idm45357000925912"></a>Another antipattern is <em>not standardizing your propagation format</em>. This can be challenging, especially when integrating legacy services or services written by a variety of teams. The key value of a trace is in the interconnected nature of a trace. If you have 20, 50, 200, or more services that are using a mishmash of <a data-type="indexterm" data-primary="tracing format" data-see="header formats" id="idm45357000924072"></a>tracing formats, you’re going to have a bad time trying to get value out of your traces. Avoid this by <span class="keep-together">standardizing</span> your tracing practices as much as possible, and providing shims for legacy systems or between different formats.</p>
+        
+        <p><a data-type="indexterm" data-primary="context propagation" data-secondary="propagator stack" id="idm45357000921800"></a><a data-type="indexterm" data-primary="propagator stack" id="idm45357000920824"></a>One method to combat non-standard propagation formats is to create a <em>stack</em> of tracing propagators that can be aware of different headers (such as <code>X-B3</code> or <code>opentracing</code>) and select the appropriate one on a per-request basis. You might find that it’s less work to actually update existing systems to the new format rather than create compatibility layers—use your best judgment and your organization’s existing standards and practices to figure out what’s right for you.</p>
+        
+        <p>The final advice, going back to the section title, is knowing when you should stop. Unfortunately, there’s not a cut-and-dry answer here, but there are some signals you should pay attention to. In general, you should consider what your service’s breaking point is without sampling any of your trace data.</p>
+        
+        <p><a data-type="indexterm" data-primary="spans" data-secondary="sampling" data-seealso="sampling" id="idm45357000917352"></a><a data-type="indexterm" data-primary="sampling" id="idm45357000916104"></a><a data-type="indexterm" data-primary="traces" data-secondary="sampling" id="idm45357000915432"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="sampling" data-seealso="sampling" id="idm45357000914488"></a>Sampling is a practice where a certain percentage of your traces aren’t recorded for analysis in order to reduce the overall load on your system. A discussion of sampling appears in <a data-type="xref" href="ch06.html#ch7_sampling">“Sampling”</a>, but we would advise that you don’t consider the sample rate when writing instrumentation. If you’re worried about the amount of spans created by your service, consider using verbosity flags to dynamically adjust how many spans are being created, or consider “tail-based” sampling approaches that analyze the entire trace before making a sampling decision. This is important because sampling is the best way to accidentally throw away potentially critical data that might be useful when debugging or diagnosing an issue in production. In contrast, a traditional sampling approach will make the decision at the beginning of a trace, so there’s no reason to optimize around “will this or won’t this be sampled”—your trace is going to be thrown away in its entirety if it is sampled out.</p>
+        
+        <p>A sign that you need to keep going is if the inter-service resolution of your trace is too low. For example, if you’re eliding multiple dependent services in a single span, you should keep instrumenting until those services are independent spans. You don’t necessarily need to instrument the dependent services, but your RPC calls to each of them should be instrumented, especially if each of those calls are terminal in your request chain. To be more specific, imagine a worker service that communicates with several datastore wrappers—it may not be necessary to instrument those datastore wrappers, but you should have separate spans for each of the calls from your service to them in order to better understand latency and errors (am I failing to read, or failing to write?).</p>
+        
+        <p>Stop tracing if the number of spans you’re emitting by default begins to look like the actual call stack of a service. Keep instrumenting if you’ve got unhandled error cases in your service code—being able to categorize spans with errors versus spans without errors is vital. Finally, you should keep instrumenting if you’re finding new things to instrument. Consider modifying your standard bug-handling process to not only include writing new tests to cover the fix, but to include writing new instrumentation to make sure that you can catch it in the future.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Smart and Sustainable Instrumentation Growth"><div class="sect2" id="idm45357000997224">
+        <h2>Smart and Sustainable Instrumentation Growth</h2>
+        
+        <p><a data-type="indexterm" data-primary="instrumentation" data-secondary="best practices" data-tertiary="sustainable growth" id="idm45357000907768"></a><a data-type="indexterm" data-primary="best practices" data-secondary="sustainable instrumentation growth" id="idm45357000906520"></a>It’s one thing to instrument a single service, or a demonstration application that’s meant to teach you some concepts about tracing. It’s another, altogether more challenging task to figure out where to go from there. Depending on how you start your instrumentation journey, you may quickly find yourself in untested waters, struggling to figure out how to provide value from tracing while simultaneously growing its adoption within your organization or team.</p>
+        
+        <p>There are several strategies you can employ to grow instrumentation inside your application. These strategies, broadly, can be grouped into technical and organizational solutions. We’ll first address the technical strategies, then talk about the organizational ones. There is some overlap between the two—as you might expect, technical and organizational solutions work hand in hand to enable each other.</p>
+        
+        <p>Technically, the best way to grow instrumentation throughout your application is to make it easy to use. <a data-type="indexterm" data-primary="library-based instrumentation" data-secondary="for sustainable instrumentation growth" data-secondary-sortas="sustainable instrumentation growth" id="idm45357000903752"></a>Providing libraries that do the <em>heavy lifting</em> required to set up tracing and integrate it into your RPC frameworks or other shared code makes it easy for services to integrate tracing. Similarly, <a data-type="indexterm" data-primary="standards" data-secondary="for sustainable instrumentation growth" data-secondary-sortas="sustainable instrumentation growth" id="idm45357000901720"></a>creating standard tags, attributes, and other metadata for your organization is a great way to ensure that new teams and services adopting tracing have a road map to quickly understand and gain value from tracing as they enable it. Finally, look at adopting tracing as part of your development and testing process—if teams are able to start using tracing on a day-to-day basis, then it becomes part of their workflow, and it’ll be available once they deploy their services to production.</p>
+        
+        <p>Ultimately, the goal of instrumentation growth should be tied to the ease of adopting instrumentation. You’re going to find it challenging to grow the adoption of tracing if it’s a lot of work for individual developers to implement. Every major engineering organization to adopt distributed tracing (including Google and Uber) has made tracing a first-class component of its microservice architecture by wrapping its infrastructure libraries in tracing code. This strategy allows for growing instrumentation quite naturally—as new services are deployed or migrated, they’ll automatically gain instrumentation.</p>
+        
+        <p><a data-type="indexterm" data-primary="organizational buy-in" id="idm45357000898440"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="organizational buy-in" id="idm45357000897736"></a>Organizationally, there’s a bit more to talk about. All of the technical solutions presented earlier aren’t going to be worth much without organizational buy-in. How, then, should you develop that buy-in? The easiest option, and one we’ve seen be incredibly successful, is simply a top-down mandate to use distributed tracing. Now, this doesn’t necessarily mean you should start emailing your VP of Engineering, and in many cases, this isn’t the most effective strategy. If you have a platform team, SRE team, DevOps team, or other infrastructure engineers, these teams can be a successful place to look for the impetus to grow tracing throughout your software. Consider how problems are communicated and managed in your engineering organization. Who has performance management as part of their portfolio? These can be allies and advocates for the initial implementation of tracing across all your services.</p>
+        
+        <p><a data-type="indexterm" data-primary="checklists" data-secondary="for organizational buy-in" data-secondary-sortas="organizational buy-in" id="idm45357000895480"></a>If your SRE team is using tools such as launch checklists, add tracing compatibility to the checklist and start to roll it out that way. You should also consider how your tracing is performing when you’re performing <a data-type="indexterm" data-primary="failure state" data-secondary="organizational buy-in of tracing" id="idm45357000893848"></a>postmortems on incidents—were there services that weren’t traced that should have been? Was there data that was critical to resolving the incident that wasn’t present in the spans? Instrumentation beyond the basics can also be a defined goal for your teams that’s measured like any other aspect of code quality. It’s also useful to track improvements to instrumentation rather than simply adding new services—effective instrumentation is just as important as ubiquitous instrumentation.</p>
+        
+        <p>Ensure that a process exists for end users of your traces to suggest improvements, especially to shared libraries, in order to drive continuous improvement. Pay careful attention to existing instrumentation code during refactors, especially refactors that modify instrumentation itself. You don’t want to lose resolution on your traces because someone removed spans accidentally! This is an area where building tests around your instrumentation is valuable, as you can easily compare the state of your traces before and after changes, and automatically warn or notify developers of unexpected differences.</p>
+        
+        <p>Ultimately, instrumentation is a critical part of distributed tracing, but it’s only the first step. Without instrumentation, you’re not going to have the necessary trace data to actually observe and understand requests as they move through your system. Once you’ve instrumented your services, you’ll suddenly be presented with a fire hose of data. How can you collect and analyze that data in order to discover insights and performance information about your services in aggregate? Over the next few chapters, we’ll discuss the art of collecting and storing trace data.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        <div data-type="footnotes"><p data-type="footnote" id="idm45357001042536"><sup><a href="ch04.html#idm45357001042536-marker">1</a></sup> <a data-type="xref" href="bibliography01.html#Sam16">[Sam16]</a></p></div></div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492056621/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

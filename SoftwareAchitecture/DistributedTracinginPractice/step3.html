@@ -1,0 +1,1006 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 3. Open Source Instrumentation: Interfaces, Libraries, and Frameworks"><div class="chapter" id="chapter_4">
+        <h1><span class="label">Chapter 3. </span>Open Source Instrumentation: Interfaces, Libraries, and Frameworks</h1>
+        
+        
+        <p>As a technology, tracing—even distributed tracing—isn’t brand-new. Developers have been building distributed systems in some form or another for decades and have turned to tracing solutions to understand these systems. One thing many of these solutions have in common, however, is that they tend to be very focused. Sometimes this focus is for a particular technology stack or language; sometimes it relies on the usage of a particular middleware provider; sometimes it’s just a home-rolled solution that’s been maintained for years by engineers who aren’t with your company anymore. More recently, we’ve seen this sort of behavior continue to proliferate aided by cloud vendors and other platform providers.</p>
+        
+        <p><a data-type="indexterm" data-primary="proprietary instrumentation challenges" id="idm45357014799640"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="proprietary instrumentation challenges" id="idm45357014798968"></a><a data-type="indexterm" data-primary="open source instrumentation" data-secondary="proprietary instrumentation challenges" id="idm45357014798056"></a>Some might say, “Well, what’s the problem here?” After all, for a great many people, these proprietary or otherwise closed solutions work fine, or at least are providing value to their users. While that certainly can be the case, these solutions are often more brittle than they appear at first glance. The foremost argument against proprietary instrumentation is that it often leaves you at the mercy of the authors of the instrumentation solution when it comes to adapting your software for new languages, methodologies, and challenges caused by increasing scale or business requirements.</p>
+        
+        <p>Remember—one of the few constants in life, and especially in computing, is change. At the time of this writing, Microsoft is one of the largest contributors to open source software. If you went back in time 20 years and told someone that, they’d likely be shocked! Relying on the current state of vendors and cloud providers and popular languages or runtimes will invariably lock you into decisions that you might not want to be locked into.</p>
+        
+        <p>There is a solution to this dilemma, one that’s been widely adopted by users, vendors, and software authors—the open source model of instrumentation. What we mean, in practice, is that rather than relying on languages and runtimes to provide the tools for instrumenting software, the community in general provides them. In this chapter, we’ll discuss the current state of the art when it comes to these open source solutions, as well as some of the historical context and forerunner projects that you’re likely to encounter in the wild. We’ll also cover the API and methodology behind instrumenting software with these packages, such as OpenTelemetry.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="The Importance of Abstract Instrumentation"><div class="sect1" id="idm45357014794328">
+        <h1>The Importance of Abstract Instrumentation</h1>
+        
+        <p><a data-type="indexterm" data-primary="open source instrumentation" data-secondary="abstract instrumentation" id="idm45357014792920"></a><a data-type="indexterm" data-primary="abstract instrumentation" id="idm45357014791800"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="abstract instrumentation" id="idm45357014791112"></a>Why is it important to embrace abstract instrumentation in the first place? It’s a good question, especially if you’re already using a platform or tech stack that provides some sort of tracing functionality, and are thinking about adopting it to monitor your services. Historically, this information has been available at several locations that tend to “make sense” (for example, at the boundaries of your services, or via some ingress layer such as a load balancer, web proxy, or other routing service). These trace identifiers, such as the <a data-type="indexterm" data-primary="header formats" data-secondary="Amazon Web Services" id="idm45357014789464"></a><a data-type="indexterm" data-primary="Amazon Web Services (AWS)" data-secondary="tracing header" id="idm45357014788520"></a><code>X-Amzn-TraceID</code> of Amazon’s Elastic Load Balancer (ELB) or the <a data-type="indexterm" data-primary="header formats" data-secondary="Microsoft IIS" id="idm45357014787176"></a><a data-type="indexterm" data-primary="Microsoft IIS (Internet Information Services)" id="idm45357014786200"></a>fairly opaque tracing headers supplied by Microsoft’s IIS (Internet Information Services), are able to provide a fairly thorough view into a single request as it moves through your services. That said, there are a few critical areas where these legacy tracing methods fall short.</p>
+        
+        <p>The first test that these tracing methods fail is portability. Take, for example, IIS Request Tracing. It might not surprise you to learn that using this requires you to also use IIS as your web server/proxy, which also implies that your software runs on Windows Server. While we won’t suggest that there’s no software that runs (and generates perhaps a massive amount of business value) on Windows Server, we would also suggest that it’s not quite as popular these days as it once was. The associated costs of this lock-in can be deleterious, however. You may delay or defer maintenance and upgrades to your monitoring, opening you up to security vulnerabilities. Advancements in monitoring platforms may provide you with improved insights and lower costs, but you may be unable to take advantage of them because you’ll be locked into your existing instrumentation. Finally, even if you’re generally happy with the level of control and insight that your proprietary instrumentation grants you, you may find it difficult to convince new team members of its greatness if they’ve learned to appreciate newer tools.</p>
+        
+        <p><a data-type="indexterm" data-primary="distributed applications" data-secondary="proprietary tracing failure" id="idm45357014783320"></a><a data-type="indexterm" data-primary="client-server applications" data-secondary="abstract instrumentation necessity" id="idm45357014782216"></a><a data-type="indexterm" data-primary="frontend services" data-secondary="abstract instrumentation necessity" id="idm45357014781208"></a><a data-type="indexterm" data-primary="web clients" data-secondary="abstract instrumentation necessity" id="idm45357014780248"></a>The second test that proprietary tracing methods fail is being <em>adaptable</em> to distributed applications. This is obvious when attempting to instrument a client-server relationship over some external link, such as the internet. Without some abstract instrumentation on both sides (the mobile application or client web application, and the backend server), you’ll often have to resort to manual hacks to fit and transform data being generated by two potentially separate systems. Often, these proprietary systems will begin their traces at the ingress point rather than at the client, which can <span class="keep-together">segregate</span> your data rather than provide a single, end-to-end view into a request. These systems often lack internal extensibility, which is to say that you may find it challenging or impossible to create subtraces of service functionality outside of the top-level HTTP request. Additionally, you’ll find that these systems may struggle at instrumenting transport methods that <em>aren’t</em> carried across HTTP, leaving you with a tangled mess of incompatible trace data being generated by your HTTP, gRPC, SOAP, or other carriers. This can stymie refactoring for performance or integration with new services and technologies.</p>
+        
+        <p><a data-type="indexterm" data-primary="vendor URLs" data-secondary="vendor lock-in" id="idm45357014776248"></a>The third and final test that these methods fail is they promote <em>vendor lock-in</em> by necessity or by design. Don’t like the analysis tools available? Too bad! Don’t care for a particular instrumentation API? You’re stuck with it unless you wrap the provided API in your own. Even this can only do so much, depending on the underlying design of the system. One surprisingly common situation we’ve seen is that this lock-in can paralyze teams that are spinning up new services because there may be business reasons that prevent the allocation of additional analytic capacity. A popular pricing model for monitoring, for example, relies on the amount of hosts or containers that are being monitored at any given time—if you’re locked into a vendor with this pricing strategy, it can actually act as a damper on the amount of new instrumentation added to your application due to cost concerns. While this may seem like a savvy way to save a few bucks while developing a new and unproven idea, you don’t know if this new service will take off (or, worse, become a sneaky failure-prone piece of code causing difficulties, headaches, and many late-night alerts for other teams).</p>
+        
+        <p><a data-type="indexterm" data-primary="distributed tracing" data-secondary="agnostic nature of" id="idm45357014773272"></a><a data-type="indexterm" data-primary="agnostic nature of distributed tracing" data-secondary="abstract instrumentation" id="idm45357014772296"></a><a data-type="indexterm" data-primary="open source instrumentation" data-secondary="benefits of" id="idm45357014771368"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="open source benefits" data-seealso="open source instrumentation" id="idm45357014770408"></a>Abstract, open source instrumentation solves these problems neatly. Your instrumentation is portable to any underlying operating system (OS) that supports the language you’re writing it in—Linux, Windows, macOS, iOS, whatever! Since it’s open source, even if it doesn’t work right now, you have the ability to fork it and add support if required. Thankfully, the major open source instrumentation interfaces and frameworks have wide support for the majority of general purpose programming languages in use today…although if you wanted to port it to Perl, we’re sure someone would be grateful. As you might expect from a widely supported framework, open source and abstract instrumentation are very adaptable to your changing requirements and needs.</p>
+        
+        <p><a data-type="indexterm" data-primary="microservices" data-secondary="abstract instrumentation" id="idm45357014768008"></a>As your services decompose into smaller services, you’ll find that abstract instrumentation fits in very neatly with your new service boundaries, regardless of how they’re being written, deployed, or run. Abstract instrumentation makes it easier to integrate your instrumentation with other technologies as well, such as <a data-type="indexterm" data-primary="service meshes" data-secondary="abstract instrumentation" id="idm45357014766440"></a>service meshes or <a data-type="indexterm" data-primary="container orchestration" data-secondary="abstract instrumentation" id="idm45357014765352"></a>container orchestration platforms. Not to mention, as you <a data-type="indexterm" data-primary="distributed applications" data-secondary="abstract instrumentation" id="idm45357014764232"></a>integrate new services into your distributed application, abstract instrumentation grants you the flexibility to share a common <em>language</em> of instrumentation across disparate teams. Finally, and most importantly, <a data-type="indexterm" data-primary="vendor URLs" data-secondary="vendor lock-in" id="idm45357014762520"></a>abstract instrumentation prevents vendor lock-in of analysis or instrumentation. Since the instrumentation APIs, trace data format, propagation headers, wire format, and more are defined openly and publicly, you’ll be able to use them (either directly or through a shim) with any sort of analysis system you can imagine. At the time of this writing, almost every major monitoring vendor supports at least one—and usually more—open source tracing formats, thus allowing you the flexibility of <em>write once, run anywhere</em> with your instrumentation code.</p>
+        
+        <p>Now that we’ve gone over the benefits of these instrumentation frameworks, let’s take a look at the most popular ones available, starting with the newest: OpenTelemetry.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="OpenTelemetry"><div class="sect1" id="ch4_opentelemetry">
+        <h1>OpenTelemetry</h1>
+        
+        <p><a data-type="indexterm" data-primary="OpenTelemetry" id="idm45357014757656"></a><a data-type="indexterm" data-primary="library-based instrumentation" data-secondary="difficulty of writing" id="idm45357014757064"></a>Writing an instrumentation library is, in a word, difficult. While the actual process of collecting and generating telemetry from a service is conceptually fairly straightforward, implementing that process in a highly performant way that also can get buy-in from a diverse group of users is extremely challenging. The foremost reason is that however much any two pieces of software have in common, they’re likely to be very different. While this might be somewhat reductionist, it’s a useful thing to keep in mind when discussing the challenges of writing instrumentation libraries for a general audience. However, there are several good reasons that you might prefer a <a data-type="indexterm" data-primary="open source instrumentation" data-secondary="general-purpose instrumentation library benefits" id="idm45357014755336"></a><a data-type="indexterm" data-primary="library-based instrumentation" data-secondary="general-purpose library benefits" id="idm45357014754280"></a>general-purpose instrumentation library over a bespoke one:</p>
+        
+        <ul>
+        <li>
+        <p>A general-purpose library will be more likely to be more performant in the <span class="keep-together">general</span> use case.</p>
+        </li>
+        <li>
+        <p>The authors of the general-purpose library are more likely to have considered edge cases and other situations.</p>
+        </li>
+        <li>
+        <p>Using a general-purpose library can save you months of maintenance headaches in adapting, extending, and using a bespoke one.</p>
+        </li>
+        </ul>
+        
+        <p>As your software becomes more complex, and development cycles become more strained, the rationale for the general-purpose library grows. You probably don’t have the time or desire to implement your own telemetry collector or API. You might not have the expertise to create or maintain bespoke telemetry libraries in every language used by your application, or you may find the organizational dynamics of creating an internal standard insurmountable. Finally, you probably don’t want to have to reinvent the wheel in terms of generating telemetry data from your dependencies—RPC frameworks, HTTP libraries, etc.</p>
+        
+        <p>OpenTelemetry solves these problems and a host of others for you. The primary goal of OpenTelemetry is to provide a single set of APIs, libraries, agents, and collectors that you can use to capture distributed tracing and metric telemetry from your application. In doing so, OpenTelemetry imagines a world where portable, high-quality telemetry data is a built-in feature of cloud native software.</p>
+        
+        <p><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="history" id="idm45357014746536"></a><a data-type="indexterm" data-primary="standards" data-secondary="OpenTelemetry" id="idm45357014745560"></a>OpenTelemetry was formally announced in May 2019 as the next major release of both OpenTracing and OpenCensus. These two projects had similar goals but different ways of achieving them. The seeds for OpenTelemetry were planted in the fall of 2018 in several wide-ranging Twitter threads that crystallized the major stumbling block facing both projects—the appearance of a “standards war” between the two. Open source project authors, seeing that there were two incompatible standards for instrumentation, would defer adding tracing to their libraries and frameworks in the absence of consensus about which they should focus on. (For more information, see <a data-type="xref" href="#ch4_opentracing">“OpenTracing”</a> and <a data-type="xref" href="#ch4_opencensus">“OpenCensus”</a>.)</p>
+        
+        <p>These and other disagreements led to back-channel negotiations and discussions between the founders of each project along with a neutral mediator. A small technical team was formed to prototype a merged API, which became the initial prototype of OpenTelemetry. Spring 2019 saw work continue on the prototype, along with efforts to codify the new governance structure—taking lessons from other successful open source projects, like Kubernetes. After the announcement in May, contributors from a wide variety of companies, including Microsoft, Google, Lightstep, and Datadog, worked in concert to formalize the specification, application programming interface (API), software development kit (SDK), and other components.</p>
+        
+        <p><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="current status" id="idm45357014740744"></a>Which brings us to now. OpenTelemetry, at the time of this writing, is still in an alpha phase. The project anticipates a beta by the time you’re reading this, but as is the nature of open source, the timeline may change. With that in mind, we’ll focus this section mostly on the distributed tracing components in OpenTelemetry, along with critical parts of its design.</p>
+        
+        <p><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="components of" id="idm45357014739000"></a>OpenTelemetry comprises three major components. These are the API, the SDK, and the Collector. These components implement the OpenTelemetry specification and data model, and are designed to be <a data-type="indexterm" data-primary="open source instrumentation" data-secondary="interoperability" id="idm45357014737688"></a><a data-type="indexterm" data-primary="interoperability" data-secondary="OpenTelemetry components" id="idm45357014736728"></a>interoperable and composable with each other. What does this mean? In short, parts of these components can be “swapped out” with differing implementations, as long as those reimplementations conform to the specification and the data model.</p>
+        
+        <p><a data-type="indexterm" data-primary="API services" data-secondary="OpenTelemetry" id="idm45357014735128"></a><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="API component" id="idm45357014733928"></a><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="SDK component" id="idm45357014732984"></a>As <a data-type="xref" href="#figure_otel_basicdesign">Figure&nbsp;3-1</a> shows, there are two main parts of any given OpenTelemetry library. The API contains the interfaces required for writing instrumentation code along with a minimal (or NoOp)<a data-type="indexterm" data-primary="NoOp (no operation)" id="idm45357014730920"></a> implementation of the SDK. Generally, the API will be packaged with the SDK, which implements the core functionality of the API such as managing span state and context, serializing and deserializing span context from the wire, and other features. External to the SDK are <a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="exporters" id="idm45357014729832"></a><a data-type="indexterm" data-primary="exporters" data-secondary="OpenTelemetry" id="idm45357014728888"></a><em>exporters</em>, plug-ins that translate and transmit the OpenTelemetry trace data to a suitable backend service for analysis. Each of these components is decoupled from the others; you can use the API with no SDK (see <a data-type="xref" href="#figure_otel_minimaldesign">Figure&nbsp;3-2</a>), for example, or selectively reimplement parts of the SDK.</p>
+        
+        <figure><div id="figure_otel_basicdesign" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0301.png" alt="The basic design of an OpenTelemetry library." width="1367" height="1277">
+        <h6><span class="label">Figure 3-1. </span>A generic OpenTelemetry library.</h6>
+        </div></figure>
+        
+        <figure><div id="figure_otel_minimaldesign" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0302.png" alt="The minimal OpenTelemetry implementation, just the API." width="959" height="684">
+        <h6><span class="label">Figure 3-2. </span>Minimal implementation of OpenTelemetry.</h6>
+        </div></figure>
+        
+        <p><a data-type="indexterm" data-primary="library-based instrumentation" data-secondary="OpenTelemetry API" id="idm45357014722264"></a>If you’re writing code that will primarily be used as a library, then you would use the API by itself. If you’re writing a service that will run—either alone or in concert with other services—you’d use the API and SDK.</p>
+        
+        <p>The rationale is fairly simple. Let’s say you’re writing a library that performs some convenient function, like an optimized search on some set of data. Your users want to be able to trace your code—giving them insight into the number of iterations it requires to find the desired search term, for example. You can accomplish this very easily by adding tracing instrumentation and creating either a single span that represents the work being done by your library, or multiple spans representing each iteration (if you parallelized the algorithm in some way, this latter approach might be more useful). However, you want your library to be fairly performant and to have few external dependencies; after all, it’s an optimized piece of code. In this case, you’d only take a dependency on the OpenTelemetry API package. When someone imports and uses your library, which is also using the OpenTelemetry SDK, your library would automatically swap over to using the full implementation rather than the minimal one, allowing your end users to trace the activity of your code.</p>
+        
+        <p>The OpenTelemetry API provides three major things: <a data-type="indexterm" data-primary="context propagation" data-secondary="OpenTelemetry API" id="idm45357014718952"></a>distributed context propagation, management, application tracing, and application metrics. We’ll focus on the first two in this book.</p>
+        
+        <p><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="Tracer" id="idm45357014717448"></a><a data-type="indexterm" data-primary="spans" data-secondary="OpenTelemetry Tracer" id="idm45357014716072"></a><a data-type="indexterm" data-primary="spans" data-secondary="context propagation" id="idm45357014715128"></a><a data-type="indexterm" data-primary="traces" data-secondary="span context propagation" id="idm45357014714184"></a><a data-type="indexterm" data-primary="tracers" data-secondary="OpenTelemetry" id="idm45357014713224"></a><a data-type="indexterm" data-primary="trace context" data-secondary="OpenTelemetry Tracer" id="idm45357014712280"></a>First, tracing. The primary building block of spans in OpenTelemetry is the <code>Tracer</code>. The <code>Tracer</code> provides methods for creating and activating new <code>Span</code> objects along with the ability to track and manage the active <code>Span</code> in the process context. Each <code>Tracer</code> is configured with Propagator objects, which allow for transferring the span context across process boundaries. The API provides a <code>TracerProvider</code> which allows for the creation of new <code>Tracer</code> objects, which each have a required name and an optional version. OpenTelemetry refers to this concept as <a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="named tracers" id="idm45357014707896"></a><a data-type="indexterm" data-primary="traces" data-secondary="named tracers of OpenTelemetry" id="idm45357014706920"></a><a data-type="indexterm" data-primary="namespacing" id="idm45357014705912"></a><em>named tracers</em>, which act as a namespacing mechanism for multiple logical components inside a single process. For example, if you were to instrument a service that used an HTTP framework to communicate with other services, you would name the tracer for our service’s business logic something like <code>myService</code>, while instrumentation for the HTTP framework would be named <code>opentelemetry.net.http</code>. This helps in preventing collisions in span name, attribute key, or other factors. Optionally, we can assign a <a data-type="indexterm" data-primary="tags" data-secondary="version attributes" id="idm45357014703512"></a><a data-type="indexterm" data-primary="version attributes" id="idm45357014702536"></a><a data-type="indexterm" data-primary="library-based instrumentation" data-secondary="version attributes" id="idm45357014701864"></a><a data-type="indexterm" data-primary="documentation" data-secondary="version attributes" id="idm45357014700904"></a>version string to our tracer that should correspond to the version of the instrumentation library itself (i.e., <code>semver:1.0.0</code>).</p>
+        
+        <p>Each tracer has to provide three methods—getting the current span, creating a new span, and activating a given span as the current one. In addition, it should provide methods to configure other important tracing components, like propagator objects. When creating a new span, the tracer will first check whether there’s an active span, and create the new one as its child. A span or span context can also be provided when creating a new span as its parent. Each span is required to contain a <a data-type="indexterm" data-primary="spans" data-secondary="span context" id="idm45357014698680"></a><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="span context" id="idm45357014697672"></a>span context, which is an immutable data structure that contains identifiers for the trace, span, and other flags and state values:</p>
+        <dl>
+        <dt><code>TraceID</code></dt>
+        <dd>
+        <p>16-byte array with at least one nonzero byte.</p>
+        </dd>
+        <dt><code>SpanId</code></dt>
+        <dd>
+        <p>8-byte array with at least one nonzero byte.</p>
+        </dd>
+        <dt><code>TraceFlags</code></dt>
+        <dd>
+        <p>Details about the trace. Present in all traces, unlike <code>Tracestate</code>.</p>
+        </dd>
+        <dt><code>Tracestate</code></dt>
+        <dd>
+        <p>System-specific configuration data, which allows for multiple tracing systems to participate in the same trace.<sup><a data-type="noteref" id="idm45357014689384-marker" href="ch03.html#idm45357014689384">1</a></sup></p>
+        </dd>
+        <dt><code>IsValid</code></dt>
+        <dd>
+        <p>A Boolean flag, which returns true if the <code>TraceID</code> and <code>SpanId</code> are valid (or <span class="keep-together">non-zero</span>).</p>
+        </dd>
+        <dt><code>IsRemote</code></dt>
+        <dd>
+        <p>A Boolean flag, which returns true if the span context was propagated from a remote parent.</p>
+        </dd>
+        </dl>
+        
+        <p><a data-type="indexterm" data-primary="spans" data-secondary="about" id="idm45357014683080"></a>The span is a data structure that represents a single operation in a trace. Each trace contains a <a data-type="indexterm" data-primary="spans" data-secondary="root span of OpenTelemetry" id="idm45357014681640"></a><a data-type="indexterm" data-primary="root span" data-secondary="OpenTelemetry" id="idm45357014680728"></a>root span that represents the end-to-end latency of a request and, optionally, subspans that correspond to suboperations. The <a data-type="indexterm" data-primary="spans" data-secondary="information encapsulated in" id="idm45357014679512"></a>span encapsulates information like the name of the operation, its span context, a parent span, the start and end timestamp of the operation, a map of attributes, links to other spans, a list of events with timestamps, and a status. Some of these are more self-explanatory than others. The start time of a span should be set to the time that it was created, but you can override this with an arbitrary timestamp as well. <a data-type="indexterm" data-primary="spans" data-secondary="created under OpenTelemetry" id="idm45357014678040"></a>Once a span has been created, you can change its name, set attribute keys and values, and add links to other spans and events—but only before the span has finished. Once an end time has been set, these values become immutable. Since the span is not intended to propagate information inside a process, you should not provide access to span fields <em>other</em> than span context.</p>
+        
+        <p>There are a few new concepts here, so we’ll break them down.</p>
+        
+        <p>The name of the span is a requirement when creating a new span, but it’s one of the only absolutely required parameters. Depending on the implementation, a <a data-type="indexterm" data-primary="spans" data-secondary="parent-child relationship" id="idm45357014675208"></a>span may be automatically created as the child of the current active span, but you also have the option to indicate that it should be a new root span. The <a data-type="indexterm" data-primary="tags" data-secondary="span kind field" id="idm45357014673960"></a>span kind field is used to describe the relationship between a given span and its parents and children in the trace. The two properties that it describes are if the span is the parent or child of a remote operation and if the span represents a synchronous call. A single span should only have a single span kind in order for the field to be meaningful to analysis systems. See <a data-type="xref" href="#Table4-2">Table&nbsp;3-2</a> for a complete description of span kind values.</p>
+        
+        <p><a data-type="indexterm" data-primary="tags" data-secondary="about" id="idm45357014671368"></a>Attributes are a collection of key-value pairs that can be created either at span creation time or during the lifetime of the span. In general, you want to set known attributes at span creation. <a data-type="indexterm" data-primary="spans" data-secondary="link objects" id="idm45357014669864"></a><a data-type="indexterm" data-primary="link objects" id="idm45357014668920"></a>Links are between arbitrary amounts of spans that have some causal relationship. They can exist between spans in a single trace or across multiple traces. When would you use link objects? First, you may want to use them to represent <a data-type="indexterm" data-primary="batch operation link objects" id="idm45357014667864"></a><em>batch</em> operations, where a single span was initiated from multiple incoming spans, each representing a single item in the batch. Additionally, a <a data-type="indexterm" data-primary="traces" data-secondary="originating and following traces" id="idm45357014666680"></a>link can declare the relationship between an originating trace and a following trace. Consider a trace entering a trusted boundary of a service such as remote client code, like a web browser, and being forced to generate a new trace rather than relying on the incoming context. The <a data-type="indexterm" data-primary="root span" data-secondary="originating and following traces" id="idm45357014665256"></a>root span in the new trace would be linked to the old trace.</p>
+        
+        <p>Finally, as mentioned earlier, the start and stop timestamps are required but are generally automatically generated. You <em>can</em> tell the API to create a span with an arbitrary start and stop timestamp, which is useful if you’re creating some sort of proxy that transforms existing telemetry data (such as a log file) into a trace.</p>
+        
+        <p><a data-type="indexterm" data-primary="API services" data-secondary="OpenTelemetry" id="idm45357014662760"></a><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="API component" id="idm45357014661784"></a><a data-type="indexterm" data-primary="spans" data-secondary="OpenTelemetry APIs" id="idm45357014660840"></a>Once you’ve created a tracer and a span, what can you do with them? The API <span class="keep-together">provides</span> several required methods:</p>
+        
+        <ul>
+        <li>
+        <p>Get the <code>SpanContext</code>.</p>
+        </li>
+        <li>
+        <p>Check whether the span <code>IsRecording</code> information.</p>
+        </li>
+        <li>
+        <p><code>SetAttributes</code> on the span.</p>
+        </li>
+        <li>
+        <p><code>AddEvents</code> to the span.</p>
+        </li>
+        <li>
+        <p><code>SetStatus</code> of the span.</p>
+        </li>
+        <li>
+        <p><code>UpdateName</code> of the span.</p>
+        </li>
+        <li>
+        <p><code>End</code> the span.</p>
+        </li>
+        </ul>
+        
+        <p><a data-type="indexterm" data-primary="tags" data-secondary="OpenTelemetry" id="idm45357014649672"></a>While some of these are fairly self-explanatory, such as ending the span, others are more nuanced. <a data-type="indexterm" data-primary="spans" data-secondary="IsRecording API" id="idm45357014648232"></a><code>IsRecording</code> is one of these—this method returns a Boolean value indicating whether the span is recording events, attributes, etc. The intended design of this flag is to avoid potentially expensive computation of attributes or events when a span is not being recorded. An interesting wrinkle to this is that the flag is independent of the sampling decision of the trace. An individual span may record events even if the trace that it is a member of has been sampled out (based on flags in the span context). The rationale is that you may want to record and process the latency of all requests with instrumentation while sending only a subset of the instrumented requests to the backend. <a data-type="indexterm" data-primary="spans" data-secondary="status codes of OpenTelemetry API" id="idm45357014646216"></a><code>SetStatus</code> lets you modify the status of a span operation. By default, a span will have a status of <code>Ok</code>, indicating that the operation that the span represents completed successfully. You can see a full list and description of valid statuses (which will look familiar if you’ve used gRPC) in <a data-type="xref" href="#Table4-1">Table&nbsp;3-1</a> and <a data-type="indexterm" data-primary="tags" data-secondary="span kind field" id="idm45357014643320"></a><a data-type="xref" href="#Table4-2">Table&nbsp;3-2</a>. Keep in mind that you can also create your own status codes through the API, which would be useful for creating statuses that map to your own RPC system.</p>
+        <table id="Table4-1">
+        <caption><span class="label">Table 3-1. </span>OpenTelemetry span status canonical codes</caption>
+        <thead>
+        <tr>
+        <th>Code</th>
+        <th>Description</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p><code>Ok</code></p></td>
+        <td><p>The operation completed successfully.</p></td>
+        </tr>
+        <tr>
+        <td><p><code>Cancelled</code></p></td>
+        <td><p>The operation was cancelled (typically, by the caller).</p></td>
+        </tr>
+        <tr>
+        <td><p><code>Unknown</code></p></td>
+        <td><p>An unknown error occurred.</p></td>
+        </tr>
+        <tr>
+        <td><p><code>InvalidArgument</code></p></td>
+        <td><p>The client specified an invalid argument. Differs from <code>FailedPrecondition</code>, as this indicates that the arguments were invalid regardless of the system state.</p></td>
+        </tr>
+        <tr>
+        <td><p><code>DeadlineExceeded</code></p></td>
+        <td><p>Deadline (timeout) expired before operation could complete.</p></td>
+        </tr>
+        <tr>
+        <td><p><code>NotFound</code></p></td>
+        <td><p>The entity requested could not be found.</p></td>
+        </tr>
+        <tr>
+        <td><p><code>AlreadyExists</code></p></td>
+        <td><p>The entity already exists (if we were trying to create it).</p></td>
+        </tr>
+        <tr>
+        <td><p><code>PermissionDenied</code></p></td>
+        <td><p>The caller was authenticated, but did not have permission to execute the desired operation.</p></td>
+        </tr>
+        <tr>
+        <td><p><code>ResourceExhausted</code></p></td>
+        <td><p>Some resource was exhausted, such as an API rate limit, per-user quota, or physical resource like disk space.</p></td>
+        </tr>
+        <tr>
+        <td><p><code>FailedPrecondition</code></p></td>
+        <td><p>The operation was rejected because the system is not in the appropriate state for the execution of the requested operation.</p></td>
+        </tr>
+        <tr>
+        <td><p><code>Aborted</code></p></td>
+        <td><p>The operation was aborted.</p></td>
+        </tr>
+        <tr>
+        <td><p><code>OutOfRange</code></p></td>
+        <td><p>The operation was attempted outside a valid range. Unlike <code>InvalidArgument</code>, this error indicates the problem may be fixed if the system state changes.</p></td>
+        </tr>
+        <tr>
+        <td><p><code>Unimplemented</code></p></td>
+        <td><p>The requested operation is not implemented or supported in this service.</p></td>
+        </tr>
+        <tr>
+        <td><p><code>Internal</code></p></td>
+        <td><p>An internal error occurred.</p></td>
+        </tr>
+        <tr>
+        <td><p><code>Unavailable</code></p></td>
+        <td><p>The requested service is unavailable.</p></td>
+        </tr>
+        <tr>
+        <td><p><code>DataLoss</code></p></td>
+        <td><p>Unrecoverable data loss or corruption occurred.</p></td>
+        </tr>
+        <tr>
+        <td><p><code>Unauthenticated</code></p></td>
+        <td><p>The request is not valid due to invalid or missing authentication credentials.</p></td>
+        </tr>
+        </tbody>
+        </table>
+        <table id="Table4-2" class="pagebreak-before less_space">
+        <caption><span class="label">Table 3-2. </span>OpenTelemetry SpanKind reference</caption>
+        <thead>
+        <tr>
+        <th>Kind</th>
+        <th>Description</th>
+        <th>Asynchronous</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p><code>CLIENT</code></p></td>
+        <td><p>This span represents a synchronous request to a remote service; it is the parent of its associated <code>SERVER</code> span.</p></td>
+        <td><p>False</p></td>
+        </tr>
+        <tr>
+        <td><p><code>SERVER</code></p></td>
+        <td><p>This span represents a synchronous request from a client on the remote service; it is the child of its associated <code>CLIENT</code> span.</p></td>
+        <td><p>False</p></td>
+        </tr>
+        <tr>
+        <td><p><code>PRODUCER</code></p></td>
+        <td><p>This span represents the parent of an asynchronous request. It is expected to end before its associated <code>CONSUMER</code> span.</p></td>
+        <td><p>True</p></td>
+        </tr>
+        <tr>
+        <td><p><code>CONSUMER</code></p></td>
+        <td><p>This span represents the child of an asynchronous request. It is the child of an associated <code>PRODUCER</code> span.</p></td>
+        <td><p>True</p></td>
+        </tr>
+        <tr>
+        <td><p><code>INTERNAL</code></p></td>
+        <td><p>This span does not represent any RPC; instead, it is an internal operation within a service and has no interaction with remote parents or children.</p></td>
+        <td><p>n/a</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p><a data-type="indexterm" data-primary="API services" data-secondary="OpenTelemetry" id="idm45357014588232"></a><a data-type="indexterm" data-primary="tags" data-secondary="SetAttributes API of OpenTelemetry" id="idm45357014587256"></a><code>SetAttributes</code> allows you to add key-value pairs to a span. These attributes, which are also commonly referred to as tags, are the primary method of aggregating and indexing spans in a backend analysis system. Attribute keys must be strings, and attribute values may be strings, Boolean, or numeric values. If you try to set an attribute that already exists, the new value will overwrite the existing one. <a data-type="indexterm" data-primary="events" data-secondary="AddEvents API of OpenTelemetry" id="idm45357014585448"></a><code>AddEvents</code> allows you to add timestamped events to a span. An event is roughly analogous to a log statement. These events can also have attributes, allowing you to make structured event data.</p>
+        
+        <p><a data-type="indexterm" data-primary="examples" data-secondary="OpenTelemetry" id="idm45357014583592"></a><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="example" id="idm45357014582616"></a>That was a lot of ground to cover, so let’s illustrate with <a data-type="xref" href="#Ex4-1">Example&nbsp;3-1</a>.</p>
+        <div id="Ex4-1" data-type="example">
+        <h5><span class="label">Example 3-1. </span>Attributes</h5>
+        
+        <pre data-type="programlisting" data-code-language="java"><code class="kn">import</code><code> </code><code class="nn">io.grpc.ManagedChannel</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.grpc.ManagedChannelBuilder</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.opentelemetry.OpenTelemetry</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.opentelemetry.exporters.jaeger.JaegerGrpcSpanExporter</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.opentelemetry.sdk.OpenTelemetrySdk</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.opentelemetry.sdk.trace.export.SimpleSpansProcessor</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.opentelemetry.trace.Span</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.opentelemetry.trace.Tracer</code><code class="o">;</code><code>
+        </code><code>
+        </code><code class="kd">public</code><code> </code><code class="kd">class</code><code> </code><code class="nc">OpenTelemetryExample</code><code> </code><code class="o">{</code><code>
+        </code><code>  </code><code class="c1">// Get a tracer from the tracer factory
+        </code><code>  </code><code class="kd">private</code><code> </code><code class="n">Tracer</code><code> </code><code class="n">tracer</code><code> </code><code class="o">=</code><code> </code><code class="n">OpenTelemetry</code><code class="o">.</code><code class="na">getTracerFactory</code><code class="o">(</code><code class="o">)</code><code>
+        </code><code>                                       </code><code class="o">.</code><code class="na">get</code><code class="o">(</code><code class="s">"OpenTelemetryExample"</code><code class="o">)</code><code class="o">;</code><code> </code><a class="co" id="co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO1-1" href="#callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO1-1"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/1.png" alt="1" width="12" height="12"></a><code>
+        </code><code>  </code><code class="c1">// Export traces to Jaeger
+        </code><code>  </code><code class="kd">private</code><code> </code><code class="n">JaegerGrpcSpanExporter</code><code> </code><code class="n">jaegerExporter</code><code class="o">;</code><code>
+        </code><code>
+        </code><code>  </code><code class="kd">public</code><code> </code><code class="nf">JaegerExample</code><code class="o">(</code><code class="n">String</code><code> </code><code class="n">ip</code><code class="o">,</code><code> </code><code class="kt">int</code><code> </code><code class="n">port</code><code class="o">)</code><code> </code><code class="o">{</code><code>
+        </code><code>    </code><code class="k">this</code><code class="o">.</code><code class="na">ip</code><code> </code><code class="o">=</code><code> </code><code class="n">ip</code><code class="o">;</code><code>
+        </code><code>    </code><code class="k">this</code><code class="o">.</code><code class="na">port</code><code> </code><code class="o">=</code><code> </code><code class="n">port</code><code class="o">;</code><code>
+        </code><code>  </code><code class="o">}</code><code>
+        </code><code>
+        </code><code>  </code><code class="kd">private</code><code> </code><code class="kt">void</code><code> </code><code class="nf">setupJaegerExporter</code><code class="o">(</code><code class="o">)</code><code> </code><code class="o">{</code><code>
+        </code><code>    </code><code class="c1">// Set up a gRPC channel to export span data to Jaeger
+        </code><code>    </code><code class="n">ManagedChannel</code><code> </code><code class="n">jaegerChannel</code><code> </code><code class="o">=</code><code> </code><code class="n">ManagedChannelBuilder</code><code class="o">.</code><code class="na">forAddress</code><code class="o">(</code><code class="n">ip</code><code class="o">,</code><code> </code><code class="n">port</code><code class="o">)</code><code>
+        </code><code>                                                        </code><code class="o">.</code><code class="na">build</code><code class="o">(</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>    </code><code class="c1">// Build the Jaeger exporter
+        </code><code>    </code><code class="k">this</code><code class="o">.</code><code class="na">jaegerExporter</code><code> </code><code class="o">=</code><code>
+        </code><code>        </code><code class="n">JaegerGrpcSpanExporter</code><code class="o">.</code><code class="na">newBuilder</code><code class="o">(</code><code class="o">)</code><code>
+        </code><code>            </code><code class="o">.</code><code class="na">setServiceName</code><code class="o">(</code><code class="s">"OpenTelemetryExample"</code><code class="o">)</code><code>
+        </code><code>            </code><code class="o">.</code><code class="na">setChannel</code><code class="o">(</code><code class="n">jaegerChannel</code><code class="o">)</code><code>
+        </code><code>            </code><code class="o">.</code><code class="na">setDeadline</code><code class="o">(</code><code class="mi">30</code><code class="o">)</code><code>
+        </code><code>            </code><code class="o">.</code><code class="na">build</code><code class="o">(</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>    </code><code class="c1">// Register the Jaeger exporter with the span processor on our tracer
+        </code><code>    </code><code class="n">OpenTelemetrySdk</code><code class="o">.</code><code class="na">getTracerFactory</code><code class="o">(</code><code class="o">)</code><code>
+        </code><code>        </code><code class="o">.</code><code class="na">addSpanProcessor</code><code class="o">(</code><code class="n">SimpleSpansProcessor</code><code class="o">.</code><code class="na">newBuilder</code><code class="o">(</code><code class="k">this</code><code class="o">.</code><code class="na">jaegerExporter</code><code class="o">)</code><code>
+        </code><code>        </code><code class="o">.</code><code class="na">build</code><code class="o">(</code><code class="o">)</code><code class="o">)</code><code class="o">;</code><code> </code><a class="co" id="co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO1-2" href="#callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO1-2"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/2.png" alt="2" width="12" height="12"></a><code>
+        </code><code>  </code><code class="o">}</code><code>
+        </code><code>
+        </code><code>  </code><code class="kd">private</code><code> </code><code class="kt">void</code><code> </code><code class="nf">makeSpan</code><code class="o">(</code><code class="o">)</code><code> </code><code class="o">{</code><code>
+        </code><code>    </code><code class="c1">// Generate a span
+        </code><code>    </code><code class="n">Span</code><code> </code><code class="n">span</code><code> </code><code class="o">=</code><code> </code><code class="k">this</code><code class="o">.</code><code class="na">tracer</code><code class="o">.</code><code class="na">spanBuilder</code><code class="o">(</code><code class="s">"test span"</code><code class="o">)</code><code class="o">.</code><code class="na">startSpan</code><code class="o">(</code><code class="o">)</code><code class="o">;</code><code> </code><a class="co" id="co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO1-3" href="#callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO1-3"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/3.png" alt="3" width="12" height="12"></a><code>
+        </code><code>    </code><code class="n">span</code><code class="o">.</code><code class="na">addEvent</code><code class="o">(</code><code class="s">"about to do work"</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>    </code><code class="c1">// Simulate some work happening
+        </code><code>    </code><code class="n">doWork</code><code class="o">(</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>    </code><code class="n">span</code><code class="o">.</code><code class="na">addEvent</code><code class="o">(</code><code class="s">"finished doing work"</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>    </code><code class="n">span</code><code class="o">.</code><code class="na">end</code><code class="o">(</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>  </code><code class="o">}</code><code>
+        </code><code>
+        </code><code>  </code><code class="kd">private</code><code> </code><code class="kt">void</code><code> </code><code class="nf">doWork</code><code class="o">(</code><code class="o">)</code><code> </code><code class="o">{</code><code>
+        </code><code>    </code><code class="k">try</code><code> </code><code class="o">{</code><code>
+        </code><code>      </code><code class="n">Thread</code><code class="o">.</code><code class="na">sleep</code><code class="o">(</code><code class="mi">1000</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>    </code><code class="o">}</code><code> </code><code class="k">catch</code><code> </code><code class="o">(</code><code class="n">InterruptedException</code><code> </code><code class="n">e</code><code class="o">)</code><code> </code><code class="o">{</code><code>
+        </code><code>    </code><code class="o">}</code><code>
+        </code><code>  </code><code class="o">}</code><code>
+        </code><code>
+        </code><code>  </code><code class="kd">public</code><code> </code><code class="kd">static</code><code> </code><code class="kt">void</code><code> </code><code class="nf">main</code><code class="o">(</code><code class="n">String</code><code class="o">[</code><code class="o">]</code><code> </code><code class="n">args</code><code class="o">)</code><code> </code><code class="o">{</code><code>
+        </code><code>    </code><code class="n">JaegerExample</code><code> </code><code class="n">example</code><code> </code><code class="o">=</code><code> </code><code class="k">new</code><code> </code><code class="n">JaegerExample</code><code class="o">(</code><code class="s">"localhost"</code><code class="o">,</code><code> </code><code class="mi">14250</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>    </code><code class="n">example</code><code class="o">.</code><code class="na">setupJaegerExporter</code><code class="o">(</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>    </code><code class="n">example</code><code class="o">.</code><code class="na">makeSpan</code><code class="o">(</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>
+        </code><code>    </code><code class="c1">// Wait for things to complete
+        </code><code>    </code><code class="k">try</code><code> </code><code class="o">{</code><code>
+        </code><code>      </code><code class="n">Thread</code><code class="o">.</code><code class="na">sleep</code><code class="o">(</code><code class="mi">1000</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>    </code><code class="o">}</code><code> </code><code class="k">catch</code><code> </code><code class="o">(</code><code class="n">InterruptedException</code><code> </code><code class="n">e</code><code class="o">)</code><code> </code><code class="o">{</code><code>
+        </code><code>    </code><code class="o">}</code><code>
+        </code><code>  </code><code class="o">}</code><code>
+        </code><code class="o">}</code></pre>
+        <dl class="calloutlist">
+        <dt><a class="co" id="callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO1-1" href="#co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO1-1"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/1.png" alt="1" width="12" height="12"></a></dt>
+        <dd><p>All spans created by this tracer will be prefixed with the name you enter here.</p></dd>
+        <dt><a class="co" id="callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO1-2" href="#co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO1-2"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/2.png" alt="2" width="12" height="12"></a></dt>
+        <dd><p>There are other span processors available in OpenTelemetry—this one sends each span as it finishes. Alternatively, you can use a batching processor that sends groups of spans on some time interval.</p></dd>
+        <dt><a class="co" id="callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO1-3" href="#co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO1-3"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/3.png" alt="3" width="12" height="12"></a></dt>
+        <dd><p>You could also add attributes or other metadata here.</p></dd>
+        </dl></div>
+        
+        <p>As you can see, the basics are pretty straightforward. Create a tracer, <a data-type="indexterm" data-primary="exporters" data-secondary="OpenTelemetry" id="idm45357012312120"></a><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="exporters" id="idm45357012375128"></a>register an exporter, then create spans. You’ll need to do a bit more to instrument your actual services, however (more about instrumenting a <em>real</em> service in <a data-type="xref" href="ch04.html#chapter_5">Chapter&nbsp;4</a>). What haven’t we discussed about OpenTelemetry? First, we didn’t touch on the metrics component, since this text is focused on distributed tracing. Second, we didn’t discuss the distributed context components of OpenTelemetry in detail—you can read more about those in <a data-type="xref" href="app02.html#appendix_b_context_propagation_in_opentelemetry">Appendix&nbsp;B</a>.</p>
+        
+        <p><a data-type="indexterm" data-primary="standards" data-secondary="OpenTelemetry" id="idm45357011743720"></a><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="as standard for instrumentation" data-secondary-sortas="standard for instrumentation" id="idm45357011742744"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="standard, OpenTelemetry as" id="idm45357011741496"></a>OpenTelemetry is the new standard for instrumenting your code for distributed tracing. Its broad base of support from major cloud and observability vendors ensures that it will have the necessary resources for maintenance and improvements over time, and it’s expected to gain adoption rapidly in existing and new open source frameworks and libraries. We’ll take you through its predecessors now and help you understand not only the differences between them and OpenTelemetry, but also the similarities.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="OpenTracing and OpenCensus"><div class="sect1" id="ch4_opentracing_and_opencensus">
+        <h1>OpenTracing and OpenCensus</h1>
+        
+        <p><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="history" id="idm45357012355608"></a>OpenTracing and OpenCensus are both highly successful open source projects and have been broadly adopted by developers for instrumenting their distributed systems. In this section, we’ll discuss the specifications and APIs of these frameworks and some of the drawbacks that led to the creation of OpenTelemetry.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="OpenTracing"><div class="sect2" id="ch4_opentracing">
+        <h2>OpenTracing</h2>
+        
+        <p><a data-type="indexterm" data-primary="OpenTracing" id="idm45357011854200"></a>OpenTracing was launched in 2016 with the goal of fixing the broken state of tracing instrumentation.<sup><a data-type="noteref" id="idm45357011853368-marker" href="ch03.html#idm45357011853368">2</a></sup> While large tech companies like Google had used distributed tracing for over a decade, overall adoption was slow. The OpenTracing authors saw this as a failure at the point of instrumentation—the wide variety of processes that a request would pass through all required instrumentation to interoperate, and the existing instrumentation options would necessarily bind you to a specific tracing vendor.</p>
+        
+        <p>As we’ve mentioned, the trace context must remain unbroken through the entire request in order to provide end-to-end visibility. This was the primary rationale behind OpenTracing: to provide a standard mechanism for instrumentation that wouldn’t bind any particular package, library, or service author to a particular tracing vendor. Prior efforts in this space focused on standardization of data formats and context encoding rather than APIs to manage spans and propagation of the trace context between services. While this could be useful, the authors determined that it wasn’t required for the widespread adoption of distributed tracing.</p>
+        
+        <p>Indeed, the problem was (and, in large part, still is) that the point of instrumentation matters a great deal. Instrumenting your application code and business logic can be useful, yes—but instrumenting the middleware and the frameworks your application relies on can be much more valuable: you benefit from the instrumentation without additional effort during development <em>and</em> can extend the instrumentation into your business logic easily. How did the authors seek to accomplish this? To achieve the goal of vendor neutrality, OpenTracing could not be overly opinionated about data formats, context propagation encoding, or other factors. Instead, they built a semantic specification that was portable across programming languages and provided an interface package that others could implement. The overall design can be seen in <a data-type="xref" href="#figure_ot_design">Figure&nbsp;3-3</a>.</p>
+        
+        <figure class="width-75"><div id="figure_ot_design" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0303.png" alt="The OpenTracing Ecosystem Design" width="1138" height="496">
+        <h6><span class="label">Figure 3-3. </span>The OpenTracing ecosystem design.<sup><a data-type="noteref" id="idm45357012307448-marker" href="ch03.html#idm45357012307448">3</a></sup></h6>
+        </div></figure>
+        
+        <p><a data-type="indexterm" data-primary="API services" data-secondary="OpenTracing" id="idm45357012178696"></a><a data-type="indexterm" data-primary="OpenTracing" data-secondary="API" id="idm45357012177832"></a><a data-type="indexterm" data-primary="tracers" data-secondary="OpenTracing" id="idm45357012176888"></a>What does the OpenTracing API look like? It’s primarily focused on span and context management; it has a fairly constrained API surface. There are three main objects defined in the OpenTracing API: tracer, span, and span context. We’ll discuss each of them in turn.</p>
+        
+        <p>A tracer is capable of creating spans and responsible for serialization and deserialization of them across process boundaries. Tracers must satisfy all of the following <span class="keep-together">requirements</span>:</p>
+        
+        <ul class="pagebreak-before">
+        <li>
+        <p>Start a new span.</p>
+        </li>
+        <li>
+        <p><a data-type="indexterm" data-primary="inject operations" data-secondary="OpenTracing span context" id="idm45357011936904"></a>Inject a span context into a carrier.</p>
+        </li>
+        <li>
+        <p><a data-type="indexterm" data-primary="extract operations" data-secondary="OpenTracing span context from carrier" id="idm45357011935144"></a>Extract a span context from a carrier.</p>
+        </li>
+        </ul>
+        
+        <p><a data-type="indexterm" data-primary="spans" data-secondary="created under OpenTracing" id="idm45357012434344"></a>A span started by a tracer must have a name—a human-readable string that represents the work being done by the span. The specification prescribes that the “operation name should be the most general string that identifies a (statistically) interesting class of Span instances.” As we’ve mentioned, this is because the name is the primary aggregation key for your traces. A span may also be created with references to other span context objects, an explicit starting time, and key-value pairs of tag data. <a data-type="indexterm" data-primary="context propagation" data-secondary="OpenTracing" id="idm45357012432648"></a>Span contexts are also operated on by the tracer for context propagation purposes through the <code>inject</code> and <code>extract</code> methods.</p>
+        
+        <p><a data-type="indexterm" data-primary="OpenTracing" data-secondary="carriers" id="idm45357012217016"></a><a data-type="indexterm" data-primary="carriers in OpenTracing" id="idm45357012216040"></a>First, we should define what a <em>carrier</em> is: a data structure that “carries” the encoded span context, such as a text map or blob of binary data. OpenTracing requires three formats for injection and extraction: text map, HTTP headers, and binary. Text map and HTTP headers are very similar in that they’re both string-to-string maps, but HTTP headers require that both the keys and values satisfy <a href="https://oreil.ly/GgfXg">RFC 7230</a>. Binary is a single arbitrary blob of bytes that represent the span context.</p>
+        
+        <p>In practice, it is this last part—injecting and extracting a span context—that has caused much consternation in the distributed tracing community. <a data-type="indexterm" data-primary="header formats" data-secondary="OpenTracing" id="idm45357011776664"></a><a data-type="indexterm" data-primary="OpenTracing" data-secondary="context header data formats" id="idm45357012293304"></a>As OpenTracing did not specify a data format for the context headers (in part due to significant existing work in the space from projects such as Zipkin, which we’ll discuss in <a data-type="xref" href="#other-notable-formats-sect">“Other Notable Formats and Projects”</a>), several different keys are commonly seen in the wild. These include <code>x-ot-span-context</code> (a binary blob used by <a data-type="indexterm" data-primary="header formats" data-secondary="Envoy" id="idm45357012290824"></a><a data-type="indexterm" data-primary="Envoy" data-secondary="context headers" id="idm45357012335640"></a>Envoy), the <a data-type="indexterm" data-primary="header formats" data-secondary="B3 context headers" id="idm45357012334568"></a><a data-type="indexterm" data-primary="B3 context headers" id="idm45357012333592"></a>B3 headers (<code>x-b3-TraceID</code>, <code>x-b3-spanid</code>, etc.) and <a data-type="indexterm" data-primary="header formats" data-secondary="Jaeger" id="idm45357012200248"></a><a data-type="indexterm" data-primary="Jaeger" data-secondary="context headers" id="idm45357012199240"></a>Jaeger’s <code>uber-TraceID</code>, which are both HTTP headers, and more (Jaeger is an OpenTracing tracer and trace analyzer). In addition, many organizations that had an existing tracing implementation would use or reuse their tracing headers and adapt them to the OpenTracing API. As described earlier, many of these issues are made moot by the adoption of <a data-type="indexterm" data-primary="W3C" data-secondary="TraceContext" id="idm45357011731560"></a><a data-type="indexterm" data-primary="standards" data-secondary="W3C TraceContext" id="idm45357011730584"></a><a data-type="indexterm" data-primary="trace context" data-secondary="W3C TraceContext standard" id="idm45357011729640"></a>W3C TraceContext, which provides a universal standard for propagating trace state over the wire, but it’s likely that we’ll see these legacy headers in use for years to come.</p>
+        
+        <p><a data-type="indexterm" data-primary="spans" data-secondary="OpenTracing APIs" id="idm45357012298616"></a>OpenTracing’s second primary object type is the span. A span implementation must satisfy the following requirements:</p>
+        
+        <ul>
+        <li>
+        <p>Retrieve the span context of the span.</p>
+        </li>
+        <li>
+        <p>Overwrite the name.</p>
+        </li>
+        <li>
+        <p>Finish (or complete) the span.</p>
+        </li>
+        <li>
+        <p>Set a tag on the span.</p>
+        </li>
+        <li>
+        <p>Create a log message on the span.</p>
+        </li>
+        <li>
+        <p>Set an item in the span baggage.</p>
+        </li>
+        <li>
+        <p>Get an item in the span baggage.</p>
+        </li>
+        </ul>
+        
+        <p>Some of these methods are fairly self-explanatory, such as overwriting the name of the span. One important note is that after a span is finished, <em>no methods other than retrieving the span context may be called on it</em>. As with starting a span, finishing a span accepts an optional explicit timestamp—if unsupplied, the current time will be used. <a data-type="indexterm" data-primary="logs" data-secondary="OpenTracing complex object logging" id="idm45357012280168"></a><a data-type="indexterm" data-primary="OpenTracing" data-secondary="complex object logging" id="idm45357012267400"></a><a data-type="indexterm" data-primary="tags" data-secondary="OpenTracing complex object logging" id="idm45357012266568"></a>Logs are an interesting field on spans because they can accept an arbitrary value, as opposed to tags, which can only accept string, numeric, or Boolean value types. This means, for example, that complex objects can be logged and, subject to the capabilities of the trace analyzer or OpenTracing implementation, interpreted.</p>
+        
+        <p><a data-type="indexterm" data-primary="baggage" data-secondary="OpenTracing APIs" id="idm45357012264888"></a><a data-type="indexterm" data-primary="baggage" data-secondary="OpenTracing span context" id="idm45357011735848"></a><a data-type="indexterm" data-primary="OpenTracing" data-secondary="span context" id="idm45357011734936"></a><a data-type="indexterm" data-primary="spans" data-secondary="span context" id="idm45357011733992"></a>Finally, we come to baggage. <em>Baggage items</em> are key-value pairs where both the key and value must be a string. Unlike tags or logs, baggage items are applied to the given span, its span context, and <em>all span objects that directly or transitively reference that span</em>. <a data-type="indexterm" data-primary="inject operations" data-secondary="OpenTracing baggage" id="idm45357012257704"></a><a data-type="indexterm" data-primary="extract operations" data-secondary="OpenTracing baggage" id="idm45357012256728"></a>When you add baggage items, they’re attached to the span context rather than to the span itself, so when you inject that context and extract it on the other side of an RPC, the baggage has gone along for the ride and can be retrieved. <a data-type="indexterm" data-primary="baggage" data-secondary="about" id="idm45357012255400"></a>Baggage is a powerful tool because it allows developers to easily pass values throughout their system, so it should be used with care. Some interesting applications of baggage are to pass values from a client system (such as client OS or application version) to a backend system where they can be used to apply more metadata to spans, or even for conditional logic statements in the backend such as selecting which method handles a given request.</p>
+        
+        <p><a data-type="indexterm" data-primary="spans" data-secondary="OpenTracing span context" id="idm45357012244056"></a>Finally, the span context. We’ve discussed it in this chapter and others, and its history in OpenTracing is complex. Originally, it only exposed a single method—an iterator for all baggage items. The authors left the actual implementation largely up to authors of tracers that implemented OpenTracing in a bid for compatibility. Over time, the specification was extended to offer accessors for the TraceID and SpanID (<span class="keep-together"><code>ToTraceID</code></span> and <code>ToSpanID</code>, respectively), which would return a string representation of the trace and span ID values. This was not extended to every language prior to the development of OpenTelemetry, however, so it’s unlikely to be seen in the wild. For the most part, as far as the specification is concerned, a <code>SpanContext</code> is an opaque identifier.</p>
+        
+        <p><a data-type="indexterm" data-primary="examples" data-secondary="OpenTracing" id="idm45357012225736"></a><a data-type="indexterm" data-primary="OpenTracing" data-secondary="example" id="idm45357012224760"></a>What does it look like in practice? Let’s go through a small example in Java (see <a data-type="xref" href="#span_context">Example&nbsp;3-2</a>).</p>
+        <div id="span_context" data-type="example">
+        <h5><span class="label">Example 3-2. </span>SpanContext</h5>
+        
+        <pre data-type="programlisting" data-code-language="java"><code class="kn">import</code><code> </code><code class="nn">io.jaegertracing.Configuration</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.jaegertracing.Configuration.ReporterConfiguration</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.jaegertracing.Configuration.SamplerConfiguration</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.jaegertracing.internal.JaegerTracer</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.jaegertracing.internal.samplers.ConstSampler</code><code class="o">;</code><code> </code><a class="co" id="co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-1" href="#callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-1"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/1.png" alt="1" width="12" height="12"></a><code>
+        </code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.opentracing.Span</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.opentracing.util.GlobalTracer</code><code class="o">;</code><code> </code><a class="co" id="co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-2" href="#callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-2"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/2.png" alt="2" width="12" height="12"></a><code>
+        </code><code>
+        </code><code class="o">.</code><code class="o">.</code><code class="o">.</code><code>
+        </code><code>
+        </code><code class="n">SamplerConfiguration</code><code> </code><code class="n">samplerConfig</code><code> </code><code class="o">=</code><code> </code><code class="n">SamplerConfiguration</code><code class="o">.</code><code class="na">fromEnv</code><code class="o">(</code><code class="o">)</code><code>
+        </code><code>  </code><code class="o">.</code><code class="na">withType</code><code class="o">(</code><code class="n">ConstSampler</code><code class="o">.</code><code class="na">TYPE</code><code class="o">)</code><code>
+        </code><code>  </code><code class="o">.</code><code class="na">withParam</code><code class="o">(</code><code class="mi">1</code><code class="o">)</code><code class="o">;</code><code> </code><a class="co" id="co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-3" href="#callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-3"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/3.png" alt="3" width="12" height="12"></a><code>
+        </code><code>
+        </code><code class="n">ReporterConfiguration</code><code> </code><code class="n">reporterConfig</code><code> </code><code class="o">=</code><code> </code><code class="n">ReporterConfiguration</code><code class="o">.</code><code class="na">fromEnv</code><code class="o">(</code><code class="o">)</code><code>
+        </code><code>  </code><code class="o">.</code><code class="na">withLogSpans</code><code class="o">(</code><code class="kc">true</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>
+        </code><code class="n">Configuration</code><code> </code><code class="n">config</code><code> </code><code class="o">=</code><code> </code><code class="k">new</code><code> </code><code class="n">Configuration</code><code class="o">(</code><code class="s">"helloWorld"</code><code class="o">)</code><code>
+        </code><code>  </code><code class="o">.</code><code class="na">withSampler</code><code class="o">(</code><code class="n">samplerConfig</code><code class="o">)</code><code>
+        </code><code>  </code><code class="o">.</code><code class="na">withReporter</code><code class="o">(</code><code class="n">reporterConfig</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>
+        </code><code class="n">GlobalTracer</code><code class="o">.</code><code class="na">register</code><code class="o">(</code><code class="n">config</code><code class="o">.</code><code class="na">getTracer</code><code class="o">(</code><code class="o">)</code><code class="o">)</code><code class="o">;</code><code> </code><a class="co" id="co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-4" href="#callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-4"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/4.png" alt="4" width="12" height="12"></a><code>
+        </code><code>
+        </code><code class="o">.</code><code class="o">.</code><code class="o">.</code><code>
+        </code><code>
+        </code><code class="k">try</code><code> </code><code class="o">(</code><code class="n">Span</code><code> </code><code class="n">parent</code><code> </code><code class="o">=</code><code> </code><code class="n">GlobalTracer</code><code class="o">.</code><code class="na">get</code><code class="o">(</code><code class="o">)</code><code class="o">.</code><code class="na">buildSpan</code><code class="o">(</code><code class="s">"hello"</code><code class="o">)</code><code class="o">.</code><code class="na">start</code><code class="o">(</code><code class="o">)</code><code class="o">)</code><code> </code><code class="o">{</code><code> </code><a class="co" id="co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-5" href="#callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-5"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/5.png" alt="5" width="12" height="12"></a><code>
+        </code><code>    </code><code class="n">parent</code><code class="o">.</code><code class="na">setTag</code><code class="o">(</code><code class="s">"parentSpan"</code><code class="o">,</code><code> </code><code class="kc">true</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>    </code><code class="n">parent</code><code class="o">.</code><code class="na">log</code><code class="o">(</code><code class="s">"event"</code><code class="o">,</code><code> </code><code class="s">"hello world!"</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>    </code><code class="k">try</code><code> </code><code class="o">(</code><code class="n">Span</code><code> </code><code class="n">child</code><code> </code><code class="o">=</code><code> </code><code class="n">GlobalTracer</code><code class="o">.</code><code class="na">get</code><code class="o">(</code><code class="o">)</code><code class="o">.</code><code class="na">buildSpan</code><code class="o">(</code><code class="s">"child"</code><code class="o">)</code><code class="o">.</code><code class="na">asChildOf</code><code class="o">(</code><code class="n">parent</code><code class="o">)</code><code>
+        </code><code>                                  </code><code class="o">.</code><code class="na">start</code><code class="o">(</code><code class="o">)</code><code class="o">)</code><code> </code><code class="o">{</code><code> </code><a class="co" id="co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-6" href="#callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-6"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/6.png" alt="6" width="12" height="12"></a><code>
+        </code><code>        </code><code class="n">child</code><code class="o">.</code><code class="na">setTag</code><code class="o">(</code><code class="s">"childSpan"</code><code class="o">,</code><code> </code><code class="kc">true</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>    </code><code class="o">}</code><code>
+        </code><code class="o">}</code></pre>
+        <dl class="calloutlist">
+        <dt><a class="co" id="callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-1" href="#co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-1"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/1.png" alt="1" width="12" height="12"></a></dt>
+        <dd><p><a data-type="indexterm" data-primary="tracers" data-secondary="OpenTracing" id="idm45357012069880"></a>Since OpenTracing doesn’t provide an implementation of the tracer, you’ll need to import the <a data-type="indexterm" data-primary="Jaeger" data-secondary="OpenTracing Tracer implementation" id="idm45357012068760"></a>Jaeger packages.</p></dd>
+        <dt><a class="co" id="callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-2" href="#co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-2"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/2.png" alt="2" width="12" height="12"></a></dt>
+        <dd><p>The OpenTracing packages here are for the span and global tracer API.</p></dd>
+        <dt><a class="co" id="callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-3" href="#co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-3"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/3.png" alt="3" width="12" height="12"></a></dt>
+        <dd><p><a data-type="indexterm" data-primary="API services" data-secondary="Jaeger sampling API for OpenTracing" id="idm45357012106888"></a><a data-type="indexterm" data-primary="Jaeger" data-secondary="sampling API for OpenTracing" id="idm45357012105944"></a>Since OpenTracing doesn’t have a first-class sampling API, Jaeger provides it.</p></dd>
+        <dt><a class="co" id="callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-4" href="#co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-4"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/4.png" alt="4" width="12" height="12"></a></dt>
+        <dd><p>OpenTracing’s <code>GlobalTracer</code> provides a single instance of the tracer class (singleton) to the process.</p></dd>
+        <dt><a class="co" id="callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-5" href="#co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-5"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/5.png" alt="5" width="12" height="12"></a></dt>
+        <dd><p><code>buildSpan</code> takes a single argument, the name of the span.</p></dd>
+        <dt><a class="co" id="callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-6" href="#co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO2-6"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/6.png" alt="6" width="12" height="12"></a></dt>
+        <dd><p>OpenTracing in Java supports a try-with-resources pattern that can finish a span automatically when it goes out of scope. Automatic context management in the Java tracer implicitly forms a parent-child relationship between these two spans.</p></dd>
+        </dl></div>
+        
+        <p><a data-type="indexterm" data-primary="API services" data-secondary="OpenTracing" id="idm45357012071896"></a><a data-type="indexterm" data-primary="OpenTracing" data-secondary="API" id="idm45357012047096"></a>As you can see, the API for OpenTracing is fairly small—too small, ironically enough. What drove adoption of OpenTracing was also what made it hard to use, in many ways. A common scenario for a new developer who had heard about distributed <span class="keep-together">tracing</span> was to discover the OpenTracing website and try to install an OpenTracing package for their language, only to find that it didn’t actually <em>do</em> anything.</p>
+        
+        <p>OpenTracing provided mock and NoOp tracers in each language for the benefit of testing and validation, but there was no simple or easy way to “get started” without first understanding the design of the library. In addition, some of the trade-offs made for the sake of simplicity turned out to be difficult for end users to cope with. Implementers of the OpenTracing API would often add nonstandard features that patched holes or added convenience for users, breaking some of the fundamental promises of vendor neutrality.</p>
+        
+        <p>OpenTracing also presented users with a tracing-only framework. There was no associated metrics API, for example, to allow for the recording of counters, gauges, or other common metric primitives. Users wanted more.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="OpenCensus"><div class="sect2" id="ch4_opencensus">
+        <h2>OpenCensus</h2>
+        
+        <p><a data-type="indexterm" data-primary="OpenCensus" data-secondary="about" id="idm45357012041400"></a><a data-type="indexterm" data-primary="Google" data-secondary="Census project" data-see="OpenCensus" id="idm45357012040424"></a><a data-type="indexterm" data-primary="URLs" data-secondary="OpenCensus" id="idm45357012039208"></a>In early 2018, Google released an open source version of its internal Census project, naming it <a href="https://oreil.ly/C-1Vx">OpenCensus</a>. Census was designed under different circumstances and with different constraints than OpenTracing. The goal of the Census project was to provide a uniform method for instrumenting and capturing trace and metric data from Google services automatically. The Census team built deep integrations into technologies such as <a data-type="indexterm" data-primary="gRPC" data-secondary="Google Census" id="idm45357012037032"></a><a data-type="indexterm" data-primary="OpenCensus" data-secondary="gRPC" id="idm45357012036056"></a>gRPC, affording any developer who used these technologies basic tracing and metrics for no additional work.</p>
+        
+        <p>The design of Census, thus, was extremely different from the thin API offered by OpenTracing. Census was an entire SDK for tracing and metrics, providing a full implementation in addition to the API, tightly coupled and deeply entwined with gRPC for activities such as <a data-type="indexterm" data-primary="context propagation" data-secondary="OpenCensus" id="idm45357012034184"></a>context propagation. Open-sourcing Census was in many ways an effort to extend the existing Google tracing infrastructure to external users of Google services—since Google services such as Spanner were traced using Census, external requests that were <em>also</em> traced using Census could be connected seamlessly. In addition, maintaining a tracing and metrics framework and integrating it with a variety of tools and vendors can be extremely costly, making the economics of open-sourcing the project a win for Google.</p>
+        
+        <p><a data-type="indexterm" data-primary="API services" data-secondary="OpenCensus" id="idm45357012031864"></a><a data-type="indexterm" data-primary="OpenCensus" data-secondary="APIs" id="idm45357012030664"></a>The fundamental design of OpenCensus differed significantly from OpenTracing, as <a data-type="xref" href="#figure_oc_design">Figure&nbsp;3-4</a> shows. In addition to a tracing API, as mentioned, a metrics API was included. Context propagation could be handled automatically thanks to all implementations using the same format for propagating trace context. It supported the automatic collection of traces and metrics from integrated frameworks along with a local viewer for this data (called “zPages”), making it more immediately useful out of the box. Finally, rather than relying on runtime-swappable implementations of its API to capture and export data to a trace analyzer, it provided a pluggable <a data-type="indexterm" data-primary="exporters" data-secondary="OpenCensus" id="idm45357012028216"></a><a data-type="indexterm" data-primary="OpenCensus" data-secondary="exporters" id="idm45357012027272"></a>exporter model that allowed it to upload data to almost any backend. Like the design, the <span class="keep-together">specification</span> is different—rather than focus on a few primitive types, it defines several different components that build upon each other, as shown in <a data-type="xref" href="#figure_oc_library">Figure&nbsp;3-5</a>.</p>
+        
+        <figure><div id="figure_oc_design" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0304.png" alt="The OpenCensus Ecosystem Design" width="1353" height="617">
+        <h6><span class="label">Figure 3-4. </span>OpenCensus ecosystem design.<sup><a data-type="noteref" id="idm45357012022760-marker" href="ch03.html#idm45357012022760">4</a></sup></h6>
+        </div></figure>
+        
+        <figure><div id="figure_oc_library" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0305.png" alt="The OpenCensus Library Design" width="1329" height="255">
+        <h6><span class="label">Figure 3-5. </span>OpenCensus library design.<sup><a data-type="noteref" id="idm45357012019736-marker" href="ch03.html#idm45357012019736">5</a></sup></h6>
+        </div></figure>
+        
+        <p>The OpenCensus libraries are built on a base of <a data-type="indexterm" data-primary="OpenCensus" data-secondary="in-process context propagation" id="idm45357012018104"></a><a data-type="indexterm" data-primary="trace context" data-secondary="OpenCensus in-process propagation" id="idm45357012017160"></a>in-process context propagation. Where OpenTracing left this mechanism as an exercise to the implementer, OpenCensus required explicit or implicit propagation of subcontexts inside a process. Where a language-supported generic context exists (such as Golang’s <code>context.Context</code>), that implementation must be used.</p>
+        
+        <p>All other APIs are built on this generic context. <a data-type="indexterm" data-primary="tracers" data-secondary="OpenCensus" id="idm45357012015048"></a>The Tracing API is extremely similar, however, to the OpenTracing API in terms of the creation and construction of span objects. The SDK provides a tracer that <a data-type="indexterm" data-primary="spans" data-secondary="created under OpenCensus" id="idm45357012013384"></a>spans can be started from (with a required name, as in OpenTracing), but the way you do this is different than in OpenTracing. OpenCensus allows for the creation of <a data-type="indexterm" data-primary="root span" data-secondary="OpenCensus" id="idm45357012012168"></a><em>root spans</em> and <em>child spans</em>—spans that do not, or do, have a parent. When creating a span, the span may be attached or detached from the underlying context. Unlike OpenTracing, there is no mechanism to modify the start or stop time of a span at creation or completion. There is also no explicit span context object; instead, SpanID and TraceID are fields set on the span itself. <a data-type="indexterm" data-primary="tags" data-secondary="OpenCensus unique fields" id="idm45357012010024"></a>OpenCensus additionally defines several unique fields such as <code>Status</code> and <a data-type="indexterm" data-primary="tags" data-secondary="span kind field" id="idm45357012008568"></a><code>SpanKind</code>, semantic fields that describe the operation status (for example, <code>OK</code>, <code>CANCELLED</code>, and <code>PERMISSION_DENIED</code>) and its type (<code>SERVER</code>, <code>CLIENT</code>, or <code>UNSPECIFIED</code>). A full list of fields follows:</p>
+        
+        <ul>
+        <li>
+        <p><code>SpanID</code></p>
+        </li>
+        <li>
+        <p><code>TraceID</code></p>
+        </li>
+        <li>
+        <p><code>ParentSpanID</code></p>
+        </li>
+        <li>
+        <p><code>StartTime</code></p>
+        </li>
+        <li>
+        <p><code>EndTime</code></p>
+        </li>
+        <li>
+        <p><code>Status</code></p>
+        </li>
+        <li>
+        <p><code>Link</code></p>
+        </li>
+        <li>
+        <p><code>SpanKind</code></p>
+        </li>
+        <li>
+        <p><code>TraceOptions</code></p>
+        </li>
+        <li>
+        <p><code>Tracestate</code></p>
+        </li>
+        <li>
+        <p><code>Time Events</code> (<code>Annotations</code> and <code>Message Events</code>)</p>
+        </li>
+        </ul>
+        
+        <p><a data-type="indexterm" data-primary="events" data-secondary="time events field of OpenCensus" id="idm45357011614456"></a>Of note is the Time Events field, which represents a collection of events that occurred during the lifetime of the span. Annotations contain both attributes (key-value pairs) as well as a log message.</p>
+        
+        <p>In addition to the Span API, OpenCensus provides an API to control sampling. <span class="keep-together">In-process</span> sampling allows you to record only a certain number of spans based on various conditions. Samplers can be configured on the global tracer, or set per span. There are four provided samplers:</p>
+        
+        <ul>
+        <li>
+        <p><code>Always</code> (always return <code>true</code> for a sampling decision)</p>
+        </li>
+        <li>
+        <p><code>Never</code> (always return <code>false</code> for a sampling decision)</p>
+        </li>
+        <li>
+        <p><code>Probabilistic</code> (random chance of returning <code>true</code> or <code>false</code> based on a rate, by default 1 in 10,000)</p>
+        </li>
+        <li>
+        <p><code>RateLimiting</code> (attempts to sample at a given rate over a time window, default of 0.1 traces/second)</p>
+        </li>
+        </ul>
+        
+        <p>In addition to the Tracing and Context APIs, OpenCensus defines a tagging API. These are used by the Data Aggregation API (part of the stats package) in order to configure how data is aggregated and broken down in views. Since the focus of this text is primarily on distributed tracing, we won’t dwell on this topic other than to <span class="keep-together">distinguish</span> it from OpenTracing span tags. Other important differences are that OpenCensus deliberately elides many of the details about interprocess propagation from the spec, instead delegating it to specific propagator plug-ins (such as the <em>go.opencensus.io/plugin/ochttp/propagation/b3</em> package).</p>
+        
+        <p><a data-type="indexterm" data-primary="examples" data-secondary="OpenCensus" id="idm45357011602648"></a><a data-type="indexterm" data-primary="OpenCensus" data-secondary="example" id="idm45357011601672"></a>So we’ve talked about how the tracing API is shaped, but what does it look like in practice? <a data-type="xref" href="#EX4-3">Example&nbsp;3-3</a> offers a Java sample:</p>
+        <div id="EX4-3" data-type="example">
+        <h5><span class="label">Example 3-3. </span>Tracing API</h5>
+        
+        <pre data-type="programlisting" data-code-language="java"><code class="kn">import</code><code> </code><code class="nn">io.opencensus.trace.AttributeValue</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.opencensus.common.Scope</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.opencensus.trace.Span</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.opencensus.trace.Status</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.opencensus.exporter.trace.zipkin.ZipkinTraceExporter</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.opencensus.trace.Tracer</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.opencensus.trace.Tracing</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.opencensus.trace.config.TraceConfig</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.opencensus.trace.config.TraceParams</code><code class="o">;</code><code>
+        </code><code class="kn">import</code><code> </code><code class="nn">io.opencensus.trace.samplers.Samplers</code><code class="o">;</code><code> </code><a class="co" id="co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-1" href="#callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-1"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/1.png" alt="1" width="12" height="12"></a><code>
+        </code><code>
+        </code><code class="o">.</code><code class="o">.</code><code class="o">.</code><code>
+        </code><code>
+        </code><code class="n">ZipkinTraceExporter</code><code class="o">.</code><code class="na">createAndRegister</code><code class="o">(</code><code>
+        </code><code>    </code><code class="s">"http://localhost:9411/api/v2/spans"</code><code class="o">,</code><code> </code><code class="s">"tracing-to-zipkin-service"</code><code class="o">)</code><code class="o">;</code><code> </code><a class="co" id="co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-2" href="#callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-2"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/2.png" alt="2" width="12" height="12"></a><code>
+        </code><code>
+        </code><code class="n">TraceConfig</code><code> </code><code class="n">traceConfig</code><code> </code><code class="o">=</code><code> </code><code class="n">Tracing</code><code class="o">.</code><code class="na">getTraceConfig</code><code class="o">(</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code class="n">TraceParams</code><code> </code><code class="n">activeTraceParams</code><code> </code><code class="o">=</code><code> </code><code class="n">traceConfig</code><code class="o">.</code><code class="na">getActiveTraceParams</code><code class="o">(</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code class="n">traceConfig</code><code class="o">.</code><code class="na">updateActiveTraceParams</code><code class="o">(</code><code>
+        </code><code>    </code><code class="n">activeTraceParams</code><code class="o">.</code><code class="na">toBuilder</code><code class="o">(</code><code class="o">)</code><code class="o">.</code><code class="na">setSampler</code><code class="o">(</code><code>
+        </code><code>        </code><code class="n">Samplers</code><code class="o">.</code><code class="na">alwaysSample</code><code class="o">(</code><code class="o">)</code><code class="o">)</code><code class="o">.</code><code class="na">build</code><code class="o">(</code><code class="o">)</code><code class="o">)</code><code class="o">;</code><code> </code><a class="co" id="co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-3" href="#callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-3"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/3.png" alt="3" width="12" height="12"></a><code>
+        </code><code>
+        </code><code class="n">Tracer</code><code> </code><code class="n">tracer</code><code> </code><code class="o">=</code><code> </code><code class="n">Tracing</code><code class="o">.</code><code class="na">getTracer</code><code class="o">(</code><code class="o">)</code><code class="o">;</code><code> </code><a class="co" id="co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-4" href="#callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-4"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/4.png" alt="4" width="12" height="12"></a><code>
+        </code><code>
+        </code><code class="k">try</code><code> </code><code class="o">(</code><code class="n">Scope</code><code> </code><code class="n">scope</code><code> </code><code class="o">=</code><code> </code><code class="n">tracer</code><code class="o">.</code><code class="na">spanBuilder</code><code class="o">(</code><code class="s">"main"</code><code class="o">)</code><code class="o">.</code><code class="na">startScopedSpan</code><code class="o">(</code><code class="o">)</code><code class="o">)</code><code> </code><code class="o">{</code><code> </code><a class="co" id="co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-5" href="#callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-5"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/5.png" alt="5" width="12" height="12"></a><code>
+        </code><code>    </code><code class="n">System</code><code class="o">.</code><code class="na">out</code><code class="o">.</code><code class="na">println</code><code class="o">(</code><code class="s">"About to do some busy work..."</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>    </code><code class="k">for</code><code> </code><code class="o">(</code><code class="kt">int</code><code> </code><code class="n">i</code><code> </code><code class="o">=</code><code> </code><code class="mi">0</code><code class="o">;</code><code> </code><code class="n">i</code><code> </code><code class="o">&lt;</code><code> </code><code class="mi">10</code><code class="o">;</code><code> </code><code class="n">i</code><code class="o">+</code><code class="o">+</code><code class="o">)</code><code> </code><code class="o">{</code><code>
+        </code><code>        </code><code class="n">doWork</code><code class="o">(</code><code class="n">i</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>    </code><code class="o">}</code><code>
+        </code><code class="o">}</code><code>
+        </code><code>
+        </code><code class="o">.</code><code class="o">.</code><code class="o">.</code><code>
+        </code><code>
+        </code><code class="kd">private</code><code> </code><code class="kd">static</code><code> </code><code class="kt">void</code><code> </code><code class="nf">doWork</code><code class="o">(</code><code class="kt">int</code><code> </code><code class="n">i</code><code class="o">)</code><code> </code><code class="o">{</code><code>
+        </code><code>    </code><code class="n">Tracer</code><code> </code><code class="n">tracer</code><code> </code><code class="o">=</code><code> </code><code class="n">Tracing</code><code class="o">.</code><code class="na">getTracer</code><code class="o">(</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>
+        </code><code>    </code><code class="k">try</code><code> </code><code class="o">(</code><code class="n">Scope</code><code> </code><code class="n">scope</code><code> </code><code class="o">=</code><code> </code><code class="n">tracer</code><code class="o">.</code><code class="na">spanBuilder</code><code class="o">(</code><code class="s">"doWork"</code><code class="o">)</code><code class="o">.</code><code class="na">startScopedSpan</code><code class="o">(</code><code class="o">)</code><code class="o">)</code><code> </code><code class="o">{</code><code> </code><a class="co" id="co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-6" href="#callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-6"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/6.png" alt="6" width="12" height="12"></a><code>
+        </code><code>        </code><code class="n">Span</code><code> </code><code class="n">span</code><code> </code><code class="o">=</code><code> </code><code class="n">tracer</code><code class="o">.</code><code class="na">getCurrentSpan</code><code class="o">(</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>
+        </code><code>        </code><code class="k">try</code><code> </code><code class="o">{</code><code>
+        </code><code>            </code><code class="n">System</code><code class="o">.</code><code class="na">out</code><code class="o">.</code><code class="na">println</code><code class="o">(</code><code class="s">"doing busy work"</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>            </code><code class="n">Thread</code><code class="o">.</code><code class="na">sleep</code><code class="o">(</code><code class="mi">100L</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>        </code><code class="o">}</code><code>
+        </code><code>        </code><code class="k">catch</code><code> </code><code class="o">(</code><code class="n">InterruptedException</code><code> </code><code class="n">e</code><code class="o">)</code><code> </code><code class="o">{</code><code>
+        </code><code>            </code><code class="n">span</code><code class="o">.</code><code class="na">setStatus</code><code class="o">(</code><code class="n">Status</code><code class="o">.</code><code class="na">INTERNAL</code><code class="o">.</code><code class="na">withDescription</code><code class="o">(</code><code class="n">e</code><code class="o">.</code><code class="na">toString</code><code class="o">(</code><code class="o">)</code><code class="o">)</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>        </code><code class="o">}</code><code>
+        </code><code>
+        </code><code>        </code><code class="n">Map</code><code class="o">&lt;</code><code class="n">String</code><code class="o">,</code><code> </code><code class="n">AttributeValue</code><code class="o">&gt;</code><code> </code><code class="n">attrs</code><code> </code><code class="o">=</code><code> </code><code class="k">new</code><code> </code><code class="n">HashMap</code><code class="o">&lt;</code><code class="n">String</code><code class="o">,</code><code> </code><code class="n">AttributeValue</code><code class="o">&gt;</code><code class="o">(</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>        </code><code class="n">attrs</code><code class="o">.</code><code class="na">put</code><code class="o">(</code><code class="s">"use"</code><code class="o">,</code><code> </code><code class="n">AttributeValue</code><code class="o">.</code><code class="na">stringAttributeValue</code><code class="o">(</code><code class="s">"demo"</code><code class="o">)</code><code class="o">)</code><code class="o">;</code><code>
+        </code><code>        </code><code class="n">span</code><code class="o">.</code><code class="na">addAnnotation</code><code class="o">(</code><code class="s">"Invoking doWork"</code><code class="o">,</code><code> </code><code class="n">attrs</code><code class="o">)</code><code class="o">;</code><code> </code><a class="co" id="co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-7" href="#callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-7"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/7.png" alt="7" width="12" height="12"></a><code>
+        </code><code>    </code><code class="o">}</code><code>
+        </code><code class="o">}</code></pre>
+        <dl class="calloutlist">
+        <dt><a class="co" id="callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-1" href="#co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-1"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/1.png" alt="1" width="12" height="12"></a></dt>
+        <dd><p>OpenCensus handles the work of creating traces, so you only need to import an exporter to an analysis system.</p></dd>
+        <dt><a class="co" id="callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-2" href="#co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-2"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/2.png" alt="2" width="12" height="12"></a></dt>
+        <dd><p>In order to export traces to an analysis system, you need to create and register the exporter. These options differ by analysis system.</p></dd>
+        <dt><a class="co" id="callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-3" href="#co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-3"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/3.png" alt="3" width="12" height="12"></a></dt>
+        <dd><p>Notice that the sampling process is handled by OpenCensus—you’ll still always sample in these test cases.</p></dd>
+        <dt><a class="co" id="callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-4" href="#co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-4"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/4.png" alt="4" width="12" height="12"></a></dt>
+        <dd><p>There’s no global tracer equivalent in OpenCensus (although some helper methods exist), so you need to grab a reference to a tracer.</p></dd>
+        <dt><a class="co" id="callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-5" href="#co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-5"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/5.png" alt="5" width="12" height="12"></a></dt>
+        <dd><p>Similar to OpenTracing, OpenCensus supports try-with-resources patterns to automatically manage span life cycle.</p></dd>
+        <dt><a class="co" id="callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-6" href="#co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-6"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/6.png" alt="6" width="12" height="12"></a></dt>
+        <dd><p>This span is implicitly a child of the span in main, since it’s executed inside a scoped span.</p></dd>
+        <dt><a class="co" id="callout_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-7" href="#co_open_source_instrumentation__interfaces__libraries__and_frameworks_CO3-7"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/7.png" alt="7" width="12" height="12"></a></dt>
+        <dd><p>Notice that annotations are roughly equivalent to OpenTracing logs, but with slightly different usage semantics.</p></dd>
+        </dl></div>
+        
+        <p>As you can see, OpenCensus provides a “batteries included” experience that OpenTracing lacked. However, this part of its design is what makes it unacceptable for some use cases. The inability to replace parts of the SDK with differing implementations, for example, meant that it couldn’t find purchase in certain vendor ecosystems. Bundling metrics and tracing APIs also proved a difficult pill to swallow for <span class="keep-together">implementers</span> who wanted to use only one part of the OpenCensus package. Tight coupling between the API and SDK made integration challenging for third-party library authors, who didn’t necessarily want to have to ship the full SDK with their libraries. Ultimately, the biggest flaw was simply that the open source telemetry community was split between two separate projects, rather than one single and unified effort.</p>
+        
+        <p><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="as instrumentation standard" id="idm45357011333384"></a><a data-type="indexterm" data-primary="standards" data-secondary="OpenTelemetry" id="idm45357011569912"></a>While OpenTelemetry is the new and current standard for tracing instrumentation, it isn’t the only one. It’s extremely likely that you’ll continue to see OpenTracing and OpenCensus in the wild for years to come. In addition, you might encounter other technologies, instrumentation libraries, and propagation standards in the wild. We’ll briefly discuss three of the most popular ones next.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Other Notable Formats and Projects"><div class="sect1" id="other-notable-formats-sect">
+        <h1>Other Notable Formats and Projects</h1>
+        
+        <p>Distributed tracing isn’t a completely new concept, it’s worth repeating. Very large-scale distributed systems have created the need for some way to correlate and track a request across multiple processes or servers. With that in mind, we’d like to briefly discuss a few of the other popular systems you might see and give you some resources on how to use them.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="X-Ray"><div class="sect2" id="idm45357011403176">
+        <h2>X-Ray</h2>
+        
+        <p><a data-type="indexterm" data-primary="X-Ray (Amazon)" id="idm45357011401736"></a><a data-type="indexterm" data-primary="Amazon Web Services (AWS)" data-secondary="X-Ray distributed tracing" id="idm45357011521016"></a>X-Ray is an Amazon Web Services (AWS) product that provides distributed tracing for applications running in the AWS ecosystem. One advantage of X-Ray is its deep integration into the AWS client SDK, allowing for seamless tracing of calls to a variety of AWS managed services. In addition, X-Ray provides a suite of analytical tools for the trace data, such as a trace visualizer and a service map.</p>
+        
+        <p>At a high level, X-Ray shares a lot in common with span-based tracing systems with a few differences in naming conventions. Rather than <a data-type="indexterm" data-primary="spans" data-secondary="as segments in X-Ray" data-secondary-sortas="segments in X-Ray" id="idm45357011518728"></a><a data-type="indexterm" data-primary="segments (spans) in X-Ray" id="idm45357011235464"></a>spans, X-Ray uses the term <em>segment</em> to refer to a unit of work being traced. Segments contain information about the resource running an application such as the hostname, request/response details, and any errors that occurred during operation. In addition, segments can have arbitrary annotations and metadata added by developers to assist in categorizing and analyzing them. In lieu of using individual spans to capture work done inside a single request, X-Ray introduces a concept known as the <em>subsegment</em>, which captures detailed timing information about downstream calls, be they remote or internal. All segments for a single logical request are rolled up into a single <em>trace</em>, which you should be familiar with by now. X-Ray uses a proprietary <a data-type="indexterm" data-primary="header formats" data-secondary="Amazon Web Services" id="idm45357011416504"></a><a data-type="indexterm" data-primary="Amazon Web Services (AWS)" data-secondary="tracing header" id="idm45357011415528"></a>tracing header, <code>X-Amzn-TraceID</code>, which is propagated by the X-Ray SDK and all other AWS services. This single key contains all information about the trace, such as its root trace identifier, sampling decision, and parent segment (if applicable).</p>
+        
+        <p>Functionally, X-Ray relies on a daemon process in conjunction with the X-Ray SDK to collect telemetry data. This daemon must be present or available to receive segment data from your services, which it can then forward to the X-Ray backend for trace assembly and display.</p>
+        
+        <p><a data-type="indexterm" data-primary="URLs" data-secondary="X-Ray" id="idm45357011563176"></a>To learn more about X-Ray, see its <a href="https://oreil.ly/l7Gli">developer documentation</a>.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Zipkin"><div class="sect2" id="ch4_zipkin">
+        <h2>Zipkin</h2>
+        
+        <p><a data-type="indexterm" data-primary="Zipkin (Twitter)" id="idm45357011339736"></a><a data-type="indexterm" data-primary="Twitter Zipkin" data-see="Zipkin" id="idm45357011526328"></a>Twitter developed <a href="https://zipkin.io">Zipkin</a> and released it to the wider open source community in 2012<a data-type="indexterm" data-primary="Zipkin (Twitter)" data-secondary="URL" id="idm45357011524568"></a><a data-type="indexterm" data-primary="URLs" data-secondary="Zipkin" id="idm45357011523592"></a>. It’s notable for being one of the first popular implementations of <a data-type="indexterm" data-primary="Dapper" data-secondary="Zipkin implementing" id="idm45357011438984"></a><a data-type="indexterm" data-primary="open source instrumentation" data-secondary="Dapper-style tracing" id="idm45357011438040"></a>Dapper-style tracing released under an open source software license, and many of the conventions that are supported by the wider distributed tracing world owe a debt to Zipkin for popularizing them. Overall, Zipkin includes a trace analysis backend, a collector/daemon process, and client libraries and integrations with popular RPC and web frameworks.</p>
+        
+        <p>Much of the terminology used in Zipkin is portable to other tracing systems, owing to their shared heritage from the Dapper paper. A span is a single unit of work; a trace is a collection of spans; and so forth. One of the most enduring parts of Zipkin is the popularization of <a data-type="indexterm" data-primary="header formats" data-secondary="B3 context headers" id="idm45357011530952"></a><a data-type="indexterm" data-primary="B3 context headers" id="idm45357011529976"></a><a data-type="indexterm" data-primary="standards" data-secondary="B3 HTTP Headers" id="idm45357011529304"></a><a data-type="indexterm" data-primary="trace context" data-secondary="B3 HTTP Headers de-facto standard" id="idm45357011449080"></a><em>B3 HTTP headers</em> as a defacto standard for passing trace context across the wire.<sup><a data-type="noteref" id="idm45357011447784-marker" href="ch03.html#idm45357011447784">6</a></sup></p>
+        
+        <p>These headers are effectively superseded by the <a data-type="indexterm" data-primary="standards" data-secondary="W3C TraceContext" id="idm45357011331848"></a><a data-type="indexterm" data-primary="trace context" data-secondary="W3C TraceContext standard" id="idm45357011330872"></a><a data-type="indexterm" data-primary="W3C" data-secondary="TraceContext" id="idm45357011329960"></a>W3C TraceContext specification, but it’s likely that you’ll see them in the wild—especially since they’re supported by OpenTelemetry as well. The critical B3 headers are as follows:</p>
+        <dl>
+        <dt><code>X-B3-TraceID</code></dt>
+        <dd>
+        <p>64- or 128-bit hex string</p>
+        </dd>
+        <dt><code>X-B3-SpanID</code></dt>
+        <dd>
+        <p>64-bit hex string</p>
+        </dd>
+        <dt><code>X-B3-ParentSpanID</code></dt>
+        <dd>
+        <p>64-bit hex string (header absent if there is no parent)</p>
+        </dd>
+        <dt><code>X-B3-Sampled</code></dt>
+        <dd>
+        <p>Boolean of “1” or “0,” optional</p>
+        </dd>
+        </dl>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Interoperability and Migration Strategies"><div class="sect1" id="idm45357011190552">
+        <h1>Interoperability and Migration Strategies</h1>
+        
+        <p>In a sufficiently large organization, one of the most challenging parts of distributed tracing might be getting everyone to agree on a single standard. The relative ease of integrating tracing into a team’s services has made it very attractive for SRE and DevOps practitioners to implement. This ease of integration, however, hasn’t necessarily translated into ease of maintainability.</p>
+        
+        <p>Over the past decade, distributed tracing has gone from a niche technology employed by a select group of large, modern software enterprises to a necessary component of modern microservice architectures. Part of this growth has involved changes in <span class="keep-together">technology</span> and tooling, with both proprietary and open source projects being announced, being adopted, growing, and eventually being eclipsed by newer projects which start the whole cycle over again. To combat this and be resilient in the face of future improvements and updates to the distributed tracing landscape, we need to develop ideas on how to maintain and upgrade distributed tracing systems.</p>
+        
+        <p><a data-type="indexterm" data-primary="interoperability" data-secondary="tracing systems" id="idm45357011343448"></a><a data-type="indexterm" data-primary="traces" data-secondary="interoperability between tracing systems" id="idm45357011342472"></a><a data-type="indexterm" data-primary="trace context" data-secondary="interoperability" id="idm45357011567720"></a>The first thing to consider is whether you’re looking for true interoperability between different tracing systems or trying to migrate and standardize around a single new system. We’ll discuss the interop case first.</p>
+        
+        <p>In general, traces are most useful when they can combine the entirety of a single logical request as it moves through your system. However, sufficiently complex systems (or sufficiently bifurcated organizations) might not have a desire or ability to create the necessary conditions to trace requests through the entire call stack. Just because that’s the case today doesn’t mean it will be the case tomorrow or the day after that, though. The primary obstacle to interoperability is usually a lack of information about the different systems used already, and more specifically, the method those systems use to propagate trace context. Your first step in achieving interoperability, then, should be to catalog the services that you’re aware of and note a few things about them:</p>
+        
+        <ul>
+        <li>
+        <p>If traced, the header format used for propagating trace context</p>
+        </li>
+        <li>
+        <p>RPC framework(s) they use to communicate with other services, and if those frameworks are transparently passing headers</p>
+        </li>
+        <li>
+        <p>Existing tracing instrumentation libraries (Zipkin, X-Ray, OpenTracing, OpenCensus, etc.) that are direct or second-order dependencies</p>
+        </li>
+        <li>
+        <p>Clients for other services, such as databases</p>
+        </li>
+        </ul>
+        
+        <p><a data-type="indexterm" data-primary="documentation" data-secondary="tracing dependencies" id="idm45357011556888"></a>Documenting these tracing dependencies will reveal what parts of your system can communicate with each other and where you might see gaps in instrumentation (for instance, if you have an RPC framework that does not forward incoming headers, then you’d see a trace break at that point). With this information, you can begin to make other decisions, such as what <a data-type="indexterm" data-primary="header formats" data-secondary="standardization of" id="idm45357011555176"></a><a data-type="indexterm" data-primary="standards" data-secondary="context propagation headers and formats" id="idm45357011328088"></a><a data-type="indexterm" data-primary="context propagation" data-secondary="standard headers and formats" id="idm45357011327176"></a>trace context header format makes the most sense for your environment. Even if you don’t have standard headers, there are approaches you can take in your instrumentation to support seamless context propagation. One popular method is to implement a <a data-type="indexterm" data-primary="context propagation" data-secondary="propagator stack" id="idm45357011325864"></a><a data-type="indexterm" data-primary="propagator stack" id="idm45357011444920"></a><a data-type="indexterm" data-primary="library-based instrumentation" data-secondary="propagator stack" id="idm45357011444248"></a><a data-type="indexterm" data-primary="RPCs (remote procedure calls)" data-secondary="propagator stack" id="idm45357011443336"></a><a data-type="indexterm" data-primary="spans" data-secondary="span context propagator stack" id="idm45357011442424"></a><a data-type="indexterm" data-primary="trace context" data-secondary="span context propagator stack" id="idm45357011425992"></a><em>propagator stack</em> in your instrumentation library or RPC framework. This allows you to add new propagators while preserving support for existing ones. <a data-type="xref" href="#EX4-4">Example&nbsp;3-4</a> illustrates creating this stack in OpenTracing.<a data-type="indexterm" data-primary="OpenTracing" data-secondary="propagator stack" id="idm45357011423672"></a></p>
+        <div id="EX4-4" data-type="example" class="pagebreak-before">
+        <h5><span class="label">Example 3-4. </span>Creating a propagator stack in OpenTracing</h5>
+        
+        <pre data-type="programlisting" data-code-language="java"><code class="kd">public</code> <code class="kd">final</code> <code class="kd">class</code> <code class="nc">PropagatorStack</code> <code class="kd">implements</code> <code class="n">Propagator</code> <code class="o">{</code>
+            <code class="n">Format</code> <code class="n">format</code><code class="o">;</code>
+            <code class="n">List</code><code class="o">&lt;</code><code class="n">Propagator</code><code class="o">&gt;</code> <code class="n">propagators</code><code class="o">;</code>
+        
+            <code class="kd">public</code> <code class="nf">PropagatorStack</code><code class="o">(</code><code class="n">Format</code> <code class="n">format</code><code class="o">)</code> <code class="o">{</code>
+                <code class="k">if</code> <code class="o">(</code><code class="n">format</code> <code class="o">==</code> <code class="kc">null</code><code class="o">)</code> <code class="o">{</code>
+                    <code class="k">throw</code> <code class="k">new</code> <code class="nf">IllegalArgumentException</code><code class="o">(</code><code class="s">"Format cannot be null."</code><code class="o">);</code>
+                <code class="o">}</code>
+                <code class="k">this</code><code class="o">.</code><code class="na">format</code> <code class="o">=</code> <code class="n">format</code><code class="o">;</code>
+                <code class="n">propagators</code> <code class="o">=</code> <code class="k">new</code> <code class="n">LinkedList</code><code class="o">&lt;</code><code class="n">Propagator</code><code class="o">&gt;();</code>
+            <code class="o">}</code>
+        
+            <code class="kd">public</code> <code class="n">Format</code> <code class="nf">format</code><code class="o">()</code> <code class="o">{</code>
+                <code class="k">return</code> <code class="n">format</code><code class="o">;</code>
+            <code class="o">}</code>
+        
+            <code class="kd">public</code> <code class="n">PropagatorStack</code> <code class="nf">pushPropagator</code><code class="o">(</code><code class="n">Propagator</code> <code class="n">propagator</code><code class="o">)</code> <code class="o">{</code>
+                <code class="k">if</code> <code class="o">(</code><code class="n">propagator</code> <code class="o">==</code> <code class="kc">null</code><code class="o">)</code> <code class="o">{</code>
+                    <code class="k">throw</code> <code class="k">new</code> <code class="nf">IllegalArgumentException</code><code class="o">(</code><code class="s">"Propagator cannot be null."</code><code class="o">);</code>
+                <code class="o">}</code>
+                <code class="n">propagators</code><code class="o">.</code><code class="na">add</code><code class="o">(</code><code class="n">propagator</code><code class="o">);</code>
+                <code class="k">return</code> <code class="k">this</code><code class="o">;</code>
+            <code class="o">}</code>
+        
+            <code class="kd">public</code> <code class="o">&lt;</code><code class="n">C</code><code class="o">&gt;</code> <code class="n">SpanContext</code> <code class="n">extract</code><code class="o">(</code><code class="n">C</code> <code class="n">carrier</code><code class="o">)</code> <code class="o">{</code>
+                <code class="k">for</code> <code class="o">(</code><code class="kt">int</code> <code class="n">i</code> <code class="o">=</code> <code class="n">propagators</code><code class="o">.</code><code class="na">size</code><code class="o">()</code> <code class="o">-</code> <code class="mi">1</code><code class="o">;</code> <code class="n">i</code> <code class="o">&gt;=</code><code class="mi">0</code><code class="o">;</code> <code class="n">i</code><code class="o">--)</code> <code class="o">{</code>
+                    <code class="n">SpanContext</code> <code class="n">context</code> <code class="o">=</code> <code class="n">propagators</code><code class="o">.</code><code class="na">get</code><code class="o">(</code><code class="n">i</code><code class="o">).</code><code class="na">extract</code><code class="o">(</code><code class="n">carrier</code><code class="o">);</code>
+                    <code class="k">if</code> <code class="o">(</code><code class="n">context</code> <code class="o">!=</code> <code class="kc">null</code><code class="o">)</code> <code class="o">{</code>
+                        <code class="k">return</code> <code class="n">context</code><code class="o">;</code>
+                    <code class="o">}</code>
+                <code class="o">}</code>
+                <code class="k">return</code> <code class="kc">null</code><code class="o">;</code>
+            <code class="o">}</code>
+        
+            <code class="kd">public</code> <code class="o">&lt;</code><code class="n">C</code><code class="o">&gt;</code> <code class="kt">void</code> <code class="n">inject</code><code class="o">(</code><code class="n">SpanContext</code> <code class="n">context</code><code class="o">,</code> <code class="n">C</code> <code class="n">carrier</code><code class="o">)</code> <code class="o">{</code>
+                <code class="k">for</code> <code class="o">(</code><code class="kt">int</code> <code class="n">i</code> <code class="o">=</code> <code class="mi">0</code><code class="o">;</code> <code class="n">i</code> <code class="o">&lt;</code> <code class="n">propagators</code><code class="o">.</code><code class="na">size</code><code class="o">();</code> <code class="n">i</code><code class="o">++)</code> <code class="o">{</code>
+                    <code class="n">propagators</code><code class="o">.</code><code class="na">get</code><code class="o">(</code><code class="n">i</code><code class="o">).</code><code class="na">inject</code><code class="o">(</code><code class="n">context</code><code class="o">,</code> <code class="n">carrier</code><code class="o">);</code>
+                <code class="o">}</code>
+            <code class="o">}</code>
+        <code class="o">}</code></pre></div>
+        
+        <p>The propagator stack will stop extracting the span context once it finds its first match, but will inject headers for all registered propagators. You could theoretically modify this behavior to return multiple extracted contexts if you had multiple independent tracers in a given service. Standardizing tracing headers from the top down is usually the most successful strategy, however, rather than attempting to manage individual services’ and teams’ preferences.</p>
+        
+        <p><a data-type="indexterm" data-primary="migration strategies" id="idm45357011152856"></a><a data-type="indexterm" data-primary="open source instrumentation" data-secondary="migration strategies" id="idm45357011152248"></a><a data-type="indexterm" data-primary="standards" data-secondary="migration strategies" id="idm45357010588488"></a>When standardizing or migrating, the calculus changes somewhat. You may still find it useful to do much of the documentation work mentioned earlier, but in service of estimating the effort required to perform a migration. If your existing tracing system is largely home-brewed—perhaps it uses custom headers or trace/span identifier formats—you’ll want to identify the number of services traced by that system versus the new one and see if you can create some sort of shim between your old code and the new code. Depending on the design of your existing tracing system, you may want to consider using <a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="migration strategies" id="idm45357010586792"></a>OpenTelemetry as a standard API but rewrite parts of your library to meet its specification, plugging in those components in lieu of the reference SDK.</p>
+        
+        <p><a data-type="indexterm" data-primary="OpenTracing" data-secondary="migration strategies" id="idm45357010585304"></a><a data-type="indexterm" data-primary="OpenCensus" data-secondary="migration strategies" id="idm45357010584328"></a>If you’re already using OpenTracing or OpenCensus and simply want to migrate to OpenTelemetry, then you have several options as well. Do you want to use the OpenTelemetry SDK in lieu of your existing OpenTracing tracer? Then you’d need to use the OpenTelemetry bridge component to make it appear as an OpenTracing tracer to your existing instrumentation, and switch out the tracer in each of your services. You can achieve a more gradual migration by ensuring that you’re using compatible header formats (W3C, B3, or one through a custom propagator) in your old and new instrumentation, then deploying new services with OpenTelemetry and leaving your old services as is for now. As long as your trace analyzer supports ingesting traces from both frameworks, you should see a single trace containing spans from both your old and new services.</p>
+        
+        <p><a data-type="indexterm" data-primary="black box instrumentation" data-secondary="migration strategy via" id="idm45357010582136"></a><a data-type="indexterm" data-primary="containerization" data-secondary="migration strategy for" id="idm45357010581144"></a>Another migration strategy, especially useful if you’re migrating to a new platform—for example, containerizing existing services in order to run them on Kubernetes—is to replace your existing tracing with a more black box approach as a prelude to reinstrumenting the logic. By using the tracing features built into <a data-type="indexterm" data-primary="service meshes" data-secondary="migration strategy via" id="idm45357010579736"></a>service meshes, for example, you can trace requests between your containerized services without replacing any existing instrumentation or filling in any instrumentation gaps. Over time, you can extend the spans into the service code and rip out any existing instrumentation when it’s convenient, while getting the immediate benefit of seamless traces that extend across all of your newly containerized services.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Why Use Open Source Instrumentation?"><div class="sect1" id="idm45357011189928">
+        <h1>Why Use Open Source Instrumentation?</h1>
+        
+        <p><a data-type="indexterm" data-primary="open source instrumentation" data-secondary="benefits of" id="idm45357010576856"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="open source benefits" id="idm45357010575816"></a>Regardless of your strategy, the best way to ensure that your tracing system is maintainable and extensible is using open source standards and frameworks. <a data-type="indexterm" data-primary="proprietary instrumentation challenges" id="idm45357010574568"></a><a data-type="indexterm" data-primary="open source instrumentation" data-secondary="proprietary instrumentation challenges" id="idm45357010573880"></a>Proprietary, or home-brewed, tracing systems are almost always more difficult and costly to maintain than something with broad community support. To conclude this chapter, we’ll discuss the rationale behind choosing open source instrumentation.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before less_space" data-pdf-bookmark="Interoperability"><div class="sect2" id="idm45357010572392">
+        <h2>Interoperability</h2>
+        
+        <p><a data-type="indexterm" data-primary="interoperability" data-secondary="open source instrumentation" id="idm45357010570696"></a><a data-type="indexterm" data-primary="open source instrumentation" data-secondary="interoperability" id="idm45357010569704"></a>When implementing any sort of distributed telemetry, interoperability is a prime concern. You may have two services or two thousand, but unless there’s a way to guarantee that the telemetry data from any arbitrary service is compatible with the telemetry data from any other service, you’re going to have a bad time trying to understand performance across all of your services. Open source instrumentation addresses this by not only providing a single set of concepts and libraries for all of your services, but also allowing for telemetry capture that extends past the boundaries of your business logic.</p>
+        
+        <p>The first case is the simpler one to understand—while it’s certainly possible to create your own request tracing system through correlation identifiers, this approach can be brittle and difficult to maintain as you scale. One of the benefits of open source solutions is that they make many of these decisions for you! You don’t have to sit down and decide whether you want a correlation ID based on a universally unique identifier (UUID) or a collision resistant unique identifier (CUID), for example. You can guarantee that each new service being instrumented is speaking the same language when it comes to context ID generation and propagation.</p>
+        
+        <p><a data-type="indexterm" data-primary="migration strategies" data-secondary="interoperability avoiding" id="idm45357010566648"></a>This also avoids frustrating migration strategies when you extend your traces out to new endpoints or frontends; you can guarantee that identifiers for traces are consistently generated, allowing for seamless extension. Contrast this with more <a data-type="indexterm" data-primary="logs" data-secondary="open source instrumentation versus" id="idm45357010565272"></a><a data-type="indexterm" data-primary="URLs" data-secondary="Distributed Diagnostic Context" id="idm45357010564312"></a><a data-type="indexterm" data-primary="Distributed Diagnostic Context" id="idm45357010563352"></a>log-based approaches to tracing such as <a href="https://oreil.ly/W-smF">Distributed Diagnostic Context</a>, which can work great as long as your entire system is relatively homogenous. Extending these through a polyglot system can involve a lot of time massaging logs into the same format, and that’s before you get into the challenges of retention and indexing that log data.</p>
+        
+        <p><a data-type="indexterm" data-primary="vendor URLs" data-secondary="vendor lock-in" id="idm45357010561336"></a>The second case for the superior interoperability of OSS instrumentation is how it integrates into <em>other</em> OSS software and libraries. Projects such as <a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="vendor neutral" id="idm45357010559336"></a>OpenTelemetry, by virtue of being vendor-neutral, are attractive instrumentation options for other OSS projects that wish to provide telemetry data to their end users. You can look at <a data-type="indexterm" data-primary="OpenTracing" data-secondary="interoperability of" id="idm45357010558024"></a><a data-type="indexterm" data-primary="URLs" data-secondary="OpenTracing integrations and plug-ins" id="idm45357010557080"></a><a data-type="indexterm" data-primary="OpenTracing" data-secondary="plug-ins registry URL" id="idm45357010556072"></a>OpenTracing as an example of this: the OpenTracing <a href="https://opentracing.io/registry">registry</a> indexes hundreds of integrations and plug-ins that instrument other OSS projects, from database clients to distributed messaging queues to network libraries, and more. These integrations allow you to get started quickly instrumenting a new, or existing, service and ensure that instrumentation can be extended into your business logic. The registry’s popularity led to <a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="plug-ins registry URL" id="idm45357010553944"></a><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="instrumentation plug-in" id="idm45357010552968"></a><a data-type="indexterm" data-primary="URLs" data-secondary="OpenTelemetry integrations and plug-ins" id="idm45357010552024"></a>OpenTelemetry adopting <a href="https://opentelemetry.io/registry">a similar registry</a>. Keep in mind that <a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="backward-compatibility with OpenTracing" id="idm45357010550232"></a><a data-type="indexterm" data-primary="OpenTracing" data-secondary="OpenTelemetry backward-compatible with" id="idm45357010549208"></a>OpenTelemetry is broadly backward-compatible with OpenTracing instrumentation, so be sure to check both!</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Portability"><div class="sect2" id="idm45357010560936">
+        <h2>Portability</h2>
+        
+        <p><a data-type="indexterm" data-primary="portability of open source instrumentation" id="idm45357010547096"></a><a data-type="indexterm" data-primary="open source instrumentation" data-secondary="portability" id="idm45357010546296"></a>As the observability space continues to mature, there will inevitably be a growing amount of projects and vendors who provide the ability to analyze distributed tracing data. With this in mind, it’s critical that your instrumentation be portable between different analysis systems. In short, you don’t want to have to rewrite your tracing code when you change the analysis tool you’re using to ingest that data.</p>
+        
+        <p><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="portability of" id="idm45357010544568"></a><a data-type="indexterm" data-primary="exporters" data-secondary="portability of open source instrumentation" id="idm45357010543592"></a><a data-type="indexterm" data-primary="agent-based instrumentation" data-secondary="portability of open source" id="idm45357010542616"></a>OpenTelemetry is an excellent example of this in practice. Your service emits telemetry data to a collector running as an agent, and those agents are able to export to a variety of backends. This gives you the ability to write instrumentation once and have it work with no configuration changes in a variety of environments, and even send that telemetry to multiple endpoints simultaneously simply by changing the configuration of the collector. For example, you could run a local analysis tool and have a local agent collecting telemetry data during development—then, with no changes to the code, have that same telemetry data go to a commercial analysis backend.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Ecosystem and Implicit Visibility"><div class="sect2" id="idm45357010540568">
+        <h2>Ecosystem and Implicit Visibility</h2>
+        
+        <p><a data-type="indexterm" data-primary="open source instrumentation" data-secondary="community of open source" id="idm45357010539192"></a>To echo some earlier points, the ecosystem of an open source community is going to be extremely valuable to your instrumentation journey. We won’t belabor the basic value proposition of open source software in this text, but suffice to say many hands make light work.</p>
+        
+        <p><a data-type="indexterm" data-primary="logs" data-secondary="deleting logging statements" id="idm45357010537464"></a><a data-type="indexterm" data-primary="debugging as granular windows" id="idm45357010536472"></a>Realistically, for as much as we harp on it, writing instrumentation and other “maintainability” code isn’t a priority outside of its immediate utility. When you’re writing a service, you’ll absolutely use as much logging as you can get away with in order to figure out why things aren’t working the way you expect them to, but how often do you go back in and delete “unnecessary” logging statements? I’d expect it’s more frequently than you think! It’s natural to think that the amount of telemetry you’re adding is too much because development cycles tend to be very granular, especially initially. This also applies to modifying code; one of the quickest ways to understand the control flow of a program is to add some simple <code>print</code> statements in an <code>if</code> statement and see which get output for a certain input value or control flow. When debugging issues, we tend to create “windows” that look into the code at a specific, narrow angle. Many of those windows remain, but they’re all too focused on specific, already existing problems to be much help in understanding overall performance.</p>
+        
+        <p><a data-type="indexterm" data-primary="open source instrumentation" data-secondary="as boilerplates" data-secondary-sortas="boilerplates" id="idm45357010533416"></a>So, how do we resolve these two ideas? On one hand, we want to build observable software. On the other, we’re not sure what we should care about observing and don’t do a great job of looking at the right thing, especially ahead of time. Open source instrumentation, again, helps address this tension. First, it provides a rich ecosystem of existing instrumentation that we can rely on to trace the important things in our lower-level dependencies (such as <a data-type="indexterm" data-primary="RPCs (remote procedure calls)" data-secondary="open source instrumentation" id="idm45357010531544"></a>RPC frameworks). This existing instrumentation is generally lightweight and easy to add to our service, and satisfies much of the<a data-type="indexterm" data-primary="distributed tracing" data-secondary="open source boilerplates" id="idm45357010530296"></a> <span class="keep-together">boilerplate</span> associated with distributed tracing. Second, it allows for implicit visibility into our requests through this ecosystem. If you’re using some sort of <a data-type="indexterm" data-primary="service meshes" data-secondary="open source instrumentation benefits" id="idm45357010528344"></a>service mesh as part of your application, that service mesh is capable of creating and extending traces between all of your services, giving you implicit visibility into your entire backend system with no code overhead. If you start to combine this with other components, such as client-level tracing, RPC framework tracing, DB client tracing, and so forth, then you’ll gain implicit visibility into your entire application.</p>
+        
+        <p>Exploiting the OSS ecosystem is an excellent strategy to quickly bootstrap useful information about your system. However, there’s more to distributed tracing than simply throwing a bunch of libraries at the problem and seeing what sticks—you’ll want to move from implicit to explicit visibility into your requests and call stack. You’ll want to create and use custom tags and attributes from your business logic in order to profile and understand what’s going on in your code and application. In <a data-type="xref" href="ch04.html#chapter_5">Chapter&nbsp;4</a>, we’ll talk about some of the best practices for instrumenting your services and how you can supercharge your telemetry.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        <div data-type="footnotes"><p data-type="footnote" id="idm45357014689384"><sup><a href="ch03.html#idm45357014689384-marker">1</a></sup> For more details, see <a href="https://oreil.ly/6sPwi">the W3C documentation</a>.</p><p data-type="footnote" id="idm45357011853368"><sup><a href="ch03.html#idm45357011853368-marker">2</a></sup> <a data-type="xref" href="bibliography01.html#Sig16">[Sig16]</a></p><p data-type="footnote" id="idm45357012307448"><sup><a href="ch03.html#idm45357012307448-marker">3</a></sup> Figure based off of an image at <a href="https://oreil.ly/JhXBy">OpenTracing</a>.</p><p data-type="footnote" id="idm45357012022760"><sup><a href="ch03.html#idm45357012022760-marker">4</a></sup> Figure based off of an image on <a href="https://oreil.ly/wWqdW">GitHub</a></p><p data-type="footnote" id="idm45357012019736"><sup><a href="ch03.html#idm45357012019736-marker">5</a></sup> Figure based off of an image on <a href="https://oreil.ly/wWqdW">GitHub</a></p><p data-type="footnote" id="idm45357011447784"><sup><a href="ch03.html#idm45357011447784-marker">6</a></sup> Why are they called B3 headers? The original internal name of Zipkin at Twitter was “BigBrotherBird.”</p></div></div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492056621/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

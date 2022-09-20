@@ -1,0 +1,1352 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 7. A New Observability Scorecard"><div class="chapter" id="chapter_9">
+        <h1><span class="label">Chapter 7. </span>A New Observability Scorecard</h1>
+        
+        
+        <p><a data-type="indexterm" data-primary="observability" data-secondary="about" id="idm45357000360744"></a><a data-type="indexterm" data-primary="monitoring" data-secondary="observability" id="idm45357000359544"></a>Engineers at organizations like Google and Twitter originally promoted
+        observability as a method not just for <em>monitoring</em> their production systems
+        but for being able to <em>understand</em> the behavior of those systems using a
+        relatively small number of signals. Borrowed from control theory, the term
+        <em>observability</em> formally means that the internal states of a system can be
+        inferred from its external outputs. This became necessary within these
+        organizations as the complexity of their systems grew so large—and the
+        number of people responsible for managing them stayed relatively small—that
+        they needed a way to simplify the problem space. In addition, as part of
+        <a data-type="indexterm" data-primary="site reliability engineering (SRE)" id="idm45357000356568"></a>site reliability engineering (SRE) organizations, many of the engineers that
+        were responsible for observability were not working on the software directly,
+        but on the infrastructure responsible for operating it and making it reliable.
+        As such, a model for understanding software performance from a set of external
+        signals was appealing and, ultimately, necessary.</p>
+        
+        <p>Despite a formal definition, observability continues to elude the understanding
+        of many practitioners. For many, the term is equated with the tools used to
+        observe software systems: <a data-type="indexterm" data-primary="logs" data-secondary="as observability tool" data-secondary-sortas="observability tool" id="idm45357000354936"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="as observability tool" data-secondary-sortas="observability tool" id="idm45357000353688"></a><a data-type="indexterm" data-primary="observability" data-secondary="distributed tracing" id="idm45357000352472"></a><a data-type="indexterm" data-primary="observability" data-secondary="logs" id="idm45357000351528"></a><a data-type="indexterm" data-primary="observability" data-secondary="three pillars" id="idm45357000350584"></a>metrics, logging, and (as will come as no surprise
+        to the reader) distributed tracing. These three tools became known as the
+        “three pillars of observability,” each a necessary part of understanding
+        system behavior. Though often implemented as separate tools, they are usually
+        used in conjunction as part of an observability platform.</p>
+        
+        <p>Metrics, logging, and tracing tools are built around three different
+        corresponding data sources, and are often compared based on what can be
+        effectively or efficiently derived from each of those data sources. In the
+        end, however, users are more interested in what they can learn from an
+        observability tool than where the data came from.</p>
+        
+        <p>Users turn to observability tools to understand the relationships between
+        causes and effects in the distributed systems. That is, they are usually more
+        interested in what can be accomplished with a tool than how it works or
+        where the data comes from. In this chapter, we’ll look at the three pillars
+        of observability in turn, consider their limitations, and build a
+        framework for assessing observability tools in general.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="The Three Pillars Defined"><div class="sect1" id="idm45357000347448">
+        <h1>The Three Pillars Defined</h1>
+        
+        <p>Before examining the trade-offs and alternatives, it’s useful to
+        understand these three observability tools as they are most often deployed
+        today.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Metrics"><div class="sect2" id="idm45357000345688">
+        <h2>Metrics</h2>
+        
+        <p><a data-type="indexterm" data-primary="metrics" data-secondary="as observability tool" data-secondary-sortas="observability tool" id="idm45357000344312"></a><a data-type="indexterm" data-primary="metrics" data-secondary="definition" id="idm45357000343064"></a><a data-type="indexterm" data-primary="observability" data-secondary="metrics" id="idm45357000342120"></a>Metrics, broadly defined, are collections of statistics about services that
+        enable developers and operators to understand the gross behavior of those
+        services and how they are being used. Examples include request rate, average
+        duration, average size, queue size, number of requests, number of
+        errors, and number of active users.</p>
+        
+        <p>These values are usually captured as time series, so that operators can see
+        and understand changes to metrics over time. Changes can then be correlated
+        to other coincident events, which in turn can indicate what corrective actions
+        to take.</p>
+        
+        <p><a data-type="indexterm" data-primary="data aggregation" data-secondary="metrics" id="idm45357000339768"></a><a data-type="indexterm" data-primary="metrics" data-secondary="aggregation of" id="idm45357000338792"></a>In today’s production environments, metrics are typically aggregated
+        every minute or even six to twelve times per minute. To enable
+        operators to react quickly enough to maintain three—or even four or more—“nines” of uptime, metrics must be aggregated and visualized within at most one
+        minute but ideally even more quickly.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45357000337240">
+        <h5>Metrics and Service Level Indicators</h5>
+        <p><a data-type="indexterm" data-primary="site reliability engineering (SRE)" id="idm45357000336104"></a><a data-type="indexterm" data-primary="service level indicators (SLIs)" data-secondary="metric labels" id="idm45357000335384"></a>The authors of <em>Site Reliability Engineering</em> describe how to measure the level or quality
+        of service provided by a service or application in terms of service level
+        indicators (SLIs).<sup><a data-type="noteref" id="idm45357000333624-marker" href="ch07.html#idm45357000333624">1</a></sup> As a quantitative measure of service levels, SLIs are a
+        subset of metrics and, like other metrics, will typically be measured as a
+        time series. Examples of SLIs include some the examples given in this
+        chapter, including request duration (or latency) and error rate.</p>
+        
+        <p>Of course, there are many other types of metrics and often the same tools will
+        be used to measure both SLIs and non-SLI metrics. This can lead to some
+        confusion on the part of users of these tools: while SLIs should be measured
+        and compared with your <a data-type="indexterm" data-primary="service level objectives (SLOs)" data-secondary="SLIs compared with" id="idm45357000331448"></a>service level objectives (SLOs), other metrics are not
+        things that you should be optimizing (unless doing so helps you meet one of
+        your SLOs). As such, we encourage readers to label dashboards and the
+        metrics clearly as SLIs in cases where they are, in fact, indicators of service
+        levels.</p>
+        </div></aside>
+        
+        <p><a data-type="indexterm" data-primary="metrics" data-secondary="labels" id="idm45357000329624"></a><a data-type="indexterm" data-primary="documentation" data-secondary="metric labels" id="idm45357000328648"></a>To help developers and operators understand more about changes to metrics,
+        developers add <em>labels</em> as they record metrics. Typically in the form of a
+        key-value pair, each label describes the circumstances of the change to the
+        metric more specifically. For example, request latency may be labeled with
+        the version of the service handling the request, the host on which the request
+        is handled, or the datacenter in which the host was running.</p>
+        
+        <p>Using labels, a metric such as latency can broken down into submetrics, one
+        for (say) each host. This can enable an operator to pinpoint problems, for example, by establishing that an overloaded host is responsible
+        for slow requests.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Types of metrics: Counters and gauges"><div class="sect3" id="idm45357000325928">
+        <h3>Types of metrics: Counters and gauges</h3>
+        
+        <p>Most metrics fall into two categories: counters and gauges. <a data-type="indexterm" data-primary="metrics" data-secondary="counters" id="idm45357000324456"></a><a data-type="indexterm" data-primary="counters" id="idm45357000323400"></a><em>Counters</em> are
+        values which describe, well, the number of events of a particular type that
+        have occurred. Examples include the number of requests and the number of
+        bytes transferred. From a developer’s point of view, the primary operation
+        associated with a counter is to <em>increment</em> it.</p>
+        
+        <p>Counters can be manipulated in several ways. For example, it’s easy to
+        <a data-type="indexterm" data-primary="data aggregation" data-secondary="counters" id="idm45357000321208"></a>aggregate changes to a counter from multiple sources, simply by adding them
+        together. From a counter, it’s also easy to compute a rate of change by
+        considering the values of a counter at different points in time. For
+        example, though recorded as a counter, the number of requests is usually
+        visualized as a rate, such as requests per minute or requests per second.</p>
+        
+        <p><a data-type="indexterm" data-primary="metrics" data-secondary="gauges" id="idm45357000319464"></a><a data-type="indexterm" data-primary="gauges" id="idm45357000318488"></a><em>Gauges</em> are metrics that describe the state of a part of your software as a
+        numeric value and at a particular moment in time. Examples include the
+        duration of a request, the size of a queue, or the current number of active
+        users. From a developer’s point of view, the primary operation associated with
+        a gauge is to describe its current value (or <em>set</em> it).</p>
+        
+        <p><a data-type="indexterm" data-primary="data aggregation" data-secondary="gauges" id="idm45357000316344"></a>Gauges are somewhat more challenging than counters to aggregate, as doing so
+        necessarily discards information. When combining gauge values from several
+        sources, metrics systems capture <a data-type="indexterm" data-primary="statistics" data-secondary="gauge values" id="idm45357000315032"></a>statistics about them, including average,
+        minimum, and maximum.</p>
+        
+        <p><a data-type="indexterm" data-primary="histograms" data-secondary="gauge values" id="idm45357000313624"></a>Gauges’ values may also be combined using histograms. The range of values can
+        be divided into discrete buckets, and the number of instances in each bucket
+        can be recorded. This effectively turns gauges into counters (or, more
+        precisely, into a <em>set</em> of counters), which can then be easily combined by
+        simply adding together the counts for each bucket. <a data-type="indexterm" data-primary="statistics" data-secondary="histograms generating" id="idm45357000311768"></a>Histograms are useful in
+        that other statistics may be derived from them. For example, using bucket
+        counts, a metrics tool can estimate the 99th-percentile value of a gauge.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Metrics tools"><div class="sect3" id="idm45357000310344">
+        <h3>Metrics tools</h3>
+        
+        <p><a data-type="indexterm" data-primary="metrics" data-secondary="challenges of" id="idm45357000309208"></a>The challenges of implementing metrics tools stem largely from how to
+        aggregate data. What is the window across which values are aggregated? How
+        are the windows from different sources aligned?</p>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Logging"><div class="sect2" id="idm45357000307640">
+        <h2>Logging</h2>
+        
+        <p><a data-type="indexterm" data-primary="logs" data-secondary="as observability tool" data-secondary-sortas="observability tool" id="idm45357000306328"></a><a data-type="indexterm" data-primary="observability" data-secondary="logs" id="idm45357000305080"></a>Logging can describe any activity where systems capture events as text
+        or structured data and either print these events out or store them for future
+        use and analysis. In the context of observability, logging usually means
+        <em>centralized</em> logging, where event data from each service instance is
+        transmitted to a single system so that it can be analyzed and searched
+        uniformly.</p>
+        
+        <p>To support this collection and analysis, log entries must have a timestamp
+        that indicates when the event occurred. Aside from that, however, there is
+        usually little standard structure to logs. While there are standard schema
+        for some specific use cases (for example, web server logs), as an
+        observability tool, log structure will depend on how it’s used by the
+        application and how logs are created by developers.</p>
+        
+        <p><a data-type="xref" href="#EX8-1a">Example&nbsp;7-1</a> shows an example of logging in Java (using Log4j).</p>
+        <div id="EX8-1a" data-type="example">
+        <h5><span class="label">Example 7-1. </span>Java logging example</h5>
+        
+        <pre data-type="programlisting" data-code-language="java"><code class="kn">import</code> <code class="nn">org.apache.logging.log4j.Logger</code><code class="o">;</code>
+        <code class="kn">import</code> <code class="nn">org.apache.logging.log4j.LogManager</code><code class="o">;</code>
+        
+        <code class="o">...</code>
+        <code class="n">Logger</code> <code class="n">LOGGER</code> <code class="o">=</code> <code class="n">LogManager</code><code class="o">.</code><code class="na">getLogger</code><code class="o">();</code>
+        <code class="n">LOGGER</code><code class="o">.</code><code class="na">info</code><code class="o">(</code><code class="s">"Hello, world!"</code><code class="o">);</code></pre></div>
+        
+        <p><a data-type="indexterm" data-primary="Go tracing features" data-secondary="logs in Go" id="idm45357000279288"></a><a data-type="indexterm" data-primary="logs" data-secondary="Go" id="idm45357000284024"></a>Similarly, <a data-type="xref" href="#EX8-1b">Example&nbsp;7-2</a> shows an example of logging in Go.</p>
+        <div id="EX8-1b" data-type="example">
+        <h5><span class="label">Example 7-2. </span>Go logging example</h5>
+        
+        <pre data-type="programlisting" data-code-language="go"><code class="kn">import</code> <code class="s">"log"</code>
+        <code class="kn">import</code> <code class="s">"bytes"</code>
+        
+        <code class="o">...</code>
+        <code class="nx">buf</code> <code class="nx">bytes</code><code class="p">.</code><code class="nx">Buffer</code>
+        <code class="nx">logger</code> <code class="p">=</code> <code class="nx">log</code><code class="p">.</code><code class="nx">New</code><code class="p">(</code><code class="o">&amp;</code><code class="nx">buf</code><code class="p">,</code> <code class="s">"logger: "</code><code class="p">,</code> <code class="nx">log</code><code class="p">.</code><code class="nx">Lshortfile</code><code class="p">)</code>
+        <code class="nx">logger</code><code class="p">.</code><code class="nx">Print</code><code class="p">(</code><code class="s">"Hello, world!"</code><code class="p">)</code></pre></div>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Logging conventions"><div class="sect3" id="idm45357000276200">
+        <h3>Logging conventions</h3>
+        
+        <p><a data-type="indexterm" data-primary="logs" data-secondary="levels or severity" id="idm45357000220328"></a>Partly due to the volume of data produced through logging, there are a few
+        conventions in common use. First, most logging systems support
+        some notion of a “level” or “severity.” Typical examples of levels include
+        “informational,” “warning,” and “error.” These can be used as part of an
+        automatic or manual filtering process. For example, a logging tool may only
+        keep info-level logs for a few hours, but might store errors  <span class="keep-together">forever</span>.</p>
+        
+        <p><a data-type="indexterm" data-primary="logs" data-secondary="correlation ID" id="idm45357000217816"></a><a data-type="indexterm" data-primary="documentation" data-secondary="log correlation ID" id="idm45357000216840"></a>A second common convention is to add some correlation ID or other means to
+        create links between related log entries. In a distributed system, this is
+        often used to trace requests as they pass from one service to another. For
+        example, all logs related to a single end-user request may include a unique
+        identifier for that request.</p>
+        
+        <p>Defined in the broadest sense, even a summary of logging tools would be far
+        beyond the scope of this section or chapter: logging is used for a wide range
+        of use cases, such as revenue tracking, security auditing, and business metric
+        tracking. To give a sense of what these tools look like as part of an
+        observability suite, we’ll briefly describe a common implementation using
+        <a data-type="indexterm" data-primary="Kibana" id="idm45357000214632"></a><a data-type="indexterm" data-primary="data analysis" data-secondary="Kibana" id="idm45357000213928"></a><a data-type="indexterm" data-primary="Elasticsearch" id="idm45357000212984"></a><a data-type="indexterm" data-primary="Logstash" id="idm45357000212312"></a><a data-type="indexterm" data-primary="logs" data-secondary="ELK stacks" id="idm45357000211640"></a><a data-type="indexterm" data-primary="observability" data-secondary="ELK stacks" id="idm45357000210696"></a><a data-type="indexterm" data-primary="ELK (Elasticsearch, Logstash, and Kibana) stacks" id="idm45357000209752"></a>Elasticsearch, Logstash, and Kibana (often called an “ELK stack”).</p>
+        
+        <p>In an ELK stack, log data is generated by many different sources—including
+        server logs, event APIs and streaming publish-subscribe (pub-sub) systems, to name a few—and fed
+        into Logstash. Logstash transforms these log entries by providing additional
+        structure and normalizing data across different sources. The results are then
+        forwarded to Elasticsearch where they are indexed so that they can be searched
+        easily. Finally, <a data-type="indexterm" data-primary="visualization tools" data-secondary="Kibana" id="idm45357000208152"></a>Kibana is an analysis and visualization tool used to build
+        dashboards based on the data stored in Elasticsearch.</p>
+        
+        <p><a data-type="indexterm" data-primary="logs" data-secondary="challenges of" id="idm45357000206664"></a>The primary challenge of implementing a logging tool is storing the data in a
+        way that is cost-effective and will allow the data to be searched
+        efficiently. Most log entries will be of little value, but finding the log
+        which contains a rare error or a suspicious transaction will have tremendous
+        value. A specific type of search is to find all of the logs associated with a
+        single request.</p>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Distributed Tracing"><div class="sect2" id="idm45357000205032">
+        <h2>Distributed Tracing</h2>
+        
+        <p><a data-type="indexterm" data-primary="observability" data-secondary="distributed tracing" id="idm45357000203624"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="as observability tool" data-secondary-sortas="observability tool" id="idm45357000202648"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="Dapper project" id="idm45357000201432"></a><a data-type="indexterm" data-primary="Dapper" data-secondary="distributed tracing" id="idm45357000200488"></a>After the previous chapters, hopefully you have some sense of the purpose,
+        scope, and implementation of distributed tracing. For the
+        purposes of this chapter, it’s useful to define distributed tracing as it was
+        implemented as part of Google’s Dapper project.<sup><a data-type="noteref" id="idm45357000199144-marker" href="ch07.html#idm45357000199144">2</a></sup> Using this definition, distributed tracing consists of
+        collecting request data from the application and then analyzing and
+        visualizing this data as traces.</p>
+        
+        <p>Tracing data, in the form of spans, must be collected from the application,
+        transmitted, and stored in such a way that complete requests can be
+        reconstructed. In Chapters <a href="ch05.html#chapter_6">5</a> and <a href="ch06.html#chapter_7">6</a>, we discussed the
+        high-level architecture of distributed tracing implementations and some
+        <a data-type="indexterm" data-primary="distributed tracing" data-secondary="challenges of" id="idm45357000195672"></a>challenges of these implementations. As with centralized logging systems,
+        many of these challenges are associated with transmitting and storing large
+        amounts of data. In some ways, tracing is a specialized form of logging that
+        attempts to address these costs by tightly coupling the collection process to
+        application request handling. As tracing tools are often focused on use cases
+        around performance analysis, they build in some common fields that describe
+        the timing of application events (for example, request duration).</p>
+        
+        <p><a data-type="indexterm" data-primary="visualization tools" data-secondary="flame graph" id="idm45357000193768"></a>As visualization tools, distributed tracing tools often show requests using a
+        flame graph (or, when presented upside down, an icicle graph) or a tree
+        showing the timing relationships between spans.</p>
+        
+        <p>The current practice of distributed tracing being part of distributed systems
+        software development stems largely from the Dapper project at Google and the
+        subsequent <a data-type="indexterm" data-primary="Zipkin (Twitter)" data-secondary="OpenZipkin" id="idm45357000191896"></a><a data-type="indexterm" data-primary="OpenZipkin" id="idm45357000190920"></a>OpenZipkin and <a data-type="indexterm" data-primary="Jaeger" data-secondary="distributed tracing" id="idm45357000161304"></a><a data-type="indexterm" data-primary="Jaeger" data-secondary="as open source" data-secondary-sortas="open source" id="idm45357000160456"></a><a data-type="indexterm" data-primary="open source instrumentation" data-secondary="Jaeger as" id="idm45357000159368"></a>Jaeger projects (from Twitter and Uber,
+        respectively). Many other organizations have deployed the open source tools OpenZipkin and Jaeger.</p>
+        
+        <p>All of these tools combine some SDK or agents with a collection pipeline and a
+        storage system (usually off-the-shelf) to store and process the data. In the
+        case of <a data-type="indexterm" data-primary="Dapper" data-secondary="BigTable" id="idm45357000157640"></a><a data-type="indexterm" data-primary="data storage" data-secondary="BigTable of Dapper" id="idm45357000156664"></a>Dapper, this storage system was BigTable, while OpenZipkin and Jaeger
+        can be deployed using Cassandra, Elasticsearch, or even (for
+        OpenZipkin) MySQL.</p>
+        
+        <p><a data-type="indexterm" data-primary="application performance management (APM) tools" id="idm45357000155176"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="APM tools for tracing" id="idm45357000154440"></a><a data-type="indexterm" data-primary="data collection" data-secondary="APM tools for tracing" id="idm45357000153528"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="APM tools for" id="idm45357000152584"></a>Though not billed as “distributing tracing,” many application performance
+        management (APM) tools provide functionality that overlaps with distributing
+        tracing and may include traces as part of that. However, because they take a
+        simpler approach to data collection, they often fail to provide good results
+        for large distributed systems. In particular, they may not be able to pass
+        through context or may need to use a very small sample to avoid adversely
+        affecting performance (leading to broken traces or other missing data).</p>
+        
+        <p>The challenges of implementing and deploying a tracing solution depend largely
+        on the use cases you are considering. As Dapper was focused primarily on
+        long-term performance optimization, the primary challenges were related to
+        managing the costs associated with transmitting and storing traces, largely
+        due to Google’s scale. In organizations with more heterogeneous development
+        environments, just getting span data from the application in a way that can be
+        used to generate complete traces can be a significant challenge.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Fatal Flaws of the Three Pillars"><div class="sect1" id="idm45357000149912">
+        <h1>Fatal Flaws of the Three Pillars</h1>
+        
+        <p>As we’ve considered each of these types of tools in turn, we’ve discussed some
+        challenges in implementing each in ways that are effective and efficient.
+        However, it’s useful to consider the challenges and limitations of these tools
+        in a more systematic and holistic way. Doing so will enable us to better
+        understand the trade-offs in building, operating, and using these tools. It
+        will also challenge the notion that they are really three separate and
+        independently defined categories of tools.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Design Goals"><div class="sect2" id="idm45357000147800">
+        <h2>Design Goals</h2>
+        
+        <p><a data-type="indexterm" data-primary="observability" data-secondary="design goals" id="idm45357000146424"></a><a data-type="indexterm" data-primary="planning for instrumentation" data-secondary="observability" id="idm45357000145448"></a>When designing an observability solution as a whole, there are three areas
+        that we should consider. These areas are broader than any specific use cases
+        and instead focus on how value is derived from a solution and how that value
+        relates to cost. For any solution, we should be able to assess how it
+        performs in each of these areas:</p>
+        
+        <ul>
+        <li>
+        <p>Does it account for every transaction? If so, then the impact of every
+        transaction can be measured using the solution.</p>
+        </li>
+        <li>
+        <p>Is it immune to cardinality issues? If so, the solution allows users to
+        analyze arbitrary subsets of transactions.</p>
+        </li>
+        <li>
+        <p>Does its cost grow proportionally with business value? If so, as the volume
+        of business grows, the cost of the observability solution grows
+        proportionally.</p>
+        </li>
+        </ul>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Accounting for every transaction"><div class="sect3" id="idm45357000140488">
+        <h3>Accounting for every transaction</h3>
+        
+        <p>An observability solution accounts for all of the data if even the rarest
+        events can be observed. This includes, for example, infrequent errors or the
+        behavior of the smallest of customer segments. Solutions that sample
+        transactions may miss these rare but still valuable events.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Immunity from cardinality issues"><div class="sect3" id="idm45357000138648">
+        <h3>Immunity from cardinality issues</h3>
+        
+        <p><a data-type="indexterm" data-primary="cardinality" data-secondary="observability immunity to" id="idm45357000137480"></a><a data-type="indexterm" data-primary="data aggregation" data-secondary="cardinality and" id="idm45357000136488"></a>An observability solution is immune to cardinality issues if users can ask
+        questions about and compare behaviors for arbitrary subsets of the data.
+        <em>Cardinality</em> means the number of different elements in a set, and in the
+        context of observability, <em>cardinality</em> refers to the number of different
+        labels (or equivalently, tags) present on data points. <em>Cardinality issues</em>
+        means the challenges of managing and querying data with many different labels.
+        For example, can a user compare performance data between service instances
+        running on two different hosts? When there are dozens of hosts? Hundreds?
+        Thousands? Can performance data be further broken down by software version?
+        Can we compare performance across customer segments or even among individual
+        customers? Solutions that aggregate data before these questions are asked may
+        miss opportunities to answer them; if the data is not aggregated, it may
+        incur high resource costs.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Cost growing proportionally with business value"><div class="sect3" id="idm45357000133096">
+        <h3>Cost growing proportionally with business value</h3>
+        
+        <p><a data-type="indexterm" data-primary="cost of tracing" data-secondary="observability solution cost" id="idm45357000131928"></a>An observability solution’s cost grows proportionally with business value if
+        its cost per transaction stays constant even as the number of transactions
+        increases. In the case of modern distributed systems, including microservice-
+        or serverless-based architectures, developers may add new observability data
+        sources as they add new services or functions; each of these will create more
+        data and therefore cost more, even as the number of transactions stays fixed.
+        However, in doing so, the observability solution now consumes a larger portion
+        of the value of each such transaction.</p>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Assessing the Three Pillars"><div class="sect2" id="idm45357000129960">
+        <h2>Assessing the Three Pillars</h2>
+        
+        <p><a data-type="indexterm" data-primary="observability" data-secondary="three pillars, fatal flaws" id="idm45357000128680"></a>With these design goals in hand, we can succinctly evaluate each of the three
+        pillars of observability, as shown in <a data-type="xref" href="#tab12-three-pillars-assessed">Table&nbsp;7-1</a>.</p>
+        <table id="tab12-three-pillars-assessed" style="width: 70%">
+        <caption><span class="label">Table 7-1. </span>Fatal flaws of the three pillars, summarized</caption>
+        <tbody>
+        <tr>
+        <td></td>
+        <td><p>Metrics</p></td>
+        <td><p>Logs</p></td>
+        <td><p>Distributed tracing</p></td>
+        </tr>
+        <tr>
+        <td><p>Accounts for every transaction</p></td>
+        <td><p>✓</p></td>
+        <td><p>✓</p></td>
+        <td><p>-</p></td>
+        </tr>
+        <tr>
+        <td><p>Immune to cardinality issues</p></td>
+        <td><p>-</p></td>
+        <td><p>✓</p></td>
+        <td><p>✓</p></td>
+        </tr>
+        <tr>
+        <td><p>Cost grows proportionally</p></td>
+        <td><p>✓</p></td>
+        <td><p>-</p></td>
+        <td><p>✓</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Fatal flaws in metrics"><div class="sect3" id="idm45357000113784">
+        <h3>Fatal flaws in metrics</h3>
+        
+        <p><a data-type="indexterm" data-primary="observability" data-secondary="metrics" id="idm45357000112408"></a><a data-type="indexterm" data-primary="metrics" data-secondary="as observability tool" data-seealso="observability" data-secondary-sortas="observability tool" id="idm45357000111432"></a><a data-type="indexterm" data-primary="metrics" data-secondary="observability tool fatal flaws" id="idm45357000109944"></a>It is straightforward to build a metrics tool that accounts for every
+        transaction: statistics like count, mean, and standard deviation can be easily
+        computed in a distributed fashion. Moreover, the cost of doing so is modest
+        since the amount of data that must be transmitted and stored is small and, in
+        fact, constant with respect to the number of transactions.</p>
+        
+        <p><a data-type="indexterm" data-primary="cost of tracing" data-secondary="cardinality and" id="idm45357000108168"></a><a data-type="indexterm" data-primary="cardinality" data-secondary="cost of metrics and" id="idm45357000107192"></a><a data-type="indexterm" data-primary="metrics" data-secondary="cardinality" id="idm45357000106248"></a>However, the cost of processing and storing metrics increases with the
+        cardinality of the dataset. That is, as the number of different labels
+        grows, and more importantly, as the number of <em>combinations</em> of different
+        labels grows, the cost of managing these statistics increases significantly:
+        the number of values that must be maintained grows exponentially with the
+        number of different labels.</p>
+        
+        <p>For example, suppose that a metrics tool is capturing request counts from five
+        different hosts, and that each request is labeled with all of the following:</p>
+        
+        <ul>
+        <li>
+        <p>Its hostname</p>
+        </li>
+        <li>
+        <p>The response class (no error, not authorized, bad request, server
+        unavailable, or internal error)</p>
+        </li>
+        <li>
+        <p>The client host from which the request was issued (say that there were also
+        five)</p>
+        </li>
+        </ul>
+        
+        <p>Using these labels, metrics can then be used to answer questions such as:</p>
+        
+        <ul>
+        <li>
+        <p>Which host served the most requests?</p>
+        </li>
+        <li>
+        <p>Which host served the most internal errors?</p>
+        </li>
+        <li>
+        <p>Which client host made the most bad requests?</p>
+        </li>
+        </ul>
+        
+        <p><a data-type="indexterm" data-primary="data aggregation" data-secondary="metrics" id="idm45357000096728"></a><a data-type="indexterm" data-primary="metrics" data-secondary="aggregation of" id="idm45357000095752"></a>To answer all of these (and other arbitrary) questions about request counts, a
+        metrics tool must aggregate 5 × 5 × 5 = 125 different counters. This small example might not seem prohibitively costly, but in real-world use
+        cases, there might be dozens of different dimensions across which a user might
+        want to examine behaviors and hundreds or thousands of different values for
+        each of these dimensions. Tracking millions or billions of different
+        combinations is prohibitively costly. As a result, most metrics solutions
+        limit the number of different label combinations that you can track. While
+        these solutions can be powerful tools for understanding <em>when</em> something has
+        gone wrong, they are not as useful for understanding <em>why</em>
+        something has gone wrong.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Fatal flaw in logging"><div class="sect3" id="idm45357000093240">
+        <h3>Fatal flaw in logging</h3>
+        
+        <p><a data-type="indexterm" data-primary="logs" data-secondary="as observability tool" data-secondary-sortas="observability tool" id="idm45357000092232"></a><a data-type="indexterm" data-primary="logs" data-secondary="observability tool fatal flaws" id="idm45357000090984"></a>Centralized logging solutions account for every transaction by definition:
+        they record every event as a log entry. Moreover, they are generally immune
+        from cardinality issues as the cost of storing each new event is proportional
+        only to the size of that event (and not the number or content of previous
+        events). Unlike metrics, there is <a data-type="indexterm" data-primary="cost of tracing" data-secondary="log costs" id="idm45357000089544"></a>no hidden cost in adding labels, tags, or
+        other structure to individual logs. While there is some cost in
+        <a data-type="indexterm" data-primary="logs" data-secondary="searching" id="idm45357000088344"></a><a data-type="indexterm" data-primary="searches" data-secondary="extremely large datasets" id="idm45357000087400"></a><a data-type="indexterm" data-primary="searches" data-secondary="logs" id="idm45357000086440"></a>maintaining indices of log data (to enable users to find relevant entries),
+        search engines such as Google have developed a number of techniques for
+        searching extremely large datasets efficiently using arbitrary queries. Many
+        of these techniques can be applied to log data.</p>
+        
+        <p>However, while this cost is predictable, it is not small in aggregate nor is
+        it scalable for an organization adopting microservices, serverless, or other
+        distributed architectures. For logging to explain problems with an individual
+        transaction, it must surface <em>all</em> of the logs associated with that
+        transaction. That means, even for a fixed number of transactions, adding to a
+        system’s complexity (for example, by adding a new service) will increase the
+        cost of logging even if the number of transactions remains constant.</p>
+        
+        <p>As a result, developers are often discouraged from adding verbose logging to
+        applications, and in most cases logging may be severely curtailed or even
+        disabled in production environments to save on cost. This is particularly
+        problematic as there can be significant value in some of these production logs
+        since many performance problems only emerge at scale or in the context of
+        hard-to-predict customer behavior.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Fatal flaws in distributed tracing"><div class="sect3" id="idm45357000082536">
+        <h3>Fatal flaws in distributed tracing</h3>
+        
+        <p><a data-type="indexterm" data-primary="infrastructure costs" data-secondary="sampling to reduce" id="idm45357000081368"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="as observability tool" data-secondary-sortas="observability tool" id="idm45357000080392"></a><a data-type="indexterm" data-primary="cost of tracing" data-secondary="sampling" id="idm45357000079176"></a><a data-type="indexterm" data-primary="sampling" data-secondary="costs of tracing" id="idm45357000078232"></a>Because distributed tracing tools are built from the ground up to support
+        distributed applications, maintaining complete records of individual
+        transactions (including across services) is a primary capability. As such,
+        it’s easy to control costs simply by changing the fraction of transactions for
+        which traces are transmitted and stored. <a data-type="indexterm" data-primary="sampling" data-secondary="Dapper percentage of transactions" id="idm45357000076808"></a><a data-type="indexterm" data-primary="sampling" data-secondary="Dapper latency and throughput metrics" id="idm45357000075800"></a><a data-type="indexterm" data-primary="sampling" data-secondary="sampling rates" id="idm45357000074840"></a>Dapper showed that sampling an
+        extremely small portion of transactions—as few as 0.1% or even 0.01%—still
+        has tremendous value for understanding performance and driving
+        optimization work. If new services are added in a way that significantly
+        increases the number of spans, the sampling rate can simply be turned down.
+        And like logging, there are no issues with adding high-cardinality tags or
+        other annotations to spans.</p>
+        
+        <p>However, this sampling has a critical downside: it’s no longer possible to
+        reconstruct a complete picture of application performance from these samples.
+        Nor is it possible to examine types of transactions that occur rarely. For
+        example, if an operator is trying to understand 99.9th-percentile latency
+        performance, the chances of 1-in-10,000 sampling finding helpful examples is
+        vanishingly small.</p>
+        
+        <p>As such, <a data-type="indexterm" data-primary="distributed tracing" data-secondary="about" id="idm45357000072104"></a>distributed tracing is often used as a tool to <em>explain</em> gross
+        performance problems rather than determining when they are occurring. And
+        while it can be quite valuable for high-volume applications with relatively
+        homogeneous users (like Google), it doesn’t offer many advantages over
+        centralized logging for lower-value applications, nor does it help provide
+        visibility into small user segments or infrequently occurring errors.</p>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Three Pipes (Not Pillars)"><div class="sect2" id="idm45357000069880">
+        <h2>Three Pipes (Not Pillars)</h2>
+        
+        <p><a data-type="indexterm" data-primary="observability" data-secondary="three pipes" id="idm45357000068536"></a>The reader may be asking some questions about our framing of the problem at
+        this point: for example, why define distributed tracing as a technique that
+        must use some form of sampling? Why require that metric time series be
+        computed in advance and stored as separate streams? You are absolutely
+        correct to be asking such questions! While implementers of these tools have
+        each focused on optimizing for specific use cases, in fact, they are not
+        really three separate tools but three different <em>techniques</em> for collecting and
+        managing telemetry data.</p>
+        
+        <p>If we instead view these three techniques as <em>pipes</em>—three ways of
+        transmitting and storing data—rather than three separate pillars, there are
+        many opportunities to answer interesting and valuable questions at a
+        reasonable cost. While it is far beyond the scope of this chapter to describe
+        the design of a unified observability platform, the following
+        examples show how <a data-type="indexterm" data-primary="observability" data-secondary="logs" id="idm45357000065016"></a><a data-type="indexterm" data-primary="logs" data-secondary="as observability pipe" data-secondary-sortas="observability pipe" id="idm45357000064040"></a><a data-type="indexterm" data-primary="observability" data-secondary="metrics" id="idm45357000062824"></a><a data-type="indexterm" data-primary="metrics" data-secondary="as observability pipe" data-secondary-sortas="observability pipe" id="idm45357000061880"></a><a data-type="indexterm" data-primary="observability" data-secondary="distributed tracing" id="idm45357000060664"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="as observability pipe" data-secondary-sortas="observability pipe" id="idm45357000059720"></a>metrics, logging, and distributed tracing <em>data</em> can be used to provide functionality usually
+        associated with one of the other pillars:</p>
+        
+        <ul>
+        <li>
+        <p>Logs may be visualized as traces. In cases where each entry is <a data-type="indexterm" data-primary="logs" data-secondary="correlation ID" id="idm45357000056584"></a><a data-type="indexterm" data-primary="documentation" data-secondary="log correlation ID" id="idm45357000055528"></a>tagged with
+        <em>transaction</em> or <em>request identifier</em> (sometimes called a <em>correlation ID</em>), it’s
+        straightforward to describe a query to find all of the logs associated with an
+        individual transaction. <a data-type="indexterm" data-primary="visualization tools" data-secondary="flame graph" id="idm45357000053016"></a>If the logs also contain request latency (or if pairs
+        of logs can be used to infer latency) then they can be visualized as a flame
+        (or icicle) graph.</p>
+        </li>
+        <li>
+        <p>Time series may be derived from spans. For example, the durations of spans
+        may be extracted either as they are generated or after the fact and then
+        displayed as a time series of latency. (If sampling is used, then the
+        results must be scaled appropriately.) Other metric time series can also be
+        derived from tags as they occur in spans.</p>
+        </li>
+        <li>
+        <p>Logs may also be extracted from spans. In cases where volume is sufficiently
+        low, span annotations can be extracted and centralized with other logs.</p>
+        </li>
+        <li>
+        <p>Metric time series may be computed from logs. For example, <a data-type="indexterm" data-primary="Scuba (Facebook)" id="idm45357000048808"></a><a data-type="indexterm" data-primary="Facebook" data-secondary="Scuba" id="idm45357000048024"></a>Facebook’s Scuba
+        database ingests (and stores) millions of events per second and then lets
+        users query and view metrics derived from these events as time
+        series.<sup><a data-type="noteref" id="idm45357000046776-marker" href="ch07.html#idm45357000046776">3</a></sup></p>
+        </li>
+        <li>
+        <p>Changes to metric counters or gauges can be added as span annotations.
+        While metrics are usually aggregated very close to the source to reduce the
+        cost of transmitting and storing them, associating changes to spans offers
+        additional possibilities in how they are analyzed.</p>
+        </li>
+        </ul>
+        
+        <p>While these three different ways of organizing observability data present many
+        trade-offs, we shouldn’t ask users to commit to these tradeoffs as part of
+        selecting tools: these are the concerns of tool implementers. At the same
+        time, as users of observability tools we will ultimately pay for these
+        choices. As we will discuss in the next section, we must first approach the
+        problem from the point of view of the outcomes we want to achieve. Only then
+        can we adequately assess which tools are required and how well they are
+        performing.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Observability Goals and Activities"><div class="sect1" id="idm45357000043288">
+        <h1>Observability Goals and Activities</h1>
+        
+        <p><a data-type="indexterm" data-primary="observability" data-secondary="goals of" id="idm45357000041944"></a><a data-type="indexterm" data-primary="observability" data-secondary="three pillars" id="idm45357000040968"></a>The fragility of the three pillars is perhaps unsurprising. It is a
+        trio of convenience: there is no fundamental law of nature that requires there
+        to be <em>exactly three</em> observability tools. Despite this, the <a data-type="indexterm" data-primary="checklists" data-secondary="observability three pillars" id="idm45357000039272"></a>three pillars
+        are often used as a checklist for infrastructure teams whose
+        responsibility is to provide tools to the rest of their organizations.
+        Unfortunately, it is quite possible to deliver suitable implementations of all
+        three pillars but still leave gaps in the observability platform. That is,
+        developers and operators may not be able to understand the behavior of their
+        applications and services despite having metrics, logging, and tracing tools,
+        because even together, those tools often do not achieve the primary goals of
+        observability.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Two Goals in Observability"><div class="sect2" id="idm45357000037512">
+        <h2>Two Goals in Observability</h2>
+        
+        <p><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="as observability goal" data-secondary-sortas="observability goal" id="idm45357000036200"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="as observability goal" data-secondary-sortas="observability goal" id="idm45357000034984"></a>There are ultimately only two goals in using any observability tool:</p>
+        
+        <ul>
+        <li>
+        <p>Improving baseline performance</p>
+        </li>
+        <li>
+        <p>Restoring baseline performance (after a regression)</p>
+        </li>
+        </ul>
+        
+        <p><a data-type="indexterm" data-primary="improving baseline performance" data-secondary="about" id="idm45357000031096"></a>By <em>improving</em> baseline performance, developers hope to improve user
+        experience, lower infrastructure costs, or both. For user-facing
+        applications, performance often means request latency, though it might also
+        include other, longer transactions. This sort of optimization is a process
+        usually undertaken over the course of days, weeks, or even months.</p>
+        
+        <p>Observability tools are critical for improving baseline performance first in
+        measuring that performance (that is, in establishing the baseline) and then by
+        directing developers toward the parts of their software where they can be more
+        effective in improving performance. <a data-type="indexterm" data-primary="monolithic applications" data-secondary="improving baseline performance" id="idm45357000028504"></a>With a monolithic application, developers
+        may simply use a CPU profiler to understand which parts of the application are
+        taking the most time. In a distributed system, it’s often unclear when slow
+        parts of a request are actually impacting user experience. We will consider
+        examples in <a data-type="xref" href="ch09.html#chapter_11">Chapter&nbsp;9</a> that show how distributed
+        tracing is critical in determining how to plan and execute work in improving
+        baseline performance.</p>
+        
+        <p><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="about" id="idm45357000025880"></a>In contrast to the planned work behind improving baseline performance,
+        <em>restoring</em> baseline performance is, almost by definition, unplanned.
+        Regressions in performance, including application outages, can result in a
+        loss of revenue, negatively impact the brand, and degrade user trust. As such,
+        regressions occurring in production systems must be corrected as soon as
+        possible. Depending on your organization’s service level goals, you may have
+        only minutes to detect, understand, and mitigate performance regressions.</p>
+        
+        <p>Observability tools are also critical in restoring baseline performance.
+        Often problems in one service may not be detected in that service itself but
+        still negatively affect the performance of other services. (This can be
+        true when both services are managed by the same organization or when they are
+        managed by two different ones.) As we discuss in
+        <a data-type="xref" href="ch09.html#chapter_11">Chapter&nbsp;9</a>, distributed tracing is also critical in
+        effectively and quickly responding to performance regressions.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Two Fundamental Activities in Observability"><div class="sect2" id="idm45357000021976">
+        <h2>Two Fundamental Activities in Observability</h2>
+        
+        <p><a data-type="indexterm" data-primary="observability" data-secondary="performance impact on users" id="idm45357000020440"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="user impact" id="idm45357000019496"></a><a data-type="indexterm" data-primary="user impact of performance" data-secondary="observability" id="idm45357000018536"></a>While improving and restoring baseline performance might feel like very
+        different kinds of goals, they are both based on the same two fundamental
+        activities:</p>
+        
+        <ul>
+        <li>
+        <p>Measuring the impact of performance on users</p>
+        </li>
+        <li>
+        <p>Explaining variation in those measurements</p>
+        </li>
+        </ul>
+        
+        <p>To some users of monitoring tools, especially infrastructure- and network-monitoring tools, it might come as a surprise to see such a narrow definition
+        of what we care about: that we focus only on the impact on <em>users</em>. There are
+        hundreds of other types of measurements that could describe the behavior of a
+        production software system: from host, storage, and network utilization, to
+        queue sizes, open connections, and garbage collector overhead and many
+        other types of performance.</p>
+        
+        <p>In the case of improving baseline performance, if you are <em>not</em> working on
+        something that will improve the performance as observed by your users (or
+        reduce cost), well, you are wasting your time. And if you just got woken up
+        at 3 a.m. for something that is <em>not</em> impacting your users, you should have a
+        few words with the rest of your team about what constitutes an urgent alert!</p>
+        
+        <p>While we’re strict about measuring performance impact <em>on users</em>, we’re less
+        so about what exactly “performance” means in this context. Generally, any
+        behavior of the software that users might notice is worth measuring: not just
+        request latency but quantitative user experience and even correctness can all be
+        considered types of performance.</p>
+        
+        <p>Focusing on user impact is closely related to the mantra of “alerting on
+        symptoms rather than causes.” And of course, your tools should measure all
+        these other potential causes, but as a user of observability tools, you need
+        concern yourself with them only inasmuch as they assist you in the second
+        fundamental activity: explaining variations in user-impacting performance.
+        The danger of looking too closely at all of these other metrics is that many
+        of them may describe problems that will distract you from more important work:
+        in any production system of reasonable scale, there are always dozens—if
+        not hundreds—of things going wrong, but (hopefully) only a small fraction
+        of them are impacting your users at any given time.</p>
+        
+        <p>As a concrete example of this kind of distraction, consider the giant
+        <a data-type="indexterm" data-primary="visualization tools" data-secondary="dashboards of operations centers" id="idm45357000009192"></a>dashboards that can be seen in operations centers or on the monitors of many
+        on-call engineers. Filled with rows and rows of time series, these dashboards
+        capture many signals that might tell an operator what is going wrong.</p>
+        
+        <p>Even—and perhaps especially—during a user-impacting incident, these
+        dashboards often will show many graphs that are changing simultaneously: when
+        something is going wrong, it will often affect many different aspects of
+        performance. However, these graphs are merely showing <em>correlated</em> failures
+        and not bringing you any closer to the cause of the problem. While there may
+        be one or two people on your team who can look at these sorts of dashboards
+        and infer the root cause of the problem, it doesn’t bode well for the team if
+        these people ever go on vacation.</p>
+        
+        <p>Worse, many members of your team may look at these dashboards and assume that
+        they are exhaustive: that they include <em>every</em> possible explanation for the
+        cause of a problem. After all, they were built by smart, experienced people!
+        This can lead to the assumption that, if the dashboard can’t explain the
+        problem, it must be a “networking glitch” or another problem that can’t be
+        explained, and therefore shouldn’t be investigated. Unfortunately, today’s
+        software systems are too complex and too dynamic for developers—even
+        seasoned ones—to anticipate every possible cause.</p>
+        
+        <p>While variation in performance is often first described as a time-dependent
+        phenomena (“our service started slowing down at 5:03 p.m.” or “error rate jumped
+        at 11:30 a.m.”), time is merely a proxy for some other precipitating event,
+        whether that be a new release of your service, a change in one of your
+        service’s dependencies, or another change to the environment.</p>
+        
+        <p>It’s critical that observability tools measure performance in ways that let these
+        events be distinguished from each other. This is the root of the
+        requirement around cardinality discussed earlier: the ability to compare
+        performance across releases, hosts, clients, or other dimensions that can
+        impact that performance.</p>
+        
+        <p>The number of signals that can <em>explain</em> performance variation is orders of
+        magnitude larger than the number of ways that performance can impact users.
+        While a typical application might only measure a handful of ways that users
+        can be affected, there can easily be thousands or even tens of thousands of
+        explanations for why users are being impacted. The problem is not a
+        signal-to-noise problem (where there is a lack of information) but a
+        too-much-signal problem: there are just too many data sources, each of which
+        will probably help to explain a performance problem at some point, even if they
+        are not helpful in explaining today’s problem.</p>
+        
+        <p>We seem to still be rather far from the point where tools can automatically
+        pinpoint the root cause of a performance problem. As such, the
+        role of an observability tool in explaining variation is often to help <em>narrow
+        the search space</em>. This can take the form of providing suggestions as to what
+        likely causes might be. It can also mean allowing developers and operators to
+        interactively query data in such a way that they can form hypotheses and then build
+        evidence to support or repudiate them.</p>
+        
+        <p>Explaining performance variation leads us to the purpose of an observability
+        tool: to take action to improve performance. The type of variation will lead
+        to the type of action to be taken. If slow requests are associated with a new
+        release, that release should be rolled back; if slow requests are all
+        occurring on the same compute node, a new node should be provisioned to
+        augment or replace the old one. Ultimately, being able to explain variation
+        in performance will enable you to control the impact on your users.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="A New Scorecard"><div class="sect2" id="idm45357000021384">
+        <h2>A New Scorecard</h2>
+        
+        <p><a data-type="indexterm" data-primary="distributed applications" data-secondary="observability tool scorecard" id="idm45356999998152"></a><a data-type="indexterm" data-primary="observability" data-secondary="tool scorecard" id="idm45356999997144"></a><a data-type="indexterm" data-primary="checklists" data-secondary="observability tool scorecard" id="idm45356999996200"></a>With these goals and activities in mind, we are now in a better position to
+        think about the trade-offs of metrics, logging, and distributed tracing and to
+        judge the efficacy of an observability platform in general. We will do so
+        looking at how solutions address each of the activities described earlier.</p>
+        
+        <p>First, to help users measure the impact of performance on users (or put
+        another way, to measure symptoms), observability tools should be judged on
+        the following <span class="keep-together">characteristics</span>:</p>
+        
+        <ul class="pagebreak-before">
+        <li>
+        <p>Statistical fidelity</p>
+        </li>
+        <li>
+        <p>Cardinality limits</p>
+        </li>
+        <li>
+        <p>Volume limits</p>
+        </li>
+        <li>
+        <p>Time limits</p>
+        </li>
+        </ul>
+        
+        <p>While no tool can provide perfect fidelity with no limits (and at reasonable
+        cost), striking the right balance between these is critical to providing
+        value.</p>
+        
+        <p>Second, to help users explain variations in these measurements, observability
+        tools must be able to help quickly narrow the search space of possible
+        explanations. While there is no fixed set of ways to do that, there are some
+        high-level approaches that observability tools can take to facilitate this:</p>
+        
+        <ul>
+        <li>
+        <p>Providing context</p>
+        </li>
+        <li>
+        <p>Prioritizing by impact</p>
+        </li>
+        <li>
+        <p>Automating correlation</p>
+        </li>
+        </ul>
+        
+        <p>These are more qualitative than the ways we can judge how well observability
+        tools measure impact. They are outlined later in this chapter and will be described in more
+        detail in the context of specific use cases in subsequent chapters.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Statistical fidelity"><div class="sect3" id="idm45356999983944">
+        <h3>Statistical fidelity</h3>
+        
+        <p><a data-type="indexterm" data-primary="observability" data-secondary="statistical fidelity of tools" id="idm45356999982568"></a>By fidelity, we mean that when summarizing the behavior of a large population
+        of requests, observability tools maintain enough information to understand the
+        overall <a data-type="indexterm" data-primary="histograms" data-secondary="observability tools" id="idm45356999981272"></a>“shape” of the behavior, often shown using histograms.</p>
+        
+        <p><a data-type="indexterm" data-primary="statistics" data-secondary="observability tools" id="idm45356999979864"></a>Statistics like mean and standard deviation are great tools for summarizing
+        behaviors that follow normal or other simple distributions. However, software
+        measurements like latency are rarely normal—they often have long tails—and are often multi-modal. For example, request latency will often have
+        multiple modes based on whether required data can be found in a cache.
+        When trying to understand or improve latency, it’s important to understand
+        whether the current objective would be best served by increasing the number of
+        cache hits or improving the latency of a cache miss.</p>
+        
+        <p>Histograms provide a simple visual way of capturing these discrete behaviors
+        and understanding their relative frequency. Histograms can also be used to
+        derive statistics such as different percentiles.</p>
+        <aside data-type="sidebar" epub:type="sidebar" class="pagebreak-before less_space"><div class="sidebar" id="ch8_high_percentile_latency">
+        <h5>High-Percentile Latency</h5>
+        <p>While they are certainly more difficult to measure than other statistics (such
+        as count, mean, or standard deviation), high-percentile measurements are
+        critical for understanding and improving performance, particularly in the case
+        of request latency. As such, it’s best practice to measure not just mean
+        latency, but also the latency of the slowest requests, such as the 95th, 99th,
+        or even 99.9th percentile.</p>
+        
+        <p>In a distributed system, the combinatorics of fanning out a request across
+        hundreds of services means that, while only 1% of requests to an individual
+        service may be slow, the chances of these slow requests impacting users may be
+        much higher.</p>
+        
+        <p>More qualitatively, those users experiencing the slowest 1% of requests can
+        act as bellwethers for the rest of your user-base. These are often expert
+        users who are pushing the limits of your system. As the data volume grows or
+        the complexity of user interactions increase, many more users may experience
+        larger latencies.</p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Cardinality limits"><div class="sect3" id="idm45356999973368">
+        <h3>Cardinality limits</h3>
+        
+        <p><a data-type="indexterm" data-primary="cardinality" data-secondary="observability tools" id="idm45356999972168"></a>The ability to break down performance across different dimensions is at the
+        core of explaining variation. As such, an observability solution must be able
+        to ingest and analyze data with many different labels or tags that represent
+        these dimensions. While there will likely be some limits on the cardinality
+        of the data, observability solutions should be measured on their capacity to
+        use labels, tags, and other metadata to explain variation in performance.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Volume limits"><div class="sect3" id="idm45356999970328">
+        <h3>Volume limits</h3>
+        
+        <p><a data-type="indexterm" data-primary="sampling" data-secondary="observability tool volume limits" id="idm45356999969160"></a>An observability solution’s volume limits are defined by how many events can
+        be captured every minute and how much detail can be captured with each event.
+        In cases where not all events are captured, what mechanisms are used to select
+        events (that is, to sample them)? The processes used to select events can
+        affect which are available for subsequent analysis as well as what statistics
+        inferences can be drawn from the <span class="keep-together">sample</span>.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Time limits"><div class="sect3" id="idm45356999966744">
+        <h3>Time limits</h3>
+        
+        <p><a data-type="indexterm" data-primary="observability" data-secondary="horizons" id="idm45356999965512"></a>Not all observability can (or should) be kept forever. The amount of history
+        that an observability solution stores is sometimes called its <em>horizon</em>.
+        Depending on the use case, different horizons may be appropriate. In the case
+        of validating a new release, hours or maybe days of data will be sufficient.
+        Measuring the impact of a quarter-long optimization project will obviously
+        require a longer horizon. Infrastructure capacity planning might require a
+        year or more of data to account for a business’s seasonality.</p>
+        
+        <p>The other important aspect of time is how soon a request is
+        reflected in measurements and analysis. As part of restoring baseline
+        performance for a highly available service, it’s critical that measurements be
+        made within a minute or less. For other use cases, processing data as part of
+        a daily or weekly batch may be sufficient.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Provide context"><div class="sect3" id="idm45356999962456">
+        <h3>Provide context</h3>
+        
+        <p><a data-type="indexterm" data-primary="context propagation" data-secondary="observability tools" id="idm45356999961256"></a>Many (maybe even most) software problems are caused not by a failure of a
+        single component but by an unanticipated interaction between two or more
+        components. One of the most common cases is where one component fails
+        gracefully but another component, one that depends on the first, does
+        not handle this failure properly.</p>
+        
+        <p>As such, observability solutions must put failures and other performance
+        problems in context. What was the original request that led to the problem?
+        What sequence of actions led to the current state? A distributed trace is one
+        example of this sort of context, but context can span multiple requests or
+        even hosts. For example, an operator trying to understand why one service
+        instance is overloaded would benefit from understanding that several other
+        instances have recently crashed (leading a load balancer to redirect traffic).</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Prioritize by impact"><div class="sect3" id="idm45356999958632">
+        <h3>Prioritize by impact</h3>
+        
+        <p><a data-type="indexterm" data-primary="prioritization of problems" id="idm45356999957528"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="prioritization of problems" id="idm45356999956856"></a>As mentioned earlier, the complexity of distributed systems means that there
+        will always be many things going wrong, including many requests (or parts of
+        requests) that are slow. An observability solution should help prioritize
+        both the problems and their potential causes by the impact they are having on
+        users.</p>
+        
+        <p>One example is to prioritize performance problems based on their contributions
+        to the <em>critical path</em> of requests. The critical path is the parts of a
+        request that, if sped up, would improve the latency experienced by an end
+        user. Since, by definition, speeding up parts of a request that are <em>not</em> on
+        the critical path would have no impact on end users, it’s not worth spending
+        time on them.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Automate correlation"><div class="sect3" id="idm45356999953432">
+        <h3>Automate correlation</h3>
+        
+        <p>Human operators have important knowledge about the behavior of software
+        systems as well as insights into their failures, but the number of signals
+        that are emitted from distributed systems is far too large to sift through
+        manually. An observability solution can help human operators focus on what
+        matters by promoting signals which correlate with performance issues and,
+        conversely, by filtering out signals which have no correlated changes. For
+        example, if the rate of errors observed during a slow roll-out is much higher
+        for the new version, then showing the difference in performance based on
+        version can be invaluable. (On the other hand, showing a breakdown by host
+        might lead to incorrect conclusions.)</p>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="The Path Ahead"><div class="sect2" id="idm45356999999064">
+        <h2>The Path Ahead</h2>
+        
+        <p>In this light, when making choices about observability tools, we should not
+        ask simply “Is this a good metrics tool?” (or a good logging tool or a good
+        tracing tool) but instead “Is this a good <em>observability</em> tool?” Doing so
+        means accepting broader definitions of each of these tools and of distributed
+        tracing in particular. Unlike metrics and logs, distributed tracing starts
+        from the assumption that we are trying to observe a <em>distributed</em> system. It
+        is critical that any observability tool used in a distributed system provide a
+        holistic view of the application, and there is an opportunity for distributed
+        tracing to play a much larger role in how applications are developed and run.</p>
+        
+        <p>As we consider use cases and potential future work in subsequent chapters, we
+        will continue to take a broader view of tracing: not just as it was deployed
+        as tools like Dapper at Google, but as a tool that takes advantage of multiple
+        sources of information and combines them in ways that are timely and
+        cost-efficient for developers and operators. This will mean leveraging
+        metric data to understand possible causes outside of the application or
+        deriving metrics from traces to show operators when application behavior is
+        changing. It will also mean leveraging log data as another source of
+        information for tracing and showing users specific events data as part of
+        explaining what happened.</p>
+        
+        <p>While the three pillars of observability offer an easy way to categorize
+        existing tools, breaking free of this paradigm offers many more possibilities
+        for how we approach observability problems. As we consider a range of use
+        cases in the next few chapters, consider how these different data sources—individually and especially when combined—can help connect cause and effect
+        in production systems.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        <div data-type="footnotes"><p data-type="footnote" id="idm45357000333624"><sup><a href="ch07.html#idm45357000333624-marker">1</a></sup> <a data-type="xref" href="bibliography01.html#Bey16">[Bey16]</a></p><p data-type="footnote" id="idm45357000199144"><sup><a href="ch07.html#idm45357000199144-marker">2</a></sup> <a data-type="xref" href="bibliography01.html#Sig10">[Sig10]</a></p><p data-type="footnote" id="idm45357000046776"><sup><a href="ch07.html#idm45357000046776-marker">3</a></sup> <a data-type="xref" href="bibliography01.html#Abr13">[Abr13]</a></p></div></div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492056621/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

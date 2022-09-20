@@ -1,0 +1,519 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 11. Beyond Individual Requests"><div class="chapter" id="chapter_beyond_individual_requests">
+        <h1><span class="label">Chapter 11. </span>Beyond Individual Requests</h1>
+        
+        
+        <p><a data-type="indexterm" data-primary="trace aggregations" data-secondary="about" id="idm45356999068920"></a><a data-type="indexterm" data-primary="aggregate traces" data-see="trace aggregations" id="idm45356999067944"></a>You’ve already seen how traces capture useful information about the end-to-end behavior of individual requests. This includes the time taken by each individual RPC, how much data was transferred at each hop, timeouts, and error responses. By inspecting a single trace carefully, you can often explain why the request took the time that it did. For example, you might see that a particular request missed in the cache. Perhaps a service returned an exceptionally large response record that took a long time to serialize and deserialize. Maybe there’s a straggler in a large RPC fanout that responds many milliseconds after its peers. Perhaps the trace reveals the dreaded staircase pattern, where RPC calls that should be parallel are in fact executing serially.</p>
+        
+        <p><a data-type="indexterm" data-primary="traces" data-secondary="aggregate analysis" data-seealso="trace aggregations" id="idm45356999065832"></a><a data-type="indexterm" data-primary="aggregate analysis" data-secondary="traces" data-seealso="trace aggregations" id="idm45356999064584"></a>Any one of these situations would reveal something important about that particular trace, but as the span timing diagram in <a data-type="xref" href="#figure14-1">Figure&nbsp;11-1</a> illustrates, it’s hard to interpret these behaviors in isolation. What you can’t tell from individual traces is how often the situation occurs, and in response to which types of requests. Therefore, should you—the service operator or owner—take some action to fix the problem, or is it a one-off that is unlikely to happen again in your lifetime? Which of the suspicious-looking parts of a trace are actually unusual? By comparing a single trace to an aggregate, or one aggregate set to another, you can learn <em>contextual</em> information that helps answer such questions.</p>
+        
+        <p>The benefits of aggregate traces don’t stop there. In addition to giving context for interpreting an individual trace, groups of traces can enlighten us about the system as a whole, even when everything is working normally. One of the most common applications for trace aggregations is to extract the dependencies between services in a production system (see <a data-type="xref" href="#figure14-2">Figure&nbsp;11-2</a>), while others include capacity planning, A/B testing, and detecting workload trends. <a data-type="indexterm" data-primary="trace aggregations" data-secondary="aggregate analysis" data-seealso="aggregate analysis" id="idm45356999059464"></a>In <a data-type="xref" href="ch08.html#ch10_aggregate_analysis">“Aggregate Analysis”</a>, we talked about using aggregate critical path analysis to discover where to focus <span class="keep-together">optimization</span> efforts, and in <a data-type="xref" href="ch08.html#ch10_correlation_analysis">“Correlation Analysis”</a>, we showed how correlation analysis can help with root cause diagnosis.</p>
+        
+        <figure><div id="figure14-1" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_1101.png" alt="It's not obvious how to interpret individual traces" width="1403" height="784">
+        <h6><span class="label">Figure 11-1. </span>Interpreting individual traces without data is hard.</h6>
+        </div></figure>
+        
+        <figure><div id="figure14-2" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_1102.png" alt="Weighted service dependency graph" width="1114" height="520">
+        <h6><span class="label">Figure 11-2. </span>A service dependency graph; the edge weights indicate the fraction of traces containing that dependency.</h6>
+        </div></figure>
+        
+        <p>To recap, trace aggregations provide context in two complementary ways. First, they show whether a particular measurement or behavior is <a data-type="indexterm" data-primary="anomalous metrics via trace aggregations" id="idm45356999050936"></a>anomalous compared to the typical trace as well as the prevalence of that characteristic. Second, <a data-type="indexterm" data-primary="normal performance defined" data-secondary="aggregations of traces" id="idm45356999049896"></a>aggregations capture what is normal in the system, defining a reference point for typical behavior and generating data for tasks such as provisioning, alerts, and tracking trends over time.</p>
+        
+        <p>In the rest of this chapter we will dig a little deeper into how to use the context provided by aggregate traces to focus debugging efforts and extract insights about system behavior.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="The Value of Traces in Aggregate"><div class="sect1" id="idm45356999047896">
+        <h1>The Value of Traces in Aggregate</h1>
+        
+        <p>Let’s look at some concrete examples to illustrate how trace aggregations are useful in practice.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Example 1: Is Network Congestion Affecting My Application?"><div class="sect2" id="ex-1-sect">
+        <h2>Example 1: Is Network Congestion Affecting My Application?</h2>
+        
+        <p><a data-type="indexterm" data-primary="trace aggregations" data-secondary="network congestion" id="idm45356999044744"></a><a data-type="indexterm" data-primary="network congestion and trace aggregations" id="idm45356999043768"></a><a data-type="indexterm" data-primary="latency" data-secondary="network congestion and trace aggregations" id="idm45356999043064"></a>You have a congested link in your datacenter network, indicated by some metric such as counters from the network switch. You want to find out what impact, if any, the congestion is having on your application traffic. Specifically, given a trace of a request that is potentially affected, you would pose the question: “Is this latency high?” <a data-type="indexterm" data-primary="latency" data-secondary="high-percentile latency" id="idm45356999041592"></a>To answer, you first need to decide what “high” means, and typically the 95th or 99th percentile would be a good choice of definition (see <a data-type="xref" href="ch07.html#ch8_high_percentile_latency">“High-Percentile Latency”</a>). Then, take a control group of traces (say, a similar population over a period when the link was not congested), and compare the 99th-percentile latency with that of traces captured during the congestion.</p>
+        
+        <p>Conversely, you may use the same information about what defines high latency to pick example traces for closer inspection. In this example, you could examine communication patterns in traces exhibiting high latency to decide whether the slowness is correlated with the problematic network link.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Example 2: What Services Are Required to Serve an API Endpoint?"><div class="sect2" id="idm45356999038328">
+        <h2>Example 2: What Services Are Required to Serve an API Endpoint?</h2>
+        
+        <p><a data-type="indexterm" data-primary="API services" data-secondary="endpoint and trace aggregations" id="idm45356999036904"></a><a data-type="indexterm" data-primary="trace aggregations" data-secondary="API endpoint service" id="idm45356999035912"></a>You’ve decided to serve some of your API endpoints out of a different datacenter and you wish to avoid cross-datacenter traffic by keeping together the microservices used to serve the same endpoint. To help in planning, you want to identify how many microservices participate in serving each endpoint. “What is the average number of services involved in requests to a particular API endpoint?”</p>
+        
+        <p>To answer this question using aggregated traces, you would group by endpoint requests and then count the number of unique services that were present before taking the average of each group of traces. Because you’re looking at the aggregate, you’re not misled by natural variations in the number of services involved. Dynamic dependencies, such as when a cache miss causes a backend storage service to be invoked, are common in microservice architectures, and a single trace may not contain the entire set of dependent services.</p>
+        
+        <p>In addition to system-wide insights, you can use contextual knowledge derived from the aggregate set of traces to be more effective when debugging with traces. Focusing attention on traces in the tail of the relevant distribution is often a good start.</p>
+        
+        <p>For instance, if you observe that the RPC send and receive times in a slow trace are in the 99th percentile of the distribution for that value across all traces, then that’s a strong clue that the problem might lie in the network. On the other hand, if you see a slow RPC but note that it is orders of magnitude larger than the average size across all traces, you may reasonably conclude that the propagation delay in this case is as expected and not (necessarily) relevant to the problem you are debugging. Notice that both cases have involved using an aggregation function over some property of the traces (99th percentile of transmission time and average message size, respectively) to provide context for debugging.</p>
+        
+        <p>Being able to check whether the characteristics of a specific trace are abnormal means that you can focus your debugging in the most promising places. Being able to check whether the suspicious stuff occurs in <em>enough</em> traces to matter directs debugging efforts to the most impactful problems.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Organizing the Data"><div class="sect1" id="idm45356999030344">
+        <h1>Organizing the Data</h1>
+        
+        <p><a data-type="indexterm" data-primary="trace aggregations" data-secondary="organizing data" id="idm45356999028968"></a><a data-type="indexterm" data-primary="data aggregation" data-secondary="organizing trace aggregations" id="idm45356999027992"></a><a data-type="indexterm" data-primary="organizing trace aggregation data" id="idm45356999027080"></a><a data-type="indexterm" data-primary="aggregate analysis" data-secondary="traces organized" id="idm45356999026392"></a>The examples we described in the previous section rely on applying aggregation to different components of the traces. You answered the first question (“Is this latency high?”) by looking at the distribution of a single value—the duration—that is a basic property of each trace. By contrast, the question “What is the average number of services for requests to a particular API endpoint?” requires applying an aggregate function to a value derived from counting the number of services contained within each trace.</p>
+        
+        <p>What this means in practice is that the best way to organize aggregate trace data to be able to answer such a range of questions is not obvious. If you only want to answer the first type of question, then you can store trace attributes in flat tables, for example in a relational database. If the second type is more important, you might consider using a <a data-type="indexterm" data-primary="graph store" id="idm45356999024024"></a>graph store (recall that traces are really graphs). In either case, it may also be useful to run user-defined queries that apply to arbitrary tags, and so you will probably want a way to support them too.</p>
+        
+        <p>Clearly, how best to make traces available for aggregate analysis depends on the particular requirements of the operating environment. For this reason, we are not going to say that one way is better than another, but instead we will use a <a data-type="indexterm" data-primary="trace aggregations" data-secondary="strawperson table" id="idm45356999022328"></a>strawperson solution—taking the “flat tables” approach—to illustrate the trade-offs involved more concretely.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="A Strawperson Solution"><div class="sect2" id="idm45356999020968">
+        <h2>A Strawperson Solution</h2>
+        
+        <p><a data-type="indexterm" data-primary="SQL and organizing trace aggregations" id="idm45356999019464"></a>We’ll start by picking SQL as our query language, leaving the specific storage backend unspecified—for example, it could be a relational database or a Hive data warehouse. In the following examples, we’ll use nonstandard, SQL-like pseudocode.</p>
+        
+        <p>Let’s begin by considering how you would use SQL to answer the question from <a href="#ex-1-sect">Example 1</a>. This is actually straightforward. As described earlier, you choose 99th-percentile duration as the aggregation function, which you then apply to your collection of traces. Thus the query to learn the exact value of “high” will look something like this:</p>
+        
+        <pre data-type="programlisting" data-code-language="mysql"><code class="k">SELECT</code> <code class="nf">PERCENTILE</code><code class="p">(</code><code class="n">duration</code><code class="p">,</code> <code class="mi">0</code><code class="p">.</code><code class="mi">99</code><code class="p">)</code>
+        <code class="k">FROM</code> <code class="n">traces</code></pre>
+        
+        <p>More realistically, you will likely want to filter the traces according to attributes like the date or the type of request, and this extends the query to:</p>
+        
+        <pre data-type="programlisting" data-code-language="mysql"><code class="k">SELECT</code> <code class="nf">PERCENTILE</code><code class="p">(</code><code class="n">duration</code><code class="p">,</code> <code class="mi">0</code><code class="p">.</code><code class="mi">99</code><code class="p">)</code>
+        <code class="k">FROM</code> <code class="n">traces</code>
+        <code class="k">WHERE</code> <code class="kt">date</code> <code class="o">=</code> <code class="ss">`today`</code> <code class="k">AND</code> <code class="n">type</code> <code class="o">=</code> <code class="s1">'http'</code></pre>
+        
+        <p>Notice that we have assumed a table called <code>traces</code>, with one row per trace and columns for <code>duration</code>, <code>date</code>, and <code>type</code>. You can imagine also surfacing other properties of traces in this same table, such as the trace identifier, timestamp, and other common attributes.</p>
+        
+        <p>Let’s move to the second example question: “What is the average number of services involved in requests to a particular API endpoint?”</p>
+        
+        <p>Here you’re interested in a derived attribute of the trace, specifically the number of services. We mentioned previously that a <a data-type="indexterm" data-primary="graph store" id="idm45356998925016"></a>graph store might be a good choice here. However, for our strawperson we’re going to stick with the flat tables and explore their pros and cons for different types of queries.</p>
+        
+        <p>Let’s assume we have a second table called <code>spans</code>, with one row per span and, at a minimum, the fields <code>TraceID</code>, <code>SpanID</code>, and <code>service</code>. This time, as shown in <a data-type="xref" href="#EX14-1">Example&nbsp;11-1</a>, you’re going to filter on traces with the API endpoint of interest, and then take the average of the count of unique services:</p>
+        <div id="EX14-1" data-type="example">
+        <h5><span class="label">Example 11-1. </span>Spans table</h5>
+        
+        <pre data-type="programlisting" data-code-language="mysql"><code class="k">SELECT</code> <code class="nf">AVG</code><code class="p">(</code><code class="n">num_services</code><code class="p">)</code> <code class="k">FROM</code> <code class="p">(</code>
+          <code class="k">SELECT</code> <code class="nf">COUNT</code><code class="p">(</code><code class="k">DISTINCT</code> <code class="n">spans</code><code class="p">.</code><code class="n">service</code><code class="p">)</code> <code class="k">AS</code> <code class="n">num_services</code>
+          <code class="k">FROM</code> <code class="n">spans</code> <code class="k">JOIN</code> <code class="n">traces</code>
+            <code class="k">ON</code> <code class="n">traces</code><code class="p">.</code><code class="n">TraceID</code> <code class="o">=</code> <code class="n">spans</code><code class="p">.</code><code class="n">TraceID</code>           <code class="err">—</code><code class="kp">tables</code> <code class="n">joined</code> <code class="k">on</code> <code class="n">TraceID</code>
+          <code class="k">WHERE</code> <code class="n">traces</code><code class="p">.</code><code class="n">api_endpoint</code> <code class="o">=</code> <code class="s1">'/get/something'</code>
+          <code class="k">GROUP</code> <code class="k">BY</code> <code class="n">spans</code><code class="p">.</code><code class="n">TraceID</code> <code class="p">)</code>                      <code class="err">—</code><code class="n">service</code> <code class="n">count</code> <code class="n">per</code> <code class="n">trace</code></pre></div>
+        
+        <p>If you aren’t familiar with SQL, this query might seem complicated. Let’s step back and consider what’s going on: We have flattened the constituent spans of each trace into a set of rows in the <code>spans</code> table. After filtering in the <code>traces</code> table to just the rows with the <code>api_endpoint</code> of interest, we choose only spans with a matching <code>TraceID</code> and then count the number of unique services in each group of spans. Finally we take the average of those counts to get our answer. That’s it!</p>
+        
+        <p>This basic idea of squishing trace graphs into flat tables is very powerful. The general approach is to have different tables for the different kinds of objects that comprise a trace. Thus in this example we have the top level <code>traces</code> table, holding information about traces, and a second <code>spans</code> table holding information just about spans. In practice, we might also consider tables for certain common tags, or even derived properties of traces like the critical path. The key to it all (pun intended) is in using <code>TraceID</code> and <code>spanid</code> as join keys, which then allows us to compute aggregate functions across traces, spans, or their attributes.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="What About the Trade-offs?"><div class="sect1" id="what-about-trade-offs">
+        <h1>What About the Trade-offs?</h1>
+        
+        <p>The astute reader may be wondering why we went to the trouble of using a join in the previous query. We could have avoided it simply by making the number of services a field in the <code>traces</code> table, as in <a data-type="xref" href="#EX14-2">Example&nbsp;11-2</a>:</p>
+        <div id="EX14-2" data-type="example">
+        <h5><span class="label">Example 11-2. </span>Traces table</h5>
+        
+        <pre data-type="programlisting" data-code-language="mysql"><code class="k">SELECT</code> <code class="nf">AVG</code><code class="p">(</code><code class="n">num_services</code><code class="p">)</code>
+        <code class="k">FROM</code> <code class="n">traces</code>
+        <code class="k">WHERE</code> <code class="n">api_endpoint</code> <code class="o">=</code> <code class="s1">'/get/something'</code></pre></div>
+        
+        <p>However, the <code>num_services</code> column is not a base property of a raw trace, so this implies a precomputation that walks over every trace in the dataset to count the number of services. Indeed, the data in these tables has to come from somewhere, typically a regularly scheduled batch-processing job, or perhaps a real-time streaming computation. The trade-off that we’re making in this example is between adding complexity to the preprocessing and adding complexity to the query. We’ll say more about preprocessing traces for aggregate analysis later, but first let’s think about sampling and how it relates to trace aggregation.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Sampling for Aggregate Analysis"><div class="sect1" id="idm45356998784968">
+        <h1>Sampling for Aggregate Analysis</h1>
+        
+        <p><a data-type="indexterm" data-primary="trace aggregations" data-secondary="sampling and aggregate analysis" id="idm45356998783688"></a><a data-type="indexterm" data-primary="sampling" data-secondary="aggregate analysis and" id="idm45356998777160"></a><a data-type="indexterm" data-primary="aggregate analysis" data-secondary="sampling and" id="idm45356998776216"></a>In an ideal world, when we apply an aggregation function to a population of traces, we get an answer that is true not only for the traces, but also for the real-world system. In other words, if the traces indicate that the 95th percentile for RPC server processing time is one second, then that’s also the case in your actual system. Unfortunately, there are good reasons why it may not be the case that the aggregate set of traces precisely reflects reality. In particular, as we explained in <a data-type="xref" href="ch08.html#ch10_biased_sampling">“Biased Sampling and Trace Comparison”</a>, it’s not always desirable to sample in a completely representative manner. This is not to say that aggregate analysis of sampled traces isn’t useful—it is—but use caution when interpreting the results.</p>
+        
+        <p>One way to avoid the problem of sampling bias is simply not to sample! Just apply aggregate functions as soon as possible to <em>all</em> traces, which guarantees the integrity of the result. If you already know which aggregation functions you’re going to be running, you can even throw away the raw traces and just keep the result, saving on storage costs and making future queries very fast and cheap. The downside with this approach is that you can’t change your mind later and apply a different aggregation function. In the first example we used earlier (“Is this latency high?”), this means you would store the precomputed 99th-percentile latency, so the lookup would be fast and cheap, but it also means you couldn’t decide to check the 75th-percentile latency instead (unless you decided in advance to store that too).</p>
+        
+        <p>In summary, there’s a three-way trade-off between <em>accuracy</em>, <em>flexibility</em>, and <em>cost</em>, which you can control by setting the sampling rate and choosing when to apply aggregation functions. The following questions guide this choice:</p>
+        
+        <ul>
+        <li>
+        <p>How much error in the aggregation results is acceptable? This sounds like a scary question, but in practice, every observability system provides imperfect data and thus has inherent error. Here we encourage you to choose the trace sampling rate intentionally in order to find the right balance between accuracy and cost.</p>
+        </li>
+        <li>
+        <p>Do you know in advance what questions you will want to ask of your set of traces? Applying aggregation early and keeping just the answer will be much cheaper, but at the expense of flexibility of future queries.</p>
+        </li>
+        </ul>
+        
+        <p>Let’s turn now to the processing pipeline itself.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="The Processing Pipeline"><div class="sect1" id="idm45356998766776">
+        <h1>The Processing Pipeline</h1>
+        
+        <p><a data-type="indexterm" data-primary="trace aggregations" data-secondary="processing pipeline" id="idm45356998765304"></a>By now you know that a trace is made up of records produced by multiple machines in a distributed system. The first step in making that data meaningful for inspection is to stitch together related records into a single trace object. This has to be done whether we make traces available for aggregate analysis or simply provide a way to look at them one at a time.</p>
+        
+        <p>In addition, tracing data is often imperfect: we see incomplete and buggy instrumentation generating invalid records, or loss in the collection system itself resulting in broken traces. As a result, processing to clean up the trace data is often performed at this stage also.</p>
+        
+        <p>Assuming these two necessary steps happen somewhere, our concern now is how and when to prepare the data for on-demand aggregation, as well as which, if any, aggregation functions to precompute.  Referring to Example 2: precomputing the number of services in each trace is a function performed in the pipeline, while calculating the average number of services per trace using a SQL query is an aggregation you perform later and on-demand.</p>
+        
+        <p>In <a data-type="xref" href="#figure14-3">Figure&nbsp;11-3</a> we illustrate two possible architectures for the processing pipeline. In both diagrams the trace data flows from the top (the production services) to the bottom, where we depict the output as flat tables, as in the strawperson data representation described earlier (of course, other representations are feasible as well). The diagram doesn’t show how the tables are eventually used, but we would typically use them for interactive queries, batch processing, and even visualizations and <span class="keep-together">dashboards</span>.</p>
+        
+        <figure><div id="figure14-3" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_1103.png" alt="Trace processing pipeline architectures" width="1259" height="660">
+        <h6><span class="label">Figure 11-3. </span>Two possible architectures for the trace processing pipeline.</h6>
+        </div></figure>
+        
+        <p>The left side of <a data-type="xref" href="#figure14-3">Figure&nbsp;11-3</a> shows a pipeline in which we store the cleaned-up traces before applying batch processing to produce the tables. If you don’t already have a processing pipeline in place but wish to apply aggregate analysis to your traces, then this arrangement is a good way to get started. You can use your existing store for individual traces, or copy them to a different one, and then run a regularly scheduled batch job over the data without changing anything about your current tracing infrastructure. The outputs may be somewhat delayed, but you can start learning insights from trace aggregations without a big investment in additional infrastructure.</p>
+        
+        <p>On the right side of the diagram, we depict a streaming system that processes traces as they arrive and continuously updates the output tables. A semi-real-time system like this gives access to trace aggregations much sooner, and holds the exciting possibility of being able to perform tasks like live debugging using the outputs and tying alerts to trace aggregates. These benefits come with a price: the operational burden of such a system is higher, particularly because tracing data is inherently unpredictable, often arriving in large bursts of data, and you have to ensure the system can keep up with the rate of incoming records.</p>
+        
+        <p>Regardless of how traces are stored, being able to quickly find traces that match specified criteria is extremely useful. One way to achieve this is to build an <a data-type="indexterm" data-primary="trace aggregations" data-secondary="indexing traces" id="idm45356998713768"></a>index as part of the processing pipeline. Because users may want to look for traces that match <em>any</em> of a large number of attributes, we recommend indexing on as many properties as possible. Even when aggregate analysis is not feasible in real time, the ability to discover and inspect individual traces with specific characteristics is valuable for debugging.</p>
+        
+        <p>In fact, building a wide index is just one example of functionality you can build into your processing pipeline. Another is to precompute aggregations, such as the number of services in a trace, as we discussed in <a data-type="xref" href="#what-about-trade-offs">“What About the Trade-offs?”</a>. A third important kind of processing is to extract information from heterogeneous data in traces, which we discuss next.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Incorporating Heterogeneous Data"><div class="sect1" id="idm45356998766152">
+        <h1>Incorporating Heterogeneous Data</h1>
+        
+        <p>The processing pipeline extracts properties of, and computes aggregations over, general attributes of traces like the number of services. It is also a place where you can introduce domain-specific processing of tags. We talked about effective tagging in <a data-type="xref" href="ch04.html#chapter_5">Chapter&nbsp;4</a>, where we noted that tags enrich a span with more information and let you apply powerful, custom aggregate analysis.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Custom Functions"><div class="sect1" id="idm45356998707592">
+        <h1>Custom Functions</h1>
+        
+        <p><a data-type="indexterm" data-primary="trace aggregations" data-secondary="custom functions" id="idm45356998706248"></a>Let’s consider a simple example that builds on our <a data-type="indexterm" data-primary="trace aggregations" data-secondary="strawperson table" id="idm45356998705080"></a>strawperson scenario. If you instrument services so that RPC spans contain tags for the client and the server’s datacenter, then you could extract this information (by parsing tags to find the ones referring to the datacenter) into your <code>spans</code> table as two extra columns. Now when you ask “Is this latency high?” you can take into account whether the traces of interest contain inter- or intra-datacenter traffic, with the former likely being across wide-area network links and thus expected to be significantly slower.</p>
+        
+        <p><a data-type="indexterm" data-primary="tags" data-secondary="service-specific for custom processing" id="idm45356998702776"></a>Taking this idea further, when different teams own different microservices, each team can write its own service-specific tags and then perform custom processing on those tags in the aggregate traces. This is a great way to get more visibility into service behavior. For example, if a service makes outgoing calls to different services depending on the arguments of the incoming RPC, the team owning the service might write custom tags into the trace recording the arguments and so have an “explanation” for the outgoing RPCs.</p>
+        
+        <p>Supporting custom functions in your processing pipeline is a bit like user-defined functions (UDFs) for a SQL query tool—they are powerful and flexible, but there are some tricky questions that you need to address:</p>
+        
+        <ul>
+        <li>
+        <p>How do users express UDFs? How do you make them safe (not crash the system, or get stuck in an infinite loop)?</p>
+        </li>
+        <li>
+        <p>How do you prevent UDFs from using too much resources, like CPU or memory, or taking too long?</p>
+        </li>
+        <li>
+        <p>How do you ensure that UDFs stay in sync with changes to instrumentation in the source code? If a tag is changed, or removed, whose responsibility is it to update the code in the processing pipeline?</p>
+        </li>
+        </ul>
+        
+        <p>As software engineers, we ask these types of questions in other domains also, especially when thinking about best practices. Like any important piece of infrastructure, you need to consider how the processing pipeline fits into the larger software ecosystem and plan for its robustness and longevity.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Joining with Other Data Sources"><div class="sect2" id="idm45356998696184">
+        <h2>Joining with Other Data Sources</h2>
+        
+        <p><a data-type="indexterm" data-primary="trace aggregations" data-secondary="joining with other data sources" id="idm45356998694840"></a>Most microservices operators collect vast amounts of metric data at many levels of the software stack. Combining this data with traces extends the reach of our understanding and insights significantly. For instance, you might ask “Is this RPC latency high, given the kernel version installed on the server machine?” In other words, you want to break down the 99th-percentile latencies by kernel versions, because after all, the Linux TCP stack in the kernel is being constantly tweaked and may well play a part in the tail latencies that you observe in production.</p>
+        
+        <p>How do you achieve the ability to answer questions about traces that involve other types of data? In this case you could arrange for a tag to be added to every RPC that records the kernel version at the server, but that would be inefficient and not a general solution. There may be many other pieces of data from external sources that you will want to join against, some of which may be infeasible to generate tags for.</p>
+        
+        <p><a data-type="indexterm" data-primary="SQL and organizing trace aggregations" data-secondary="joining with other data sources" id="idm45356998692072"></a>A more flexible approach is to ensure that suitable join keys are present in both data sources in a form amenable to querying. Thus, with our strawperson solution, we might maintain a table, populated by a different process, called <code>kernel_versions</code> with fields <code>hostname</code>, <code>version</code>, <code>start_time</code>, and <code>stop_time</code>. Now you can write the query, shown in <a data-type="xref" href="#EX14-3">Example&nbsp;11-3</a>, to extract 99th-percentile RPC latencies by kernel version by joining <code>hostname</code> from each row in your <code>spans</code> table with <code>hostname</code> in the table that tracks the current kernel versions:</p>
+        <div id="EX14-3" data-type="example">
+        <h5><span class="label">Example 11-3. </span>Extracting 99th-percentile RPC latencies</h5>
+        
+        <pre data-type="programlisting" data-code-language="mysql"><code class="k">SELECT</code> <code class="n">kernel_version</code><code class="p">,</code> <code class="nf">PERCENTILE</code><code class="p">(</code><code class="n">duration</code><code class="p">,</code> <code class="mi">0</code><code class="p">.</code><code class="mi">99</code><code class="p">)</code>
+        <code class="k">FROM</code> <code class="n">spans</code> <code class="k">JOIN</code> <code class="n">kernel_versions</code>
+          <code class="k">ON</code> <code class="n">spans</code><code class="p">.</code><code class="n">server_hostname</code> <code class="o">=</code> <code class="n">kernel_versions</code><code class="p">.</code><code class="n">hostname</code>
+        <code class="k">WHERE</code>
+          <code class="n">spans</code><code class="p">.</code><code class="kt">timestamp</code> <code class="o">&gt;</code> <code class="n">kernel_versions</code><code class="p">.</code><code class="n">start_time</code>
+            <code class="k">AND</code> <code class="p">(</code><code class="n">spans</code><code class="p">.</code><code class="kt">timestamp</code> <code class="o">&lt;</code> <code class="n">kernel_versions</code><code class="p">.</code><code class="n">stop_time</code>
+              <code class="k">OR</code> <code class="n">kernel_versions</code><code class="p">.</code><code class="n">stop_time</code> <code class="k">IS</code> <code class="no">NULL</code><code class="p">)</code>
+            <code class="k">AND</code> <code class="n">spans</code><code class="p">.</code><code class="kt">date</code> <code class="o">=</code> <code class="ss">`today`</code> <code class="k">AND</code> <code class="n">spans</code><code class="p">.</code><code class="n">type</code> <code class="o">=</code> <code class="s1">'http'</code>
+        <code class="k">GROUP</code> <code class="k">BY</code>
+          <code class="n">kernel_version</code></pre></div>
+        
+        <p>The presence of <code>hostname</code> in both tables makes the query simple. In general, designing data query systems with the expectation that different sources may be combined in the same query unlocks a great deal of information, and tracing data is no <span class="keep-together">exception</span>.</p>
+        
+        <p>This concludes a lightning tour of the benefits of aggregation. For readers thinking about building and/or deploying a processing pipeline for aggregate analysis of traces, we highlighted some of the trade-offs and implementation issues. To conclude the chapter, we’ll recap the key points by describing how they appear in a case study of a real-world tracing system.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Recap and Case Study"><div class="sect1" id="idm45356998612856">
+        <h1>Recap and Case Study</h1>
+        
+        <p><a data-type="indexterm" data-primary="trace aggregations" data-secondary="case study" id="idm45356998611416"></a><a data-type="indexterm" data-primary="Canopy (Facebook)" id="idm45356998610216"></a><a data-type="indexterm" data-primary="case study of trace aggregations (Canopy)" id="idm45356998609544"></a><a data-type="indexterm" data-primary="Facebook" data-secondary="Canopy" id="idm45356998608904"></a><a data-type="indexterm" data-primary="trace aggregations" data-secondary="Canopy" id="idm45356998607960"></a>Canopy is a distributed tracing infrastructure in use at Facebook, described in a paper published in 2017,<sup><a data-type="noteref" id="idm45356998606760-marker" href="ch11.html#idm45356998606760">1</a></sup> whose authors include <a data-type="indexterm" data-primary="Mace, Jonathan" id="idm45356998605528"></a>Jonathan Mace, a coauthor of this book. In contrast to conventional tracing systems like Zipkin or Dapper, Facebook engineers designed <a data-type="indexterm" data-primary="aggregate analysis" data-secondary="Canopy" id="idm45356998604584"></a>Canopy from the start to support aggregate analysis and to incorporate heterogeneous data, such as logging statements, performance counters, and stack traces.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="The Value of Traces in Aggregate"><div class="sect2" id="idm45356998603336">
+        <h2>The Value of Traces in Aggregate</h2>
+        
+        <p>The number of traces at Facebook is immense, with over a billion captured per day, and so in Canopy aggregation is the norm, rather than the exception. Similar to the basic design of our <a data-type="indexterm" data-primary="trace aggregations" data-secondary="strawperson table" id="idm45356998601864"></a>strawperson tables, Canopy aggregates traces into <em>datasets</em>, in which each column is a <em>feature</em>, the term it uses for a value derived from aggregated traces. When analyzing performance data, Facebook engineers query datasets directly, as well as access them via visualization tools and in dashboards.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Organizing the Data"><div class="sect2" id="idm45356998599480">
+        <h2>Organizing the Data</h2>
+        
+        <p>Canopy supports multiple APIs for instrumentation, which means that the raw trace data it consumes has a variety of forms, from records representing the RPCs we are familiar with in other tracing systems, to events capturing the causal relationships between asynchronous function calls, and many others. <a data-type="indexterm" data-primary="trace aggregations" data-secondary="processing pipeline, Canopy" id="idm45356998597832"></a><a data-type="indexterm" data-primary="trace aggregations" data-secondary="processing pipeline" id="idm45356998596888"></a>In Canopy’s processing pipeline all of these lower-level data models are mapped to a standard intermediate representation called a <em>modeled trace</em>, from which the pipeline extracts features and outputs the final datasets.</p>
+        
+        <p>In terms of the trade-off between precomputation and query complexity, the designers of Canopy have come down firmly on the side of eager precomputation of features in the processing pipeline. This has the advantage of supporting almost real-time interactive analysis on trace aggregates, but it is possible that some of that precomputation is redundant.</p>
+        
+        <p><a data-type="indexterm" data-primary="data storage" data-secondary="Canopy" id="idm45356998594216"></a>As well as producing aggregated datasets, Canopy stores individual traces on disk for deeper analysis when required. This is the ideal situation for the engineer debugging a performance problem: The datasets, and higher-level tools written against them, let them quickly identify where to look more closely, and then they can retrieve exactly the right traces for detailed examination.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Sampling for Aggregate Analysis"><div class="sect2" id="idm45356998592456">
+        <h2>Sampling for Aggregate Analysis</h2>
+        
+        <p><a data-type="indexterm" data-primary="sampling" data-secondary="Canopy" id="idm45356998591320"></a>Canopy doesn’t attempt to obtain a representative (accurate) set of traces; rather it focuses on providing value for specific use cases, while keeping the volume of tracing manageable. Individual users or teams define policies that set sampling rates on a case-by-case basis according to request characteristics like the endpoint or datacenter. The rates are further constrained by fixed limits set per user and globally.</p>
+        
+        <p>The Canopy paper strongly implies that the main priority for the system is flexibility, rather than accuracy (which is not possible with per-user sampling policies) or cost (the paper does not discuss cost directly). Within this choice there is some nuance: by placing aggregation into the processing pipeline, Canopy designers have potentially limited <em>flexibility</em>. However, this is mitigated by also storing the original traces on disk at some <em>cost</em>, leaving open the option to compute additional aggregations offline at a later time.</p>
+        
+        <p>The paper discusses characteristics of the Canopy system itself. For example, it reports how often individual columns across many datasets were accessed by user queries over six months (it notes that one column—page load latency—is by far the most popular). A potential use of such information that is not mentioned in the paper would be to refine the set of aggregate analysis functions run in the pipeline, thus reducing complexity and the cognitive burden on engineers for commonplace <span class="keep-together">queries</span>.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="The Processing Pipeline"><div class="sect2" id="idm45356998586328">
+        <h2>The Processing Pipeline</h2>
+        
+        <p><a data-type="indexterm" data-primary="trace aggregations" data-secondary="processing pipeline, Canopy" id="idm45356998585096"></a>The heart of Canopy is its processing pipeline, which looks somewhat like the streaming system we showed on the right side of <a data-type="xref" href="#figure14-3">Figure&nbsp;11-3</a>. The pipeline, which runs continuously online, takes incoming events and builds modeled traces, which includes cleaning up the traces by detecting and correcting buggy and incomplete instrumentation, aligning timestamps, inferring missing information, and so on. The pipeline then applies aggregation functions to traces, and finally outputs multiple datasets.</p>
+        
+        <p>The Canopy designers have taken a great deal of care to ensure that the processing pipeline can keep up with the rate of arriving data records (reported as 1.16 GB/s). The system contains mechanisms like isolation queues, offloading work to be processed asynchronously, and ways to shed load when necessary.</p>
+        
+        <p><a data-type="indexterm" data-primary="trace aggregations" data-secondary="custom functions" id="idm45356998581704"></a>To deal with the diversity of input data and custom aggregations required by different engineering teams, Canopy has extensive support for user-defined aggregation functions in the processing pipeline. An interesting discussion in the paper describes how the original system design included a domain-specific language (DSL) for expressing UDFs as simple pipelines of filters and transformations. It turned out that users needed more complex computations than expected and the DSL had to evolve to include more general-purpose features. Moreover, interactive exploration of the analysis functions proved to be a requirement, leading to integration with iPython <span class="keep-together">notebooks</span>.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Incorporating Heterogeneous Data"><div class="sect2" id="idm45356998579016">
+        <h2>Incorporating Heterogeneous Data</h2>
+        
+        <p><a data-type="indexterm" data-primary="data analysis" data-secondary="heterogeneous data" id="idm45356998577816"></a><a data-type="indexterm" data-primary="trace aggregations" data-secondary="heterogeneous data" id="idm45356998576840"></a><a data-type="indexterm" data-primary="heterogeneous data" id="idm45356998575896"></a>There are two characteristics of Canopy that make it particularly well suited to handling heterogeneous data. First, translating all events into a common trace model means that different types of data (say, traces of browser page loads versus the backend RPC call graph) can be fed directly into Canopy’s processing pipeline and unified in traces as appropriate. Similarly, on the output side of the pipeline, the capability to introduce or adapt user-defined aggregation functions supports the customized extraction of information from these various data sources.</p>
+        
+        <p>In contrast to the approach we suggested earlier of keeping the other data sources separate but <em>joinable</em>, Canopy is designed to integrate heterogeneous data tightly. This adds complexity to the processing pipeline, but simplifies access to relevant features of a trace. Data that is not trace-related, such as the kernel version on each server, will still need some kind of join key with trace datasets to be accessed programmatically.</p>
+        
+        <p>In conclusion, Canopy provides a powerful real-time tracing system that supports customized aggregate analysis, while also keeping individual traces for detailed inspection. In practice, companies without the resources of Facebook are unlikely to choose to build and maintain such a costly system, but the design offers many good lessons that also apply to simpler systems for aggregate analysis of traces.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        <div data-type="footnotes"><p data-type="footnote" id="idm45356998606760"><sup><a href="ch11.html#idm45356998606760-marker">1</a></sup> <a data-type="xref" href="bibliography01.html#Kal17">[Kal17]</a></p></div></div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492056621/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

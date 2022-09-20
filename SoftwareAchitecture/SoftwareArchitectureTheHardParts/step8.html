@@ -1,0 +1,928 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 8. Reuse Patterns"><div class="chapter" id="ch08-reuse-patterns">
+        <h1><span class="label">Chapter 8. </span>Reuse Patterns</h1>
+        
+        
+        <p><code>Wednesday, February 2, 15:15</code></p>
+        <div class="story">
+        
+        <p>As the development team members worked on breaking apart the domain services, <a data-type="indexterm" data-primary="reuse patterns" data-see="code reuse patterns" id="idm45978844055472"></a><a data-type="indexterm" data-primary="code reuse patterns" data-secondary="Sysops Squad saga" id="idm45978844054496"></a><a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="monolithic application broken apart" data-tertiary="code reuse patterns" id="idm45978844053552"></a>they started running into disagreements about what to do with all the shared code and shared functionality. Taylen, upset with what Skyler was doing with regard to the shared code, walked over to Skyler’s desk.</p>
+        
+        <p>“What in the world are you doing?” asked Taylen.</p>
+        
+        <p>“I’m moving all of the shared code to a new workspace so we can create a shared DLL from it,” replied Skyler.</p>
+        
+        <p>“A <em>single</em> shared DLL?”</p>
+        
+        <p>“That’s what I was planning,” said Skyler. “Most of the services will need this stuff anyway, so I’m going to create a single DLL that all the services can use.”</p>
+        
+        <p>“That’s the worst idea I’ve ever heard,” said Taylen. “Everyone knows you should have multiple shared libraries in a distributed architecture!”</p>
+        
+        <p>“Not in my opinion,” said Sydney. “Seems to me it’s much easier to manage a single shared library DLL rather than dozens of them.”</p>
+        
+        <p>“Given that I’m the tech lead for this application, I want you to split that functionality into separate shared libraries.”</p>
+        
+        <p>“OK, OK, I suppose I can move the all of the authorization into its own separate DLL if that would make you happy,” said Skyler.</p>
+        
+        <p>“What?” said Taylen. “The authorization code has to be a shared service, you know——<em>not</em> in a shared library."”</p>
+        
+        <p>“No,” said Skyler. “That code should be in a shared DLL.”</p>
+        
+        <p>“What’s all the shouting about over there?” asked Addison.</p>
+        
+        <p>“Taylen wants the authorization functionality to be in a shared service. That’s just crazy. I think it should go in the common shared DLL,” said Skyler.</p>
+        
+        <p>“No way,” said Taylen. “It’s got to be in its own separate shared service.”</p>
+        
+        <p>“And,” said Skyler, “Taylen is insisting on having multiple shared libraries for the shared functionality rather than a single shared library.”</p>
+        
+        <p>“Tell you what,” said Addison. “Let’s go over the trade-offs of shared library granularity, and also go over the trade-offs between a shared library and a shared service to see if we can resolve these issues in a more reasonable and thoughtful manner.”</p>
+        <hr>
+        </div>
+        
+        <p>Code reuse is a normal part of software development. Common business domain functionality,<a data-type="indexterm" data-primary="code reuse patterns" data-secondary="about" id="idm45978844042624"></a><a data-type="indexterm" data-primary="distributed architectures" data-secondary="code reuse patterns" data-seealso="code reuse patterns" id="idm45978844041648"></a> such as formatters, calculators, validators, and auditing, are typically shared across multiple components, as is common infrastructure functionality, such as security, logging, and metrics gathering. In most monolithic architectures, code reuse is rarely given a second thought—it’s a matter of simply importing or auto-injecting shared class files. However, in distributed architectures, as shown in <a data-type="xref" href="#fig-reuse-patterns-code-reuse">Figure 8-1</a>, things get a bit more complicated, as questions arise about how to deal with shared functionality.</p>
+        
+        <figure><div id="fig-reuse-patterns-code-reuse" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0801.png" alt="Code Reuse" width="600" height="258">
+        <h6><span class="label">Figure 8-1. </span>Code reuse is a hard part of distributed architecture</h6>
+        </div></figure>
+        
+        <p>Frequently within highly distributed architectures like microservices and serverless environments, phrases like “reuse is abuse!” and “share nothing!” are touted by architects in an attempt to reduce the amount of shared code within these types of architectures. Architects in these environments have even been found to offer countering advice to the famous <a href="https://oreil.ly/dTVrX">DRY principle</a> (Don’t repeat yourself) by using an opposing acronym called WET (Write every time or Write everything twice).</p>
+        
+        <p>While developers should try to limit the amount of code reuse within distributed architectures, it is nevertheless a fact of life in software development and must be addressed, particularly in distributed architectures. In this chapter, we introduce several techniques for managing code reuse within a distributed architecture, including replicating code, shared libraries, shared services, and sidecars within a service mesh. For each of these options, we also discuss the pros, cons, and trade-offs of each approach.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Code Replication"><div class="sect1" id="idm45978844034768">
+        <h1>Code Replication</h1>
+        
+        <p>In <em>code replication</em>, shared code is copied into each service<a data-type="indexterm" data-primary="code reuse patterns" data-secondary="code replication" id="ch08-rep"></a><a data-type="indexterm" data-primary="code replication as reuse pattern" id="ch08-rep2"></a> (or more specifically, each service source code repository), as shown in <a data-type="xref" href="#fig-reuse-patterns-replication">Figure 8-2</a>, thereby avoiding code sharing altogether. While it might sound crazy, this technique became popular in the early days of microservices when a lot of confusion and misunderstanding arose about the <em>bounded context</em> concept, hence the drive to create a “share nothing architecture.” In theory, code replication seemed like a good approach at that time to reduce code sharing, but in practice it quickly fell apart.</p>
+        
+        <figure><div id="fig-reuse-patterns-replication" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0802.png" alt="Replication" width="600" height="101">
+        <h6><span class="label">Figure 8-2. </span>With replication, shared functionality is copied into each service</h6>
+        </div></figure>
+        
+        <p>While code replication isn’t used much today, it nevertheless is still a valid technique for addressing code reuse across multiple distributed services. This technique should be approached with extreme caution for the obvious reason that if a bug is found in the code or an important change to the code is needed, it would be very difficult and time-consuming to update all services containing the replicated code.</p>
+        
+        <p>At times, however, this technique can prove useful, particularly for highly static one-off code that most (or all) services need. For example, consider the Java code in <a data-type="xref" href="#source-java-entrypoint">Example&nbsp;8-1</a> and the corresponding C# code in <a data-type="xref" href="#source-csharp-entrypoint">Example&nbsp;8-2</a> that identifies the class in the service that represents the service entry point (usually the restful API class within a service).</p>
+        <div id="source-java-entrypoint" data-type="example" class="pagebreak-before less_space">
+        <h5><span class="label">Example 8-1. </span>Source code defining a service entry point annotation (Java)</h5>
+        
+        <pre data-type="programlisting" data-code-language="java"><code class="nd">@Retention</code><code class="o">(</code><code class="n">RetentionPolicy</code><code class="o">.</code><code class="na">RUNTIME</code><code class="o">)</code>
+        <code class="nd">@Target</code><code class="o">(</code><code class="n">ElementType</code><code class="o">.</code><code class="na">TYPE</code><code class="o">)</code>
+        <code class="kd">public</code> <code class="nd">@interface</code> <code class="n">ServiceEntrypoint</code> <code class="o">{}</code>
+        
+        <code class="cm">/* Usage:</code>
+        <code class="cm">@ServiceEntrypoint</code>
+        <code class="cm">public class PaymentServiceAPI {</code>
+        <code class="cm">   ...</code>
+        <code class="cm">}</code>
+        <code class="cm">*/</code></pre></div>
+        <div id="source-csharp-entrypoint" data-type="example">
+        <h5><span class="label">Example 8-2. </span>Source code defining a service entry point attribute (C#)</h5>
+        
+        <pre data-type="programlisting" data-code-language="c#"><code class="na">[AttributeUsage(AttributeTargets.Class)]</code>
+        <code class="k">class</code> <code class="nc">ServiceEntrypoint</code> <code class="p">:</code> <code class="n">Attribute</code> <code class="p">{}</code>
+        
+        <code class="cm">/* Usage:</code>
+        <code class="cm">[ServiceEntrypoint]</code>
+        <code class="cm">class PaymentServiceAPI {</code>
+        <code class="cm">   ...</code>
+        <code class="cm">}</code>
+        <code class="cm">*/</code></pre></div>
+        
+        <p>Note that the source code in <a data-type="xref" href="#source-java-entrypoint">Example&nbsp;8-1</a> actually contains no functionality whatsoever.<a data-type="indexterm" data-primary="documentation for managing distributed transactions" id="idm45978843989024"></a><a data-type="indexterm" data-primary="metadata annotations" id="idm45978843988416"></a><a data-type="indexterm" data-primary="annotations" data-secondary="metadata for" id="idm45978843987808"></a><a data-type="indexterm" data-primary="Henney, Kevlin" id="idm45978843986896"></a><a data-type="indexterm" data-primary="Gee, Trisha" id="idm45978843986224"></a><a data-type="indexterm" data-primary="97 Things Every Java Programmer Should Know (Henney and Gee)" data-primary-sortas="Ninety-Seven Things" id="idm45978843985552"></a> The annotation is simply a marker (or tag) used to identify a particular class as representing the service entry point. However, this simple annotation is very useful for placing other metadata annotations about a particular service, including the service type, domain, bounded context, and so on; see Chapter 89 in <a class="orm:hideurl" href="https://learning.oreilly.com/library/view/97-things-every/9781491952689/ch89.html#use_custom_identity_annotations_liberall"><em>97 Things Every Java Programmer Should Know</em></a> by Kevlin Henney and Trisha Gee (O’Reilly) for a description of these metadata custom annotations.</p>
+        
+        <p>This kind of source code makes a good candidate for replication because it’s static and doesn’t contain any bugs (and most likely will not in the future). If this were a unique one-off class, it might be worth copying it into each service code repository rather than creating a shared library for it. That said, we generally encourage investigating the other code-sharing techniques presented in this chapter before opting for the code replication technique.</p>
+        
+        <p>While the replication technique preserves the bounded context, it does make it difficult to apply changes if the code ever does need to be modified. <a data-type="xref" href="#table-replication-trade-offs">Table 8-1</a> lists the various trade-offs associated with this technique.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978843922240">
+        <h5>Trade-Offs</h5><table id="table-replication-trade-offs" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 8-1. </span>Trade-offs for the code replication technique</caption>
+        <thead>
+        <tr>
+        <th>Advantages</th>
+        <th>Disadvantages</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Preserves the bounded context</p></td>
+        <td><p>Difficult to apply code changes</p></td>
+        </tr>
+        <tr>
+        <td><p>No code sharing</p></td>
+        <td><p>Code inconsistency across services</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td><p>No versioning capabilities across services</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="When to Use"><div class="sect2" id="idm45978843912832">
+        <h2>When to Use</h2>
+        
+        <p>The replication technique is a good approach when developers have simple static code (like annotations, attributes, simple common utilities, and so on) that is either a one-off class or code that is unlikely to ever change because of defects or functional changes. However, as mentioned earlier, we encourage exploring other code-reuse options before embracing the code replication technique.</p>
+        
+        <p>When migrating from a monolithic architecture to a distributed one, we’ve also found that the replication technique can sometimes work for common static utility classes. For example, by replicating a <code>Utility.cs</code> C# class to all services, each service can now remove (or enhance) the <code>Utility.cs</code> class to suit its particular needs, therefore eliminating unnecessary code and allowing the utility class to evolve for each specific context (similar to the tactical forking technique described in <a data-type="xref" href="ch03.html#ch03-architectural-modularity">Chapter&nbsp;3</a>). Again, the risk with this technique is that a defect or change is very difficult to propagate to all services because the code is duplicated for each service.<a data-type="indexterm" data-startref="ch08-rep" id="idm45978843908848"></a><a data-type="indexterm" data-startref="ch08-rep2" id="idm45978843908176"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Shared Library"><div class="sect1" id="idm45978843907120">
+        <h1>Shared Library</h1>
+        
+        <p>One of the most common techniques for sharing code is to use a shared library. <a data-type="indexterm" data-primary="code reuse patterns" data-secondary="shared libraries" data-tertiary="about" id="idm45978843905472"></a><a data-type="indexterm" data-primary="shared libraries" data-secondary="about" id="idm45978843904224"></a>A shared library is an external artifact (such as a JAR file, DLL, and so on) containing source code that is used by multiple services which is typically bound to the service at compile time (see <a data-type="xref" href="#fig-reuse-patterns-lib-single">Figure 8-3</a>). Although the shared library technique seems simple and straightforward, it has its share of complexities and trade-offs, not the least of which is shared library granularity and versioning.</p>
+        
+        <figure><div id="fig-reuse-patterns-lib-single" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0803.png" alt="Single Shared Lib" width="600" height="273">
+        <h6><span class="label">Figure 8-3. </span>With the shared library technique, common code is consolidated and shared at compile time</h6>
+        </div></figure>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Dependency Management and Change Control"><div class="sect2" id="idm45978843900192">
+        <h2>Dependency Management and Change Control</h2>
+        
+        <p>Similar to service granularity (discussed in <a data-type="xref" href="ch07.html#ch07-service-granularity">Chapter&nbsp;7</a>), there are trade-offs associated with the granularity of a shared library.<a data-type="indexterm" data-primary="shared libraries" data-secondary="granularity and" id="idm45978843897744"></a><a data-type="indexterm" data-primary="shared code and granularity" data-secondary="shared libraries" id="idm45978843896800"></a><a data-type="indexterm" data-primary="granularity" data-secondary="shared libraries" id="idm45978843895840"></a><a data-type="indexterm" data-primary="code reuse patterns" data-secondary="shared libraries" data-tertiary="granularity and" id="idm45978843894896"></a><a data-type="indexterm" data-primary="code reuse patterns" data-secondary="granularity and shared code" id="idm45978843893680"></a> The two opposing forces that form trade-offs with shared libraries are dependency management and change control.</p>
+        
+        <p>Consider the coarse-grained shared library illustrated in <a data-type="xref" href="#fig-reuse-patterns-lib-single-change">Figure 8-4</a>. <a data-type="indexterm" data-primary="dependencies" data-secondary="shared libraries" id="idm45978843891232"></a>Note that while the dependency management is relatively straightforward (each service uses the single shared library), change control is not. If a change occurs to any of the class files in the coarse-grained shared library, <em>every</em> service, whether it cares about the change or not, must eventually adopt the change because of a version deprecation of the shared library. This forces unnecessary retesting and redeployment of all the services using that library, therefore significantly increasing the overall testing scope of a shared library change.</p>
+        
+        <figure><div id="fig-reuse-patterns-lib-single-change" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0804.png" alt="Coarse-Grained Libraries" width="600" height="271">
+        <h6><span class="label">Figure 8-4. </span>Changes to coarse-grained shared libraries impact multiple services but keep dependencies low</h6>
+        </div></figure>
+        
+        <p>Breaking shared code into smaller functionality-based shared libraries (such as security, formatters, annotations, calculators, and so on) is better for change control and overall maintainability, but unfortunately creates a mess in terms of dependency management. As shown in <a data-type="xref" href="#fig-reuse-patterns-lib-multi-change">Figure 8-5</a>, a change in shared class C7 impacts only Service D and Service E, but managing the dependency matrix between shared libraries and services quickly starts looking like a big ball of distributed mud (or what some people refer to as a <em>distributed monolith</em>).</p>
+        
+        <figure><div id="fig-reuse-patterns-lib-multi-change" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0805.png" alt="Fine-Grained Libraries" width="600" height="296">
+        <h6><span class="label">Figure 8-5. </span>Changes to fine-grained shared libraries impact fewer services but increase dependencies</h6>
+        </div></figure>
+        
+        <p>The choice of shared library granularity may not matter much with only a few services, but as the number of services increases, so do the issues associated with change control and dependency management. Just imagine a system with 200 services and 40 shared libraries—it would quickly become overly complex and unmaintainable.</p>
+        
+        <p>Given these trade-offs of change control and dependency management, our advice is to generally avoid large, coarse-grained shared libraries and strive for smaller, functionally partitioned libraries whenever possible, thus favoring change control over dependency management. For example, carving off relatively static functionality such as formatters and security (authentication and authorization) into their own shared libraries isolates this static code, therefore reducing the testing scope and unnecessary version deprecation deployments for other shared functionality.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Versioning Strategies"><div class="sect2" id="idm45978843882640">
+        <h2>Versioning Strategies</h2>
+        
+        <p>Our general advice about shared library versioning<a data-type="indexterm" data-primary="version control systems" data-secondary="shared code libraries" id="ch08-ver"></a><a data-type="indexterm" data-primary="shared libraries" data-secondary="versioning strategies" id="ch08-ver2"></a><a data-type="indexterm" data-primary="code reuse patterns" data-secondary="shared libraries" data-tertiary="versioning strategies" id="ch08-ver3"></a><a data-type="indexterm" data-primary="agility" data-secondary="versioning shared libraries" id="idm45978843876624"></a> is to <em>always use versioning!</em> Versioning your shared libraries provides not only backward compatibility, but also a high level of agility—the ability to respond quickly to change.</p>
+        
+        <p>To illustrate this point, consider a shared library containing common field validation rules called <em>Validation.jar</em> that is used by 10 services. Suppose one of those services needs an immediate change to one of the validation rules. By versioning the <em>Validation.jar</em> file, the service needing the change can immediately incorporate the new <em>Validation.jar</em> version and be deployed to production right away, without any impact to the other 9 services. Without versioning, all 10 services would have to be tested and redeployed when making the shared library change, thereby increasing the amount of time and coordination for the shared library change (hence less agility).</p>
+        
+        <p>While the preceding advice may seem obvious, there are trade-offs and hidden complexity in versioning. As a matter of fact, versioning can be so complex that your authors often think of versioning as the ninth <a href="https://oreil.ly/a9ADS">fallacy of distributed computing</a>: “versioning is simple”</p>
+        
+        <p>One of the first complexities of shared library versioning is communicating a version change. In a highly distributed architecture with multiple teams, it is often difficult to communicate a version change to a shared library. How do other teams know that <em>Validation.jar</em> just increased to version 1.5? What were the changes? What services are impacted? What teams are impacted? Even with the plethora of tools that manage shared libraries, versions, and change documentation (such as <a href="https://jfrog.com/artifactory">JFrog Artifactory</a>), version changes must nevertheless be coordinated and communicated to the right people at the right time.</p>
+        
+        <p>Another complexity is the deprecation of older versions of a <a data-type="indexterm" data-primary="deprecation strategies for shared libraries" id="idm45978843869424"></a>shared library—removing those versions no longer supported after a certain date. Deprecation strategies range from <em>custom</em> (for individual shared libraries) all the way to <em>global</em> (for all shared libraries). And, not surprisingly, trade-offs are involved with both approaches.</p>
+        
+        <p>Assigning a custom deprecation strategy to each shared library is usually the desired approach because libraries change at different rates. For example, if a <em>Security.jar</em> shared library doesn’t change often, maintaining only two or three versions is a reasonable strategy. However, if the <em>Calculators.jar</em> shared library changes weekly, maintaining only two or three versions means that all services using that shared library will be incorporating a newer version on a monthly (or even weekly) basis—causing a lot of unnecessary frequent retesting and redeployment. Therefore, maintaining 10 versions of <em>Calculators.jar</em> would be a much more reasonable strategy because of the frequency of change. The trade-off of this approach, however, is that someone must maintain and track the deprecation for <em>each shared library</em>. This can sometimes be a daunting task and is definitely not for the faint of heart.</p>
+        
+        <p>Because change is variable among the various shared libraries, the global deprecation strategy, while simpler, is a less effective approach. The global deprecation strategy dictates that <em>all</em> shared libraries, regardless of the rate of change, will not support more than a certain number of backward versions (for example, four). While this is easy to maintain and govern, it can cause significant <em>churn</em>--the constant retesting and redeploying of services—just to maintain compatibility with the latest version of a frequently changed shared library. This can drive teams crazy and significantly reduce overall team velocity and productivity.</p>
+        
+        <p>Regardless of the deprecation strategy used, serious defects or breaking changes to shared code invalidate any sort of deprecation strategy, causing <em>all</em> services to adopt the latest version of a shared library at once (or within a very short period of time). This is another reason we recommend keeping shared libraries as fine-grained as appropriate and avoid the coarse-grained <em>SharedStuff.jar</em> type of libraries containing all the shared functionality in the system.</p>
+        
+        <p>One last word of advice regarding versioning: avoid the use of the<a data-type="indexterm" data-primary="version control systems" data-secondary="LATEST caution" id="idm45978843861312"></a><a data-type="indexterm" data-primary="LATEST caution for versioning" id="idm45978843860336"></a> <code>LATEST</code> version when specifying which version of a library a service requires. It has been our experience that services using the <code>LATEST</code> version experience issues when doing quick fixes or emergency hot deployments into production, because something in the <code>LATEST</code> version might be incompatible with the service, therefore causing additional development and testing effort for the team to release the service into production.</p>
+        
+        <p>While the shared library technique allows changes to be versioned (therefore providing a good level of agility for shared code changes), <a data-type="indexterm" data-primary="dependencies" data-secondary="shared libraries" id="idm45978843857408"></a>dependency management can be difficult and messy. <a data-type="xref" href="#table-replication-sharedlib">Table 8-2</a> lists various trade-offs associated with this technique.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978843855296">
+        <h5>Trade-Offs</h5><table id="table-replication-sharedlib" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 8-2. </span>Trade-offs for the shared library technique</caption>
+        <thead>
+        <tr>
+        <th>Advantages</th>
+        <th>Disadvantages</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Ability to version changes</p></td>
+        <td><p>Dependencies can be difficult to manage</p></td>
+        </tr>
+        <tr>
+        <td><p>Shared code is compile-based, reducing runtime errors</p></td>
+        <td><p>Code duplication in heterogeneous codebases</p></td>
+        </tr>
+        <tr>
+        <td><p>Good agility for code shared code changes</p></td>
+        <td><p>Version deprecation can be difficult</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td><p>Version communication can be difficult</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="When To Use"><div class="sect2" id="idm45978843843648">
+        <h2>When To Use</h2>
+        
+        <p>The shared library technique is a good approach for homogeneous environments where shared code change is low to moderate. The ability to version (although sometimes complex) allows for good levels of agility when making shared code changes. Because shared libraries are usually bound to the service at compile time, operational characteristics such as performance, scalability, and fault tolerance are not impacted, and the risk of breaking other services with a change to common code is low because of versioning.<a data-type="indexterm" data-startref="ch08-ver" id="idm45978843842352"></a><a data-type="indexterm" data-startref="ch08-ver2" id="idm45978843841648"></a><a data-type="indexterm" data-startref="ch08-ver3" id="idm45978843840976"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Shared Service"><div class="sect1" id="idm45978843839920">
+        <h1>Shared Service</h1>
+        
+        <p>The primary alternative to using a shared library for common functionality is to use a shared service instead. <a data-type="indexterm" data-primary="shared services for code reuse" id="ch08-sscru"></a><a data-type="indexterm" data-primary="code reuse patterns" data-secondary="shared services" id="ch08-sscru2"></a><a data-type="indexterm" data-primary="services" data-secondary="shared services for code reuse" id="ch08-sscru3"></a>The <em>shared service</em> technique, illustrated in <a data-type="xref" href="#fig-reuse-patterns-service">Figure 8-6</a>, avoids reuse by placing shared functionality in a separately deployed service.</p>
+        
+        <figure><div id="fig-reuse-patterns-service" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0806.png" alt="Shared Service" width="600" height="219">
+        <h6><span class="label">Figure 8-6. </span>With the shared service technique, common functionality is made available at runtime through separate services</h6>
+        </div></figure>
+        
+        <p>One distinguishing factor about the shared service technique is <a data-type="indexterm" data-primary="design" data-secondary="composition versus inheritance" id="idm45978843830048"></a><a data-type="indexterm" data-primary="composition versus inheritance in design" id="idm45978843829056"></a><a data-type="indexterm" data-primary="inheritance versus composition in design" id="idm45978843828288"></a><a data-type="indexterm" data-primary="Thoughtworks" data-secondary="composition versus inheritance" id="idm45978843827584"></a><a data-type="indexterm" data-primary="Fowler, Martin" id="idm45978843826624"></a><a data-type="indexterm" data-primary="architecture" data-secondary="composition versus inheritance" id="idm45978843825952"></a>that the shared code must be in the form of <em>composition</em>, not <em>inheritance</em>. While there is a lot of debate about the use of composition over inheritance from a source code <em>design</em> standpoint (see the Thoughtworks article <a href="https://oreil.ly/LMmZH">“Composition vs. Inheritance: How to Choose”</a> and Martin Fowler’s article <a href="https://oreil.ly/bW8CH">“Designed Inheritance”</a>), <em>architecturally</em> composition versus inheritance matters when choosing a code-reuse technique, particularly with the shared services technique.</p>
+        
+        <p>Back in the day, shared services were a common approach to address shared functionality within a distributed architecture. Changes to shared functionality no longer require redeployment of services; rather, since changes are isolated to a separate  service, they can be deployed without redeploying other services needing the shared functionality. However, like everything in software architecture, many trade-offs are associated with using shared services, including change risk, performance, scalability, and fault tolerance.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before less_space" data-pdf-bookmark="Change Risk"><div class="sect2" id="idm45978843820880">
+        <h2>Change Risk</h2>
+        
+        <p>Changing shared functionality using the shared service technique turns out to be a double-edged sword.<a data-type="indexterm" data-primary="shared services for code reuse" data-secondary="change risk" id="idm45978843818752"></a><a data-type="indexterm" data-primary="code reuse patterns" data-secondary="shared services" data-tertiary="change risk" id="idm45978843817712"></a> As illustrated in <a data-type="xref" href="#fig-reuse-patterns-service-change">Figure 8-7</a>, changing shared functionality is simply a matter of modifying the shared code contained in a separate service (such as a discount calculator), redeploying the service, and voila—the changes are now available to all services, without having to retest and redeploy any other service needing that shared functionality.</p>
+        
+        <figure><div id="fig-reuse-patterns-service-change" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0807.png" alt="Shared Service Changes" width="600" height="333">
+        <h6><span class="label">Figure 8-7. </span>Shared functionality changes are isolated to only the shared service</h6>
+        </div></figure>
+        
+        <p>If only life were that simple! The problem, of course, is that a<a data-type="indexterm" data-primary="runtime versus compile-based changes" id="idm45978843813152"></a><a data-type="indexterm" data-primary="compile-based versus runtime changes" id="idm45978843812352"></a> change to a shared service is a <em>runtime</em> change, as opposed to a <em>compile-based</em> change with the shared library technique. As a result, a “simple” change in a shared service can effectively bring down an entire system, as illustrated in <a data-type="xref" href="#fig-reuse-patterns-service-change-break">Figure 8-8</a>.</p>
+        
+        <figure><div id="fig-reuse-patterns-service-change-break" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0808.png" alt="Runtime Shared Service Changes" width="600" height="219">
+        <h6><span class="label">Figure 8-8. </span>Changes to a shared service can break other services at runtime</h6>
+        </div></figure>
+        
+        <p class="pagebreak-before">This necessarily brings to the forefront the topic of versioning. In the shared library technique, versioning is managed through compile-time bindings, significantly reducing risk associated with a change in a shared library. However, how does one version a simple shared service change?<a data-type="indexterm" data-primary="version control systems" data-secondary="shared service API endpoint versioning" id="idm45978843806704"></a><a data-type="indexterm" data-primary="shared services for code reuse" data-secondary="versioning via API endpoints" id="idm45978843805712"></a><a data-type="indexterm" data-primary="code reuse patterns" data-secondary="shared services" data-tertiary="versioning via API endpoints" id="idm45978843804736"></a><a data-type="indexterm" data-primary="APIs" data-secondary="endpoint versioning for shared services" id="idm45978843803504"></a></p>
+        
+        <p>The immediate response, of course, is to use API endpoint versioning—in other words, create a new endpoint containing each shared service change, as shown in <a data-type="xref" href="#source-version-endpoints">Example&nbsp;8-3</a>.</p>
+        <div id="source-version-endpoints" data-type="example">
+        <h5><span class="label">Example 8-3. </span>Discount calendar with versioning for shared service endpoint</h5>
+        
+        <pre data-type="programlisting" data-code-language="http"><code class="err">app/1.0/discountcalc?orderid=123</code>
+        <code class="err">app/1.1/discountcalc?orderid=123</code>
+        <code class="err">app/1.2/discountcalc?orderid=123</code>
+        <code class="err">app/1.3/discountcalc?orderid=123</code>
+        <code class="err">latest change -&gt; app/1.4/discountcalc?orderid=123</code></pre></div>
+        
+        <p>Using this approach, each time a shared service changes, the team would create a new API endpoint containing a new version of the URI. It’s not difficult to see the issues that arise with this practice. First of all, services accessing the discount calculator service (or the corresponding configuration for each service) must change to point to the correct version. Second, when should the team create a new API endpoint? What about for a simple error message change? What about for a new calculation? Versioning starts to become largely subjective at this point, <em>and</em> the services using the shared service must still change to point to the correct endpoint.</p>
+        
+        <p>Another problem with API endpoint versioning is that it assumes all <a data-type="indexterm" data-primary="communication" data-secondary="interservice communication" data-tertiary="API endpoint versioning for shared services" id="idm45978843792480"></a><a data-type="indexterm" data-primary="interservice communication" data-secondary="API endpoint versioning for shared services" id="idm45978843784480"></a>access to the shared service is through a RESTful API call going through a gateway or via point-to-point communication. However, in some cases, access to a shared service through interservice communication is commonly done through other types of <a data-type="indexterm" data-primary="gRPC protocol" data-secondary="information link" id="idm45978843783248"></a>protocols such as messaging and <a href="https://grpc.io">gRPC</a> (in addition to a RESTful API call). This further complicates the versioning strategy for a change, making it difficult to coordinate versions across multiple protocols.</p>
+        
+        <p>The bottom line is that with the shared service technique, changes to a shared service are generally runtime in nature, and therefore carry much more risk than with shared libraries. While versioning can help reduce this risk, it’s much more complex to apply and manage than that of a shared library.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before less_space" data-pdf-bookmark="Performance"><div class="sect2" id="idm45978843780464">
+        <h2>Performance</h2>
+        
+        <p>Because services requiring the shared functionality must make an<a data-type="indexterm" data-primary="code reuse patterns" data-secondary="shared services" data-tertiary="performance" id="idm45978843778624"></a><a data-type="indexterm" data-primary="shared services for code reuse" data-secondary="performance" id="idm45978843777376"></a><a data-type="indexterm" data-primary="asynchronous communication" data-secondary="performance issues" id="idm45978843753776"></a><a data-type="indexterm" data-primary="communication" data-secondary="performance issues" id="idm45978843752928"></a> interservice call to a shared service, performance is impacted because of network latency (and security latency, assuming the endpoints to the shared service are secure). This trade-off, shown in <a data-type="xref" href="#fig-reuse-patterns-service-performance">Figure 8-9</a>, does not exist with the shared library technique when accessing shared code.</p>
+        
+        <figure><div id="fig-reuse-patterns-service-performance" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0809.png" alt="Shared Service Performance" width="600" height="311">
+        <h6><span class="label">Figure 8-9. </span>Shared service introduces network and security latency</h6>
+        </div></figure>
+        
+        <p>Use of gRPC can help mitigate some of the<a data-type="indexterm" data-primary="gRPC protocol" data-secondary="performance mitigation by" id="idm45978843748480"></a> performance issues by significantly reducing network latency, as can the use of <a data-type="indexterm" data-primary="messaging asynchronicity" id="idm45978843747360"></a><a data-type="indexterm" data-primary="asynchronous communication" data-secondary="performance issues" data-tertiary="messaging mitigating" id="idm45978843746672"></a><a data-type="indexterm" data-primary="Richards, Mark" id="idm45978843745440"></a><a data-type="indexterm" data-primary="Java Message Service (Richards)" id="idm45978843744768"></a><a data-type="indexterm" data-primary="messaging asynchronicity" data-secondary="Java Message Service (Richards)" id="idm45978843744080"></a>asynchronous protocols like messaging. With messaging, the service needing the shared functionality can issue a request through a request queue, perform other work, and once needed, can retrieve the results through a separate reply queue using a correlation ID (see <a class="orm:hideurl" href="https://www.oreilly.com/library/view/java-message-service/9780596802264"><em>Java Message Service</em>, Second Edition</a> by Mark Richards et al. (O’Reilly) for more information about messaging 
+        <span class="keep-together">techniques</span>).</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before less_space" data-pdf-bookmark="Scalability"><div class="sect2" id="idm45978843740688">
+        <h2>Scalability</h2>
+        
+        <p>Another drawback of the shared service technique is that the shared<a data-type="indexterm" data-primary="scalability" data-secondary="shared services" id="idm45978843739072"></a><a data-type="indexterm" data-primary="shared services for code reuse" data-secondary="scalability" id="idm45978843738096"></a><a data-type="indexterm" data-primary="code reuse patterns" data-secondary="shared services" data-tertiary="scalability" id="idm45978843737136"></a> service must scale as services using the shared service scale. This can sometimes be a mess to manage, particularly with multiple services concurrently accessing the same shared service. However, as illustrated in <a data-type="xref" href="#fig-reuse-patterns-service-scalability">Figure 8-10</a>, the shared library technique does not have this issue because the shared functionality is contained within the service at compile time.</p>
+        
+        <figure><div id="fig-reuse-patterns-service-scalability" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0810.png" alt="Shared Service Scalability" width="600" height="330">
+        <h6><span class="label">Figure 8-10. </span>Shared services must scale as dependent services scale</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Fault Tolerance"><div class="sect2" id="idm45978843732464">
+        <h2>Fault Tolerance</h2>
+        
+        <p>While fault-tolerance issues can usually be mitigated through<a data-type="indexterm" data-primary="fault tolerance" data-secondary="shared services" id="idm45978843730928"></a><a data-type="indexterm" data-primary="shared services for code reuse" data-secondary="fault tolerance" id="idm45978843729952"></a><a data-type="indexterm" data-primary="code reuse patterns" data-secondary="shared services" data-tertiary="fault tolerance" id="idm45978843729040"></a> multiple instances of a service, nevertheless it is a trade-off to consider when using the shared service technique. As illustrated in <a data-type="xref" href="#fig-reuse-patterns-service-ft">Figure 8-11</a>, if the shared service becomes unavailable, services requiring the shared functionality are rendered nonoperational until the shared service is available. <a data-type="indexterm" data-primary="shared libraries" data-secondary="fault tolerance" id="idm45978843726720"></a><a data-type="indexterm" data-primary="fault tolerance" data-secondary="shared libraries" id="idm45978843725776"></a>The shared library technique does not have this issue since the shared functionality is contained in the service at compile time, and therefore accessed through standard method or function calls.</p>
+        
+        <figure><div id="fig-reuse-patterns-service-ft" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0811.png" alt="Shared Service Fault Tolerance" width="600" height="309">
+        <h6><span class="label">Figure 8-11. </span>Shared services introduce fault-tolerance issues</h6>
+        </div></figure>
+        
+        <p>While the shared service technique preserves the bounded context and is good for shared code that changes frequently, operational characteristics such as performance, scalability, and availability suffer. <a data-type="xref" href="#table-replication-sharedservice">Table 8-3</a> lists the various trade-offs associated with this technique.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978843721056">
+        <h5>Trade-Offs</h5><table id="table-replication-sharedservice" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 8-3. </span>Trade-offs for the shared service technique</caption>
+        <thead>
+        <tr>
+        <th>Advantages</th>
+        <th>Disadvantages</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Good for high code volatility</p></td>
+        <td><p>Versioning changes can be difficult</p></td>
+        </tr>
+        <tr>
+        <td><p>No code duplication in heterogeneous codebases</p></td>
+        <td><p>Performance is impacted due to latency</p></td>
+        </tr>
+        <tr>
+        <td><p>Preserves the bounded context</p></td>
+        <td><p>Fault tolerance and availability issues due to service dependency</p></td>
+        </tr>
+        <tr>
+        <td><p>No static code sharing</p></td>
+        <td><p>Scalability and throughput issues due to service dependency</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td><p>Increased risk due to runtime changes</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before less_space" data-pdf-bookmark="When to Use"><div class="sect2" id="idm45978843707856">
+        <h2>When to Use</h2>
+        
+        <p>The shared service technique is good to use in highly polyglot environments (those with multiple heterogeneous languages and platforms), and also when shared functionality tends to change often. While changes in a shared service tend to be much more agile overall than with the shared library technique, be careful of runtime side-effects and risks to services needing the shared functionality.<a data-type="indexterm" data-startref="ch08-sscru" id="idm45978843705888"></a><a data-type="indexterm" data-startref="ch08-sscru2" id="idm45978843705184"></a><a data-type="indexterm" data-startref="ch08-sscru3" id="idm45978843704512"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Sidecars and Service Mesh"><div class="sect1" id="sec-sidecar-pattern">
+        <h1>Sidecars and Service Mesh</h1>
+        
+        <p>Perhaps the most common response to any question posed by an architect is “It depends!” No issue in distributed architectures better illustrates this ambiguity better than operational coupling.<a data-type="indexterm" data-primary="code reuse patterns" data-secondary="sidecars and service mesh" id="ch08-ssm"></a><a data-type="indexterm" data-primary="Sidecar pattern" id="ch08-ssm2"></a><a data-type="indexterm" data-primary="coupling" data-secondary="operational coupling" id="ch08-ssm4"></a><a data-type="indexterm" data-primary="operational coupling" id="ch08-ssm5"></a><a data-type="indexterm" data-primary="microservices" data-secondary="operational coupling" id="ch08-ssm6"></a><a data-type="indexterm" data-primary="services" data-secondary="Sidecar pattern" id="ch08-ssmc"></a></p>
+        
+        <p>One of the design goals of microservices architectures is a high degree of decoupling, often manifested in the advice “Duplication is preferable to coupling.” For example, let’s say that two Sysops Squad services need to pass customer information, yet the domain-driven design bounded context insists that implementation details remain private to the service. Thus, a common solution allows each service its own internal representation of entities such as <code>Customer</code>, passing that information in loosely coupled ways such as name-value pairs in JSON. Notice that this allows each service to change its internal representation at will, including the technology stack, without breaking the integration. Architects generally frown on duplicating code because it causes synchronization issues, semantic drift, and a host of other issues, but sometimes forces exist that are worse than the problems of duplication, and coupling in microservices often fits that bill. Thus, in microservices architecture, the answer to the question of “should we duplicate or couple to some capability?” is likely <em>duplicate</em>, whereas in another architecture style such as a service-based architecture, the correct answer is likely <em>couple</em>. It depends!</p>
+        
+        <p>When designing microservices, architects have resigned themselves to the reality of implementation duplication to preserve decoupling. But what about the type of capabilities that <em>benefit</em> from high coupling? For example, consider common operational capabilities such as monitoring, logging, authentication and authorization, circuit breakers, and a host of other operational abilities that each service should have. But allowing each team to manage these dependencies often descends into chaos. For example, consider a company like Penultimate Electronics trying to standardize on a common monitoring solution to make it easier to operationalize the various services. Yet if each team is responsible for implementing monitoring for their service, how can the operations team be sure they did? Also, what about issues such as unified upgrades? If the monitoring tool needs to upgrade across the organization, how can teams coordinate that?</p>
+        
+        <p class="pagebreak-before">The common solution that has emerged in the microservices ecosystem over the last few years solves this problem in an <a data-type="indexterm" data-primary="Cockburn, Alistair" id="idm45978843691120"></a><a data-type="indexterm" data-primary="Hexagonal Architecture" id="idm45978843690416"></a>elegant way, by using the Sidecar pattern. This pattern is based on a much earlier architecture pattern defined by Alistair Cockburn, known as the <em>hexagonal architecture</em>, illustrated in <a data-type="xref" href="#fig-reuse-patterns-hexagonal">Figure 8-12</a>.</p>
+        
+        <p>In this Hexagonal pattern, what we would now call the domain logic resides in the center of the hexagon, which is surrounded by ports and adaptors to other parts of the ecosystem (in fact, this <a data-type="indexterm" data-primary="Ports and Adaptors Pattern" id="idm45978843687776"></a>pattern is alternately known as the <em>Ports and Adaptors Pattern</em>). While predating microservices by a number of years, this pattern has similarities to modern microservices, with one significant difference: data fidelity. The hexagonal architecture treated the database as just another adaptor that can be plugged in, but one of the insights from DDD suggests that data schemas and transactionality should be inside the interior—like microservices.</p>
+        
+        <figure><div id="fig-reuse-patterns-hexagonal" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0812.png" alt="hexagonal architecture pattern illustration" width="600" height="653">
+        <h6><span class="label">Figure 8-12. </span>The Hexagonal pattern separated domain logic from technical coupling</h6>
+        </div></figure>
+        
+        <p class="pagebreak-before">The <em>Sidecar pattern</em> leverages the same concept as hexagonal architecture in that it decouples the domain logic from the technical (infrastructure) logic. For example, consider two microservices, as shown in <a data-type="xref" href="#fig-reuse-patterns-ms-premesh">Figure 8-13</a>.</p>
+        
+        <figure><div id="fig-reuse-patterns-ms-premesh" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0813.png" alt="two services with similar operational capabilities" width="600" height="388">
+        <h6><span class="label">Figure 8-13. </span>Two microservices that share the same operational capabilities</h6>
+        </div></figure>
+        
+        <p>Here, each service includes a split between operational concerns (the larger components toward the bottom of the service) and domain concerns, pictured in the boxes toward the top of the service labeled “domain.” If architects desire consistency in operational capabilities, the separable parts go into a sidecar component, metaphorically named for the <a href="https://oreil.ly/EcBuk">sidecar that attaches to motorcycles</a>, whose implementation is either a shared responsibility across teams or managed by a centralized infrastructure group. If architects can assume that every service includes the sidecar, it forms a consistent operational interface across services, typically attached via a service plane, shown in <a data-type="xref" href="#fig-reuse-patterns-sidecar-service-pane">Figure 8-14</a>.</p>
+        
+        <figure><div id="fig-reuse-patterns-sidecar-service-pane" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0814.png" alt="microservices including a sidecar component and service plane" width="600" height="363">
+        <h6><span class="label">Figure 8-14. </span>When each microservice includes a common component, architects can establish links between them for consistent control</h6>
+        </div></figure>
+        
+        <p>If architects and operations can safely assume that every service includes <a data-type="indexterm" data-primary="service mesh" id="ch08-ssm3"></a><a data-type="indexterm" data-primary="services" data-secondary="service mesh" id="ch08-ssmb"></a>the sidecar component (governed by fitness functions), it forms a service mesh, illustrated in <a data-type="xref" href="#fig-reuse-patterns-servicemesh">Figure 8-15</a>. The boxes to the right of each service all interconnect, forming a “mesh.”</p>
+        
+        <p>Having a mesh allows architects and DevOps to create dashboards, control operational characteristics such as scale, and a host of other capabilities.</p>
+        
+        <p>The Sidecar pattern allows governance groups like enterprise architects a reasonable restraint over too many polyglot environments: one of the advantages of microservices is a reliance on integration rather than a common platform, allowing teams to choose the correct level of complexity and capabilities on a service-by-service basis. However, as the number of platforms proliferates, unified governance becomes more difficult. Therefore, teams often use the consistency of the service mesh as a driver to support infrastructure and other cross-cutting concerns across multiple heterogeneous platforms. For example, without a service mesh, if enterprise architects want to unify around a common monitoring solution, then teams must build a sidecar per platform that supports that solution.</p>
+        
+        <figure><div id="fig-reuse-patterns-servicemesh" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0815.png" alt="illustration of a service mesh linkage" width="600" height="411">
+        <h6><span class="label">Figure 8-15. </span>A service mesh is an operational link among services</h6>
+        </div></figure>
+        
+        <p>The Sidecar pattern represents not only a way to decouple operational capabilities from domains—it’s <a data-type="indexterm" data-primary="code reuse patterns" data-secondary="orthogonal reuse pattern" id="idm45978843667840"></a><a data-type="indexterm" data-primary="orthogonal code reuse pattern" id="idm45978843666848"></a><a data-type="indexterm" data-primary="coupling" data-secondary="orthogonal coupling" id="idm45978843666160"></a><a data-type="indexterm" data-primary="orthogonal coupling" id="idm45978843665216"></a>an <em>orthogonal reuse</em> pattern to address a specific kind of coupling (see <a data-type="xref" href="#sb-orthogonal-coupling">“Orthogonal Coupling”</a>). Often, architectural solutions require several types of coupling, such as our current example of domain versus operational coupling. An orthogonal reuse pattern presents a way to reuse some aspect counter to one or more seams in the architecture. For example, microservices architectures are organized around domains, but operational coupling requires cutting across those domains. A sidecar allows an architect to isolate those concerns in a cross-cutting, but consistent, layer through the architecture.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="sb-orthogonal-coupling">
+        <h5>Orthogonal Coupling</h5>
+        <p>In mathematics, two lines are <em>orthogonal</em> if they intersect at right angles, which also implies independence. In software architecture, two parts of an architecture may be <em>orthogonally coupled</em>: two distinct purposes that must still intersect to form a complete solution. The obvious example from this chapter is an operational concern such as monitoring, which is necessary but independent from domain behavior, like catalog checkout. Recognizing orthogonal coupling allows architects to find intersection points that cause the least entanglement between concerns.</p>
+        </div></aside>
+        
+        <p>While the Sidecar pattern offers a nice abstraction, it has trade-offs like all other architectural approaches, shown in <a data-type="xref" href="#table-replication-mesh">Table 8-4</a>.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978843659072">
+        <h5>Trade-Offs</h5><table id="table-replication-mesh" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 8-4. </span>Trade-offs for the Sidecar pattern / service mesh technique</caption>
+        <thead>
+        <tr>
+        <th>Advantages</th>
+        <th>Disadvantages</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Offers a consistent way to create isolated coupling</p></td>
+        <td><p>Must implement a sidecar per platform</p></td>
+        </tr>
+        <tr>
+        <td><p>Allows consistent infrastructure coordination</p></td>
+        <td><p>Sidecar component may grow large/complex</p></td>
+        </tr>
+        <tr>
+        <td><p>Ownership per team, centralized, or some combination</p></td>
+        <td></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="When to Use"><div class="sect2" id="idm45978843649120">
+        <h2>When to Use</h2>
+        
+        <p>The Sidecar pattern and service mesh offer a clean way to spread some sort of cross-cutting concern across a distributed architecture, and can be used by more than just operational coupling (see <a data-type="xref" href="ch14.html#ch14-data-mesh">Chapter&nbsp;14</a>). <a data-type="indexterm" data-primary="Decorator Design Pattern" id="idm45978843646736"></a><a data-type="indexterm" data-primary="design" data-secondary="Decorator Design Pattern" id="idm45978843646016"></a>It offers an architectural equivalent to the <a href="https://oreil.ly/4hYmI">Decorator Design Pattern</a> from the Gang of Four <em>Design Patterns</em> book (Addison Wesley)—it allows an architect to “decorate” behavior across a distributed architecture independent of the normal connectivity.<a data-type="indexterm" data-startref="ch08-ssm" id="idm45978843643632"></a><a data-type="indexterm" data-startref="ch08-ssm2" id="idm45978843642928"></a><a data-type="indexterm" data-startref="ch08-ssm3" id="idm45978843642256"></a><a data-type="indexterm" data-startref="ch08-ssm4" id="idm45978843641584"></a><a data-type="indexterm" data-startref="ch08-ssm5" id="idm45978843640976"></a><a data-type="indexterm" data-startref="ch08-ssm6" id="idm45978843640368"></a><a data-type="indexterm" data-startref="ch08-ssmb" id="idm45978843639760"></a><a data-type="indexterm" data-startref="ch08-ssmc" id="idm45978843639088"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Sysops Squad Saga: Common Infrastructure Logic"><div class="sect1" id="idm45978843702800">
+        <h1>Sysops Squad Saga: Common Infrastructure Logic</h1>
+        
+        <p><code>Thursday, February 10, 10:34</code></p>
+        <div class="story">
+        
+        <p>Sydney peeped into Taylen’s office on a foggy morning. “Hey, are you using the shared Message Dispatch library?”<a data-type="indexterm" data-primary="code reuse patterns" data-secondary="Sysops Squad saga" data-tertiary="sidecars and service mesh" id="idm45978843635504"></a><a data-type="indexterm" data-primary="code reuse patterns" data-secondary="sidecars and service mesh" data-tertiary="Sysops Squad saga" id="idm45978843634256"></a><a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="monolithic application broken apart" data-tertiary="code reuse patterns" id="idm45978843633024"></a><a data-type="indexterm" data-primary="Sidecar pattern" data-secondary="Sysops Squad saga" id="idm45978843631792"></a><a data-type="indexterm" data-primary="service mesh" data-secondary="Sysops Squad saga" id="idm45978843630848"></a><a data-type="indexterm" data-primary="operational coupling" data-secondary="Sysops Squad saga" id="idm45978843629904"></a><a data-type="indexterm" data-primary="coupling" data-secondary="operational coupling" data-tertiary="Sysops Squad saga" id="idm45978843628960"></a></p>
+        
+        <p>Taylen replied, “Yes, we’re trying to consolidate on that to get some consistency on message resolution.”</p>
+        
+        <p>Sydney said, “OK, but now we’re getting double log messages—it looks like the library writes to the logs, but our service also writes to the log. Is that as it should be?”</p>
+        
+        <p>“No,” Taylen replied. “We definitely don’t want duplicate log entries. That just makes everything confusing. We should ask Addison about that.”</p>
+        
+        <p>Consequently, Sydney and Taylen darkened Addison’s door. “Hey, do you have a minute?”</p>
+        
+        <p>Addison replied, “Always for you—what’s up?”</p>
+        
+        <p>Sydney said, “We’ve been consolidating a bunch of our duplicated code into shared libraries, and that’s working well—we’re getting better at identifying the parts that rarely change. But, now we’ve hit the problem that brings us here—who is supposed to be writing log messages? Libraries, services, or something else? And, how can we make that consistent?”</p>
+        
+        <p>Addison said, “We’ve bumped into operational shared behavior. Logging is just one of them. What about monitoring, service discovery, circuit breakers, even some of our utility functions, like the <code>JSONtoXML</code> library that a few teams are sharing? We need a better way to handle this to prevent issues. That’s why we’re in the process of implementing a service mesh with this common behavior in a sidecar component.”</p>
+        
+        <p>Sydney said, “I’ve read about sidecars and service mesh—it’s a way to share things across a bunch of microservices, right?”</p>
+        
+        <p>Addison said, “Sort of, but not all kinds of <em>things</em>. The intent of the service mesh and sidecar is to consolidate operational coupling, not domain coupling. For example, just like in our case, we want consistency for logging and monitoring across all our services, but don’t want each team to have to worry about that. If we consolidate logging code into the common sidecar that every service implements, we can enforce consistency.”</p>
+        
+        <p>Taylen asked, “Who owns the shared library? Shared responsibility across all the teams?”</p>
+        
+        <p>Addison replied, “We thought about that, but we have enough teams now; we’ve built a shared infrastructure team that is going to manage and maintain the sidecar component. They have built the deployment pipeline to automatically test the sidecar once it’s been bound into the service with a set of fitness functions.”</p>
+        
+        <p>Sydney said, “So if we need to share libraries between services, just ask them to put it in the sidecar?”</p>
+        
+        <p>Addison said, “Be careful—the sidecar isn’t meant to be used for just anything, only operational 
+        <span class="keep-together">coupling</span>.”</p>
+        
+        <p>“I’m not sure what that distinction is,” Taylen said.</p>
+        
+        <p>“Operational coupling includes the things we’ve been discussing—logging, monitoring, service discovery, authentication and authorization, and so on. Basically, it covers all the plumbing parts of the infrastructure that have no domain responsibility. But you should never put domain shared components, like the <code>Address</code> or <code>Customer</code> class, in the sidecar.”</p>
+        
+        <p>Sydney asked, “But why? What if I need the same class definition in two services? Won’t putting it in the sidecar make it available to both?”</p>
+        
+        <p>Addison replied, “Yes, but now you are increasing coupling in exactly the way we try to avoid in microservices. In most architectures, a single implementation of that service would be shared across the teams that need it. However, in microservices, that creates a coupling point, tying several services together in an undesirable way—if one team changes the shared code, every team must coordinate with that change. However, the architects could decide to put the shared library in the sidecar—it is, after all a technical capability. Neither answer is unambiguously correct, making this an architect decision and worthy of trade-off analysis. For example, if the <code>Address</code> class changes and both services rely on it, they must both change—the definition of coupling. We handle those issues with contracts. The other issue concerns size: we don’t want the sidecar to become the biggest part of the architecture. For example, consider the <code>JSONtoXML</code> library we were discussing before. How many teams use that?”</p>
+        
+        <p>Taylen said, “Well, any team that has to integrate with the mainframe system for anything—probably 5 out of, what, 16 or 17 teams?”</p>
+        
+        <p>Addison said, “Perfect. OK, what’s the trade-off of putting the <code>JSONtoXML</code> in the sidecar?”</p>
+        
+        <p>Sydney answered, “Well, that means that every team automatically has the library and doesn’t have to wire it in through dependencies.”</p>
+        
+        <p>“And the bad side?” asked Addison.</p>
+        
+        <p>“Well, adding it to the sidecar makes it bigger, but not by much—it’s a small library.” said Sydney.</p>
+        
+        <p>“That’s the key trade-off for shared utility code—how many teams need it versus how much overhead does it add to every service, particularly ones that don’t need it.”</p>
+        
+        <p>“And if less than one-half the teams use it, it’s probably not worth the overhead,” Sydney said.</p>
+        
+        <p>“Right! So, for now, we’ll leave that out of the sidecar and perhaps reassess in the future,” said 
+        <span class="keep-together">Addison</span>.</p>
+        <blockquote>
+        <p class="adr" id="adr_8"><em>ADR: Using a Sidecar for Operational Coupling</em></p>
+        
+        <p><em>Context</em><br>
+        Each service in our microservices architecture requires common and consistent operational behavior; leaving that responsibility to each team introduces inconsistencies and coordination issues.</p>
+        
+        <p><em>Decision</em><br>
+        We will use a sidecar component in conjunction with a service mesh to consolidate shared operational coupling.</p>
+        
+        <p>The shared infrastructure team will own and maintain the sidecar for service teams; service teams act as their customers. The following services will be provided by the sidecar:</p>
+        
+        <ul>
+        <li>
+        <p>Monitoring</p>
+        </li>
+        <li>
+        <p>Logging</p>
+        </li>
+        <li>
+        <p>Service discovery</p>
+        </li>
+        <li>
+        <p>Authentication</p>
+        </li>
+        <li>
+        <p>Authorization</p>
+        </li>
+        </ul>
+        
+        <p><em>Consequences</em><br>
+        Teams should not add domain classes to the sidecar, which encourages inappropriate coupling.</p>
+        
+        <p>Teams work with the shared infrastructure team to place shared, <em>operational</em> libraries in the sidecar if enough teams require it.</p></blockquote>
+        <hr>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Code Reuse: When Does It Add Value?"><div class="sect1" id="idm45978843636160">
+        <h1>Code Reuse: When Does It Add Value?</h1>
+        
+        <p>Many architects fail to properly assess trade-offs when they<a data-type="indexterm" data-primary="code reuse patterns" data-secondary="value added" id="idm45978843596080"></a> encounter some situations, which isn’t necessarily a deficiency—many trade-offs become obvious only after the fact.</p>
+        
+        <p><em>Reuse</em> is one of the most abused abstractions, because the general view in organizations is that <em>reuse</em> represents a laudable goal that teams should strive for. However, failing to evaluate all the trade-offs associated with reuse can lead to serious problems within architecture.</p>
+        
+        <p>The danger of too much reuse was one of the lessons many architects learned from the early 21st century trend of orchestration-driven service-oriented architecture, where one of the primary goals for many organizations was to maximize reuse.</p>
+        
+        <p>Consider the scenario from an insurance company, illustrated in <a data-type="xref" href="#fig-reuse-patterns-shared-customer">Figure 8-16</a>.</p>
+        
+        <figure><div id="fig-reuse-patterns-shared-customer" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0816.png" alt="different insurance divisions with differing customer views" width="600" height="475">
+        <h6><span class="label">Figure 8-16. </span>Each domain within a large insurance company has a view of the customer</h6>
+        </div></figure>
+        
+        <p>Each division in the company has some aspect of customers it cares about. Years ago, architects were instructed to keep an eye out for this type of commonality; once discovered, the goal was to consolidate the organizational view of customer into a single service, shown in <a data-type="xref" href="#fig-reuse-patterns-shared-customer-centralized">Figure 8-17</a>.</p>
+        
+        <figure><div id="fig-reuse-patterns-shared-customer-centralized" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0817.png" alt="Unifying on a single customer service" width="600" height="359">
+        <h6><span class="label">Figure 8-17. </span>Unifying on a centralized Customer service</h6>
+        </div></figure>
+        
+        <p>While the picture in <a data-type="xref" href="#fig-reuse-patterns-shared-customer-centralized">Figure 8-17</a> may seem logical, it’s an architectural disaster for two reasons. First, if all institutional information about a key entity like Customer must reside in a single place, that entity must be complex enough to handle any domain and scenario, making it difficult to use for simple things.</p>
+        
+        <p>Secondly, though, it creates <em>brittleness</em> within the architecture.<a data-type="indexterm" data-primary="architecture" data-secondary="brittleness" id="idm45978843583056"></a><a data-type="indexterm" data-primary="brittleness in architecture" id="idm45978843582080"></a> If every domain that needs customer information must get it from a single place, when that place changes, everything breaks. For example, in our example, what happens when <code>CustomerService</code> needs to add new capabilities on behalf of one of the domains? That change could potentially impact every other domain, requiring coordination and testing to ensure that the change hasn’t “rippled” throughout the architecture.</p>
+        
+        <p>What architects failed to realize is that reuse has two important aspects; they got the first one correct: abstraction. The way architects and developers discover candidates for reuse is via abstraction. However, the second consideration is the one that determines utility and value: <em>rate of change</em>.</p>
+        
+        <p>Observing that some reuse causes brittleness begs the question about how that kind of reuse differs from the kinds we clearly benefit from. Consider things that everyone successfully reuses: operating systems, open source frameworks and libraries, and so on. What distinguishes those from assets that project teams build? The answer is <em>slow rate of change</em>. We benefit from technical coupling, like operating systems and external frameworks, because they have a well-understood rate of change and update cadence. Internal domain capabilities or quick-changing technical frameworks make terrible coupling targets.</p>
+        <div data-type="tip"><h6>Tip</h6>
+        <p>Reuse is derived via abstraction but operationalized by slow rate of change.</p>
+        </div>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Reuse via Platforms"><div class="sect2" id="idm45978843576496">
+        <h2>Reuse via Platforms</h2>
+        
+        <p>Much press exists extolling the virtue of platforms within organizations,<a data-type="indexterm" data-primary="code reuse patterns" data-secondary="value added" data-tertiary="reuse via platforms" id="idm45978843575168"></a><a data-type="indexterm" data-primary="platforms for code reuse" id="idm45978843573920"></a><a data-type="indexterm" data-primary="APIs" data-secondary="platforms for code reuse" id="idm45978843573232"></a> almost to the point of <a href="https://oreil.ly/oYla7"><em>semantic diffusion</em></a>. However, most agree that the <em>platform</em> is the new target of reuse within organizations, meaning that for each distinguishable domain capability, the organization builds a platform with a well-defined API to hide the implementation details.</p>
+        
+        <p>Slow rate of change drives this reasoning. As we discuss in <a data-type="xref" href="ch13.html#ch13-contracts">Chapter&nbsp;13</a>, an API can be designed to be quite loosely coupled to callers, allowing for an aggressive internal rate of change of implementation details without breaking the API. This, of course, doesn’t protect the organization from changes to the semantics of the information it must pass between domains, but by careful design of encapsulation and contracts, architects can limit the amount of breaking change and brittleness in integration architecture.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Sysops Squad Saga: Shared Domain Functionality"><div class="sect1" id="idm45978843568768">
+        <h1>Sysops Squad Saga: Shared Domain Functionality</h1>
+        
+        <p><code>Tuesday, February 8, 12:50</code></p>
+        <div class="story">
+        
+        <p>With Addison’s approval, the development team had decided to split<a data-type="indexterm" data-primary="shared domain functionality" data-secondary="Sysops Squad saga" id="idm45978843565600"></a><a data-type="indexterm" data-primary="code reuse patterns" data-secondary="Sysops Squad saga" data-tertiary="shared domain functionality" id="idm45978843564544"></a><a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="monolithic application broken apart" data-tertiary="code reuse patterns" id="idm45978843563312"></a><a data-type="indexterm" data-primary="shared services for code reuse" data-secondary="Sysops Squad saga" id="idm45978843562080"></a> the core ticketing functionality into three separate services: a customer-facing Ticket Creation service, a Ticket Assignment service, and a Ticket Completion service. However, all three services used common database logic (queries and updates) and shared a set of database tables in the ticketing data domain.</p>
+        
+        <p>Taylen wanted to create a shared data service that would contain the common database logic, thus forming a database abstraction layer, as shown in <a data-type="xref" href="#fig-reuse-patterns-ss-domain-svc">Figure 8-18</a>.</p>
+        
+        <figure><div id="fig-reuse-patterns-ss-domain-svc" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0818.png" alt="Shared Service Option" width="600" height="245">
+        <h6><span class="label">Figure 8-18. </span>Option using a shared Ticket Data service for common database logic for the Sysops Squad ticketing services</h6>
+        </div></figure>
+        
+        <p>Skyler hated the idea and wanted to use a single shared library (DLL) that each service would include as part of the build and deployment, as illustrated in <a data-type="xref" href="#fig-reuse-patterns-ss-domain-lib">Figure 8-19</a>.</p>
+        
+        <figure><div id="fig-reuse-patterns-ss-domain-lib" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0819.png" alt="Shared Library Option" width="600" height="335">
+        <h6><span class="label">Figure 8-19. </span>Option using a shared library for common database logic for the Sysops Squad ticketing services</h6>
+        </div></figure>
+        
+        <p>Both developers met with Addison to resolve this roadblock.</p>
+        
+        <p>“So, Addison, what is your opinion? Should the shared database logic be in a shared data service or a shared library?” asked Taylen.</p>
+        
+        <p>“It’s not about opinions,” said Addison. “It’s about analyzing the trade-offs to arrive at the most appropriate solution for the core shared ticketing database functionality. Let’s do a hypothesis-based approach and hypothesize that the most appropriate solution is to use the shared data service.”</p>
+        
+        <p>“Hold on,” said Skyler. “It’s simply not a good architectural solution for this problem.”</p>
+        
+        <p>“Why?” asked Addison, prompting Skyler to start thinking in terms of trade-offs.</p>
+        
+        <p>“First of all,” said Skyler, “all three services would need to make an interservice call to the shared data service for <em>every</em> database query or update. We’re going take a serious performance hit if we do that. Furthermore, if the shared data service goes down, all three of those services become 
+        <span class="keep-together">nonoperational</span>.”</p>
+        
+        <p>“So?” said Taylen. “It’s all backend functionality, so who cares? The backend functionality doesn’t have to be that fast, and services come up fairly quickly if they fail.”</p>
+        
+        <p>“Actually,” said Addison, “it’s not all backend functionality. Don’t forget, the Ticket Creation service is customer facing, and it would be using the same shared data service as the backend ticketing 
+        <span class="keep-together">functionality</span>.”</p>
+        
+        <p>“Yeah, but <em>most</em> of the functionality is still backend,” said Taylen, with a little less confidence than before.</p>
+        
+        <p>“So far,” said Addison, “it looks like the trade-off for using the shared data service is performance and fault tolerance for the ticketing services.”</p>
+        
+        <p>“Let’s also not forget that any changes made to the shared data service are runtime changes. In other words,” said Skyler, “if we make a change and deploy the shared data service, we could possibly break something.”</p>
+        
+        <p>“That’s why we test,” said Taylen.</p>
+        
+        <p>“Yeah, but if you want to reduce risk you would have to test all of the ticketing services for every change to the shared data service, which increases testing time significantly. With a shared DLL, we could version the shared library to provide backward compatibility,” said Skyler.</p>
+        
+        <p>“OK, we will add increased risk for changes and increased testing effort to the trade-offs as well,” said Addison. “Also, let’s not forget that we would have extra coordination from a scalability standpoint. Every time we create more instances of the ticket creation service, we would have to make sure we create more instances of the shared data service as well.”</p>
+        
+        <p>“Let’s not keep focusing so much on the negatives.” said Taylen. “How about the positives of using a shared data service?”</p>
+        
+        <p>“OK,” said Addison, “let’s talk about the benefits of using a shared data service.”</p>
+        
+        <p>“Data abstraction, of course,” said Taylen. “The services wouldn’t have to worry about any database logic. All they would have to do is make a remote service call to the shared data service.”</p>
+        
+        <p>“Any other benefits?” asked Addison.</p>
+        
+        <p>“Well,” said Taylen, “I was going to say centralized connection pooling, but we would need multiple instances anyway to support the customer ticket creation service. It would help, but it’s not a major game changer since there are only three services without a lot of instances of each service. However, change control would be so much easier with a shared data service. We wouldn’t have to redeploy any of the ticketing services for database logic changes.”</p>
+        
+        <p>“Let’s take a look at those shared class files in the repository and see historically how much change there really is for that code,” said Addison.</p>
+        
+        <p>Addison, Taylen, and Skyler all looked at the repository history for the shared data logic class files.</p>
+        
+        <p>“Hmm…” said Taylen, “I thought there were a lot more changes to that code than what is showing up in the repo. OK, so I guess the changes are fairly minimal for the shared database logic after all.”</p>
+        
+        <p>Through the conversation of discussing trade-offs, Taylen started to realize that the negatives of a shared service seemed to outweigh the positives, and there was no real compelling justification for putting the shared database logic in a shared service. Taylen agreed to put the shared database logic in a shared DLL, and Addison wrote an ADR for this architecture decision:</p>
+        <blockquote>
+        <p class="adr" id="adr_9"><em>ADR: Use of a Shared Library for Common Ticketing Database Logic</em><br></p>
+        
+        <p><em>Context</em><br>
+        The ticketing functionality is broken into three services: Ticket Creation, Ticket Assignment, and Ticket Completion. All three services use common code for the bulk of the database queries and update statements. The two options are to use a shared library or create a shared data service.<br></p>
+        
+        <p><em>Decision</em><br>
+        We will use a shared library for the common ticketing database logic.<br></p>
+        
+        <p>Using a shared library will improve performance, scalability, and fault tolerance of the customer-facing Ticket Creation service, as well as for the Ticket Assignment service.<br></p>
+        
+        <p>We found that the common database logic code does not change much and is therefore fairly stable code. Furthermore, change is less risky for the common database logic because services would need to be tested and redeployed. If changes are needed, we will apply versioning where appropriate so that not all services need to be redeployed when the common database logic changes.<br></p>
+        
+        <p>Using a shared library reduces service coupling and eliminates additional service dependencies, HTTP traffic, and overall bandwidth.<br></p>
+        
+        <p><em>Consequences</em><br>
+        Changes to the common database logic in the shared DLL will require the ticketing services to be tested and deployed, therefore reducing overall agility for common database logic for the ticketing functionality.<br></p>
+        
+        <p>Service instances will need to manage their own database connection pool.</p></blockquote>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        </div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492086888/files/epub.css" crossorigin="anonymous"><script src="https://learning.oreilly.comhttps://cdn.jsdelivr.net/npm/mathjax@3/es5/mml-svg.js"></script></div></div></section>
+</div>
+
+https://learning.oreilly.com

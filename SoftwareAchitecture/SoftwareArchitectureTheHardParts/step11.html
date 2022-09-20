@@ -1,0 +1,710 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 11. Managing Distributed Workflows"><div class="chapter" id="ch11-managing-workflows">
+        <h1><span class="label">Chapter 11. </span>Managing Distributed Workflows</h1>
+        
+        
+        <p><code>Tuesday, February 15, 14:34</code></p>
+        <div class="story">
+        
+        <p>Austen bolted into Logan’s office just after lunch. “I’ve been looking<a data-type="indexterm" data-primary="distributed workflows" data-secondary="Sysops Squad saga" id="idm45978842732976"></a><a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="distributed workflows" id="idm45978842732000"></a><a data-type="indexterm" data-primary="coordination of workflow" data-secondary="Sysops Squad saga" id="idm45978842731056"></a> at the new architecture designs, and I want to help out. Do you need me to write up some ADRs or help with some spikes? I’d be happy to write up the ADR that states that we’re only going to use choreography in the new architecture to keep things decoupled.”</p>
+        
+        <p>“Whoa, there, you maniac,” said Logan. “Where did you hear that? What gives you that impression?”</p>
+        
+        <p>“Well, I’ve been reading a lot about microservices, and everyone’s advice seems to be to keep things highly decoupled. When I look at the patterns for communication, it seems that choreography is the most decoupled, so we should always use it, right?”</p>
+        
+        <p>"<em>Always</em> is a tricky term in software architecture. I had a mentor who had a memorable perspective on this, who always said, <em>Never use absolutes when talking about architecture, except when talking about absolutes.</em> In other words, <em>never</em> say <em>never</em>. I can’t think of many decisions in architecture where <em>always</em> or <em>never</em> applies.”</p>
+        
+        <p>“OK,” said Austen. “So how <em>do</em> architects decide between the different communication patterns?”</p>
+        <hr>
+        </div>
+        
+        <p>As part of our ongoing analysis of the trade-offs associated with<a data-type="indexterm" data-primary="distributed workflows" data-secondary="about" id="idm45978842723392"></a> modern distributed architectures, we reach the <em>dynamic</em> part of quantum coupling, realizing many of the patterns we described and named in <a data-type="xref" href="ch02.html#ch02-discerning">Chapter&nbsp;2</a>. In fact, even our named patterns only touch on the many permutations possible with modern architectures. Thus, an architect should understand the forces at work so that they can make a most objective trade-off analysis.</p>
+        
+        <p>In <a data-type="xref" href="ch02.html#ch02-discerning">Chapter&nbsp;2</a>, we identified three coupling forces when considering interaction models in distributed architectures:<a data-type="indexterm" data-primary="dynamic coupling" data-secondary="about dimensions of" id="idm45978842719296"></a> communication, consistency, and coordination, shown in <a data-type="xref" href="#fig-workflows-dimensions">Figure 11-1</a>.</p>
+        
+        <figure><div id="fig-workflows-dimensions" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0213.png" alt="Dimensions of dynamic quantum coupling" width="600" height="592">
+        <h6><span class="label">Figure 11-1. </span>The dimensions of dynamic quantum coupling</h6>
+        </div></figure>
+        
+        <p>In this chapter, we discuss <em>coordination</em>: combining two or more<a data-type="indexterm" data-primary="distributed workflows" data-secondary="about coordination" id="idm45978842714432"></a><a data-type="indexterm" data-primary="coordination of workflow" data-secondary="about" id="idm45978842713424"></a><a data-type="indexterm" data-primary="orchestrated coordination" data-secondary="about coordination" id="idm45978842712416"></a><a data-type="indexterm" data-primary="choreographed coordination" data-secondary="about coordination" id="idm45978842711456"></a> services in a distributed architecture to form some domain-specific work, along with the many attendant issues.</p>
+        
+        <p>Two fundamental coordination patterns exist in distributed<a data-type="indexterm" data-primary="coordination of workflow" data-secondary="orchestrated coordination" data-tertiary="about choreographed versus" id="idm45978842709856"></a><a data-type="indexterm" data-primary="coordination of workflow" data-secondary="choreographed coordination" data-tertiary="about orchestration versus" id="idm45978842708480"></a><a data-type="indexterm" data-primary="choreographed coordination" data-secondary="about orchestrated versus" id="idm45978842707216"></a><a data-type="indexterm" data-primary="orchestrated coordination" data-secondary="about choreographed versus" id="idm45978842706240"></a><a data-type="indexterm" data-primary="distributed workflows" data-secondary="orchestration" data-tertiary="about choreographed versus" id="idm45978842705264"></a><a data-type="indexterm" data-primary="distributed workflows" data-secondary="choreography" data-tertiary="about orchestration versus" id="idm45978842704032"></a> architectures: orchestration and choreography. The fundamental topological differences between the two styles is illustrated in <a data-type="xref" href="#fig-managing-workflows-orch-and-choreo">Figure 11-2</a>.</p>
+        
+        <p>Orchestration is distinguished by the use of an orchestrator, whereas a choreographed solution does not use one.</p>
+        
+        <figure><div id="fig-managing-workflows-orch-and-choreo" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1102.png" alt="orchestration versus choreography" width="600" height="694">
+        <h6><span class="label">Figure 11-2. </span>Orchestration versus choreography in distributed architectures</h6>
+        </div></figure>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Orchestration Communication Style"><div class="sect1" id="sec-orchestrator">
+        <h1>Orchestration Communication Style</h1>
+        
+        <p>The <em>orchestration pattern</em> uses an <em>orchestrator</em> (sometimes called a <em>mediator</em>) component<a data-type="indexterm" data-primary="orchestrated coordination" data-secondary="orchestrator" id="idm45978842695152"></a><a data-type="indexterm" data-primary="distributed workflows" data-secondary="orchestration" id="ch11-orch"></a><a data-type="indexterm" data-primary="orchestrated coordination" id="ch11-orch2"></a><a data-type="indexterm" data-primary="coordination of workflow" data-secondary="orchestrated coordination" id="ch11-orch3"></a><a data-type="indexterm" data-primary="mediator in orchestration" id="idm45978842690704"></a> to manage workflow state, optional behavior, error handling, notification, and a host of other workflow maintenance. It is named for the distinguishing feature of a musical orchestra, which utilizes a conductor to synchronize the incomplete parts of the overall score to create a unified piece of music. Orchestration is illustrated in the most generic representation in <a data-type="xref" href="#fig-managing-workflows-orch-iso">Figure 11-3</a>.</p>
+        
+        <p>In this example, services A-D are domain services, each responsible for its own bounded context, data, and behavior. The Orchestrator component generally doesn’t include any domain behavior outside of the workflow it mediates. <a data-type="indexterm" data-primary="microservices" data-secondary="orchestrator per workflow" id="idm45978842688192"></a><a data-type="indexterm" data-primary="enterprise service bus (ESB) global orchestrator" id="idm45978842687216"></a>Notice that microservices architectures have an orchestrator per workflow, <em>not</em> a global orchestrator such as an <a href="https://oreil.ly/KTGrU"><em>enterprise service bus</em> (ESB)</a>. One of the primary goals of the microservices architecture style is decoupling, and using a global 
+        <span class="keep-together">component</span> such as an ESB creates an undesirable coupling point. Thus, microservices tend to have an orchestrator per  workflow.</p>
+        
+        <figure><div id="fig-managing-workflows-orch-iso" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1103.png" alt="orchestration illustration" width="600" height="461">
+        <h6><span class="label">Figure 11-3. </span>Orchestration among distributed microservices</h6>
+        </div></figure>
+        
+        <p>Orchestration is useful when an architect must model a complex workflow that includes more than just the single “happy path,” but also alternate paths and error conditions. However, to understand the basic shape of the pattern, we start with the nonerror happy path. Consider a very simple example of Penultimate Electronics selling a device to one of its customers online, shown in <a data-type="xref" href="#fig-managing-workflows-orch-happy">Figure 11-4</a>.</p>
+        
+        <p>This system passes the Place Order request to the Order Placement Orchestrator, which makes a synchronous call to the Order Placement Service, which records the order and returns a status message. Next, the mediator calls the Payment Service, which updates payment information. Next, the orchestrator makes an asynchronous call to the Fulfillment Service to handle the order. The call is asynchronous because no strict timing dependencies exist for order fulfillment, unlike payment verification. For example, if order fulfillment happens only a few times a day, there is no reason for the overhead of a synchronous call. Similarly, the orchestrator then calls the Email Service to notify the user of a successful electronics order.</p>
+        
+        <p>If the world consisted of only happy paths, software architecture would be easy. However, one of the primary hard parts of software architecture is error conditions and pathways.</p>
+        
+        <figure><div id="fig-managing-workflows-orch-happy" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1104.png" alt="happy path orchestration example" width="600" height="436">
+        <h6><span class="label">Figure 11-4. </span>A “happy path” workflow using an orchestrator to purchase electronic equipment (note the asynchronous calls denoted by dotted lines for less time-sensitive calls)</h6>
+        </div></figure>
+        
+        <p>Consider two potential error scenarios for electronics purchasing. First, what happens if the customer’s payment method is rejected? This error scenario appears in <a data-type="xref" href="#fig-managing-workflows-orch-error-pay">Figure 11-5</a>.</p>
+        
+        <p>Here, the Order Placement Orchestrator updates the order via the Order Placement Service as before. However, when trying to apply payment, it is rejected by the payment service, perhaps because of an expired credit card number. In that case, the Payment Service notifies the orchestrator, which then places a (typically) asynchronous call to send a message to the Email Service to notify the customer of the failed order. Additionally, the orchestrator updates the state of the Order Placement Service, which still thinks this is an active order.</p>
+        
+        <p>Notice in this example we’re allowing each service to maintain its own transactional state, modeling our <a data-type="xref" href="ch12.html#sec-fairy-tale-saga">“Fairy Tale Saga<sup>(seo)</sup> Pattern”</a>. One of the hardest parts of modern architectures is managing transactions, which we cover in <a data-type="xref" href="ch12.html#ch12-transactional-sagas">Chapter&nbsp;12</a>.</p>
+        
+        <figure><div id="fig-managing-workflows-orch-error-pay" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1105.png" alt="illustration of payment rejected error condition" width="600" height="436">
+        <h6><span class="label">Figure 11-5. </span>Payment rejected error condition</h6>
+        </div></figure>
+        
+        <p>In the second error scenario, the workflow has progressed further along: what happens when the Fulfillment Service reports a back order? This error scenario appears in <a data-type="xref" href="#fig-managing-workflows-orch-error-backorder">Figure 11-6</a>.</p>
+        
+        <figure><div id="fig-managing-workflows-orch-error-backorder" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1106.png" alt="message flow for a failed order fulfillment" width="600" height="426">
+        <h6><span class="label">Figure 11-6. </span>When an item is back-ordered, the orchestrator must rectify the state</h6>
+        </div></figure>
+        
+        <p>As you can see, the workflow preceeds as normal until the Fulfillment Service notifies the orchestrator that the current item is out of stock, necessitating a back order. In that case, the orchestrator must refund the payment (this is why many online services don’t charge until shipment, not at order time) and update the state of the Order Placement Service.</p>
+        
+        <p>One interesting characteristic to note in <a data-type="xref" href="#fig-managing-workflows-orch-error-backorder">Figure 11-6</a>: even in the most elaborate error scenarios, the architect wasn’t required to add additional communication paths that weren’t already there to facilitate the normal workflow, which differs from the <a data-type="xref" href="#sec-choreography">“Choreography Communication Style”</a>.</p>
+        
+        <p>General advantages of the orchestration communication style include the following:</p>
+        <dl>
+        <dt>Centralized workflow</dt>
+        <dd>
+        <p>As complexity goes up, having a unified component for state and behavior becomes beneficial.</p>
+        </dd>
+        <dt>Error handling</dt>
+        <dd>
+        <p>Error handling is a major part of many domain workflows, assisted by having a state owner for the workflow.</p>
+        </dd>
+        <dt>Recoverability</dt>
+        <dd>
+        <p>Because an orchestrator monitors the state of the workflow, an architect may add logic to retry if one or more domain services suffers from a short-term outage.</p>
+        </dd>
+        <dt>State management</dt>
+        <dd>
+        <p>Having an orchestrator makes the state of the workflow queriable,<a data-type="indexterm" data-primary="state management" data-secondary="orchestration" id="idm45978842657840"></a> providing a place for other workflows and other transient states.</p>
+        </dd>
+        </dl>
+        
+        <p>General disadvantages of the orchestration communication style include the 
+        <span class="keep-together">following</span>:</p>
+        <dl>
+        <dt>Responsiveness</dt>
+        <dd>
+        <p>All communication must go through the mediator, creating a potential throughput bottleneck that can harm responsiveness.</p>
+        </dd>
+        <dt>Fault tolerance</dt>
+        <dd>
+        <p>While orchestration enhances recoverability for domain services,<a data-type="indexterm" data-primary="fault tolerance" data-secondary="orchestration" id="idm45978842651808"></a> it creates a potential single point of failure for the workflow, which can be addressed with redundancy but adds more complexity.</p>
+        </dd>
+        <dt>Scalability</dt>
+        <dd>
+        <p>This communication style doesn’t scale as well as choreography<a data-type="indexterm" data-primary="scalability" data-secondary="orchestration" id="idm45978842649200"></a> because it has more coordination points (the orchestrator), which cuts down on potential parallelism. As we discussed in <a data-type="xref" href="ch02.html#ch02-discerning">Chapter&nbsp;2</a>, several dynamic coupling patterns utilize choreography and thus achieve higher scale (notably <a data-type="xref" href="ch12.html#sec-time-travel-saga">“Time Travel Saga<sup>(sec)</sup> Pattern”</a> and <a data-type="xref" href="ch12.html#sec-anthology-saga">“Anthology Saga<sup>(aec)</sup> Pattern”</a>).</p>
+        </dd>
+        <dt>Service coupling</dt>
+        <dd>
+        <p>Having a central orchestrator creates higher coupling between it and domain components, which is sometimes necessary. The orchestration communication style’s trade-offs appear in <a data-type="xref" href="#total-orch-tradeoffs">Table 11-1</a>.<a data-type="indexterm" data-primary="coupling" data-secondary="orchestration" id="idm45978842642992"></a><a data-type="indexterm" data-startref="ch11-orch" id="idm45978842642016"></a><a data-type="indexterm" data-startref="ch11-orch2" id="idm45978842641344"></a><a data-type="indexterm" data-startref="ch11-orch3" id="idm45978842640672"></a></p>
+        </dd>
+        </dl>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978842639744">
+        <h5>Trade-Offs</h5><table id="total-orch-tradeoffs" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 11-1. </span>Trade-offs for orchestration</caption>
+        <thead>
+        <tr>
+        <th>Advantage</th>
+        <th>Disadvantage</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Centralized workflow</p></td>
+        <td><p>Responsiveness</p></td>
+        </tr>
+        <tr>
+        <td><p>Error handling</p></td>
+        <td><p>Fault tolerance</p></td>
+        </tr>
+        <tr>
+        <td><p>Recoverability</p></td>
+        <td><p>Scalability</p></td>
+        </tr>
+        <tr>
+        <td><p>State management</p></td>
+        <td><p>Service coupling</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Choreography Communication Style"><div class="sect1" id="sec-choreography">
+        <h1>Choreography Communication Style</h1>
+        
+        <p>Whereas the Orchestration Communication Style was named for the metaphorical central coordination<a data-type="indexterm" data-primary="distributed workflows" data-secondary="choreography" id="ch11-chor"></a><a data-type="indexterm" data-primary="choreographed coordination" id="ch11-chor2"></a><a data-type="indexterm" data-primary="coordination of workflow" data-secondary="choreographed coordination" id="ch11-chor3"></a> offered by an orchestrator, the <em>choreography</em> pattern visually illustrates intent of the communication style that has no central coordination. Instead, each service participates with the others, similar to dance partners. It isn’t an ad hoc performance—the moves were planned beforehand by the choreographer/architect but executed without a central coordinator.</p>
+        
+        <p><a data-type="xref" href="#fig-managing-workflows-orch-happy">Figure 11-4</a> described the orchestrated workflow for a customer purchasing electronics from Penultimate Electronics; the same workflow modeled in the choreography communication style appears in <a data-type="xref" href="#fig-managing-workflows-simple-choreo">Figure 11-7</a>.</p>
+        
+        <p>In this workflow, the initiating request goes to the first service in the chain of responsibility—in this case, the Order Placement Service. Once it has updated internal records about the order, it sends an asynchronous request that the Payment Service receives. Once payment has been applied, the Payment Service generates a message received by the Fulfillment Service, which plans for delivery and sends a message to the Email Service.</p>
+        
+        <p>At first glance, the choreography solution seems simpler—fewer services (no orchestrator), and a simple chain of events/commands (messages). However, as with many issues in software architecture, the difficulties lie not with the default paths but rather with boundary and error conditions.</p>
+        
+        <figure><div id="fig-managing-workflows-simple-choreo" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1107.png" alt="simple workflow using choreography" width="600" height="300">
+        <h6><span class="label">Figure 11-7. </span>Purchasing electronics using choreography</h6>
+        </div></figure>
+        
+        <p>As in the previous section, we cover two potential error scenarios. The first results from failed payment, as illustrated in <a data-type="xref" href="#fig-managing-workflows-chor-error-pay">Figure 11-8</a>.</p>
+        
+        <figure><div id="fig-managing-workflows-chor-error-pay" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1108.png" alt="illustration of payment error workflow in choreography" width="600" height="311">
+        <h6><span class="label">Figure 11-8. </span>Error in payment in choreography</h6>
+        </div></figure>
+        
+        <p>Rather than send a message intended for the Fulfillment Service, the Payment service sends messages indicating failure to the Email Service and back to the Order Placement Service to update the order status. This alternate workflow doesn’t appear too complex, with a single new communication link that didn’t exist before.</p>
+        
+        <p class="pagebreak-before">However, consider the increasing complexity imposed by the other error scenario for a product back order, shown in <a data-type="xref" href="#fig-managing-workflows-chor-error-backorder">Figure 11-9</a>.</p>
+        
+        <figure><div id="fig-managing-workflows-chor-error-backorder" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1109.png" alt="illustrating the workflow required for product backlog error" width="600" height="333">
+        <h6><span class="label">Figure 11-9. </span>Managing the workflow error condition of product backlog</h6>
+        </div></figure>
+        
+        <p>Many steps of this workflow have already completed before the event (out of stock) that causes the error. Because each of these services implement its own transactionality (this is an example of the <a data-type="xref" href="ch12.html#sec-anthology-saga">“Anthology Saga<sup>(aec)</sup> Pattern”</a>), when an error occurs, each service must issue compensating messages to other services. Once the Fulfillment Service realizes the error condition, it should generate events suited to its bounded context, perhaps a broadcast message subscribed to by the Email, Payment, and Order Placement services.</p>
+        
+        <p>The example shown in <a data-type="xref" href="#fig-managing-workflows-chor-error-backorder">Figure 11-9</a> illustrates the dependency between complex workflows and mediators. While the initial workflow in choreography illustrated in <a data-type="xref" href="#fig-managing-workflows-simple-choreo">Figure 11-7</a> seemed simpler than <a data-type="xref" href="#fig-managing-workflows-orch-happy">Figure 11-4</a>, the error case (and others) keeps adding more complexity to the choreographed solution. In <a data-type="xref" href="#fig-managing-workflows-chor-error-add-comm">Figure 11-10</a>, each error scenario forces domain services to interact with each other, adding communication links that weren’t necessary for the happy path.</p>
+        
+        <figure><div id="fig-managing-workflows-chor-error-add-comm" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1110.png" alt="illustration of added communication links for choreography error handling" width="600" height="400">
+        <h6><span class="label">Figure 11-10. </span>Error conditions in choreography typically add communication links</h6>
+        </div></figure>
+        
+        <p>Every workflow that architects need to model in software has a certain amount<a data-type="indexterm" data-primary="coupling" data-secondary="semantic coupling" id="idm45978842600000"></a><a data-type="indexterm" data-primary="semantic coupling" id="idm45978842599024"></a><a data-type="indexterm" data-primary="distributed workflows" data-secondary="semantic coupling" id="idm45978842598352"></a> of <em>semantic coupling</em>—the inherent coupling that exists in the problem domain. For example, the process of assigning a ticket to a Sysops Squad member has a certain workflow: a client must request service, skills must be matched to particular specialists, then cross-referenced to schedules and locations. <a data-type="indexterm" data-primary="coupling" data-secondary="semantic coupling" data-tertiary="implementation coupling" id="idm45978842596560"></a><a data-type="indexterm" data-primary="implementation coupling" id="idm45978842595312"></a><a data-type="indexterm" data-primary="distributed workflows" data-secondary="semantic coupling" data-tertiary="implementation coupling" id="idm45978842594640"></a><a data-type="indexterm" data-primary="semantic coupling" data-secondary="implementation coupling" id="idm45978842593424"></a>The way an architect models that interaction is the <em>implementation coupling</em>.</p>
+        
+        <p>The semantic coupling of a workflow is mandated by the domain requirements of the solution and must be modeled somehow. However clever an architect is, they cannot reduce the amount of semantic coupling, but their implementation choices may increase it. This doesn’t mean that an architect might not push back on impractical or impossible semantics defined by business users—some domain requirements create extraordinarily difficult problems in architecture.</p>
+        
+        <p id="sec-domain-technical-partitioning">Here is a common example. Consider the standard layered monolithic architecture compared to the more modern style of a modular monolith, shown in <a data-type="xref" href="#fig-managing-workflows-tech-domain-part-one">Figure 11-11</a>.</p>
+        
+        <p>The architecture on the left represents the traditional layered architecture, separated by <em>technical</em> capabilities such as persistence, business rules, and so on. On the right, the same solution appears, but separated by <em>domain</em> concerns such as <code>Catalog Checkout</code> and <code>Update Inventory</code> rather than technical capabilities.</p>
+        
+        <figure><div id="fig-managing-workflows-tech-domain-part-one" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1111.png" alt="Technical versus domain partitioning in architecture" width="600" height="343">
+        <h6><span class="label">Figure 11-11. </span>Technical versus domain partitioning in architecture</h6>
+        </div></figure>
+        
+        <p>Both topologies are logical ways to organize a codebase. However, consider where domain concepts such as <code>Catalog Checkout</code> reside within each architecture, illustrated in <a data-type="xref" href="#fig-managing-workflows-tech-domain-part-two">Figure 11-12</a>.</p>
+        
+        <figure><div id="fig-managing-workflows-tech-domain-part-two" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1112.png" alt="illustration of the location of the domain workflow of Catalog Checkout" width="600" height="343">
+        <h6><span class="label">Figure 11-12. </span>Catalog Checkout is smeared across implementation layers in a technically partitioned architecture</h6>
+        </div></figure>
+        
+        <p><code>Catalog Checkout</code> is “smeared” across the layers of the technical architecture, whereas it appears only in the matching domain component and database in the domain partitioned example. Of course, aligning a domain with domain partitioned architecture isn’t a revelation—one of the insights of domain-driven design was the primacy of the domain workflows. No matter what, if an architect wants to model a workflow, they must make those moving parts work together. If the architect has organized their architecture the same as the domains, the implementation of the workflow should have similar complexity. <a data-type="indexterm" data-primary="domain partitioned architecture" data-secondary="technical partitioning" data-tertiary="domain workflows" id="idm45978842579952"></a><a data-type="indexterm" data-primary="technical partitioning" data-secondary="domain workflows" id="idm45978842578736"></a>However, if the architect has imposed additional layers (as in technical partitioning, shown in <a data-type="xref" href="#fig-managing-workflows-tech-domain-part-two">Figure 11-12</a>), it increases the overall implementation complexity because now the architect must design for the <em>semantic</em> complexity along with the additional <em>implementation</em> complexity.</p>
+        
+        <p>Sometimes the extra complexity is warranted. For example, many layered architectures came from a desire by architects to gain cost savings by consolidating on architecture patterns, such as database connection pooling. In that case, an architect considered the trade-offs of the cost saving associated with technically partitioning database connectivity versus the imposed complexity and cost won in many cases.</p>
+        
+        <p>The major lesson of the last decade of architecture design is to model the <em>semantics</em> of the workflow as closely as possible with the implementation.</p>
+        <div data-type="tip"><h6>Tip</h6>
+        <p>An architect can never reduce semantic coupling via 
+        <span class="keep-together">implementation</span>, but they can make it worse.</p>
+        </div>
+        
+        <p>Thus, we can establish a relationship between the semantic coupling and the need for coordination—the more steps required by the workflow, the more potential error and other optional paths appear.<a data-type="indexterm" data-startref="ch11-chor" id="idm45978842571696"></a><a data-type="indexterm" data-startref="ch11-chor2" id="idm45978842570992"></a><a data-type="indexterm" data-startref="ch11-chor3" id="idm45978842570320"></a></p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Workflow State Management"><div class="sect2" id="idm45978842569520">
+        <h2>Workflow State Management</h2>
+        
+        <p>Most workflows include transient state about the status of the workflow: <a data-type="indexterm" data-primary="distributed workflows" data-secondary="choreography" data-tertiary="workflow state management" id="ch11-wsm"></a><a data-type="indexterm" data-primary="state management" data-secondary="workflow state management" id="ch11-wsm2"></a><a data-type="indexterm" data-primary="choreographed coordination" data-secondary="workflow state management" id="ch11-wsm3"></a><a data-type="indexterm" data-primary="coordination of workflow" data-secondary="choreographed coordination" data-tertiary="workflow state management" id="idm45978842563472"></a>what elements have executed, which ones are left, ordering, error conditions, retries, and so on. <a data-type="indexterm" data-primary="distributed workflows" data-secondary="orchestration" data-tertiary="workflow state management" id="idm45978842561968"></a><a data-type="indexterm" data-primary="orchestrated coordination" data-secondary="workflow state management" id="idm45978842560736"></a><a data-type="indexterm" data-primary="coordination of workflow" data-secondary="orchestrated coordination" data-tertiary="workflow state management" id="idm45978842559760"></a>For orchestrated solutions, the obvious workflow state owner is the orchestrator (although some architectural solutions create stateless orchestrators for higher scale). However, for choreography, no obvious owner for workflow state exists. Many common options exist to manage state in choreography; here are three common ones.</p>
+        
+        <p>First, the <em>Front Controller pattern</em>  places the responsibility for state<a data-type="indexterm" data-primary="choreographed coordination" data-secondary="workflow state management" data-tertiary="Front Controller pattern" id="idm45978842557488"></a><a data-type="indexterm" data-primary="Front Controller in choreography" id="idm45978842556176"></a><a data-type="indexterm" data-primary="domain services" data-secondary="Front Controller in choreography" id="idm45978842555488"></a> on the first called service in the chain of responsibility, which in this case is Order Placement Service. If that service contains information about both orders and the state of the workflow, some of the domain services must have a communication link to query and update the order state, as illustrated in <a data-type="xref" href="#fig-managing-workflows-chor-state">Figure 11-13</a>.</p>
+        
+        <figure><div id="fig-managing-workflows-chor-state" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1113.png" alt="illustration of state ownership in choreography" width="600" height="395">
+        <h6><span class="label">Figure 11-13. </span>In choreography, a <em>Front Controller</em> is a domain service that owns 
+        <span class="keep-together">workflow</span> state in addition to domain behavior</h6>
+        </div></figure>
+        
+        <p>In this scenario, some services must communicate back to the Order Placement Service to update the state of the order, as it is the state owner. While this simplifies the workflow, it increases communication overhead and makes the Order Placement Service more complex than one that handled only domain behavior. While the Front Controller pattern has some advantageous characteristics, it also has trade-offs, as shown in <a data-type="xref" href="#total-front-controller">Table 11-2</a>.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978842548096">
+        <h5>Trade-Offs</h5><table id="total-front-controller" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 11-2. </span>Trade-offs for the Front Controller pattern</caption>
+        <thead>
+        <tr>
+        <th>Advantage</th>
+        <th>Disadvantage</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Creates a pseudo-orchestrator within choreography</p></td>
+        <td><p>Adds additional workflow state to a domain service</p></td>
+        </tr>
+        <tr>
+        <td><p>Makes querying the state of an order trivial</p></td>
+        <td><p>Increases communication overhead</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td><p>Detrimental to performance and scale as it increases integration communication chatter</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        
+        <p>A second way for an architect to manage the transactional state is to keep no transient workflow state at all, <a data-type="indexterm" data-primary="choreographed coordination" data-secondary="workflow state management" data-tertiary="stateless choreography" id="idm45978842537872"></a><a data-type="indexterm" data-primary="stateless choreography" id="idm45978842536544"></a>relying on querying the individual services to build a real-time snapshot. This is known as <em>stateless choreography</em>. While this simplifies the state of the first service, it greatly increases network overhead in terms of chatter between services to build a stateful snapshot. For example, consider a workflow like the simple choreography happy path in <a data-type="xref" href="#fig-managing-workflows-simple-choreo">Figure 11-7</a> with no extra state. If a customer wants to know the state of their order, the architect must build a workflow that queries the state of each domain service to determine the most up-to-date order status. While this makes for a highly flexible solution, rebuilding state can be complex and costly in terms of operational architecture characteristics like scalability and performance. Stateless choreography trades high performance for workflow control, as illustrated in <a data-type="xref" href="#total-stateless">Table 11-3</a>.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978842532736">
+        <h5>Trade-Offs</h5><table id="total-stateless" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 11-3. </span>Stateless choreography trade-offs</caption>
+        <thead>
+        <tr>
+        <th>Advantage</th>
+        <th>Disadvantage</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Offers high performance and scale</p></td>
+        <td><p>Workflow state must be built on the fly</p></td>
+        </tr>
+        <tr>
+        <td><p>Extremely decoupled</p></td>
+        <td><p>Complexity rises swiftly with complex workflows</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        
+        <p>A third solution utilizes <em>stamp coupling</em> (described in more detail in <a data-type="xref" href="ch13.html#sec-stamp-coupling">“Stamp Coupling for Workflow Management”</a>), <a data-type="indexterm" data-primary="choreographed coordination" data-secondary="workflow state management" data-tertiary="stamp coupling" id="idm45978842522640"></a><a data-type="indexterm" data-primary="coupling" data-secondary="stamp coupling" data-tertiary="choreography state management" id="idm45978842521312"></a><a data-type="indexterm" data-primary="stamp coupling" data-secondary="choreography state management" id="idm45978842520080"></a>storing extra workflow state in the message contract sent between services. Each domain service updates its part of the overall state and passes that to the next in the chain of responsibility. Thus, any consumer of that contract can check on the status of the workflow without querying each 
+        <span class="keep-together">service</span>.</p>
+        
+        <p>This is a partial solution, as it still does not provide a single place for users to query the state of the ongoing workflow. However, it does provide a way to pass the state between services as part of the workflow, providing each service with additional potentially useful context. As in all features of software architecture, stamp coupling has good and bad characteristics, shown in <a data-type="xref" href="#total-stamp-coupling">Table 11-4</a>.</p>
+        <aside data-type="sidebar" epub:type="sidebar" class="pagebreak-before less_space"><div class="sidebar" id="idm45978842516384">
+        <h5>Trade-Offs</h5><table id="total-stamp-coupling" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 11-4. </span>Stamp coupling trade-offs</caption>
+        <thead>
+        <tr>
+        <th>Advantage</th>
+        <th>Disadvantage</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Allows domain services to pass workflow state without additional queries to a state owner</p></td>
+        <td><p>Contracts must be larger to accommodate workflow state</p></td>
+        </tr>
+        <tr>
+        <td><p>Eliminates need for a front controller</p></td>
+        <td><p>Doesn’t provide just-in-time status queries</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        
+        <p>In <a data-type="xref" href="ch13.html#ch13-contracts">Chapter&nbsp;13</a>, we discuss how contracts can reduce or increase workflow coupling in choreographed solutions.</p>
+        
+        <p>Advantages of the choreography communication style include the following:</p>
+        <dl>
+        <dt>Responsiveness</dt>
+        <dd>
+        <p>This communication style has fewer single choke points, thus offering more opportunities for parallelism.</p>
+        </dd>
+        <dt>Scalability</dt>
+        <dd>
+        <p>Similar to responsiveness, lack of coordination points like orchestrators allows more independent scaling.<a data-type="indexterm" data-primary="scalability" data-secondary="choreography" id="idm45978842502880"></a></p>
+        </dd>
+        <dt>Fault tolerance</dt>
+        <dd>
+        <p>The lack of a single orchestrator allows an architect to enhance fault tolerance with the use of multiple instances.<a data-type="indexterm" data-primary="fault tolerance" data-secondary="choreography" id="idm45978842500496"></a></p>
+        </dd>
+        <dt>Service decoupling</dt>
+        <dd>
+        <p>No orchestrator means less coupling.</p>
+        </dd>
+        </dl>
+        
+        <p>Disadvantages of the choreography communication style include the following:</p>
+        <dl>
+        <dt>Distributed workflow</dt>
+        <dd>
+        <p>No workflow owner makes error management and other boundary conditions more difficult.</p>
+        </dd>
+        <dt>State management</dt>
+        <dd>
+        <p>No centralized state holder hinders ongoing state management.</p>
+        </dd>
+        <dt>Error handling</dt>
+        <dd>
+        <p>Error handling becomes more difficult without an orchestrator because the domain services must have more workflow knowledge.</p>
+        </dd>
+        <dt>Recoverability</dt>
+        <dd>
+        <p>Similarly, recoverability becomes more difficult without an orchestrator to attempt retries and other remediation efforts.</p>
+        </dd>
+        </dl>
+        
+        <p>Like <a data-type="xref" href="#sec-orchestrator">“Orchestration Communication Style”</a>, choreography has a number of good and bad trade-offs, often opposites, summarized in <a data-type="xref" href="#total-choreography">Table 11-5</a>.<a data-type="indexterm" data-startref="ch11-wsm" id="idm45978842489456"></a><a data-type="indexterm" data-startref="ch11-wsm2" id="idm45978842488752"></a><a data-type="indexterm" data-startref="ch11-wsm3" id="idm45978842488080"></a></p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978842487280">
+        <h5>Trade-Offs</h5><table id="total-choreography" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 11-5. </span>Trade-offs for the choreography communication style</caption>
+        <thead>
+        <tr>
+        <th>Advantage</th>
+        <th>Disadvantage</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Responsiveness</p></td>
+        <td><p>Distributed workflow</p></td>
+        </tr>
+        <tr>
+        <td><p>Scalability</p></td>
+        <td><p>State management</p></td>
+        </tr>
+        <tr>
+        <td><p>Fault tolerance</p></td>
+        <td><p>Error handling</p></td>
+        </tr>
+        <tr>
+        <td><p>Service decoupling</p></td>
+        <td><p>Recoverability</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Trade-Offs Between Orchestration and Choreography"><div class="sect1" id="idm45978842627264">
+        <h1>Trade-Offs Between Orchestration and Choreography</h1>
+        
+        <p>As with all things in software architecture, neither orchestration nor choreography<a data-type="indexterm" data-primary="distributed workflows" data-secondary="about trade-offs" id="idm45978842474576"></a><a data-type="indexterm" data-primary="choreographed coordination" data-secondary="about orchestrated versus" data-tertiary="trade-offs" id="idm45978842473600"></a><a data-type="indexterm" data-primary="orchestrated coordination" data-secondary="about choreographed versus" data-tertiary="trade-offs" id="idm45978842472448"></a><a data-type="indexterm" data-primary="coordination of workflow" data-secondary="about trade-offs" id="idm45978842471200"></a><a data-type="indexterm" data-primary="trade-off analysis" data-secondary="coordination" id="idm45978842470240"></a> represent the perfect solution for all possibilities. A number of key trade-offs, including some delineated here, will lead an architect toward one of these two solutions.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="State Owner and Coupling"><div class="sect2" id="sec-state-owner">
+        <h2>State Owner and Coupling</h2>
+        
+        <p>As illustrated in <a data-type="xref" href="#fig-managing-workflows-chor-state">Figure 11-13</a>, state ownership typically resides somewhere, either in a formal mediator acting as an orchestrator, or a front controller in a choreographed solution. In the choreographed solution, removing the mediator forces higher levels of communication between services. This might be a perfectly suitable trade-off. For example, if an architect has a workflow that needs higher scale and typically has few error conditions, it might be worth trading the higher scale of choreography with the complexity of error handling.</p>
+        
+        <p>However, as workflow complexity goes up, the need for an orchestrator rises proportionally, as illustrated in <a data-type="xref" href="#fig-managing-workflows-complexity-orch">Figure 11-14</a>.</p>
+        
+        <p>In addition, the more semantic complexity contained in a workflow, the more utilitarian an orchestrator is. Remember, implementation coupling can’t make semantic coupling better, only worse.</p>
+        
+        <p class="pagebreak-before">Ultimately, the sweet spot for choreography lies with workflows that need responsiveness and scalability, and either don’t have complex error scenarios or they are infrequent. This communication style allows for high throughput; it is used by the dynamic coupling patterns <a data-type="xref" href="ch12.html#sec-phone-tag-saga">“Phone Tag Saga<sup>(sac)</sup> Pattern”</a>, <a data-type="xref" href="ch12.html#sec-time-travel-saga">“Time Travel Saga<sup>(sec)</sup> Pattern”</a>, and <a data-type="xref" href="ch12.html#sec-anthology-saga">“Anthology Saga<sup>(aec)</sup> Pattern”</a>. However, it can also lead to extremely difficult implementations when other forces are mixed in, leading to the <a data-type="xref" href="ch12.html#sec-horror-story">“Horror Story<sup>(aac)</sup> Pattern”</a>.</p>
+        
+        <figure><div id="fig-managing-workflows-complexity-orch" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1114.png" alt="relationship between semantic workflow complexity and usefulness of orchestration" width="600" height="538">
+        <h6><span class="label">Figure 11-14. </span>As the complexity of the workflow rises, orchestration becomes more useful</h6>
+        </div></figure>
+        
+        <p>On the other hand, <em>orchestration</em> is best suited for complex workflows that include boundary and error conditions. While this style doesn’t provide as much scale as choreography, it greatly reduces complexity in most cases. This communication style appears in <a data-type="xref" href="ch12.html#sec-epic-saga">“Epic Saga<sup>(sao)</sup> Pattern”</a>, <a data-type="xref" href="ch12.html#sec-fairy-tale-saga">“Fairy Tale Saga<sup>(seo)</sup> Pattern”</a>, <a data-type="xref" href="ch12.html#sec-fantasy-fiction-saga">“Fantasy Fiction Saga<sup>(aao)</sup> Pattern”</a>, and <a data-type="xref" href="ch12.html#sec-parallel-saga">“Parallel Saga<sup>(aeo)</sup> Pattern”</a>.</p>
+        
+        <p><em>Coordination</em> is one of the primary forces that create complexity for architects when determining how to best communicate between microservices. Next, we investigate how this force intersects with another primary force, <em>consistency</em>.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" class="pagebreak-before less_space" data-pdf-bookmark="Sysops Squad Saga: Managing Workflows"><div class="sect1" id="idm45978842451776">
+        <h1>Sysops Squad Saga: Managing Workflows</h1>
+        
+        <p><code>Thursday, March 15, 11:00</code></p>
+        <div class="story">
+        
+        <p>Addison and Austen arrived at Logan’s office right on time, armed with a presentation and ritual coffee urn from the kitchen.<a data-type="indexterm" data-primary="distributed workflows" data-secondary="Sysops Squad saga" id="ch11-ssdwe"></a><a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="distributed workflows" id="ch11-ssdwe2"></a><a data-type="indexterm" data-primary="coordination of workflow" data-secondary="Sysops Squad saga" id="ch11-ssdwe3"></a></p>
+        
+        <p>“Are you ready for us?” asked Addison.</p>
+        
+        <p>“Sure,” said Logan. “Good timing—just got off a conference call. Are y’all ready to talk about workflow options for the primary ticket flow?”</p>
+        
+        <p>“Yes!” said Austen. “I think we should use choreography, but Addison thinks orchestration, and we can’t decide.”</p>
+        
+        <p>“Give me an overview of the workflow we’re looking at.”</p>
+        
+        <p>“It’s the primary ticket workflow,” said Addison. “It involves four services; here are the steps.”</p>
+        
+        <p><em>Customer-facing operations</em></p>
+        <ol>
+        <li>
+        <p>Customer submits a trouble ticket through the Ticket Management Service and receives a ticket number.</p>
+        </li>
+        
+        </ol>
+        
+        <p><em>Background operations</em></p>
+        <ol>
+        <li>
+        <p>The Ticket Assignment Service finds the right Sysops expert for the trouble ticket.</p>
+        </li>
+        <li>
+        <p>The Ticket Assignment Service routes the trouble ticket to the systems expert’s mobile device.</p>
+        </li>
+        <li>
+        <p>The customer is notified via the Notification Service that the Sysops expert is on their way to fix the problem.</p>
+        </li>
+        <li>
+        <p>The expert fixes the problem and marks the ticket as complete, which is sent to the Ticket Management Service.</p>
+        </li>
+        <li>
+        <p>The Ticket Management Service communicates with the Survey Service to tell the customer to fill out the survey.</p>
+        </li>
+        
+        </ol>
+        
+        <p>“Have you modeled both solutions?” asked Logan.</p>
+        
+        <p>“Yes. The drawing for choreography is in <a data-type="xref" href="#fig-managing-workflows-ss-choreography">Figure 11-15</a>.”</p>
+        
+        <figure><div id="fig-managing-workflows-ss-choreography" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1115.png" alt="Primary ticket flow modeled as choreography" width="600" height="400">
+        <h6><span class="label">Figure 11-15. </span>Primary ticket flow modeled as choreography</h6>
+        </div></figure>
+        
+        <p>“…and the model for orchestration is in <a data-type="xref" href="#fig-managing-workflows-ss-orch">Figure 11-16</a>.”</p>
+        
+        <figure><div id="fig-managing-workflows-ss-orch" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_1116.png" alt="Primary ticket workflow modeled as orchestration" width="600" height="340">
+        <h6><span class="label">Figure 11-16. </span>Primary ticket workflow modeled as orchestration</h6>
+        </div></figure>
+        
+        <p class="pagebreak-before">Logan pondered the diagrams for a moment, then pronounced, “Well, there doesn’t seem to be an obvious winner here. You know what that means.”</p>
+        
+        <p>Austen piped up, “Trade-offs!”</p>
+        
+        <p>“Of course,” laughed Logan. " Let’s think about the likely scenarios and see how each solution reacts to them. What are the primary issues you are concerned with?”</p>
+        
+        <p>“The first is lost or misrouted tickets. The business has been complaining about it, and it has become a priority,” said Addison.</p>
+        
+        <p>“OK, which handles that problem better—orchestration or choreography?”</p>
+        
+        <p>“Easier control of the workflow sounds like the orchestrator version is better—we can handle all the workflow issues there,” volunteered Austen.</p>
+        
+        <p>“OK, let’s build a table of issues and preferred solutions in <a data-type="xref" href="#tbl-ss-wf-one">Table 11-6</a>.”</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978842421744">
+        <h5>Trade-Offs</h5><table id="tbl-ss-wf-one" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 11-6. </span>Trade-off between orchestration and choreography for ticket workflow</caption>
+        <thead>
+        <tr>
+        <th>Orchestration</th>
+        <th>Choreography</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Workflow control</p></td>
+        <td></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        
+        <p>“What’s the next issue we should model?” Addison asked.</p>
+        
+        <p>“We need to know the status of a trouble ticket at any given moment—the business has requested this feature, and it makes it easier to track several metrics. That implies we need an orchestrator so that we can query the state of the workflow.”</p>
+        
+        <p>“But you don’t have to have an orchestrator for that—we can query any given service to see if it has handled a particular part of the workflow, or use stamp coupling,” said Addison.</p>
+        
+        <p>“That’s right—this isn’t a zero-sum game,” said Logan. “It’s possible that both or neither work just as well. We’ll give both solutions credit in our updated table in <a data-type="xref" href="#tbl-ss-wf-two">Table 11-7</a>.”</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978842411696">
+        <h5>Trade-Offs</h5><table id="tbl-ss-wf-two" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 11-7. </span>Updated trade-offs between orchestration and choreography for ticket workflow</caption>
+        <thead>
+        <tr>
+        <th>Orchestration</th>
+        <th>Choreography</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Workflow control</p></td>
+        <td></td>
+        </tr>
+        <tr>
+        <td><p>State query</p></td>
+        <td><p>State query</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        
+        <p>“OK, what else?”</p>
+        
+        <p>“Just one more that I can think of,” Addison said. “Tickets can get canceled by the customer, and tickets can get reassigned because of expert availability, lost connections to the expert’s mobile device, or expert delays at a customer site. Therefore, proper error handling is important. That means orchestration?”</p>
+        
+        <p>“Yes, generally. Complex workflows must go somewhere, either in an orchestrator or scattered through services. It’s nice to have a single place to consolidate error handling. And choreography definitely does not score well here, so we’ll update our table in <a data-type="xref" href="#tbl-ss-wf-three">Table 11-8</a>.”</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45978842401360">
+        <h5>Trade-Offs</h5><table id="tbl-ss-wf-three" class="tradeoff" style="width: 90%">
+        <caption><span class="label">Table 11-8. </span>Final trade-offs  between orchestration and choreography for ticket workflow</caption>
+        <thead>
+        <tr>
+        <th>Orchestration</th>
+        <th>Choreography</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Workflow control</p></td>
+        <td></td>
+        </tr>
+        <tr>
+        <td><p>State query</p></td>
+        <td><p>State query</p></td>
+        </tr>
+        <tr>
+        <td><p>Error handling</p></td>
+        <td></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></aside>
+        
+        <p>“That looks pretty good. Any more?”</p>
+        
+        <p>“Nothing that’s not obvious,” said Addison. “We’ll write this up in an ADR; in case we think of any other issues, we can add them there.”</p>
+        <blockquote>
+        <p class="adr pagebreak-before" id="adr_primary"><em>ADR: Use Orchestration for Primary Ticket Workflow</em></p>
+        
+        <p><em>Context</em><br>
+        For the primary ticket workflow, the architecture must support easy tracking of lost or mistracked messages, excellent error handling, and the ability to track ticket status. Either an orchestration solution illustrated in <a data-type="xref" href="#fig-managing-workflows-ss-orch">Figure 11-16</a> or a choreography solution illustrated in <a data-type="xref" href="#fig-managing-workflows-ss-choreography">Figure 11-15</a> will work.</p>
+        
+        <p><em>Decision</em><br>
+        We will use orchestration for the primary ticketing workflow.</p>
+        
+        <p>We modeled orchestration and choreography and arrived at the trade-offs in <a data-type="xref" href="#tbl-ss-wf-three">Table 11-8</a>.</p>
+        
+        <p><em>Consequences</em><br>
+        Ticketing workflow might have scalability issues around a single orchestrator, which should be reconsidered if current scalability requirements change.<a data-type="indexterm" data-startref="ch11-ssdwe" id="idm45978842383856"></a><a data-type="indexterm" data-startref="ch11-ssdwe2" id="idm45978842383184"></a><a data-type="indexterm" data-startref="ch11-ssdwe3" id="idm45978842382512"></a></p></blockquote>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        </div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492086888/files/epub.css" crossorigin="anonymous"><script src="https://learning.oreilly.comhttps://cdn.jsdelivr.net/npm/mathjax@3/es5/mml-svg.js"></script></div></div></section>
+</div>
+
+https://learning.oreilly.com

@@ -1,0 +1,97 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div data-type="part" epub:type="part" data-pdf-bookmark="Part I. Single-Node Patterns" id="part01">
+        <h1><span class="label">Part I. </span>Single-Node Patterns</h1>
+        
+        <div class="partintro">
+        <p><a data-type="indexterm" data-primary="container patterns, single-node" id="ix_ch02-asciidoc0"></a><a data-type="indexterm" data-primary="single-node container patterns" id="ix_ch02-asciidoc1"></a><a data-type="indexterm" data-primary="single-node patterns" data-secondary="container patterns" id="ix_ch02-asciidoc2"></a>This book concerns itself with <a data-type="indexterm" data-primary="distributed systems (generally)" data-secondary="defined" id="idm139824744807744"></a>distributed systems, which are applications made up of many different components running on many different machines. However, the first section of this book is devoted to patterns that exist on a single node. The motivation for this is straightforward. Containers are the foundational building block for the patterns in this book, but in the end, groups of containers co-located on a single machine make up the atomic elements of distributed system patterns.</p>
+        </div>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Motivations"><div class="sect1" id="idm139824744805872">
+        <h1>Motivations</h1>
+        
+        <p><a data-type="indexterm" data-primary="single-node container patterns" data-secondary="reasons for using" id="ix_ch02-asciidoc3"></a>Though it is clear as to why you might want to break your distributed application into a collection of different containers running on different machines, it is perhaps somewhat less clear as to why you might also want to break up the components running on a single machine into different containers.  To understand the motivation for these groups of containers, it is worth considering the goals behind containerization.
+        <a data-type="indexterm" data-primary="boundaries" id="idm139824744802640"></a><a data-type="indexterm" data-primary="containerization, goals of" id="idm139824744801968"></a>In general, the goal of a container is to establish boundaries around specific resources (e.g., this application needs two cores and 8 GB of memory). Likewise, the boundary delineates team ownership (e.g., this team owns this image). Finally, the boundary is intended to provide separation of concerns (e.g., this image does this one thing).</p>
+        
+        <p>All of these reasons provide motivation for splitting up an application on a single machine into a group of containers.
+        <a data-type="indexterm" data-primary="resource isolation" id="idm139824744800272"></a>Consider resource isolation first. Your application may be made up of two components: one is a user-facing application server and the other is a background configuration file loader. <a data-type="indexterm" data-primary="latency" data-secondary="containerization" id="idm139824744799248"></a>Clearly, end-user-facing request latency is the highest priority, so the user-facing application needs to have sufficient resources to ensure that it is highly responsive. On the other hand, the background configuration loader is mostly a best-effort service; if it is delayed slightly during times of high user-request volume, the system will be okay. Likewise, the background configuration loader should not impact the quality of service that end users receive. For all of these reasons, you want to separate the user-facing service and the background shard loader into different containers. This allows you to attach different resource requirements and priorities to the two different containers and, for example, ensure that the background loader opportunistically steals cycles from the user-facing service whenever it is lightly loaded and the cycles are free. Likewise, separate resource requirements for the two containers ensure that the background loader will be terminated before the user-facing service if there is a resource contention issue caused by a memory leak or other overcommitment of memory resources.</p>
+        
+        <p>In addition to this resource isolation, there are other reasons to split your single-node application into multiple containers. <a data-type="indexterm" data-primary="scaling" data-secondary="teams" id="idm139824744445504"></a><a data-type="indexterm" data-primary="team scaling" id="idm139824744444528"></a>Consider the task of scaling a team. There is good reason to believe that the ideal team size is six to eight people. In order to structure teams in this manner and yet still build significant systems, we need to have small, focused pieces for each team to own. Additionally, often some of the components, if factored properly, are reusable modules that can be used by many teams. Consider, for example, the task of keeping a local filesystem synchronized with a git source code repository. If you build this Git sync tool as a separate container, you can reuse it with PHP, HTML, JavaScript, Python, and numerous other web-serving environments. If you instead factor each environment as a single container where, for example, the Python runtime and the Git synchronization are inextricably bound, then this sort of modular reuse (and the corresponding small team that owns that reusable module) are impossible.</p>
+        
+        <p><a data-type="indexterm" data-primary="separation of concerns" data-secondary="containerization" id="idm139824744442544"></a>Finally, even if your application is small and all of your containers are owned by a single team, the separation of concerns ensures that your application is well understood and can easily be tested, updated, and deployed. Small, focused applications are easier to understand and have fewer couplings to other systems. This means, for example, that you can deploy the Git synchronization container without having to also redeploy your application server. This leads to rollouts with fewer dependencies and smaller scope. That, in turn, leads to more reliable rollouts (and rollbacks), which leads to greater agility and flexibility when deploying your application.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Summary"><div class="sect1" id="idm139824744440624">
+        <h1>Summary</h1>
+        
+        <p>I hope that all of these examples have motivated you to think about breaking up your applications, even those on a single node, into multiple containers. The following chapters describe some patterns that can help guide you as you build modular groups of containers. In contrast to multi-node, distributed patterns, all of these patterns assume tight dependencies among all of the containers in the pattern. In particular, they assume that all of the containers in the pattern can be reliably coscheduled onto a single machine. They also assume that all of the containers in the pattern can optionally share volumes or parts of their filesystems as well as other key container resources like network namespaces and shared memory. <a data-type="indexterm" data-primary="pod" id="idm139824744438352"></a>This tight grouping is called a <em>pod</em> in Kubernetes,<sup><a data-type="noteref" id="idm139824744437136-marker" href="part01.html#idm139824744437136">1</a></sup> but the concept is generally applicable to different container orchestrators, though some support it more natively than others<a data-type="indexterm" data-startref="ix_ch02-asciidoc3" id="idm139824744434352"></a>.<a data-type="indexterm" data-startref="ix_ch02-asciidoc2" id="idm139824744433584"></a><a data-type="indexterm" data-startref="ix_ch02-asciidoc1" id="idm139824744432880"></a><a data-type="indexterm" data-startref="ix_ch02-asciidoc0" id="idm139824744432208"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        <div data-type="footnotes"><p data-type="footnote" id="idm139824744437136"><sup><a href="part01.html#idm139824744437136-marker">1</a></sup> <a href="https://kubernetes.io/">Kubernetes</a> is an open source system for automating deployment, scaling, and management of containerized applications. Check out my book, <a class="orm:hideurl" href="http://shop.oreilly.com/product/0636920043874.do"><em>Kubernetes: Up and Running</em></a> (O’Reilly).</p></div></div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781491983638/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

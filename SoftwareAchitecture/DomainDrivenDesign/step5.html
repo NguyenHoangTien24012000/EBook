@@ -1,0 +1,336 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 5. Business Logic Implementation Patterns"><div class="chapter" id="business_logic_implementation_patterns">
+        <h1><span class="label">Chapter 5. </span>Business Logic <span class="keep-together">Implementation Patterns</span></h1>
+        <p>Business logic is the most important part of software. It’s the reason the software is being implemented in the first place. A system’s user interface can be sexy, and its database can be blazingly fast and scalable, but if the software is not useful for the business it’s nothing but a technology demo.</p>
+        <p>In the first part of this report, we saw how important it is for all stakeholders to communicate in the ubiquitous language and to have a shared understanding of the problem domain. The system’s source code should also “speak” the ubiquitous language, and be designed according to the shared model of the business domain. But how do we implement it in such a way?</p>
+        <p>As we saw in <a data-type="xref" href="ch02.html#discovering_domain_knowledge">Chapter&nbsp;2</a>, not all business subdomains are created equal. Different subdomains have different levels of strategic importance and complexity. In this chapter, we will examine four different ways of implementing business logic in code: the transaction script, active record, domain model, and event-sourced domain model patterns. Each pattern suits a different level of complexity in the business domain.</p>
+        <section data-type="sect1" data-pdf-bookmark="Transaction Script"><div class="sect1" id="transaction_script">
+          <h1>Transaction Script</h1>
+          <p>This pattern is well adapted to the simplest problem domains, where the business logic resembles extract-transform-load (ETL) <span class="keep-together">operations</span>—i.e., each operation extracts data from a source, applies transformation logic to convert it into another form, and loads the result into the destination store. This process is shown in <a data-type="xref" href="#fig_16_extract_transform_load_data_flow">Figure&nbsp;5-1</a>.</p>
+          <figure><div id="fig_16_extract_transform_load_data_flow" class="figure">
+            <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492057802/files/assets/widd_0501.png" alt="Extract transform load data flow" width="780" height="188">
+            <h6><span class="label">Figure 5-1. </span>Extract-transform-load data flow</h6>
+          </div></figure>
+          <p>The implementation of this pattern is accordingly simple. It organizes the business logic by procedures, where each procedure implements a request from the system’s public interface.</p>
+          <p>Each procedure is implemented as a simple, straightforward procedural script. It can use a thin abstraction layer for integrating with storage mechanisms, but it is also free to access the databases directly.</p>
+          <p>The only requirement procedures have to fulfill is the transactional behavior. Each operation should either succeed or fail, but can never be in an in-between state. If a process fails for some reason, the system should remain in a consistent state—hence the pattern’s name, <em>transaction script</em>.</p>
+          <p>Here is an example of a transaction script that converts batches of JSON files into XML files:</p>
+          <div data-type="example">
+            <pre data-type="programlisting">DB.StartTransaction();
+            
+  var job = DB.LoadNextJob();
+  var json = LoadFile(source);
+  var xml = ConvertJsonToXml(json);
+  WriteFile(destination, xml.ToString();
+  DB.MarkJobAsCompleted(job);
+  
+  DB.Commit()</pre>
+          </div>
+          <p>The transaction script pattern naturally fits supporting subdomains where, by definition, the business logic is simple. This pattern should never be used for core subdomains, as it won’t cope with the business logic’s complexity.</p>
+        </div></section>
+        <section data-type="sect1" data-pdf-bookmark="Active Record"><div class="sect1" id="active_record">
+          <h1>Active Record</h1>
+          <p>Like the previous pattern, this one supports cases where the business logic is simple. Here, however, the business logic may operate on more complex data structures. For example, instead of flat records we can have more complicated object trees and hierarchies, as shown in <a data-type="xref" href="#fig_17_a_more_complicated_data_model">Figure&nbsp;5-2</a>.</p>
+          <figure><div id="fig_17_a_more_complicated_data_model" class="figure">
+            <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492057802/files/assets/widd_0502.png" alt="A more complicated data model" width="869" height="384">
+            <h6><span class="label">Figure 5-2. </span>A more complicated data model</h6>
+          </div></figure>
+          <p>Operating on such data structures via a plain transaction script would result in lots of repetitive code. The mapping of the data to an in-memory representation would be duplicated all over. </p>
+          <p>Consequently, this pattern uses dedicated objects to represent complicated data structures: <em>active records</em>. Apart from the data structure, these objects also implement data access methods for creating, reading, updating, and deleting records—the so-called <em>CRUD</em> operations. As a result, the active record objects are dependent on an <em>object-relational mapping</em> (ORM) or some other data access framework. The name of the pattern is derived from the fact that each data structure is “active”; i.e., it implements data access logic.</p>
+          <p>As in the case of the transaction script pattern, the system’s business logic is organized in procedures. The difference between the two patterns is that in this case, instead of accessing the database directly the procedures are manipulating the active record objects:</p>
+          <div data-type="example">
+  <pre data-type="programlisting">public class CreateUser {
+   public void Execute(userDetails) {
+    try {
+      DB.StartTransaction();
+  
+      var user = new User();
+    user.Name = userDetails.Name;
+      user.Email = userDetails.Email;
+      user.Save();
+  
+    DB.Commit();
+      } catch {
+        DB.Rollback();
+    throw;
+        }
+      }
+    }</pre>
+          </div>
+          <p>This pattern can only support relatively simple business logic—CRUD operations, at most validating the user’s input. Hence, the active record pattern lends itself to supporting subdomains.</p>
+        </div></section>
+        <section data-type="sect1" data-pdf-bookmark="Domain Model"><div class="sect1" id="domain_model">
+          <h1>Domain Model</h1>
+          <p>The domain model pattern is intended to cope with cases of complex business logic. Here, instead of CRUD interfaces, we are dealing with complicated business rules and invariants that have to be <span class="keep-together">protected.</span></p>
+          <p>Like the transaction script and active record patterns, the domain model pattern was introduced in Martin Fowler’s book <a class="orm:hideurl" href="https://learning.oreilly.com/library/view/patterns-of-enterprise/0321127420/"><em>Patterns of Enterprise Application Architecture</em></a> (Addison-Wesley). However, the implementation of the pattern was only elaborately described a year later, by Eric Evans in his book <a class="orm:hideurl" href="https://learning.oreilly.com/library/view/domain-driven-design-tackling/0321125215/"><em>Domain-Driven Design: Tackling Complexity in the Heart of Software</em></a> (Addison-Wesley), as a tool for implementing core subdomains.<sup><a data-type="noteref" id="idm46528345678264-marker" href="ch05.html#idm46528345678264">1</a></sup> </p>
+          <section data-type="sect2" data-pdf-bookmark="Implementation"><div class="sect2" id="implementation_1">
+            <h2>Implementation</h2>
+            <p>As defined by Martin Fowler, a domain model is an object model of the domain that incorporates both behavior and data. DDD’s tactical patterns are the building blocks of such an object model: aggregates, value objects, domain events, etc.</p>
+            <p>All these patterns share a common theme: putting the business logic first. Let’s see the ways the domain model addresses different design concerns.</p>
+            <section data-type="sect3" data-pdf-bookmark="Complexity"><div class="sect3" id="complexity">
+              <h3>Complexity</h3>
+              <p>The domain’s business logic is already inherently complex, so the objects modeling it should not introduce any additional accidental complexities. The model should be devoid of any infrastructural or technological concerns. This restriction requires the model’s objects to be “plain old objects.”<sup><a data-type="noteref" id="idm46528345672104-marker" href="ch05.html#idm46528345672104">2</a></sup></p>
+            </div></section>
+            <section data-type="sect3" data-pdf-bookmark="Ubiquitous language"><div class="sect3" id="ubiquitous_language_5">
+              <h3>Ubiquitous language</h3>
+              <p>The emphasis on business logic instead of technical concerns makes it easier for the domain model’s objects to follow the terminology of the bounded context’s ubiquitous language. In other words, this pattern allows the code to “speak” the ubiquitous language and to follow the domain experts’ mental models. </p>
+            </div></section>
+          </div></section>
+          <section data-type="sect2" data-pdf-bookmark="Building Blocks"><div class="sect2" id="building_blocks">
+            <h2>Building Blocks</h2>
+            <p>Let’s look at two of the domain model building blocks (tactical patterns) offered by DDD: value objects and aggregates.</p>
+            <section data-type="sect3" data-pdf-bookmark="Value object"><div class="sect3" id="value_object">
+              <h3>Value object</h3>
+              <p>A value object is an object that can be identified by its values. An example of such an object is:</p>
+              <div data-type="example">
+  <pre data-type="programlisting">class Color {
+    int red;
+    int green;
+    int blue
+  }</pre>
+              </div>
+              <p>Changing the value of one of the fields will result in a new color. No two different colors can have the same values. Also, two instances of the same color must have the same values. Therefore, no explicit identification field is needed to identify colors. </p>
+              <section data-type="sect4" data-pdf-bookmark="Implementation"><div class="sect4" id="implementation_2">
+                <h4>Implementation</h4>
+                <p>Since a change to any of the fields of a value object results in a different value, value objects are implemented as immutable objects.</p>
+                <p>When an executed action results in a new value, it doesn’t modify the original instance, but instantiates and returns a new one:</p>
+                <div data-type="example">
+  <pre data-type="programlisting">class Color {
+   Color mixWith(Color other) 
+      ...
+      return new Color(...);
+    }
+  }</pre>
+                </div>
+                <p>A trivial example of a value object is the String object in Java and .NET stacks. It’s immutable, and all its operations result in a new instance of a string.</p>
+              </div></section>
+            </div></section>
+            <section data-type="sect3" data-pdf-bookmark="Aggregate"><div class="sect3" id="aggregate_idxnLBxd">
+              <h3>Aggregate</h3>
+              <p>An aggregate is an <em>entity</em> representing a hierarchy of objects. Contrary to a value object, an entity cannot be identified solely by its value. This means each aggregate requires an ID field to be <span class="keep-together">identified.</span></p>
+              <p>As an example, consider two people who share the same name. That doesn’t make them the same person. Therefore, we need a dedicated ID field to identify people:</p>
+              <div data-type="example">
+  <pre data-type="programlisting">class Person {
+    Guid Id;
+    String FirstName;
+    String LastName;
+  } </pre>
+              </div>
+              <p>Also contrary to value objects, the inability to identify aggregates by their values makes their state <em>mutable</em>. Let’s examine the implications of this, and some other properties of aggregates.</p>
+              <section data-type="sect4" data-pdf-bookmark="Consistency"><div class="sect4" id="consistency_5">
+                <h4>Consistency</h4>
+                <p>Since an aggregate can be mutated over time, it’s crucial to protect the consistency of its state. To enforce consistency, the aggregate pattern draws a clear boundary between the aggregate and its outer scope. Only the aggregate’s business logic is allowed to modify its state. All processes or objects external to the aggregate are only allowed to read its state or execute its public methods.</p>
+                <p>The aggregate’s public methods are responsible for validating the input and enforcing all business rules and invariants. This strict boundary also ensures that all business logic related to the aggregate is implemented in one place—the aggregate itself.</p>
+                <p>Some objects have to be changed together.</p>
+                <div data-type="note" epub:type="note"><h6>Note</h6>
+                  <p>The goal of the aggregate pattern is to protect the consistency of its state. All objects within the aggregate’s boundary can be modified only by the aggregate itself. No external process or layer can fiddle with the aggregate’s values directly, but only through its public <span class="keep-together">interface.</span></p>
+                </div>
+              </div></section>
+              <section data-type="sect4" data-pdf-bookmark="Transaction boundary"><div class="sect4" id="transaction_boundary">
+                <h4>Transaction boundary</h4>
+                <p>Since aggregates’ state can only be modified by their own business logic, the aggregate boundary also acts as a transactional boundary. All changes to the aggregate’s state should be committed transactionally as one atomic operation. Moreover, no system operation can assume a multiaggregate transaction. A change to an aggregate’s state can only be committed individually—one aggregate per physical transaction.</p>
+                <p>This seems to impose a modeling limitation. What if we need to modify multiple aggregates in the same transaction? Let’s see how the pattern addresses such situations.</p>
+              </div></section>
+              <section data-type="sect4" data-pdf-bookmark="Hierarchy of objects"><div class="sect4" id="hierarchy_of_objects">
+                <h4>Hierarchy of objects</h4>
+                <p>There are business scenarios where multiple objects should share a transactional boundary—for example, when both can be modified simultaneously, or the business rules of one object depend on the state of another.</p>
+                <p>DDD prescribes that a system’s design should be driven by its business domain. Aggregates are no exception.</p>
+                <p>An aggregate is not a flat record. Rather, it’s a document—a hierarchy of related objects, as shown in <a data-type="xref" href="#fig_18_aggregate_as_hierarchy_of_objects">Figure&nbsp;5-3</a>.</p>
+                <figure><div id="fig_18_aggregate_as_hierarchy_of_objects" class="figure">
+                  <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492057802/files/assets/widd_0503.png" alt="Aggregate as hierarchy of objects" width="891" height="388">
+                  <h6><span class="label">Figure 5-3. </span>Aggregate as hierarchy of objects</h6>
+                </div></figure>
+                <p>A hierarchy of objects—other aggregates and value objects—can belong to the same aggregate, if they are bound by the domain’s business logic.</p>
+                <p>That’s why the pattern is so named: it aggregates business entities and value objects in the same transaction boundary.</p>
+              </div></section>
+              <section data-type="sect4" data-pdf-bookmark="Referencing other aggregates"><div class="sect4" id="referencing_other_aggregates">
+                <h4>Referencing other aggregates</h4>
+                <p>Since all objects contained by an aggregate share the same transactional boundary, performance and scalability issues may arise if an aggregate grows too big.</p>
+                <p>The consistency of the data can be a convenient heuristic for designing aggregates’ boundaries. Only the information that is required to be strongly consistent to implement the aggregate’s business logic should reside within its boundaries. Objects that can be eventually consistent should not belong to the aggregate and can be referenced by their ID, as shown in <a data-type="xref" href="#fig_19_aggregate_as_consistency_boundary">Figure&nbsp;5-4</a>.</p>
+                <figure><div id="fig_19_aggregate_as_consistency_boundary" class="figure">
+                  <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492057802/files/assets/widd_0504.png" alt="Aggregate as consistency boundary" width="1199" height="447">
+                  <h6><span class="label">Figure 5-4. </span>Aggregate as consistency boundary</h6>
+                </div></figure>
+                <p>The rule of thumb is to keep the aggregates as small as possible, and include only objects that are required to be in a strongly consistent state by the business domain.</p>
+              </div></section>
+              <section data-type="sect4" data-pdf-bookmark="The aggregate root"><div class="sect4" id="the_aggregate_root">
+                <h4>The aggregate root</h4>
+                <p>We saw earlier that an aggregate’s state can only be modified by executing one of its public methods. Since an aggregate represents a hierarchy of objects, only one of them should be designated as the aggregate’s public interface—the aggregate root, as shown in <a data-type="xref" href="#fig_20_aggregate_root">Figure&nbsp;5-5</a>.</p>
+                <figure><div id="fig_20_aggregate_root" class="figure">
+                  <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492057802/files/assets/widd_0505.png" alt="Aggregate root" width="1355" height="429">
+                  <h6><span class="label">Figure 5-5. </span>Aggregate root</h6>
+                </div></figure>
+                <p>In addition to the aggregate root, there is another mechanism for the outer world to communicate with aggregates—domain events.</p>
+              </div></section>
+              <section data-type="sect4" data-pdf-bookmark="Domain events"><div class="sect4" id="domain_events_5">
+                <h4>Domain events</h4>
+                <p>A domain event is a message describing a significant event that has occurred in the business domain. For example:</p>
+                <ul>
+                  <li>
+                    <p>Order paid</p>
+                  </li>
+                  <li>
+                    <p>Stock replenished</p>
+                  </li>
+                  <li>
+                    <p>Advertising campaign published</p>
+                  </li>
+                </ul>
+                <p>Since domain events are describing something that has already happened, their names should be formulated in the past tense.</p>
+                <p>Domain events are a part of an aggregate’s public interface. An aggregate publishes its domain events. Other processes, aggregates, or even external systems can subscribe to and execute their own logic in response to the domain events, as shown in <a data-type="xref" href="#fig_21_domain_events_publishing_flow">Figure&nbsp;5-6</a>.</p>
+                <figure><div id="fig_21_domain_events_publishing_flow" class="figure">
+                  <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492057802/files/assets/widd_0506.png" alt="Domain events publishing flow" width="824" height="301">
+                  <h6><span class="label">Figure 5-6. </span>Domain events publishing flow</h6>
+                </div></figure>
+              </div></section>
+            </div></section>
+          </div></section>
+          <section data-type="sect2" data-pdf-bookmark="Other Building Blocks"><div class="sect2" id="other_building_blocks">
+            <h2>Other Building Blocks</h2>
+            <p>Aggregates and value objects are only two of the tactical patterns offered by domain-driven design. Other available patterns include the domain service, repository, saga, and factory patterns.</p>
+          </div></section>
+        </div></section>
+        <section data-type="sect1" data-pdf-bookmark="Event-Sourced Domain Model"><div class="sect1" id="event_sourced_domain_model_5">
+          <h1>Event-Sourced Domain Model</h1>
+          <p>The event-sourced domain model pattern is based on the same premise as the domain model pattern. Again, the business logic is complex and belongs to a core subdomain. Moreover, it uses the same tactical patterns as the domain model: value objects, entities, and aggregates, and aggregate roots. The difference between these implementation patterns lies in the way the aggregates’ state is persisted. The event-sourced domain model uses <em>event sourcing</em> for managing the aggregates’ states.</p>
+          <section data-type="sect2" data-pdf-bookmark="Event Sourcing"><div class="sect2" id="event_sourcing">
+            <h2>Event Sourcing</h2>
+            <p>The notion of event sourcing is easiest to explain by example. Say we are working on a CRM system, and we have the following customer record (<a data-type="xref" href="#fig_22_a_state_based_model">Figure&nbsp;5-7</a>).</p>
+            <figure><div id="fig_22_a_state_based_model" class="figure">
+              <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492057802/files/assets/widd_0507.png" alt="A state based model" width="411" height="239">
+              <h6><span class="label">Figure 5-7. </span>A state-based model</h6>
+            </div></figure>
+            <p>In a state-based system, the values shown here are all we know about this customer. We have no idea how the customer got there. Did he purchase the product right away, or did he go through a lengthy sales journey? That information is not there. All we know is William’s current state.</p>
+            <p>The event sourcing pattern uses domain events to introduce the dimension of time into the model. Every change to the system’s state should be expressed and recorded as a domain event. Consider the domain events in <a data-type="xref" href="#fig_23_event_based_representation">Figure&nbsp;5-8</a>.</p>
+            <figure><div id="fig_23_event_based_representation" class="figure">
+              <img alt="Event based representation" src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492057802/files/assets/widd_0508.png" width="1391" height="557">
+              <h6><span class="label">Figure 5-8. </span>Event-based representation</h6>
+            </div></figure>
+            <p>The domain events shown here describe the customer’s journey:</p>
+            <ol>
+              <li>
+                <p>The customer has been initialized in the system.</p>
+              </li>
+              <li>
+                <p>A sales agent has called the customer, but he has asked for a follow-up call at a later time, via a different phone number.</p>
+              </li>
+              <li>
+                <p>The customer has been contacted again, and this time he agreed to purchase the product. </p>
+              </li>
+            </ol>
+            <p>The customer’s state we saw earlier can easily be projected out from these domain events.</p>
+          </div></section>
+          <section data-type="sect2" data-pdf-bookmark="Source of Truth"><div class="sect2" id="source_of_truth">
+            <h2>Source of Truth</h2>
+            <p>For the event sourcing pattern to work, all changes to an object’s state should be represented and persisted as domain events. These domain events become the system’s source of truth (hence the name of the pattern). This process is shown in <a data-type="xref" href="#fig_24_event_sourced_aggregate">Figure&nbsp;5-9</a>.</p>
+            <figure><div id="fig_24_event_sourced_aggregate" class="figure">
+              <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492057802/files/assets/widd_0509.png" alt="Event sourced aggregate" width="854" height="266">
+              <h6><span class="label">Figure 5-9. </span>Event-sourced aggregate</h6>
+            </div></figure>
+            <p>The database that stores the system’s domain events is the only strongly consistent storage—the system’s source of truth.</p>
+            <p class="pagebreak-before">Each operation on an event-sourced aggregate follows this script:</p>
+            <ol>
+              <li>
+                <p>Load the aggregate’s domain events.</p>
+              </li>
+              <li>
+                <p>Reconstitute a state representation.</p>
+              </li>
+              <li>
+                <p>Execute the business logic and produce new domain events.</p>
+              </li>
+              <li>
+                <p>Commit the new domain events to the database.</p>
+              </li>
+            </ol>
+            <p>In essence, the event sourcing pattern is nothing new. The financial industry uses events for representing changes, in a ledger. A ledger is an append-only log that documents transactions. A current state (e.g., account balance) can always be deduced by “projecting” the ledger’s records.</p>
+            <p>Now let’s take a look at some of the advantages of event sourcing.</p>
+          </div></section>
+          <section data-type="sect2" data-pdf-bookmark="Advantages"><div class="sect2" id="advantages">
+            <h2>Advantages</h2>
+            <p>Compared to a regular state-based representation, the event sourcing model requires more effort to model the aggregates. However, this approach brings considerable advantages that make this pattern worth considering in many scenarios:</p>
+            <dl>
+              <dt>Time machine</dt>
+              <dd>
+                <p>As the domain events can be used to reconstitute an aggregate’s current state, they can also be used for restoring all past states of the aggregate.</p>
+              </dd>
+              <dt>Deep insight</dt>
+              <dd>
+                <p>We saw in the first part of this report that optimizing core subdomains is strategically important for the business. Event sourcing provides deep insight into the system’s state and behavior. Moreover, the flexible model allows transforming the events into different state representations—even ones that were not planned initially.</p>
+              </dd>
+              <dt>Audit log</dt>
+              <dd>
+                <p>The persisted domain events represent a strongly consistent audit log of everything that has happened to the aggregates’ states. Laws oblige some business domains to implement such audit logs. Event sourcing provides this out of the box. </p>
+              </dd>
+            </dl>
+            <p>This model is especially convenient for systems managing money or monetary transactions. It allows us to easily trace the decisions the system has made and the flow of funds between accounts.</p>
+          </div></section>
+        </div></section>
+        <section data-type="sect1" data-pdf-bookmark="Conclusion"><div class="sect1" id="conclusion_8">
+          <h1>Conclusion</h1>
+          <p>In this chapter, we covered four different patterns for implementing a system’s business logic:</p>
+          <dl>
+            <dt>Transaction script</dt>
+            <dd>
+              <p>This pattern organizes the system’s operations as simple, straightforward procedural scripts. The procedures ensure that each operation is transactional—either it succeeds, or it fails. The transaction script pattern lends itself to supporting subdomains, with business logic resembling simple ETL-like <span class="keep-together">operations.</span></p>
+            </dd>
+            <dt>Active record</dt>
+            <dd>
+              <p>When the business logic is simple but operates on complicated data structures, you can implement those data structures as active records. An active record object is a data structure that provides simple CRUD data access methods.</p>
+            </dd>
+            <dt>Domain model</dt>
+            <dd>
+              <p>When the business logic is complex, implement it using domain-driven design’s tactical patterns: value objects, aggregates, and aggregate roots.</p>
+            </dd>
+            <dt>Event-sourced domain model</dt>
+            <dd>
+              <p>This pattern fits cases where it’s crucial to have deep insight into the system’s data, whether for analysis and optimization or because an audit log is required by law. It’s based on the same tactical patterns as the domain model but uses event sourcing for persisting aggregates’ states.</p>
+            </dd>
+          </dl>
+        </div></section>
+      <div data-type="footnotes"><p data-type="footnote" id="idm46528345678264"><sup><a href="ch05.html#idm46528345678264-marker">1</a></sup> The domain model pattern is often referred to as “tactical domain-driven design.” That’s the reason this part of the report is called “Tactical Design” and not “Tactical DDD.”<br></p><p data-type="footnote" id="idm46528345672104"><sup><a href="ch05.html#idm46528345672104-marker">2</a></sup> POCOs in .NET, POJOs in Java, POPOs in Python, etc.<br></p></div></div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492057802/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

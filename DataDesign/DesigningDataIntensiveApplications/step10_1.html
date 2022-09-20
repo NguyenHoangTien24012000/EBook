@@ -1,0 +1,143 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><div data-type="part" epub:type="part" data-pdf-bookmark="Part III. Derived Data" id="part_systems">
+        <h1><span class="label">Part III. </span>Derived Data</h1>
+        
+        <div class="partintro">
+        <p>In Parts <a data-type="xref" data-xrefstyle="select:labelnumber" href="part01.html#part_foundations">I</a>
+        and <a data-type="xref" data-xrefstyle="select:labelnumber" href="part02.html#part_distributed_data">II</a>
+        of this book, we assembled from the ground up all the major considerations that go into a
+        distributed database, from the layout of data on disk all the way to the limits of distributed
+        consistency in the presence of faults. However, this discussion assumed that there was only one
+        database in the application.</p>
+        
+        <p>In reality, data systems are often more complex. In a large application you often need to be able to
+        access and process data in many different ways, and there is no one database that can satisfy all
+        those different needs simultaneously. Applications thus commonly use a combination of several
+        different datastores, indexes, caches, analytics systems, etc. and implement mechanisms for moving
+        data from one store to another.</p>
+        
+        <p>
+        <a data-type="indexterm" data-primary="data integration" data-secondary="need for" id="idm45085102533600"></a>
+        <a data-type="indexterm" data-primary="integrating different data systems" data-see="data integration" id="idm45085102532464"></a>
+        In this final part of the book, we will examine the issues around integrating multiple
+        different data systems, potentially with different data models and optimized for different access
+        patterns, into one coherent application architecture. This aspect of system-building is often
+        overlooked by vendors who claim that their product can satisfy all your needs. In reality,
+        integrating disparate systems is one of the most important things that needs to be done in a
+        nontrivial application.</p>
+        
+        <div class="pagebreak-before">
+        <h1>Systems of Record and Derived Data</h1>
+        
+        <p>On a high level, systems that store and process data can be grouped into two broad categories:</p>
+        
+        <dl>
+            <dt>Systems of record</dt>
+            <dd>
+            <p>
+            <a data-type="indexterm" data-primary="systems of record" id="idm45085102527440"></a>
+            <a data-type="indexterm" data-primary="source of truth" data-see="systems of record" id="idm45085102526608"></a>
+            <a data-type="indexterm" data-primary="normalization (data representation)" data-secondary="in systems of record" id="idm45085102525472"></a>
+            A system of record, also known as <em>source of truth</em>, holds the authoritative version
+            of your data.  When new data comes in, e.g., as user input, it is first written here. Each fact
+            is represented exactly once (the representation is typically <em>normalized</em>). If there is
+            any discrepancy between another system and the system of record, then the value in the system of
+            record is (by definition) the correct one.</p>
+            </dd>
+        
+            <dt>Derived data systems</dt>
+            <dd>
+            <p>
+            <a data-type="indexterm" data-primary="derived data" id="idm45085102521984"></a>
+            <a data-type="indexterm" data-primary="materialization" data-secondary="materialized views" data-tertiary="as derived data" id="idm45085102521120"></a>
+            <a data-type="indexterm" data-primary="indexes" data-secondary="as derived data" id="idm45085102519744"></a>
+            <a data-type="indexterm" data-primary="caches" data-secondary="as derived data" id="idm45085102518640"></a>
+            Data in a derived system is the result of taking some existing data from another system and
+            transforming or processing it in some way. If you lose derived data, you can recreate it from
+            the original source. A classic example is a cache: data can be served from the cache if present,
+            but if the cache doesn’t contain what you need, you can fall back to the underlying
+            database. Denormalized values, indexes, and materialized views also fall into this category. In
+            recommendation systems, predictive summary data is often derived from usage logs.</p>
+            </dd>
+        </dl>
+        
+        <p>
+        <a data-type="indexterm" data-primary="denormalization (data representation)" data-secondary="in derived data systems" id="idm45085102516304"></a>
+        <a data-type="indexterm" data-primary="redundancy" data-secondary="of derived data" data-seealso="derived data" id="idm45085102515152"></a>
+        Technically speaking, derived data is <em>redundant</em>, in the sense that it duplicates
+        existing information. However, it is often essential for getting good performance on read queries.
+        It is commonly <em>denormalized</em>. You can derive several different datasets from a single
+        source, enabling you to look at the data from different “points of view.”</p>
+        
+        <p>Not all systems make a clear distinction between systems of record and derived data in their
+        architecture, but it’s a very helpful distinction to make, because it clarifies the dataflow
+        through your system: it makes explicit which parts of the system have which inputs and which
+        outputs, and how they depend on each other.</p>
+        
+        <p>Most databases, storage engines, and query languages are not inherently either a system of record
+        or a derived system. A database is just a tool: how you use it is up to you. The distinction between
+        system of record and derived data system depends not on the tool, but on how you use it in your
+        application.</p>
+        
+        <p>By being clear about which data is derived from which other data, you can bring clarity to an
+        otherwise confusing system architecture. This point will be a running theme throughout this part of
+        the book.</p>
+        </div>
+        
+        <div>
+        <h1>Overview of Chapters</h1>
+        
+        <p>We will start in <a data-type="xref" href="ch10.html#ch_batch">Chapter&nbsp;10</a> by examining batch-oriented dataflow
+        systems such as MapReduce, and see how they give us good tools and principles for building
+        large-scale data systems. In <a data-type="xref" href="ch11.html#ch_stream">Chapter&nbsp;11</a> we will take those ideas and
+        apply them to data streams, which allow us to do the same kinds of things with lower delays.
+        <a data-type="xref" href="ch12.html#ch_future">Chapter&nbsp;12</a> concludes the book by exploring ideas about how we might
+        use these tools to build reliable, scalable, and maintainable applications in the future.</p>
+        </div>
+        </div>
+        </div></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781491903063/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

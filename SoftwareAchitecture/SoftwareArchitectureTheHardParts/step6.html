@@ -1,0 +1,1959 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 6. Pulling Apart Operational Data"><div class="chapter" id="ch06-decomposing-operational-data">
+        <h1><span class="label">Chapter 6. </span>Pulling Apart Operational Data</h1>
+        
+        
+        <p><code>Thursday, October 7, 08:55</code></p>
+        <div class="story">
+        
+        <p>Now that the Sysops Squad application was successfully broken into separately deployed domain services, <a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="monolithic application broken apart" data-tertiary="data pulled apart" id="idm45978846569872"></a><a data-type="indexterm" data-primary="data" data-secondary="decomposition of operational data" data-tertiary="Sysops Squad saga" id="idm45978846568560"></a>Addison and Austen both realized that it was time to start thinking about breaking apart the monolithic Sysops Squad database. Addison agreed to start this effort, while Austen began to work on enhancing the CI/CD deployment pipeline. Addison met with Dana, the Sysops Squad data architect, and also Devon, one of the DBAs supporting the Penultimate Electronics databases.</p>
+        
+        <p>“I’d like your opinions on how we might go about breaking up the Sysops Squad database,” said Addison.</p>
+        
+        <p>“Wait a minute,” said Dana. “Who said anything about breaking apart the database?”</p>
+        
+        <p>“Addison and I agreed last week that we needed to break up the Sysops Squad database,” said Devon. “As you know, the Sysops Squad application has been going through a major overhaul, and breaking apart the data is part of that overhaul.”</p>
+        
+        <p>“I think the monolithic database is just fine,” said Dana. “I see no reason why it should be broken apart. Unless you can convince me otherwise, I’m not going to budge on this issue. Besides, do you know how hard it would be to break apart that database?”</p>
+        
+        <p>“Of course it will be difficult,” said Devon, “but I know of a five-step process leveraging what are known as data domains that would work really well on this database. That way, we can even start investigating using different kinds of databases for certain parts of the application, like the knowledge base and even the customer survey functionality.”</p>
+        
+        <p>“Let’s not get ahead of ourselves,” said Dana. “And let’s also not forget that I am the one who is responsible for all of these databases.”</p>
+        
+        <p>Addison quickly realized things were spiraling out of control, and quickly put some key negotiation and facilitation skills to use. “OK,” said Addison, “we should have included you in our initial discussions, and for that I apologize. I should have known better. What can we do to bring you on board and help us decompose the Sysops Squad database?”</p>
+        
+        <p>“That’s easy,” said Dana. “Convince me that the Sysops Squad database really does need to be broken apart. Provide me with a solid justification. If you can do that, then we’ll talk about Devon’s five-step process. Otherwise, it stays as it is.”</p>
+        <hr>
+        </div>
+        
+        <p>Breaking apart a database is hard—much harder, in fact, than breaking<a data-type="indexterm" data-primary="architectural decomposition" data-secondary="data" data-tertiary="about" id="idm45978846536400"></a><a data-type="indexterm" data-primary="data" data-secondary="decomposition of operational data" data-tertiary="about" id="idm45978846535312"></a> apart application functionality. Because data is generally the most important asset in the company, there is greater risk of business and application disruption when breaking apart or restructuring data. Also, data tends to be highly coupled to application functionality, making it harder to identify well-defined seams within a large data model.</p>
+        
+        <p>In the same way a monolithic application is broken into separate deployment units, there are times when it is desirable (or even necessary) to break up a monolithic database as well. Some architecture styles, <a data-type="indexterm" data-primary="microservices" data-secondary="bounded context" data-tertiary="data requirement" id="idm45978846533456"></a><a data-type="indexterm" data-primary="bounded context in microservices" data-secondary="data requirement in some architectures" id="idm45978846532208"></a><a data-type="indexterm" data-primary="services" data-secondary="bounded contexts" data-see="bounded context" id="idm45978846531280"></a>such as microservices, <em>require</em> data to be broken apart to form well-defined bounded contexts (where each service owns its own data), <a data-type="indexterm" data-primary="data" data-secondary="services sharing" id="idm45978846529408"></a><a data-type="indexterm" data-primary="service-based architecture" data-secondary="data shared by services" id="idm45978846528432"></a><a data-type="indexterm" data-primary="services" data-secondary="data shared by services" id="idm45978846527472"></a>whereas other distributed architectures, such as service-based architecture, allow services to share a single database.</p>
+        
+        <p>Interestingly enough, some of the same techniques used to break apart application functionality can be applied to breaking apart data as well. For example, components translate to data domains, class files translate to database tables, and coupling points between classes translate to database artifacts such as foreign keys, views, triggers, or even stored procedures.</p>
+        
+        <p>In this chapter, we explore some of the drivers for decomposing data and show techniques for how to effectively break apart monolithic data into separate data domains, schemas, and even separate databases in an iterative and controlled fashion. Knowing that the database world is not all relational, we also discuss various types of databases (relational, graph, document, key-value, columnar, NewSQL, and cloud native) and outline the various trade-offs associated with each of these database types.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Data Decomposition Drivers"><div class="sect1" id="sec-data-decomposition-drivers">
+        <h1>Data Decomposition Drivers</h1>
+        
+        <p>Breaking apart a monolithic database can be a daunting task, <a data-type="indexterm" data-primary="architectural decomposition" data-secondary="data" data-tertiary="drivers of decomposition" id="ch06-ddcd"></a><a data-type="indexterm" data-primary="data" data-secondary="decomposition of operational data" data-tertiary="drivers of" id="ch06-ddcd2"></a>and as such it’s important to understand if (and when) a database should be decomposed, as illustrated in <a data-type="xref" href="#fig-data-decomposition-monolith">Figure 6-1</a>. Architects can justify a data decomposition effort by understanding and analyzing <em>data disintegrators</em> (drivers that justify breaking apart data) and <em>data integrators</em> (drivers that justify keeping data together). Striving for a balance between these two driving forces and analyzing the trade-offs of each is the key to getting data granularity right.</p>
+        
+        <figure><div id="fig-data-decomposition-monolith" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0601.png" alt="When To Decompose Data" width="600" height="346">
+        <h6><span class="label">Figure 6-1. </span>Under what circumstances should a monolithic database be decomposed?</h6>
+        </div></figure>
+        
+        <p>In this section, we will explore the data disintegrators and data integrators used to help make the right choice when considering breaking apart monolithic data.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Data Disintegrators"><div class="sect2" id="idm45978846516256">
+        <h2>Data Disintegrators</h2>
+        
+        <p>Data disintegration drivers provide answers and justifications<a data-type="indexterm" data-primary="data" data-secondary="disintegration drivers" data-tertiary="about" id="idm45978846514592"></a> for the question “when should I consider breaking apart my data?” The six main disintegration drivers for breaking apart data include the following:</p>
+        <dl>
+        <dt>Change control</dt>
+        <dd>
+        <p>How many services are impacted by a database table change?</p>
+        </dd>
+        <dt>Connection management</dt>
+        <dd>
+        <p>Can my database handle the connections needed from multiple distributed services?</p>
+        </dd>
+        <dt>Scalability</dt>
+        <dd>
+        <p>Can the database scale to meet the demands of the services accessing it?</p>
+        </dd>
+        <dt>Fault tolerance</dt>
+        <dd>
+        <p>How many services are impacted by a database crash or maintenance downtime?</p>
+        </dd>
+        <dt>Architectural quanta</dt>
+        <dd>
+        <p>Is a single shared database forcing me into an undesirable single architecture quantum?</p>
+        </dd>
+        <dt>Database type optimization</dt>
+        <dd>
+        <p>Can I optimize my data by using multiple database types?</p>
+        </dd>
+        </dl>
+        
+        <p>Each of these disintegration drivers is discussed in detail in the following sections.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Change control"><div class="sect3" id="idm45978846504144">
+        <h3>Change control</h3>
+        
+        <p>One of the primary data disintegration drivers is <a data-type="indexterm" data-primary="data" data-secondary="disintegration drivers" data-tertiary="database change control" id="ch06-chang"></a><a data-type="indexterm" data-primary="data" data-secondary="breaking changes" id="idm45978846500640"></a><a data-type="indexterm" data-primary="breaking changes to data structure" id="idm45978846499696"></a>controlling changes in the database table schemas. Dropping tables or columns, changing table or column names, and even changing the column type in a table break the corresponding SQL accessing those tables, and consequently break corresponding services using those tables. We call these types of changes <em>breaking changes</em> as opposed to adding tables or columns in a database, which generally do not impact existing queries or writes. Not surprisingly, change control is most impacted when using relational databases, but other database types can create change control issues as well (see <a data-type="xref" href="#sec-polyglot-databases">“Selecting a Database Type”</a>).</p>
+        
+        <p>As illustrated in <a data-type="xref" href="#fig-data-decomposition-change-coordinate">Figure 6-2</a>, when breaking changes occur to a database, multiple services must be updated, tested, and deployed together with the database changes. This coordination can quickly become both difficult and error prone as the number of separately deployed services sharing the same database increases. Imagine trying to coordinate 42 separately deployed services for a single breaking database change!</p>
+        
+        <figure><div id="fig-data-decomposition-change-coordinate" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0602.png" alt="Coordinating Database Changes" width="600" height="309">
+        <h6><span class="label">Figure 6-2. </span>Services impacted by the database change must be deployed together with the database</h6>
+        </div></figure>
+        
+        <p>Coordinating changes to multiple distributed services for a shared database change is only half the story. <a data-type="indexterm" data-primary="data" data-secondary="services sharing" data-tertiary="changes to database" id="idm45978846493168"></a><a data-type="indexterm" data-primary="services" data-secondary="data shared by services" data-tertiary="changes to database" id="idm45978846491920"></a><a data-type="indexterm" data-primary="service-based architecture" data-secondary="data shared by services" data-tertiary="changes to database" id="idm45978846490704"></a><a data-type="indexterm" data-primary="microservices" data-secondary="shared database changed" id="idm45978846489472"></a>The real danger of changing a shared database in any distributed architecture is forgetting about services that access the table just changed. As illustrated in <a data-type="xref" href="#fig-data-decomposition-change-break">Figure 6-3</a>, those services become nonoperational <em>in production</em> until they can be changed, tested, and redeployed.</p>
+        
+        <figure><div id="fig-data-decomposition-change-break" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0603.png" alt="Services Not Changed" width="600" height="336">
+        <h6><span class="label">Figure 6-3. </span>Services impacted by a database change but forgotten will continue to fail until redeployed</h6>
+        </div></figure>
+        
+        <p>In most applications, the danger of forgotten services is mitigated by diligent impact analysis and agressive regression testing. However, consider a microservices ecosystem with 400 services, all sharing the same monolithic highly available clustered relational database. Imagine running around to all the development teams in many domain areas, trying to find out which services use the table being changed. Also imagine having to then coordinate, test, and deploy all of these services <em>together</em> as a single unit, along with the database. Thinking about this scenario starts to become a mind-numbing exercise, usually leading to some degree of insanity.</p>
+        
+        <p>Breaking apart a database into well-defined <a href="https://oreil.ly/Q8mI7">bounded contexts</a> significantly <a data-type="indexterm" data-primary="breaking changes to data structure" data-secondary="bounded context controlling" id="ch06-boud4"></a><a data-type="indexterm" data-primary="bounded context in microservices" data-secondary="breaking database changes controlled" id="ch06-boud"></a><a data-type="indexterm" data-primary="microservices" data-secondary="bounded context" data-tertiary="breaking database changes controlled" id="ch06-boud2"></a><a data-type="indexterm" data-primary="data" data-secondary="breaking changes" data-tertiary="bounded contexts controlling" id="ch06-boud3"></a>helps control breaking database changes. The bounded context concept comes from the seminal book <em>Domain-Driven Design</em> by Eric Evans (Addison-Wesley) and describes the source code, business logic, data structures, and data all bound together—encapsulated—within a specific context. As illustrated in <a data-type="xref" href="#fig-data-decomposition-bounded-context">Figure 6-4</a>, well-formed bounded contexts around services and their corresponding data helps control change, because change is isolated to just those services within that bounded context.</p>
+        
+        <p>Most typically, bounded contexts are formed around services and the data<a data-type="indexterm" data-primary="bounded context in microservices" id="idm45978846474992"></a> the services owns. By “own” we mean a service that writes to the database (as opposed to having read-only access to the data). We discuss distributed data ownership in more detail in <a data-type="xref" href="ch09.html#ch09-data-update">Chapter&nbsp;9</a>.</p>
+        
+        <figure><div id="fig-data-decomposition-bounded-context" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0604.png" alt="Bounded Context" width="600" height="249">
+        <h6><span class="label">Figure 6-4. </span>Database changes are isolated to only those services within the associated bounded context</h6>
+        </div></figure>
+        
+        <p>Notice in <a data-type="xref" href="#fig-data-decomposition-bounded-context">Figure 6-4</a> that Service C needs access to some of the data in Database D that is contained in a bounded context with Service D. Since Database D is in a different bounded context, Service C cannot directly access the data. This would not only violate the bounded context rule, but also create a mess with regard to change control. Therefore, Service C must <em>ask</em> Service D for the data. There are many ways of accessing data a service doesn’t own while still maintaining a bounded context. These techniques are discussed in detail in <a data-type="xref" href="ch10.html#ch10-data-access">Chapter&nbsp;10</a>.</p>
+        
+        <p>One important aspect of a bounded context related to the scenario between Service C needing data and Service D <a data-type="indexterm" data-primary="microservices" data-secondary="bounded context" data-tertiary="database abstraction" id="ch06-owabb"></a><a data-type="indexterm" data-primary="bounded context in microservices" data-secondary="breaking database changes controlled" data-tertiary="database abstraction" id="ch06-owab3"></a><a data-type="indexterm" data-primary="database abstraction via bounded context" id="ch06-owab4"></a><a data-type="indexterm" data-primary="breaking changes to data structure" data-secondary="bounded context controlling" data-tertiary="database abstraction" id="ch06-owabz"></a><a data-type="indexterm" data-primary="contracts" data-secondary="bounded context data ownership" id="ch06-owab5"></a>owning that data within its bounded context is that of <em>database abstraction</em>. Notice in <a data-type="xref" href="#fig-data-decomposition-contracts">Figure 6-5</a> that Service D is sending data that was requested by Service C through some sort of <em>contract</em> (such as JSON, XML, or maybe even an object).</p>
+        
+        <p>The advantage of the bounded context is that the data sent to Service C can be a different contract than the schema for Database D. This means that a breaking change to some table in Database D impacts only Service D and not necessarily the contract of the data sent to Service C. In other words, Service C is abstracted from the actual schema structure of Database D.</p>
+        
+        <figure><div id="fig-data-decomposition-contracts" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0605.png" alt="Contracts and Database Schemas" width="600" height="509">
+        <h6><span class="label">Figure 6-5. </span>The contract from a service call abstracts the caller from the underlying database schema</h6>
+        </div></figure>
+        
+        <p>To illustrate the power of this bounded context abstraction within a distributed architecture, assume Database D has a Wishlist table with the following structure:</p>
+        
+        <pre data-type="programlisting" data-code-language="perl"><code class="n">CREATE</code> <code class="n">TABLE</code> <code class="n">Wishlist</code>
+        <code class="p">(</code>
+        <code class="n">CUSTOMER_ID</code> <code class="n">VARCHAR</code><code class="p">(</code><code class="mi">10</code><code class="p">),</code>
+        <code class="n">ITEM_ID</code> <code class="n">VARCHAR</code><code class="p">(</code><code class="mi">20</code><code class="p">),</code>
+        <code class="n">QUANTITY</code> <code class="n">INT</code><code class="p">,</code>
+        <code class="n">EXPIRATION_DT</code> <code class="n">DATE</code>
+        <code class="p">);</code></pre>
+        
+        <p>The corresponding JSON contract that Service D sends to Service C requesting wish list items is as follows:</p>
+        
+        <pre data-type="programlisting" data-code-language="perl"><code class="p">{</code>
+          <code class="s">"$schema"</code><code class="p">:</code> <code class="s">"http://json-schema.org/draft-04/schema#"</code><code class="p">,</code>
+          <code class="s">"properties"</code><code class="p">:</code> <code class="p">{</code>
+            <code class="s">"cust_id"</code><code class="p">:</code> <code class="p">{</code><code class="s">"type"</code><code class="p">:</code> <code class="s">"string"</code><code class="p">},</code>
+            <code class="s">"item_id"</code><code class="p">:</code> <code class="p">{</code><code class="s">"type"</code><code class="p">:</code> <code class="s">"string"</code><code class="p">},</code>
+            <code class="s">"qty"</code><code class="p">:</code> <code class="p">{</code><code class="s">"type"</code><code class="p">:</code> <code class="s">"number"</code><code class="p">},</code>
+            <code class="s">"exp_dt"</code><code class="p">:</code> <code class="p">{</code><code class="s">"type"</code><code class="p">:</code> <code class="s">"number"</code><code class="p">}</code>
+          <code class="p">},</code>
+        <code class="p">}</code></pre>
+        
+        <p>Notice how the expiration data field (<code>exp_dt</code>) in the JSON schema is named differently than the database column name and is specified as a number (a long value representing the epoch time—the number of milliseconds since midnight on 1 January 1970), whereas in the database it is represented as a <code>DATE</code> field. Any column name change or column type change made in the database no longer impacts Service C because of the separate JSON contract.</p>
+        
+        <p>To illustrate this point, suppose the business decides to no longer expire wish list items. This would require a change in the table structure of the database:</p>
+        
+        <pre data-type="programlisting" data-code-language="perl"><code class="n">ALTER</code> <code class="n">TABLE</code> <code class="n">Wishlist</code>
+        <code class="n">DROP</code> <code class="n">COLUMN</code> <code class="n">EXPIRATION_DT</code><code class="p">;</code></pre>
+        
+        <p>Service D would have to be modified to accommodate this change because it is within the same bounded context as the database, but the corresponding contract would not have to change at the same time. Until the contract is eventually changed, Service D could either specify a date far into the future or set the value to zero indicating the item doesn’t expire. The bottom line is that Service C is abstracted from breaking changes made to Database D due to the bounded context.<a data-type="indexterm" data-startref="ch06-chang" id="idm45978846360032"></a><a data-type="indexterm" data-startref="ch06-boud" id="idm45978846326928"></a><a data-type="indexterm" data-startref="ch06-boud2" id="idm45978846326432"></a><a data-type="indexterm" data-startref="ch06-boud3" id="idm45978846325760"></a><a data-type="indexterm" data-startref="ch06-boud4" id="idm45978846325088"></a><a data-type="indexterm" data-startref="ch06-owab3" id="idm45978846324416"></a><a data-type="indexterm" data-startref="ch06-owab4" id="idm45978846323744"></a><a data-type="indexterm" data-startref="ch06-owab5" id="idm45978846323072"></a><a data-type="indexterm" data-startref="ch06-owabb" id="idm45978846322400"></a><a data-type="indexterm" data-startref="ch06-owabz" id="idm45978846321728"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Connection management"><div class="sect3" id="idm45978846503232">
+        <h3>Connection management</h3>
+        
+        <p>Establishing a connection to a database is an expensive operation. <a data-type="indexterm" data-primary="data" data-secondary="disintegration drivers" data-tertiary="connection management" id="ch06-conmg"></a><a data-type="indexterm" data-primary="connection management" data-secondary="data disintegration driver" id="ch06-conmg2"></a>A database connection pool is often used not only to increase performance, but also to limit the number of concurrent connections an application is allowed to use. <a data-type="indexterm" data-primary="monolithic architectures" data-secondary="database connection pool" id="idm45978846295296"></a><a data-type="indexterm" data-primary="distributed architectures" data-secondary="database connection pool" id="idm45978846294448"></a><a data-type="indexterm" data-primary="communication" data-secondary="database connection pool" id="idm45978846293600"></a><a data-type="indexterm" data-primary="services" data-secondary="database connection pool" id="idm45978846292752"></a>In monolithic applications, the database connection pool is usually owned by the application (or application server). However, in distributed architectures, each service—or more specifically, each service instance—typically has its own connection pool. <a data-type="indexterm" data-primary="service-based architecture" data-secondary="data shared by services" data-tertiary="connection management" id="ch06-conmg5"></a><a data-type="indexterm" data-primary="services" data-secondary="data shared by services" data-tertiary="connection management" id="ch06-conmg4"></a><a data-type="indexterm" data-primary="data" data-secondary="services sharing" data-tertiary="connection management" id="ch06-conmg3"></a>As illustrated in <a data-type="xref" href="#fig-data-decomposition-connections">Figure 6-6</a>, when multiple services share the same database, the number of connections can quickly become saturated, particularly as the number of services or service instances increase.</p>
+        
+        <figure><div id="fig-data-decomposition-connections" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0606.png" alt="Connections" width="600" height="296">
+        <h6><span class="label">Figure 6-6. </span>Database connections can quickly get saturated with multiple service 
+        <span class="keep-together">instances</span></h6>
+        </div></figure>
+        
+        <p class="pagebreak-before">Reaching (or exceeding) the maximum number of available database connections is yet another driver to consider when deciding whether to break apart a database. Frequent connection waits (the amount of time it takes waiting for a connection to become available) is usually the first sign that the maximum number of database connections has been reached. Since connection waits can also manifest themselves as request time-outs or tripped circuit breakers, looking for connection waits is usually the first thing we recommend if these conditions frequently occur when using a shared database.</p>
+        
+        <p>To illustrate the issues associated with database connections and distributed architecture, consider the following example: a monolithic application with 200 database connections is broken into a distributed architecture consisting of 50 services, each with 10 database connections in its connection pool.</p>
+        <table style="width: 50%">
+        
+        <tbody>
+        <tr>
+        <td><p>Original monolithic application</p></td>
+        <td><p>200 connections</p></td>
+        </tr>
+        <tr>
+        <td><p>Distributed services</p></td>
+        <td><p>50</p></td>
+        </tr>
+        <tr>
+        <td><p>Connections per service</p></td>
+        <td><p>10</p></td>
+        </tr>
+        <tr>
+        <td><p>Minimum service instances</p></td>
+        <td><p>2</p></td>
+        </tr>
+        <tr>
+        <td><p>Total service connections</p></td>
+        <td><p>1,000</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>Notice how the number of database connections within the same application context grew from 200 to 1,000, and the services haven’t even started scaling yet! Assuming half of the services scale to an average of 5 instances each, the number of database connections quickly grows to 1,700.</p>
+        
+        <p>Without some sort of connection strategy or governance plan, services<a data-type="indexterm" data-primary="distributed architectures" data-secondary="database connection pool" data-tertiary="connection management" id="idm45978846272128"></a><a data-type="indexterm" data-primary="connection management" data-secondary="connection quotas" id="idm45978846270848"></a> will try to use as many connections as possible, frequently starving other services from much needed connections. For this reason, it’s important to govern how database connections are used in a distributed architecture. One effective approach is to assign each service a <em>connection quota</em> to govern the distribution of available database connections across services. A connection quota specifies the maximum number of database connections a service is allowed to use or make available in its connection pool.</p>
+        
+        <p>By specifying a connection quota, services are not allowed to create more database connections than are allocated to it. If a service reaches the maximum number of database connections in its quota, it must wait for one of the connections it’s using to become available. This method can be implemented using two approaches: evenly distributing the same connection quota to every service, or assigning a different connection quota to each service based on its needs.</p>
+        
+        <p>The even distribution approach is typically used when first deploying services, and it is not known yet how many connections each service will need during normal and peak operations. While simple, this approach is not overly efficient because some services may need more connections than others, while some connections held by other services may go unused.</p>
+        
+        <p>While more complex, the variable distribution approach is much more efficient for managing database connections to a shared database. With this approach, each service is assigned a different connection quota based on its functionality and scalability requirements. The advantage of this approach is that it optimizes the use of available database connections across distributed services, making sure those services that require more database connections have them available for use. However, the disadvantage is that it requires knowledge about the nature of the functionality and the scalability requirements of each service.</p>
+        
+        <p>We usually recommend starting out with the even distribution approach and creating fitness functions to measure the concurrent connection usage for each service. We also recommend keeping the connection quota values in an external configuration server (or service) so that the values can be easily adjusted either manually or programmatically through simple machine learning algorithms. This technique not only helps mitigate connection saturation risk, but also properly balances available database connections between distributed services to ensure that no idle connections are wasted.</p>
+        
+        <p><a data-type="xref" href="#table-data-decomposition-allocations-even">Table&nbsp;6-1</a> shows an example of starting out using the even distribution approach for a database that can support a maximum of 100 concurrent connections. Notice that Service A has only ever needed a maximum of 5 connections, Service C only 15 connections, and Service E only 14 connections, whereas Service B and Service D have reached their max connection quota and have experienced connection waits.</p>
+        <table id="table-data-decomposition-allocations-even" style="width: 50%">
+        <caption><span class="label">Table 6-1. </span>Connection quota allocations evenly distributed</caption>
+        <thead>
+        <tr>
+        <th></th>
+        <th>Service</th>
+        <th>Quota</th>
+        <th>Max used</th>
+        <th>Waits</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td></td>
+        <td><p>A</p></td>
+        <td><p>20</p></td>
+        <td><p>5</p></td>
+        <td><p>No</p></td>
+        </tr>
+        <tr>
+        <td><p>→</p></td>
+        <td><p>B</p></td>
+        <td><p>20</p></td>
+        <td><p>20</p></td>
+        <td><p>Yes</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td><p>C</p></td>
+        <td><p>20</p></td>
+        <td><p>15</p></td>
+        <td><p>No</p></td>
+        </tr>
+        <tr>
+        <td><p>→</p></td>
+        <td><p>D</p></td>
+        <td><p>20</p></td>
+        <td><p>20</p></td>
+        <td><p>Yes</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td><p>E</p></td>
+        <td><p>20</p></td>
+        <td><p>14</p></td>
+        <td><p>No</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>Since Service A is well below its connection quota, this is a good place to start reallocating connections to other services. Moving five database connections to Service B and five database connections to Service D yields the results shown in <a data-type="xref" href="#table-data-decomposition-allocations-variable-1">Table&nbsp;6-2</a>.</p>
+        <table id="table-data-decomposition-allocations-variable-1" class="pagebreak-before less_space" style="width: 50%">
+        <caption><span class="label">Table 6-2. </span>Connection quota allocations with varying distributions</caption>
+        <thead>
+        <tr>
+        <th></th>
+        <th>Service</th>
+        <th>Quota</th>
+        <th>Max used</th>
+        <th>Waits</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td></td>
+        <td><p>A</p></td>
+        <td><p>10</p></td>
+        <td><p>5</p></td>
+        <td><p>No</p></td>
+        </tr>
+        <tr>
+        <td><p>→</p></td>
+        <td><p>B</p></td>
+        <td><p>25</p></td>
+        <td><p>25</p></td>
+        <td><p>Yes</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td><p>C</p></td>
+        <td><p>20</p></td>
+        <td><p>15</p></td>
+        <td><p>No</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td><p>D</p></td>
+        <td><p>25</p></td>
+        <td><p>25</p></td>
+        <td><p>No</p></td>
+        </tr>
+        <tr>
+        <td></td>
+        <td><p>E</p></td>
+        <td><p>20</p></td>
+        <td><p>14</p></td>
+        <td><p>No</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>This is better, but Service B is still experiencing connection waits, indicating that it requires more connections than it has in its connection quota. Readjusting the quotas even further by taking two connections each from Service A and Service E yields much better results, as shown in <a data-type="xref" href="#table-data-decomposition-allocations-variable-2">Table&nbsp;6-3</a>.</p>
+        <table id="table-data-decomposition-allocations-variable-2" style="width: 50%">
+        <caption><span class="label">Table 6-3. </span>Further connection quota tuning results in no connection waits</caption>
+        <thead>
+        <tr>
+        <th>Service</th>
+        <th>Quota</th>
+        <th>Max used</th>
+        <th>Waits</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>A</p></td>
+        <td><p>8</p></td>
+        <td><p>5</p></td>
+        <td><p>No</p></td>
+        </tr>
+        <tr>
+        <td><p>B</p></td>
+        <td><p>29</p></td>
+        <td><p>27</p></td>
+        <td><p>No</p></td>
+        </tr>
+        <tr>
+        <td><p>C</p></td>
+        <td><p>20</p></td>
+        <td><p>15</p></td>
+        <td><p>No</p></td>
+        </tr>
+        <tr>
+        <td><p>D</p></td>
+        <td><p>25</p></td>
+        <td><p>25</p></td>
+        <td><p>No</p></td>
+        </tr>
+        <tr>
+        <td><p>E</p></td>
+        <td><p>18</p></td>
+        <td><p>14</p></td>
+        <td><p>No</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>This analysis, which can be derived from continuous fitness functions that gather streamed metrics data from each service, can also be used to determine how close the maximum number of connections used is to the maximum number of connections available, and also how much buffer exists for each service in terms of its quota and maximum connections used.<a data-type="indexterm" data-startref="ch06-conmg" id="idm45978846201744"></a><a data-type="indexterm" data-startref="ch06-conmg2" id="idm45978846201008"></a><a data-type="indexterm" data-startref="ch06-conmg3" id="idm45978846200336"></a><a data-type="indexterm" data-startref="ch06-conmg4" id="idm45978846199664"></a><a data-type="indexterm" data-startref="ch06-conmg5" id="idm45978846198992"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Scalability"><div class="sect3" id="idm45978846320928">
+        <h3>Scalability</h3>
+        
+        <p>One of the many advantages of a distributed architecture<a data-type="indexterm" data-primary="data" data-secondary="disintegration drivers" data-tertiary="scalability" id="idm45978846196752"></a><a data-type="indexterm" data-primary="scalability" data-secondary="data disintegration driver" id="idm45978846195472"></a> is scalability—the ability for services to handle increases in request volume while maintaining a consistent response time. Most cloud-based and on-prem infrastructure-related products do a good job at ensuring that services, containers, HTTP servers, and virtual machines scale to satisfy increases in demand. But what about the database?</p>
+        
+        <p>As illustrated in <a data-type="xref" href="#fig-data-decomposition-scalability">Figure 6-7</a>, <a data-type="indexterm" data-primary="connection management" data-secondary="scalability includes connections" id="idm45978846193216"></a><a data-type="indexterm" data-primary="scalability" data-secondary="connection management" id="idm45978846192272"></a>service scalability can put a tremendous strain on the database, not only in terms of database connections (as discussed in the prior section), but also on throughput and database capacity. In order for a distributed system to scale, <em>all</em> parts of the system need to scale—including the database.</p>
+        
+        <figure><div id="fig-data-decomposition-scalability" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0607.png" alt="Bad Scalability" width="600" height="321">
+        <h6><span class="label">Figure 6-7. </span>The database must also scale when services scale</h6>
+        </div></figure>
+        
+        <p>Scalability is another data disintegration driver to consider when thinking about breaking apart a database. Database connections, capacity, throughput, and performance are all factors in determining whether a shared database can meet the demands of multiple services within a distributed architecture.</p>
+        
+        <p>Consider the refined variable database connection quotas in <a data-type="xref" href="#table-data-decomposition-allocations-variable-2">Table&nbsp;6-3</a> in the prior section. When services scale by adding multiple instances, the picture changes dramatically, as shown in <a data-type="xref" href="#table-data-decomposition-scalability">Table&nbsp;6-4</a>, where the total number of database connections is 100.</p>
+        <table id="table-data-decomposition-scalability" style="width: 50%">
+        <caption><span class="label">Table 6-4. </span>When services scale, more connection are used than are available</caption>
+        <thead>
+        <tr>
+        <th>Service</th>
+        <th>Quota</th>
+        <th>Max used</th>
+        <th>Instances</th>
+        <th>Total used</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>A</p></td>
+        <td><p>8</p></td>
+        <td><p>5</p></td>
+        <td><p>2</p></td>
+        <td><p>10</p></td>
+        </tr>
+        <tr>
+        <td><p>B</p></td>
+        <td><p>29</p></td>
+        <td><p>27</p></td>
+        <td><p>3</p></td>
+        <td><p>81</p></td>
+        </tr>
+        <tr>
+        <td><p>C</p></td>
+        <td><p>20</p></td>
+        <td><p>15</p></td>
+        <td><p>3</p></td>
+        <td><p>45</p></td>
+        </tr>
+        <tr>
+        <td><p>D</p></td>
+        <td><p>25</p></td>
+        <td><p>25</p></td>
+        <td><p>2</p></td>
+        <td><p>50</p></td>
+        </tr>
+        <tr>
+        <td><p>E</p></td>
+        <td><p>18</p></td>
+        <td><p>14</p></td>
+        <td><p>4</p></td>
+        <td><p>56</p></td>
+        </tr>
+        <tr>
+        <td><p>TOTAL</p></td>
+        <td><p>100</p></td>
+        <td><p>86</p></td>
+        <td><p>14</p></td>
+        <td><p>242</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p class="pagebreak-before">Notice that even though the connection quota is distributed to match the 100 database connections available, once services start to scale, the quota is no longer valid because the total number of connections used increases to 242, which is 142 more connections than are available in the database. This will likely result in connection waits, which in turn will result in overall performance degradation and request 
+        <span class="keep-together">time-outs</span>.</p>
+        
+        <p>Breaking data into separate data domains or even<a data-type="indexterm" data-primary="data" data-secondary="database-per-service" id="idm45978846158128"></a><a data-type="indexterm" data-primary="database-per-service" id="idm45978846157152"></a><a data-type="indexterm" data-primary="services" data-secondary="database-per-service" id="idm45978846156480"></a><a data-type="indexterm" data-primary="connection management" data-secondary="scalability includes connections" data-tertiary="database per service" id="idm45978846155536"></a><a data-type="indexterm" data-primary="scalability" data-secondary="connection management" data-tertiary="database-per-service" id="idm45978846154352"></a> a database-per-service, as illustrated in <a data-type="xref" href="#fig-data-decomposition-scalability-separate">Figure 6-8</a>, requires fewer connections to each database, hence providing better database scalability and performance as the services scale.</p>
+        
+        <figure><div id="fig-data-decomposition-scalability-separate" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0608.png" alt="Good Scalability" width="600" height="269">
+        <h6><span class="label">Figure 6-8. </span>Breaking apart the database provides better database scalability</h6>
+        </div></figure>
+        
+        <p>In addition to database connections, another factor to consider with respect to scalability is the load placed on the database. By breaking apart a database, less load is placed on each database, thereby also improving overall performance and scalability.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Fault tolerance"><div class="sect3" id="idm45978846197728">
+        <h3>Fault tolerance</h3>
+        
+        <p>When multiple services share the same database, the overall<a data-type="indexterm" data-primary="data" data-secondary="disintegration drivers" data-tertiary="fault tolerance" id="idm45978846147920"></a><a data-type="indexterm" data-primary="fault tolerance" data-secondary="data disintegration driver" id="idm45978846146592"></a><a data-type="indexterm" data-primary="data" data-secondary="single point of failure vulnerability" id="idm45978846145680"></a><a data-type="indexterm" data-primary="single point of failure (SPOF)" id="idm45978846144768"></a><a data-type="indexterm" data-primary="fault tolerance" data-secondary="single point of failure" id="idm45978846144128"></a> system becomes less fault tolerant because the database becomes a single point of failure (SPOF). <a data-type="indexterm" data-primary="fault tolerance" data-secondary="definition" id="idm45978846142944"></a><a data-type="indexterm" data-primary="data" data-secondary="services sharing" data-tertiary="single point of failure" id="idm45978846142000"></a><a data-type="indexterm" data-primary="service-based architecture" data-secondary="data shared by services" data-tertiary="single point of failure" id="idm45978846140784"></a><a data-type="indexterm" data-primary="services" data-secondary="data shared by services" data-tertiary="single point of failure" id="idm45978846139600"></a>Here, we are defining fault tolerance as the ability of some parts of the system to continue uninterrupted when a service or database fails. Notice in <a data-type="xref" href="#fig-data-decomposition-fault-tolerance">Figure 6-9</a> that when sharing a single database, overall fault tolerance is low because if the database goes down, <em>all</em> services become nonoperational.</p>
+        
+        <figure><div id="fig-data-decomposition-fault-tolerance" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0609.png" alt="Bad Fault Tolerance" width="600" height="266">
+        <h6><span class="label">Figure 6-9. </span>If the database goes down, all services become nonoperational</h6>
+        </div></figure>
+        
+        <p>Fault tolerance is another driver for considering breaking apart data. If fault tolerance is required for certain parts of the system, breaking apart the data can remove the single point of failure in the system, as shown in Figure 6-10. This ensures that some parts of the system are still operational in the event of a database crash.</p>
+        
+        <figure><div id="fig-data-decomposition-fault-tolerance-separate" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0610.png" alt="Good Fault Tolerance" width="600" height="266">
+        <h6><span class="label">Figure 6-10. </span>Breaking apart the database achieves better fault tolerance</h6>
+        </div></figure>
+        
+        <p>Notice that since the data is now broken apart, if Database B goes down, only Service B and Service C are impacted and become nonoperational, whereas the other services continue to operate uninterrupted.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Architectural quantum"><div class="sect3" id="database-architectural-quantum">
+        <h3>Architectural quantum</h3>
+        
+        <p>Recall from <a data-type="xref" href="ch02.html#ch02-discerning">Chapter&nbsp;2</a> that an architectural quantum<a data-type="indexterm" data-primary="architecture quantum" data-secondary="data disintegration driver" id="idm45978846129280"></a><a data-type="indexterm" data-primary="data" data-secondary="disintegration drivers" data-tertiary="architecture quantum" id="idm45978846128368"></a><a data-type="indexterm" data-primary="architecture quantum" data-secondary="about" id="idm45978846127152"></a> is defined as an independently deployable artifact with high functional cohesion, high static coupling, and synchronous dynamic coupling. The architecture quantum helps provide guidance in terms of when to break apart a database, making it another data disintegration driver.</p>
+        
+        <p class="pagebreak-before">Consider the services in <a data-type="xref" href="#fig-data-decomposition-quantum">Figure 6-11</a>, where Service A and Service B require different architectural characteristics than the other services. Notice in the diagram that although Service A and Service B are grouped together, they do not form a separate quantum from the other services because of a single shared database. Thus, all five services, along with the database, form a single architectural quantum.</p>
+        
+        <figure><div id="fig-data-decomposition-quantum" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0611.png" alt="Single Architecture Quantum" width="600" height="446">
+        <h6><span class="label">Figure 6-11. </span>The database is part of the architectural quantum</h6>
+        </div></figure>
+        
+        <p>Because the database is included in the <em>functional cohesion</em> part of the architecture quantum definition,<a data-type="indexterm" data-primary="cohesion" data-secondary="high functional cohesion" data-tertiary="database architecture quantum" id="idm45978846121632"></a><a data-type="indexterm" data-primary="architecture quantum" data-secondary="high functional cohesion" data-tertiary="database" id="idm45978846120544"></a><a data-type="indexterm" data-primary="high functional cohesion" data-secondary="database architecture quantum" id="idm45978846119456"></a> it is necessary to break apart the data so that each resulting part can be in its own quantum. Notice in <a data-type="xref" href="#fig-data-decomposition-quanta">Figure 6-12</a> that since the database is broken apart, Service A and Service B, along with the corresponding data, are now a separate quantum from the one formed with services C, D, and E.</p>
+        
+        <figure><div id="fig-data-decomposition-quanta" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0612.png" alt="Architecture Quanta" width="600" height="336">
+        <h6><span class="label">Figure 6-12. </span>Breaking up the database forms two architectural quanta</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Database type optimization"><div class="sect3" id="idm45978846115168">
+        <h3>Database type optimization</h3>
+        
+        <p>It’s often the case that not all data is treated the same. <a data-type="indexterm" data-primary="database types" data-secondary="database type optimization" id="idm45978846113872"></a><a data-type="indexterm" data-primary="data" data-secondary="disintegration drivers" data-tertiary="database type optimization" id="idm45978846112848"></a><a data-type="indexterm" data-primary="monolithic architectures" data-secondary="database type optimization" id="idm45978846111664"></a>When using a monolithic database, <em>all</em> data must adhere to that database type, therefore producing potentially sub-optimal solutions for certain types of data.</p>
+        
+        <p>Breaking apart monolithic data allows the architect to move certain data to a more optimal database type. For example, suppose a monolithic relational database stored application-related transactional data, including reference data in the form of key-value pairs (such as country codes, product codes, warehouse codes, and so on). This type of data is difficult to manage in a relational database because the data is not relational in nature, but rather key-value. Hence, a <em>key-value</em> database (see <a data-type="xref" href="#sec-kv-database">“Key-Value Databases”</a>) would produce a more optimal solution than a relational database.</p>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Data Integrators"><div class="sect2" id="idm45978846515632">
+        <h2>Data Integrators</h2>
+        
+        <p>Data integrators do the exact opposite of the data disintegrators discussed in the prior section. <a data-type="indexterm" data-primary="data" data-secondary="integration drivers" data-tertiary="about" id="idm45978846106864"></a>These drivers provide answers and justifications for the question “when should I consider putting data back together?” Along with data disintegrators, data integrators provide the balance and trade-offs for analyzing when to break apart data and when not to.</p>
+        
+        <p class="pagebreak-before">The two main integration drivers for pulling data back together are the following:</p>
+        <dl>
+        <dt>Data relationships</dt>
+        <dd>
+        <p>Are there foreign keys, triggers, or views that form close relationships between the tables?</p>
+        </dd>
+        <dt>Database transactions</dt>
+        <dd>
+        <p>Is a single transactional unit of work necessary to ensure data integrity and consistency?</p>
+        </dd>
+        </dl>
+        
+        <p>Each of these integration drivers is discussed in detail in the following sections.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Data relationships"><div class="sect3" id="data-relationship-integrator">
+        <h3>Data relationships</h3>
+        
+        <p>Like components within an architecture, database tables can be coupled<a data-type="indexterm" data-primary="data" data-secondary="integration drivers" data-tertiary="relationships" id="idm45978846098976"></a><a data-type="indexterm" data-primary="coupling" data-secondary="data relationships" id="idm45978846097648"></a><a data-type="indexterm" data-primary="data" data-secondary="coupling" data-tertiary="relationships among data" id="idm45978846096704"></a><a data-type="indexterm" data-primary="data" data-secondary="database-per-service" data-tertiary="breaking apart database to achieve" id="idm45978846095520"></a><a data-type="indexterm" data-primary="database-per-service" data-secondary="breaking apart database to achieve" id="idm45978846094336"></a><a data-type="indexterm" data-primary="data" data-secondary="decomposition of operational data" data-tertiary="database-per-service requiring" id="idm45978846093424"></a> as well, particularly with regard to relational databases. Artifacts like foreign keys, triggers, views, and stored procedures tie tables together, making it difficult to pull data apart; see Figure 6-13.</p>
+        
+        <p>Imagine walking up to your DBA or data architect and telling them that since the database must be broken apart to support tightly formed bounded contexts within a microservices ecosystem, every foreign key and view in the database needs to be removed! That’s not a likely (or even feasible) scenario, yet that is precisely what would need to happen to support a database-per-service pattern in microservices.</p>
+        
+        <figure><div id="fig-data-decomposition-artifacts" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0613.png" alt="Data Artifacts" width="600" height="301">
+        <h6><span class="label">Figure 6-13. </span>Foreign keys (FK), triggers, and views create tightly coupled relationships between data</h6>
+        </div></figure>
+        
+        <p class="pagebreak-before">These artifacts are necessary in most relational databases to support data consistency and data integrity. In addition to these physical artifacts, data may also be logically related, such as a problem ticket table and its corresponding problem ticket status table. However, as illustrated in <a data-type="xref" href="#fig-data-decomposition-artifacts-split">Figure 6-14</a>, these artifacts must be removed when moving data to another schema or database to form bounded contexts.</p>
+        
+        <figure><div id="fig-data-decomposition-artifacts-split" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0614.png" alt="Removing Relationships" width="600" height="232">
+        <h6><span class="label">Figure 6-14. </span>Data artifacts must be removed when breaking apart data</h6>
+        </div></figure>
+        
+        <p>Notice that the foreign key (FK) relationship between the tables in Service A can be preserved because the data is in the same bounded context, schema, or database. However, the foreign keys (FK) between the tables in Service B and Service C must be removed (as well as the view that is used in Service C) because those tables are associated with different databases or schemas.</p>
+        
+        <p>The relationship between data, either logical or physical, is a data integration driver, thus creating a trade-off between data disintegrators and data integrators. For example, is change control (a data disintegrator) more important than preserving the foreign key relationships between the tables (a data integrator)? Is fault tolerance (a data disintegrator) more important than preserving materialized views between tables (a data integrator)? Identifying what is more important helps make the decision about whether the data should be broken apart and what the resulting schema granularity should be.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Database transactions"><div class="sect3" id="database-transaction-integrator">
+        <h3>Database transactions</h3>
+        
+        <p>Another data integrator is that of database transactions,<a data-type="indexterm" data-primary="data" data-secondary="integration drivers" data-tertiary="database transactions" id="idm45978846082496"></a><a data-type="indexterm" data-primary="transactions" data-secondary="data integration driver" id="idm45978846081168"></a> something we discuss in detail in <a data-type="xref" href="ch09.html#sec-acid-vs-base">“Distributed Transactions”</a>. As shown in <a data-type="xref" href="#fig-data-decomposition-transactions">Figure 6-15</a>, when a single service does multiple database write actions to separate tables in the same database or schema, those updates can be done within an Atomicity, Consistency, Isolation, Durability (ACID) transaction and either committed or rolled back as a single unit of work.</p>
+        
+        <figure><div id="fig-data-decomposition-transactions" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0615.png" alt="Database Transaction" width="600" height="489">
+        <h6><span class="label">Figure 6-15. </span>A single transactional unit of work exists when the data is together</h6>
+        </div></figure>
+        
+        <p>However, when data is broken apart into either separate schemas or databases, as illustrated in <a data-type="xref" href="#fig-data-decomposition-no-transactions">Figure 6-16</a>, a single transactional unit of work no longer exists because of the remote calls between services. This means that an insert or update can be committed in one table, but not in the other tables because of error conditions, resulting in data consistency and integrity issues.</p>
+        
+        <figure><div id="fig-data-decomposition-no-transactions" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0616.png" alt="No Database Transaction" width="600" height="357">
+        <h6><span class="label">Figure 6-16. </span>Single unit of work transactions don’t exist when data is broken apart</h6>
+        </div></figure>
+        
+        <p>While we dive into the details of distributed transaction management and transactional sagas in <a data-type="xref" href="ch12.html#ch12-transactional-sagas">Chapter&nbsp;12</a>, the point here is to emphasize that database transactions are yet another data integration driver, and should be taken into account when considering breaking apart a database.<a data-type="indexterm" data-startref="ch06-ddcd" id="idm45978846070896"></a><a data-type="indexterm" data-startref="ch06-ddcd2" id="idm45978846070224"></a></p>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Sysops Squad Saga: Justifying Database Decomposition"><div class="sect2" id="idm45978846069424">
+        <h2>Sysops Squad Saga: Justifying Database Decomposition</h2>
+        
+        <p><code>Monday, November 15, 15:55</code></p>
+        <div class="story">
+        
+        <p>Armed with their justifications, Addison and Devon met to<a data-type="indexterm" data-primary="architectural decomposition" data-secondary="data" data-tertiary="Sysops Squad saga" id="idm45978846066464"></a><a data-type="indexterm" data-primary="data" data-secondary="decomposition of operational data" data-tertiary="Sysops Squad saga" id="idm45978846065120"></a><a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="monolithic application broken apart" data-tertiary="data pulled apart" id="idm45978846063888"></a> convince Dana that it was necessary to break apart the monolithic Sysops Squad database.</p>
+        
+        <p>“Hi, Dana,” said Addison. “We think we have enough evidence to convince you that it’s necessary to break apart the Sysops Squad database.”</p>
+        
+        <p>“I’m all ears,” said Dana, arms crossed and ready to argue that the database should remain as is.</p>
+        
+        <p>“I’ll start,” said Addison. “Notice how these logs continuously show that whenever the operational reports run, the ticketing functionality in the application freezes up?”</p>
+        
+        <p>“Yeah,” said Dana, “I’ll admit that even I suspected that. It’s clearly something wrong with the way the ticketing functionality is accessing the database, not reporting.”</p>
+        
+        <p>“Actually,” said Addison, “it’s a combination of both ticketing <em>and</em> reporting. Look here.”</p>
+        
+        <p>Addison showed Dana metrics and logs that demonstrated some of the queries were necessarily wrapped in threads, and that the queries from the ticketing functionality were timing out because of a wait state when the reporting queries were run. Addison also showed how the reporting part of the system used parallel threads to query parts of the more complex reports concurrently, essentially taking up all of the database connections.</p>
+        
+        <p>“OK, I can see how having a separate reporting database would help the situation from a database connection perspective. But that still doesn’t convince me that the nonreporting data should be broken apart,” said Dana.</p>
+        
+        <p>“Speaking of database connections,” said Devon, “look at this connection pool estimate as we start breaking apart the domain services.”</p>
+        
+        <p>Devon showed Dana the number of estimated services in the final planned Sysops Squad distributed application, <a data-type="indexterm" data-primary="connection management" data-secondary="scalability includes connections" data-tertiary="Sysops Squad saga" id="idm45978846057248"></a><a data-type="indexterm" data-primary="scalability" data-secondary="connection management" data-tertiary="Sysops Squad saga" id="idm45978846055936"></a><a data-type="indexterm" data-primary="communication" data-secondary="database connection pool" data-tertiary="Sysops Squad saga" id="idm45978846054720"></a><a data-type="indexterm" data-primary="services" data-secondary="database connection pool" data-tertiary="Sysops Squad saga" id="idm45978846053488"></a><a data-type="indexterm" data-primary="distributed architectures" data-secondary="database connection pool" data-tertiary="Sysops Squad saga" id="idm45978846052256"></a>including the projected number of instances for each of the services as the application scales. Dana explained to Devon that the connection pool was contained within each separate service instance, not like in the current phase of the migration where the application server owned the connection pool.</p>
+        
+        <p>“So you see, Dana,” said Devon, “with these projected estimates, we will need an additional 2,000 connections to the database to provide the scalability we need to handle the ticket load, and we simply do not have them with a single database.”</p>
+        
+        <p>Dana took a moment to look over the numbers. “Do you agree with these numbers, Addison?”</p>
+        
+        <p>“I do,” said Addison. “Devon and I came up with them ourselves after a lot of analysis based on the amount of HTTP traffic as well as the projected growth rates supplied by Parker.”</p>
+        
+        <p>“I must admit,” said Dana, “this is good stuff you’ve both prepared. I particularly like that you’ve already thought about not having services connect to multiple databases or schemas. As you know, in my book that’s a no-go.”</p>
+        
+        <p>“Us, too. However, we have one more justification to talk to you about,” said Addison. “As you may or may not know, we’ve been having lots of issues with regard to the system not being available for our customers. <a data-type="indexterm" data-primary="fault tolerance" data-secondary="single point of failure" data-tertiary="Sysops Squad saga" id="idm45978846047888"></a><a data-type="indexterm" data-primary="single point of failure (SPOF)" data-secondary="Sysops Squad saga" id="idm45978846046640"></a><a data-type="indexterm" data-primary="data" data-secondary="single point of failure vulnerability" data-tertiary="Sysops Squad saga" id="idm45978846045680"></a>While breaking apart the services provides us with some level of fault tolerance, if a monolithic database should go down for either maintenance or a server crash, all services would become nonoperational.”</p>
+        
+        <p>“What Addison is saying,” added Devon, “is that by breaking apart the database, we can provide better fault tolerance by creating domain silos for the data. In other words, if the survey database were to go down, ticketing functionality would still be available.”</p>
+        
+        <p>“We call that an architectural quantum,” said Addison.<a data-type="indexterm" data-primary="architecture quantum" data-secondary="data disintegration driver" data-tertiary="Sysops Squad saga" id="idm45978846043232"></a> “In other words, since the database is part of the static coupling of a system, breaking it apart would make the core ticketing functionality standalone and not synchronously dependent on other parts of the system.”</p>
+        
+        <p>“Listen,” said Dana, “you’ve convinced me that there’s good reasons to break apart the Sysops Squad database, but explain to me how you can even think about doing that. Do you realize how many foreign keys and views there are in that database? There’s no way you’re going to be able remove all of those things.”</p>
+        
+        <p>“We don’t necessarily have to remove all of those artifacts. That’s where data domains and the five-step process come into play,” said Devon. “Here, let me explain…”</p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Decomposing Monolithic Data"><div class="sect1" id="idm45978846040144">
+        <h1>Decomposing Monolithic Data</h1>
+        
+        <p>Decomposing a monolithic database is hard, and requires an architect<a data-type="indexterm" data-primary="architectural decomposition" data-secondary="data" data-tertiary="about decomposing monolithic" id="idm45978846038192"></a><a data-type="indexterm" data-primary="data" data-secondary="decomposition of operational data" data-tertiary="about decomposing monolithic" id="idm45978846036832"></a><a data-type="indexterm" data-primary="monolithic architectures" data-secondary="data decomposition" data-tertiary="about" id="idm45978846035584"></a><a data-type="indexterm" data-primary="data domains" data-secondary="about decomposing monolithic data" id="idm45978846034352"></a> to collaborate closely with the database team to safely and effectively break apart the data. One particularly effective technique for breaking apart data is to leverage what is known as the <em>five-step process</em>. As illustrated in <a data-type="xref" href="#fig-data-decomposition-five-step-process">Figure 6-17</a>, this evolutionary and iterative process leverages the concept of a data domain as a vehicle for methodically migrating data into separate schemas, and consequently different physical databases.</p>
+        
+        <figure><div id="fig-data-decomposition-five-step-process" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0617.png" alt="Five step process" width="600" height="159">
+        <h6><span class="label">Figure 6-17. </span>Five-step process for decomposing a monolithic database</h6>
+        </div></figure>
+        
+        <p>A <em>data domain</em> is a collection of coupled database<a data-type="indexterm" data-primary="data domains" data-secondary="about" id="idm45978846028896"></a><a data-type="indexterm" data-primary="data" data-secondary="data domains" data-see="data domains" id="idm45978846027888"></a><a data-type="indexterm" data-primary="domain partitioned architecture" data-secondary="data domains" id="idm45978846026672"></a> artifacts—tables, views, foreign keys, and triggers—that are all related to a particular domain and frequently used together within a limited functional scope. <a data-type="indexterm" data-primary="data" data-secondary="Sysops Squad data model" data-tertiary="data domains" id="idm45978846025584"></a><a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="data model" data-tertiary="data domains" id="idm45978846024368"></a><a data-type="indexterm" data-primary="data domains" data-secondary="Sysops Squad data model" id="idm45978846023152"></a>To illustrate the concept of a data domain, consider the Sysops Squad tables introduced in <a data-type="xref" href="ch01.html#table-ss-initial-database-tables">Table&nbsp;1-2</a> and the corresponding proposed data domain assignments shown in <a data-type="xref" href="#table-to-data-domain-assignment">Table&nbsp;6-5</a>.</p>
+        <table id="table-to-data-domain-assignment" style="width: 100%">
+        <caption><span class="label">Table 6-5. </span>Existing Sysops Squad database tables assigned to data domains</caption>
+        <thead>
+        <tr>
+        <th>Table</th>
+        <th>Proposed data domains</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>customer</p></td>
+        <td><p>Customer</p></td>
+        </tr>
+        <tr>
+        <td><p>customer_notification</p></td>
+        <td><p>Customer</p></td>
+        </tr>
+        <tr>
+        <td><p>survey</p></td>
+        <td><p>Survey</p></td>
+        </tr>
+        <tr>
+        <td><p>question</p></td>
+        <td><p>Survey</p></td>
+        </tr>
+        <tr>
+        <td><p>survey_administered</p></td>
+        <td><p>Survey</p></td>
+        </tr>
+        <tr>
+        <td><p>survey_question</p></td>
+        <td><p>Survey</p></td>
+        </tr>
+        <tr>
+        <td><p>survey_response</p></td>
+        <td><p>Survey</p></td>
+        </tr>
+        <tr>
+        <td><p>billing</p></td>
+        <td><p>Payment</p></td>
+        </tr>
+        <tr>
+        <td><p>contract</p></td>
+        <td><p>Payment</p></td>
+        </tr>
+        <tr>
+        <td><p>payment_method</p></td>
+        <td><p>Payment</p></td>
+        </tr>
+        <tr>
+        <td><p>payment</p></td>
+        <td><p>Payment</p></td>
+        </tr>
+        <tr>
+        <td><p>sysops_user</p></td>
+        <td><p>Profile</p></td>
+        </tr>
+        <tr>
+        <td><p>profile</p></td>
+        <td><p>Profile</p></td>
+        </tr>
+        <tr>
+        <td><p>expert_profile</p></td>
+        <td><p>Profile</p></td>
+        </tr>
+        <tr>
+        <td><p>expertise</p></td>
+        <td><p>Profile</p></td>
+        </tr>
+        <tr>
+        <td><p>location</p></td>
+        <td><p>Profile</p></td>
+        </tr>
+        <tr>
+        <td><p>article</p></td>
+        <td><p>Knowledge Base</p></td>
+        </tr>
+        <tr>
+        <td><p>tag</p></td>
+        <td><p>Knowledge Base</p></td>
+        </tr>
+        <tr>
+        <td><p>keyword</p></td>
+        <td><p>Knowledge Base</p></td>
+        </tr>
+        <tr>
+        <td><p>article_tag</p></td>
+        <td><p>Knowledge Base</p></td>
+        </tr>
+        <tr>
+        <td><p>article_keyword</p></td>
+        <td><p>Knowledge Base</p></td>
+        </tr>
+        <tr>
+        <td><p>ticket</p></td>
+        <td><p>Ticketing</p></td>
+        </tr>
+        <tr>
+        <td><p>ticket_type</p></td>
+        <td><p>Ticketing</p></td>
+        </tr>
+        <tr>
+        <td><p>ticket_history</p></td>
+        <td><p>Ticketing</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p><a data-type="xref" href="#table-to-data-domain-assignment">Table&nbsp;6-5</a> lists six data domains within the Sysops Squad application: Customer, Survey, Payment, Profile, Knowledge base, and Ticketing. The <code>billing</code> table belongs to the Payment data domain, <code>ticket</code> and <code>ticket_type</code> tables belong to the Ticketing data domain, and so on.</p>
+        
+        <p>One way to conceptually think about data domains is to think<a data-type="indexterm" data-primary="tools" data-secondary="visualization" data-tertiary="data domains via soccer ball" id="idm45978845974768"></a><a data-type="indexterm" data-primary="data domains" data-secondary="soccer ball visualization" id="idm45978845973472"></a><a data-type="indexterm" data-primary="visualization tools" data-secondary="data domains via soccer ball" id="idm45978845972512"></a> about the database as a soccer ball, where each white hexagon represents a separate data domain. As illustrated in <a data-type="xref" href="#fig-data-decomposition-data-domains-sysops-soccer-ball">Figure 6-18</a>, each white hexagon of the soccer ball contains a collection of domain-related tables along with all of the coupling artifacts (such as foreign keys, views, stored procedures, and so on).</p>
+        
+        <figure><div id="fig-data-decomposition-data-domains-sysops-soccer-ball" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0618.png" alt="Data domains based on bounded contexts" width="600" height="600">
+        <h6><span class="label">Figure 6-18. </span>Database objects in a hexagon belong in a data domain</h6>
+        </div></figure>
+        
+        <p>Visualizing the database this way allows the architect and database team to clearly <a data-type="indexterm" data-primary="dependencies" data-secondary="monolithic data domains" id="ch06-modd"></a><a data-type="indexterm" data-primary="data" data-secondary="decomposition of operational data" data-tertiary="dependencies" id="ch06-modd2"></a>see data domain boundaries and also the cross-domain dependencies (such as foreign keys, views, stored procedures, and so on) that need to be broken. Notice in <a data-type="xref" href="#fig-data-decomposition-data-domains-sysops-soccer-ball">Figure 6-18</a> that <em>within</em> each white hexagon, all data table dependencies and relationships can be preserved, but not <em>between</em> each white hexagon. For example, in the diagram notice that solid lines represent dependencies that are self-contained to the data domain, while the dotted lines cross data domains and must be removed when the data domains are extracted into separate schemas.</p>
+        
+        <p class="pagebreak-before">When extracting a data domain, these cross-domain dependencies must be removed. This means removing foreign-key constraints, views, triggers, functions, and stored procedures between data domains. <a data-type="indexterm" data-primary="Ambler, Scott" id="idm45978845961968"></a><a data-type="indexterm" data-primary="Sadalage, Pramod" id="idm45978845961264"></a><a data-type="indexterm" data-primary="Refactoring Databases (Ambler and Sadalage)" id="idm45978845960592"></a><a data-type="indexterm" data-primary="dependencies" data-secondary="monolithic data domains" data-tertiary="Refactoring Databases (Ambler and Sadalage)" id="idm45978845959888"></a><a data-type="indexterm" data-primary="monolithic architectures" data-secondary="data decomposition" data-tertiary="Refactoring Databases (Ambler and Sadalage)" id="idm45978845958640"></a><a data-type="indexterm" data-primary="data" data-secondary="decomposition of operational data" data-tertiary="Refactoring Databases (Ambler and Sadalage)" id="idm45978845957376"></a><a data-type="indexterm" data-primary="architectural decomposition" data-secondary="data" data-tertiary="Refactoring Databases (Ambler and Sadalage)" id="idm45978845956112"></a><a data-type="indexterm" data-primary="resources online" data-secondary="Refactoring Databases (Ambler and Sadalage)" id="idm45978845954848"></a><a data-type="indexterm" data-primary="database refactoring book" id="idm45978845953872"></a>Database teams can leverage the refactoring patterns found in the book <em>Refactoring Databases: Evolutionary Database Design</em>, by Scott Ambler and Pramod Sadalage (Addison-Wesley), to safely and iteratively remove these data dependencies.</p>
+        
+        <figure><div id="fig-data-decomposition-data-domains-sysops-soccer-ball-data-domain-projection" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0619.png" alt="Data domains extracted out" width="600" height="646">
+        <h6><span class="label">Figure 6-19. </span>Tables belonging to data domains, extracted out, and connections that need to be broken</h6>
+        </div></figure>
+        
+        <p>To illustrate the process of defining a data domain and removing cross-domain references, consider the diagram in  <a data-type="xref" href="#fig-data-decomposition-data-domains-sysops-soccer-ball-data-domain-projection">Figure 6-19</a>, where a data domain representing Payment is created. Since the <code>customer</code> table belongs to a different data domain than the <code>v_customer_contract</code>, the <code>customer</code> table must be removed from the view in the Payment domain. The original view <code>v_customer_contract</code> prior to defining the data domain is defined in <a data-type="xref" href="#view-customer-contract">Example&nbsp;6-1</a>.</p>
+        <div id="view-customer-contract" data-type="example">
+        <h5><span class="label">Example 6-1. </span>Database view to provide payment information to remove cross-domain references</h5>
+        
+        <pre data-type="programlisting" data-code-language="sql"><code class="k">CREATE</code> <code class="k">VIEW</code> <code class="p">[</code><code class="n">payment</code><code class="p">].[</code><code class="n">v_customer_contract</code><code class="p">]</code>
+          <code class="k">AS</code>
+        <code class="k">SELECT</code>
+            <code class="n">customer</code><code class="p">.</code><code class="n">customer_id</code><code class="p">,</code> <code class="n">customer</code><code class="p">.</code><code class="n">customer_name</code><code class="p">,</code>
+            <code class="n">contract</code><code class="p">.</code><code class="n">contract_start_date</code><code class="p">,</code> <code class="n">contract</code><code class="p">.</code><code class="n">contract_duration</code><code class="p">,</code>
+            <code class="n">billing</code><code class="p">.</code><code class="n">billing_date</code><code class="p">,</code> <code class="n">billing</code><code class="p">.</code><code class="n">billing_amount</code>
+        <code class="k">FROM</code> <code class="n">payment</code><code class="p">.</code><code class="n">contract</code> <code class="k">AS</code> <code class="n">contract</code>
+        <code class="k">INNER</code> <code class="k">JOIN</code> <code class="n">customer</code><code class="p">.</code><code class="n">customer</code> <code class="k">AS</code> <code class="n">customer</code>
+            <code class="k">ON</code> <code class="p">(</code> <code class="n">contract</code><code class="p">.</code><code class="n">customer_id</code> <code class="o">=</code> <code class="n">customer</code><code class="p">.</code><code class="n">customer_id</code> <code class="p">)</code>
+        <code class="k">INNER</code> <code class="k">JOIN</code> <code class="n">payment</code><code class="p">.</code><code class="n">billing</code> <code class="k">AS</code> <code class="n">billing</code>
+            <code class="k">ON</code> <code class="p">(</code> <code class="n">contract</code><code class="p">.</code><code class="n">contract_id</code> <code class="o">=</code> <code class="n">billing</code><code class="p">.</code><code class="n">contract_id</code> <code class="p">)</code>
+        <code class="k">WHERE</code> <code class="n">contract</code><code class="p">.</code><code class="n">auto_renewal</code> <code class="o">=</code> <code class="mi">0</code></pre></div>
+        
+        <p>Notice in the updated view shown in <a data-type="xref" href="#contract-billing-view">Example&nbsp;6-2</a> that the join between <code>customer</code> and <code>payment</code> tables is removed, as is the column for the customer name (<code>customer.customer_name</code>).</p>
+        <div id="contract-billing-view" data-type="example">
+        <h5><span class="label">Example 6-2. </span>Database view to allow cross-domain access</h5>
+        
+        <pre data-type="programlisting" data-code-language="sql"><code class="k">CREATE</code> <code class="k">VIEW</code> <code class="p">[</code><code class="n">payment</code><code class="p">].[</code><code class="n">v_customer_contract</code><code class="p">]</code>
+          <code class="k">AS</code>
+        <code class="k">SELECT</code>
+            <code class="n">billing</code><code class="p">.</code><code class="n">customer_id</code><code class="p">,</code> <code class="n">contract</code><code class="p">.</code><code class="n">contract_start_date</code><code class="p">,</code>
+            <code class="n">contract</code><code class="p">.</code><code class="n">contract_duration</code><code class="p">,</code> <code class="n">billing</code><code class="p">.</code><code class="n">billing_date</code><code class="p">,</code>
+            <code class="n">billing</code><code class="p">.</code><code class="n">billing_amount</code>
+        <code class="k">FROM</code> <code class="n">payment</code><code class="p">.</code><code class="n">contract</code> <code class="k">AS</code> <code class="n">contract</code>
+        <code class="k">INNER</code> <code class="k">JOIN</code> <code class="n">payment</code><code class="p">.</code><code class="n">billing</code> <code class="k">AS</code> <code class="n">billing</code>
+            <code class="k">ON</code> <code class="p">(</code> <code class="n">contract</code><code class="p">.</code><code class="n">contract_id</code> <code class="o">=</code> <code class="n">billing</code><code class="p">.</code><code class="n">contract_id</code> <code class="p">)</code>
+        <code class="k">WHERE</code> <code class="n">contract</code><code class="p">.</code><code class="n">auto_renewal</code> <code class="o">=</code> <code class="mi">0</code></pre></div>
+        
+        <p>The bounded context rules for data domains apply just the same as individual <a data-type="indexterm" data-primary="bounded context in microservices" data-secondary="data domains" id="idm45978845703360"></a><a data-type="indexterm" data-primary="microservices" data-secondary="bounded context" data-tertiary="data domains" id="idm45978845702512"></a><a data-type="indexterm" data-primary="data domains" data-secondary="about decomposing monolithic data" data-tertiary="bounded context rules" id="idm45978845595104"></a>tables—a service cannot talk to multiple data domains. Therefore, by removing this table from the view, the Payment service must now call the Customer service to get the customer name that it originally had from the view.<a data-type="indexterm" data-startref="ch06-modd" id="idm45978845593552"></a><a data-type="indexterm" data-startref="ch06-modd2" id="idm45978845592880"></a></p>
+        
+        <p>Once architects and database teams understand the concept of a data domain, they can apply the five-step process for decomposing a monolithic database. Those five steps are outlined in the following sections.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before less_space" data-pdf-bookmark="Step 1: Analyze Database and Create Data Domains"><div class="sect2" id="step-1-data-domain">
+        <h2>Step 1: Analyze Database and Create Data Domains</h2>
+        
+        <p>As illustrated in <a data-type="xref" href="#fig-data-decomposition-original-state">Figure 6-20</a>, all services have access to all data in the database.<a data-type="indexterm" data-primary="data domains" data-secondary="about decomposing monolithic data" data-tertiary="create data domains" id="idm45978845586496"></a><a data-type="indexterm" data-primary="data" data-secondary="decomposition of operational data" data-tertiary="create data domains" id="idm45978845585408"></a><a data-type="indexterm" data-primary="architectural decomposition" data-secondary="data" data-tertiary="create data domains" id="idm45978845584320"></a><a data-type="indexterm" data-primary="monolithic architectures" data-secondary="data decomposition" data-tertiary="create data domains" id="idm45978845583232"></a><a data-type="indexterm" data-primary="Hohpe, Gregor" id="idm45978845582048"></a><a data-type="indexterm" data-primary="Woolf, Bobby" id="idm45978845581376"></a><a data-type="indexterm" data-primary="Enterprise Integration Patterns (Hohpe and Woolf)" id="idm45978845580704"></a> This practice, known as the <a href="https://oreil.ly/EFqtc">shared database</a> integration style described by Gregor Hohpe and Bobby Woolf in their book <em>Enterprise Integration Patterns: Designing, Building, and Deploying Messaging Solutions</em> (Addison-Wesley), creates a tight coupling between data and the services accessing that data. As 
+        <span class="keep-together">discussed</span> in <a data-type="xref" href="#sec-data-decomposition-drivers">“Data Decomposition Drivers”</a>, this tight coupling in the database makes change management very difficult.</p>
+        
+        <figure><div id="fig-data-decomposition-original-state" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0620.png" alt="Original State" width="600" height="379">
+        <h6><span class="label">Figure 6-20. </span>Multiple services use the same database, accessing all the tables necessary for read or write purposes</h6>
+        </div></figure>
+        
+        <p>The first step in breaking apart a database is to identify specific domain groupings within the database. For example, as shown in <a data-type="xref" href="#table-to-data-domain-assignment">Table&nbsp;6-5</a>, related tables are grouped together to help identify possible data domains.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Step 2: Assign Tables to Data Domains"><div class="sect2" id="step-2-data-domain">
+        <h2>Step 2: Assign Tables to Data Domains</h2>
+        
+        <p>The next step is to group tables along a specific bounded context, assigning<a data-type="indexterm" data-primary="data domains" data-secondary="about decomposing monolithic data" data-tertiary="assign tables to data domains" id="ch06-st2"></a><a data-type="indexterm" data-primary="data" data-secondary="decomposition of operational data" data-tertiary="assign tables to data domains" id="ch06-st22"></a><a data-type="indexterm" data-primary="architectural decomposition" data-secondary="data" data-tertiary="assign tables to data domains" id="ch06-st23"></a><a data-type="indexterm" data-primary="monolithic architectures" data-secondary="data decomposition" data-tertiary="assign tables to data domains" id="ch06-st24"></a><a data-type="indexterm" data-primary="schemas for database tables" id="idm45978845565808"></a> tables that belong to a specific data domain into their own schema. A <em>schema</em> is a logical construct in database servers. A schema contain objects such as tables, views, functions, and so on. In some database servers, like Oracle, the schema is same as the user, while in other databases, like SQL Server, a schema is logical space for database objects where users have access to these schemas.</p>
+        
+        <p>As illustrated in <a data-type="xref" href="#fig-data-decomposition-no-cross-schema-sql">Figure 6-21</a>, we have created schemas for each data domain and moved tables to the schemas to which they belong.</p>
+        
+        <figure><div id="fig-data-decomposition-no-cross-schema-sql" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0621.png" alt="Segregate along data domains" width="600" height="399">
+        <h6><span class="label">Figure 6-21. </span>Services use the primary schema according to their data domain needs</h6>
+        </div></figure>
+        
+        <p>When tables belonging to different data domains are tightly coupled<a data-type="indexterm" data-primary="data domains" data-secondary="combining" data-tertiary="tables tightly coupled" id="idm45978845560784"></a><a data-type="indexterm" data-primary="bounded context in microservices" data-secondary="data domains" data-tertiary="combining data domains" id="idm45978845559536"></a><a data-type="indexterm" data-primary="microservices" data-secondary="bounded context" data-tertiary="data domains combined" id="idm45978845558304"></a> and related to one another, data domains must necessarily be combined, creating a broader bounded context where multiple services own a specific data domain. Combining data domains is discussed in more detail in <a data-type="xref" href="ch09.html#ch09-data-update">Chapter&nbsp;9</a>.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="domain-vs-schema">
+        <h5>Data Domain Versus Database Schema</h5>
+        <p>A <em>data domain</em> is an architectural concept, whereas a<a data-type="indexterm" data-primary="schemas for database tables" data-secondary="data domain versus data schema" id="idm45978845553968"></a><a data-type="indexterm" data-primary="data domains" data-secondary="data schemas versus" id="idm45978845552912"></a> <em>schema</em> is a database construct that holds the database objects belonging to a particular data domain. While the relationship between a data domain and a schema is usually one to one, data domains can be mapped to one or more schemas, particularly when combining data domains because of tightly coupled data relationships. We will be referring to a data domain and schema to mean the same thing, and will be using the terms interchangeably.</p>
+        </div></aside>
+        
+        <p>To illustrate the assignment of tables to schemas, consider the Sysops Squad example where the <code>billing</code> table must be moved from its original schema to another data domain schema called <code>payment</code>:</p>
+        
+        <pre data-type="programlisting" data-code-language="sql"><code class="k">ALTER</code> <code class="k">SCHEMA</code> <code class="n">payment</code> <code class="n">TRANSFER</code> <code class="n">sysops</code><code class="p">.</code><code class="n">billing</code><code class="p">;</code></pre>
+        
+        <p>Alternatively, a database team can create synonyms for tables<a data-type="indexterm" data-primary="schemas for database tables" data-secondary="synonyms for tables" id="idm45978845546272"></a><a data-type="indexterm" data-primary="synonyms for tables" id="idm45978845545424"></a><a data-type="indexterm" data-primary="dependencies" data-secondary="monolithic data domains" data-tertiary="synonyms for tables" id="idm45978845544816"></a><a data-type="indexterm" data-primary="data domains" data-secondary="data schemas versus" data-tertiary="synonyms for tables" id="idm45978845543600"></a> that do not belong in their schema. <em>Synonyms</em> are database constructs, similar to <em>symlink</em>, that provide an alternate name for another database object that can exist in the same or different schema or server. While the idea of synonyms is to eliminate cross-schema queries, read or write privileges are needed to access them.</p>
+        
+        <p>To illustrate this practice, consider the following cross-domain query:</p>
+        
+        <pre data-type="programlisting" data-code-language="sql"><code class="k">SELECT</code>
+            <code class="n">history</code><code class="p">.</code><code class="n">ticket_id</code><code class="p">,</code> <code class="n">history</code><code class="p">.</code><code class="n">notes</code><code class="p">,</code> <code class="n">agent</code><code class="p">.</code><code class="n">name</code>
+        <code class="k">FROM</code> <code class="n">ticket</code><code class="p">.</code><code class="n">ticket_history</code> <code class="k">AS</code> <code class="n">history</code>
+        <code class="k">INNER</code> <code class="k">JOIN</code> <code class="n">profile</code><code class="p">.</code><code class="n">sysops_user</code> <code class="k">AS</code> <code class="n">agent</code>
+            <code class="k">ON</code> <code class="p">(</code> <code class="n">history</code><code class="p">.</code><code class="n">assigned_to_sysops_user_id</code> <code class="o">=</code> <code class="n">agent</code><code class="p">.</code><code class="n">sysops_user_id</code> <code class="p">)</code></pre>
+        
+        <p>Next, create a synonym for the <code>profile.sysops_user</code> table in the ticketing schema:</p>
+        
+        <pre data-type="programlisting" data-code-language="sql"><code class="k">CREATE</code> <code class="n">SYNONYM</code> <code class="n">ticketing</code><code class="p">.</code><code class="n">sysops_user</code>
+        <code class="k">FOR</code> <code class="n">profile</code><code class="p">.</code><code class="n">sysops_user</code><code class="p">;</code>
+        <code class="k">GO</code></pre>
+        
+        <p>As a result, the query can leverage the synonym <code>sysops_user</code> rather than the cross-domain table:</p>
+        
+        <pre data-type="programlisting" data-code-language="sql"><code class="k">SELECT</code>
+            <code class="n">history</code><code class="p">.</code><code class="n">ticket_id</code><code class="p">,</code> <code class="n">history</code><code class="p">.</code><code class="n">notes</code><code class="p">,</code> <code class="n">agent</code><code class="p">.</code><code class="n">name</code>
+        <code class="k">FROM</code> <code class="n">ticket</code><code class="p">.</code><code class="n">ticket_history</code> <code class="k">AS</code> <code class="n">history</code>
+        <code class="k">INNER</code> <code class="k">JOIN</code> <code class="n">ticket</code><code class="p">.</code><code class="n">sysops_user</code> <code class="k">AS</code> <code class="n">agent</code>
+            <code class="k">ON</code> <code class="p">(</code> <code class="n">history</code><code class="p">.</code><code class="n">assigned_to_sysops_user_id</code> <code class="o">=</code> <code class="n">agent</code><code class="p">.</code><code class="n">sysops_user_id</code> <code class="p">)</code></pre>
+        
+        <p>Unfortunately, creating synonyms this way for tables that are accessed across schemas provides the application developers with coupling points. To form proper data domains, these coupling points need to be broken apart at some later time, therefore moving the integration points from the database layer to the application layer.</p>
+        
+        <p>While synonyms do not really get rid of cross-schema queries, they do allow for easier dependency checking and code analysis, making it easier to split these later on.<a data-type="indexterm" data-startref="ch06-st2" id="idm45978845348832"></a><a data-type="indexterm" data-startref="ch06-st22" id="idm45978845348224"></a><a data-type="indexterm" data-startref="ch06-st23" id="idm45978845347584"></a><a data-type="indexterm" data-startref="ch06-st24" id="idm45978845346912"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Step 3: Separate Database Connections to Data Domains"><div class="sect2" id="step-3-data-domain">
+        <h2>Step 3: Separate Database Connections to Data Domains</h2>
+        
+        <p>In this step, the database connection logic within each service is refactored<a data-type="indexterm" data-primary="data domains" data-secondary="about decomposing monolithic data" data-tertiary="separate connections to data domains" id="idm45978845344096"></a><a data-type="indexterm" data-primary="data" data-secondary="decomposition of operational data" data-tertiary="separate connections to data domains" id="idm45978845342912"></a><a data-type="indexterm" data-primary="architectural decomposition" data-secondary="data" data-tertiary="separate connections to data domains" id="idm45978845341760"></a><a data-type="indexterm" data-primary="monolithic architectures" data-secondary="data decomposition" data-tertiary="separate connections to data domains" id="idm45978845340560"></a><a data-type="indexterm" data-primary="schemas for database tables" data-secondary="cross-schema access resolved" id="idm45978845339312"></a> to ensure services connect to a specific schema and have read and write access to the tables belonging only to their data domain. This transition, illustrated in Figure 6-22, is the most difficult since all cross-schema access must be resolved at the service level.</p>
+        
+        <p>Notice that the database configuration has been changed so that all <a data-type="indexterm" data-primary="service-based architecture" data-secondary="data access in other domains" id="idm45978845337824"></a><a data-type="indexterm" data-primary="data" data-secondary="decomposition of operational data" data-tertiary="data access in other domains" id="idm45978845336816"></a><a data-type="indexterm" data-primary="data domains" data-secondary="data access in other domains" id="idm45978845335568"></a><a data-type="indexterm" data-primary="services" data-secondary="data access in other domains" id="idm45978845334608"></a>data access is done strictly via services and their connected schemas. In this example, Service C communicates with Service D and not with SchemaD. There is no cross-schema access; all synonyms created in <a data-type="xref" href="#step-2-data-domain">“Step 2: Assign Tables to Data Domains”</a> are removed.</p>
+        
+        <figure><div id="fig-data-decomposition-segregate-access" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0622.png" alt="Database connections to specific schemas" width="600" height="272">
+        <h6><span class="label">Figure 6-22. </span>Move the cross-schema object access to the services, away from direct cross-schema access</h6>
+        </div></figure>
+        <div data-type="tip"><h6>Tip</h6>
+        <p>When data from other domains is needed, do not reach into their databases. Instead, access it using the service that owns the data domain.</p>
+        </div>
+        
+        <p>Upon completion of this step, the database is in a <a data-type="indexterm" data-primary="services" data-secondary="ownership of data" data-tertiary="data sovereignty per service" id="idm45978845329104"></a><a data-type="indexterm" data-primary="data" data-secondary="ownership" data-tertiary="data sovereignty per service" id="idm45978845327840"></a><a data-type="indexterm" data-primary="ownership of data" data-secondary="data sovereignty per service" id="idm45978845326608"></a><a data-type="indexterm" data-primary="bounded context in microservices" data-secondary="data sovereignty per service" id="idm45978845325648"></a><a data-type="indexterm" data-primary="distributed architectures" data-secondary="data sovereignty per service" id="idm45978845324672"></a>state of <em>data sovereignty per service</em>, which occurs when each service owns its own data. Data sovereignty per service is the nirvana state for a distributed architecture. Like all practices in architecture, it includes benefits and shortcomings:</p>
+        <dl>
+        <dt>Benefits</dt>
+        <dd>
+        
+        <ul>
+        <li>
+        <p>Teams can change the database schema without worrying about affecting changes in other domains.</p>
+        </li>
+        <li>
+        <p>Each service can use the database technology and database type best suitable for their use case.</p>
+        </li>
+        </ul>
+        </dd>
+        <dt>Shortcomings</dt>
+        <dd>
+        
+        <ul>
+        <li>
+        <p>Performance issues occur when services need access to large volumes of data.</p>
+        </li>
+        <li>
+        <p>Referential integrity cannot be maintained in the database, resulting in the possibility of bad data quality.</p>
+        </li>
+        <li>
+        <p>All database code (stored procedures, functions) that access tables belonging to other domains must be moved to the service layer.</p>
+        </li>
+        </ul>
+        </dd>
+        </dl>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Step 4: Move Schemas to Separate Database Servers"><div class="sect2" id="idm45978845315056">
+        <h2>Step 4: Move Schemas to Separate Database Servers</h2>
+        
+        <p>Once database teams have created and separated data domains,<a data-type="indexterm" data-primary="data domains" data-secondary="about decomposing monolithic data" data-tertiary="schemas to separate servers" id="idm45978845313360"></a><a data-type="indexterm" data-primary="data" data-secondary="decomposition of operational data" data-tertiary="schemas to separate servers" id="idm45978845312128"></a><a data-type="indexterm" data-primary="architectural decomposition" data-secondary="data" data-tertiary="schemas to separate servers" id="idm45978845310880"></a><a data-type="indexterm" data-primary="monolithic architectures" data-secondary="data decomposition" data-tertiary="schemas to separate servers" id="idm45978845309632"></a><a data-type="indexterm" data-primary="architecture quantum" data-secondary="data disintegration driver" data-tertiary="separate databases" id="idm45978845308384"></a><a data-type="indexterm" data-primary="databases separated physically" id="idm45978845307152"></a><a data-type="indexterm" data-primary="schemas for database tables" data-secondary="databases separated physically" id="idm45978845306464"></a> and have isolated services so that they access their own data, they can now move the data domains to separate physical databases. This is often a necessary step because even though 
+        <span class="keep-together">services</span> access their own schemas, accessing a single database creates a single <em>architecture quantum</em>, as discussed in <a data-type="xref" href="ch02.html#ch02-discerning">Chapter&nbsp;2</a>, which might have adverse effects for operational characteristics, such as scalability, fault tolerance, and performance.</p>
+        
+        <p>When moving schemas to separate physical databases, database teams have two options: backup and restore, or replication. These options are outlined as follows:</p>
+        <dl>
+        <dt>Backup and restore</dt>
+        <dd>
+        <p>With this option, teams first back up each schema with data<a data-type="indexterm" data-primary="backup and restore databases" id="idm45978845301664"></a> domains, then set up database servers for each data domain. They then restore the schemas, connect services to schemas in the new database servers, and finally remove schemas from the original database server. This approach usually requires downtime for the migration.</p>
+        </dd>
+        <dt>Replicate</dt>
+        <dd>
+        <p>Using the replicate option, teams first set up database servers for<a data-type="indexterm" data-primary="replicate databases" id="idm45978845299584"></a> each data domain. Next they replicate the schemas, switch connections over to the new database servers, and then remove the schemas from the original database server. While this approach avoids downtime, it does require more work to set up the replication and manage increased coordination.</p>
+        </dd>
+        </dl>
+        
+        <p><a data-type="xref" href="#fig-data-decomposition-replicate-move">Figure 6-23</a> shows an example of the replication option, where the database team sets up multiple database servers so that there is one database server for each data domain.</p>
+        
+        <figure><div id="fig-data-decomposition-replicate-move" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0623.png" alt="Replicate to move" width="600" height="406">
+        <h6><span class="label">Figure 6-23. </span>Replicate schemas (data domains) to their own database servers</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Step 5: Switch Over to Independent Database Servers"><div class="sect2" id="idm45978845295184">
+        <h2>Step 5: Switch Over to Independent Database Servers</h2>
+        
+        <p>Once the schemas are fully replicated, the service connections can be switched.<a data-type="indexterm" data-primary="data domains" data-secondary="about decomposing monolithic data" data-tertiary="switch over to independent servers" id="idm45978845293824"></a><a data-type="indexterm" data-primary="data" data-secondary="decomposition of operational data" data-tertiary="switch over to independent servers" id="idm45978845292544"></a><a data-type="indexterm" data-primary="architectural decomposition" data-secondary="data" data-tertiary="switch over to independent servers" id="idm45978845291296"></a><a data-type="indexterm" data-primary="monolithic architectures" data-secondary="data decomposition" data-tertiary="switch over to independent servers" id="idm45978845290048"></a> The last step in getting the data domains and services to act as their own independent deployable units is to remove the connection to the old database servers and remove the schemas from the old database servers as well. The final state is seen in <a data-type="xref" href="#fig-data-decomposition-final-state">Figure 6-24</a>.</p>
+        
+        <figure><div id="fig-data-decomposition-final-state" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0624.png" alt="Individual Database Servers" width="600" height="293">
+        <h6><span class="label">Figure 6-24. </span>Independent database servers for each data domain</h6>
+        </div></figure>
+        
+        <p>Once the database team has separated the data domains, isolated the database connections, and finally moved the data domains to their own database servers, they can optimize the individual database servers for availability and scalability. Teams can also analyze the data to determine the most appropriate database type to use, introducing polyglot database usage within the ecosystem.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Selecting a Database Type"><div class="sect1" id="sec-polyglot-databases">
+        <h1>Selecting a Database Type</h1>
+        
+        <p>Beginning around 2005, a revolution has occurred in database<a data-type="indexterm" data-primary="database types" data-secondary="about characteristics rated" id="idm45978845283344"></a> technologies. Unfortunately, the number of products that have emerged during this time have created a problem known as <a href="https://oreil.ly/pBjGZ">The Paradox of Choice</a>. Having such a large number of products and choices means having more trade-off decisions to make. Given that each product is optimized for certain trade-offs, it rests on both software and data architects to pick the appropriate product with these trade-offs in mind as it relates to their problem space.</p>
+        
+        <p>In this section, we introduce star ratings for the various database types, using the following characteristics in our analysis:</p>
+        <dl>
+        <dt>Ease-of-learning curve</dt>
+        <dd>
+        <p>This characteristic refers to the ease with which new developers, data architects, data modelers, operational DBAs, and other users of the databases can learn and adopt. For example, it’s assumed that most software developers understand SQL, whereas something like Gremlin (a graph query language) may be a niche skill. The higher the star rating, the easier the learning curve. The lower the star rating, the harder the learning curve.</p>
+        </dd>
+        <dt>Ease of data modeling</dt>
+        <dd>
+        <p>This characteristic refers to the ease with which data modelers can represent the domain in terms of a data model. A higher star rating means data modeling matches many use cases, and once modeled, is easy to change and adopt.</p>
+        </dd>
+        <dt>Scalability/throughput</dt>
+        <dd>
+        <p>This characteristic refers to the degree and ease with which a database can scale to handle increased throughput. Is it easy to scale the database? Can the database scale horizontally, vertically, or both? A higher star rating means it’s easier to scale and get higher throughput.</p>
+        </dd>
+        <dt>Availability/partition tolerance</dt>
+        <dd>
+        <p>This characteristic refers to whether <a data-type="indexterm" data-primary="availability" data-secondary="database types" data-tertiary="about availability" id="idm45978845275072"></a>the database supports high availability configurations (such as <em>replica-sets</em> in MongoDB or <em>tunable consistency</em> in <a href="https://cassandra.apache.org">Apache Cassandra</a>). Does it provide features to handle network partitions? The higher the star rating, the better the database supports higher availability and/or better partition tolerance.</p>
+        </dd>
+        <dt>Consistency</dt>
+        <dd>
+        <p>This characteristic refers to whether the database supports an “always consistent” paradigm. <a data-type="indexterm" data-primary="consistency" data-secondary="about" id="idm45978845270464"></a>Does the database support ACID transactions, or does it lean toward BASE transactions with an eventual consistency model? Does it provide features to have tunable consistency models for different types of writes? The higher the star rating, the more consistency the database supports.</p>
+        </dd>
+        <dt>Programming language support, product maturity, SQL support, and community</dt>
+        <dd>
+        <p>This characteristic refers to which (and how many) programming languages the database supports, how mature the database is, and the size of the database community. Can an organization easily hire people who know how to work with the database? Higher star ratings means there is better support, the product is mature, and it’s easy to hire talent.</p>
+        </dd>
+        <dt>Read/write priority</dt>
+        <dd>
+        <p>This characteristic refers to whether the database prioritizes reads over writes, or writes over reads, or if it is balanced in its approach. This is not a binary choice—rather, it’s more of a scale toward which direction the database optimizes.</p>
+        </dd>
+        </dl>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" class="pagebreak-before less_space" data-pdf-bookmark="Relational Databases"><div class="sect2" id="idm45978845280352">
+        <h2>Relational Databases</h2>
+        
+        <p>Relational databases (also known as an RDBMS) have been the<a data-type="indexterm" data-primary="database types" data-secondary="relational databases" id="ch06-rdbms"></a><a data-type="indexterm" data-primary="relational databases (RDBMS)" id="ch06-rdbms2"></a> database of choice for more than three decades. There is significant value in their usage and the stability they provide, particularly within most business-related applications. <a data-type="indexterm" data-primary="ACID (atomicity, consistency, isolation, durability) transactions" data-secondary="database types" data-tertiary="relational databases" id="idm45978845262064"></a>These databases are known for the ubiquitous Structured Query Language (SQL) and the ACID properties they provide. The SQL interface they provide makes them a preferred choice for implementing different <code>read</code> models on top of the same <code>write</code> model. The star ratings for relational databases appear in <a data-type="xref" href="#fig-data-decomposition-star-rating-rdbms">Figure 6-25</a>.</p>
+        
+        <figure><div id="fig-data-decomposition-star-rating-rdbms" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0625.png" alt="Relational databases and their ratings" width="600" height="377">
+        <h6><span class="label">Figure 6-25. </span>Relational databases rated for various adoption characteristics</h6>
+        </div></figure>
+        <dl>
+        <dt>Ease-of-learning curve</dt>
+        <dd>
+        <p>Relational databases have been around for many years. They are commonly taught in schools, and mature documentation and tutorials exist. Therefore, they are much easier to learn than other database types.</p>
+        </dd>
+        <dt>Ease of data modeling</dt>
+        <dd>
+        <p>Relational databases allow for flexible data modeling. They allow the modeling of key-value, document, graph-like structures, and they allow for changes in read patterns with addition of new indexes. Some models are really difficult to achieve, such as graph structures with arbitrary depth. Relational databases organize data into tables and rows (similar to spreadsheets), something that is natural for most database modelers.</p>
+        </dd>
+        <dt>Scalability/throughput</dt>
+        <dd>
+        <p>Relational databases are generally vertically scaled using large machines.<a data-type="indexterm" data-primary="scalability" data-secondary="database types" data-tertiary="relational complexity" id="idm45978845252384"></a> However, setup with replications and automated switchover are complex, requiring higher coordination and setup.</p>
+        </dd>
+        <dt>Availability/partition tolerance</dt>
+        <dd>
+        <p>Relational databases favor consistency over availability and partition tolerance, discussed in <a data-type="xref" href="ch09.html#sec-cap-theorem">“Table Split Technique”</a>.<a data-type="indexterm" data-primary="availability" data-secondary="database types" data-tertiary="relational databases" id="idm45978845248592"></a></p>
+        </dd>
+        <dt>Consistency</dt>
+        <dd>
+        <p>Relational databases have been dominant for years because of their support for ACID properties.<a data-type="indexterm" data-primary="consistency" data-secondary="database types" data-tertiary="relational ACID" id="idm45978845245952"></a><a data-type="indexterm" data-primary="ACID (atomicity, consistency, isolation, durability) transactions" data-secondary="database types" data-tertiary="relational databases" id="idm45978845244704"></a> The ACID features handle many concerns in concurrent systems and allow for developing applications without being concerned about lower-level details of concurrency and how the databases handle them.</p>
+        </dd>
+        <dt>Programming language support, product maturity, SQL support, and community</dt>
+        <dd>
+        <p>Since relational databases have been around for many years, well-known design, implementation, and operational patterns can be applied to them, thus making them easy to adopt, develop, and integrate within an architecture. Many of the relational databases lack support for reactive stream APIs and similar new concepts; newer architectural concepts take longer to implement in well-established relational databases. Numerous programming language interfaces work with relational databases, and the community of users is large (although splintered among all the vendors).</p>
+        </dd>
+        <dt>Read/write priority</dt>
+        <dd>
+        <p>In relational databases, the data model can be designed in such a way that either reads become more efficient or writes become more efficient. The same database can handle different types of workloads, allowing for balanced read-write priority. For example, not all use cases need ACID properties, especially in large data and traffic scenarios, or when really flexible schema is desired such as in survey administration. In these cases, other database types may be a better option.</p>
+        </dd>
+        </dl>
+        
+        <p><a href="https://www.mysql.com">MySQL</a>, <a href="https://www.oracle.com">Oracle</a>, <a href="https://oreil.ly/LP7jK">Microsoft SQL Server</a>, and <a href="https://www.postgresql.org">PostgreSQL</a> are the most <a data-type="indexterm" data-primary="MySQL relational database" id="idm45978845237360"></a><a data-type="indexterm" data-primary="Oracle relational database" id="idm45978845236656"></a><a data-type="indexterm" data-primary="Microsoft SQL Server relational database" id="idm45978845235968"></a><a data-type="indexterm" data-primary="PostgreSQL relational database" id="idm45978845235264"></a><a data-type="indexterm" data-primary="relational databases (RDBMS)" data-secondary="links to most popular" id="idm45978845234576"></a><a data-type="indexterm" data-primary="resources online" data-secondary="database links" data-tertiary="relational databases" id="idm45978845233616"></a><a data-type="indexterm" data-primary="Database as a Service (DBaaS)" id="idm45978845232400"></a>popular relational databases and can be run as standalone installations or are available as <em>Database as a Service</em> on major cloud provider platforms.<a data-type="indexterm" data-startref="ch06-rdbms" id="idm45978845231088"></a><a data-type="indexterm" data-startref="ch06-rdbms2" id="idm45978845230384"></a></p>
+        <aside data-type="sidebar" epub:type="sidebar" class="pagebreak-before less_space"><div class="sidebar" id="aggregate_orientation">
+        <h5>Aggregate Orientation</h5>
+        <p><em>Aggregate orientation</em> is the preference to operate on data<a data-type="indexterm" data-primary="aggregate orientation" id="idm45978845227328"></a><a data-type="indexterm" data-primary="database types" data-secondary="aggregate orientation" id="idm45978845226624"></a><a data-type="indexterm" data-primary="Evans, Eric" id="idm45978845225680"></a> that is related and has a complex data structure. Aggregate is a term originated in <em>Domain-Driven Design: Tackling Complexity in the Heart of Software</em> by Eric Evans. Think of <code>ticket</code> or <code>customer</code> with all its dependent tables in the Sysops Squad—they are aggregates. Like all practices in architecture, aggregate orientation includes benefits and shortcomings:</p>
+        <dl>
+        <dt>Benefits</dt>
+        <dd>
+        
+        <ul>
+        <li>
+        <p>Enables easy distribution of data in clusters of servers, as the whole aggregate can be copied over to different servers.</p>
+        </li>
+        <li>
+        <p>Improves read and write performance, as it reduces joins in the database.</p>
+        </li>
+        <li>
+        <p>Reduces impedance mismatch between the application model and storage model.</p>
+        </li>
+        </ul>
+        </dd>
+        <dt>Shortcomings</dt>
+        <dd>
+        
+        <ul>
+        <li>
+        <p>It’s difficult to arrive at proper aggregates, and changing aggregate boundaries is hard.</p>
+        </li>
+        <li>
+        <p>Analyzing data across aggregates is difficult.</p>
+        </li>
+        </ul>
+        </dd>
+        </dl>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Key-Value Databases"><div class="sect2" id="sec-kv-database">
+        <h2>Key-Value Databases</h2>
+        
+        <p>Key-value databases are similar to a <a href="https://oreil.ly/2FOQy">hash table</a> data structure, <a data-type="indexterm" data-primary="hash table data structure" id="idm45978845212400"></a><a data-type="indexterm" data-primary="key-value databases" id="ch06-kvd"></a><a data-type="indexterm" data-primary="database types" data-secondary="key-value databases" id="ch06-kvd2"></a>something like tables in an RDBMS with an <code>ID</code> column as the key and a <code>blob</code> column as the value, which can consequently store any type of data. <a data-type="indexterm" data-primary="NoSQL databases" data-secondary="key-value databases" id="idm45978845208496"></a><a data-type="indexterm" data-primary="database types" data-secondary="NoSQL databases" id="idm45978845207440"></a><a data-type="indexterm" data-primary="Sadalage, Pramod" id="idm45978845206496"></a><a data-type="indexterm" data-primary="Fowler, Martin" id="idm45978845205824"></a><a data-type="indexterm" data-primary="NoSQL databases" data-secondary="NoSQL Distilled (Sadalage and Fowler)" id="idm45978845205152"></a><a data-type="indexterm" data-primary="resources online" data-secondary="database links" data-tertiary="NoSQL databases" id="idm45978845204144"></a>Key-value databases are part of a family known as NoSQL databases. In the book <em>NoSQL Distilled: A Brief Guide to the Emerging World of Polyglot Persistence</em> (Addison-Wesley), Pramod Sadalage (one of your authors) and Martin Fowler describe the rise of NoSQL databases and the motivations, usages, and trade-offs of using these types of databases, and is a good reference for further information on this database type.</p>
+        
+        <p>Key-value databases are easiest to understand among the NoSQL databases. An application client can insert a key and a value, get a value for a known key, or delete a known key and its value. A key-value database does not know what’s inside the value part, nor does it care what’s inside, meaning that the database can query using the key and nothing else.</p>
+        
+        <p>Unlike relational databases, key-value databases should be picked based on needs. <a data-type="indexterm" data-primary="Amazon DynamoDB key-value database" id="idm45978845201552"></a><a data-type="indexterm" data-primary="Riak KV key-value database" id="idm45978845200880"></a><a data-type="indexterm" data-primary="MemcacheDB key-value database" id="idm45978845200208"></a><a data-type="indexterm" data-primary="Redis key-value database" id="idm45978845199520"></a>There are persistent key-value databases like Amazon DynamoDB or Riak KV, nonpersistent databases like MemcacheDB, and other databases like Redis that can be configured to be persistent or not. Other relational database constructs like <code>joins</code>, <code>where</code>, and <code>order by</code> are not supported, but rather the operations <code>get</code>, <code>put</code>, and <code>delete</code>. The ratings for key-value databases appear in <a data-type="xref" href="#fig-data-decomposition-star-rating-key-value">Figure 6-26</a>.</p>
+        
+        <figure><div id="fig-data-decomposition-star-rating-key-value" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0626.png" alt="Key-Value databases and their ratings" width="600" height="377">
+        <h6><span class="label">Figure 6-26. </span>Key-value databases rated for various adoption characteristics</h6>
+        </div></figure>
+        <dl>
+        <dt>Ease-of-learning curve</dt>
+        <dd>
+        <p>Key-value databases are easy to understand. Since they <a data-type="indexterm" data-primary="aggregate orientation" data-secondary="key-value databases" id="idm45978845191248"></a>use <a data-type="xref" href="#aggregate_orientation">“Aggregate Orientation”</a>, it’s important to design the aggregate properly because any change in the aggregate means rewriting all the data. Moving from relational databases to any of the NoSQL databases takes practice and unlearning familiar practices. For example, a developer cannot simply query “Get me all the keys.”</p>
+        </dd>
+        <dt>Ease of data modeling</dt>
+        <dd>
+        <p>Since key-value databases are aggregate oriented, they can use memory structures like arrays, maps, or any other type of data, including big blob. The data can be queried only by key or ID, which means the client should have access to the key outside of the database. Good examples of a key include  <code>session_id</code>, <code>user_id</code>, and <code>order_id</code>.</p>
+        </dd>
+        <dt>Scalability/throughput</dt>
+        <dd>
+        <p>Since key-value databases are indexed by key or ID, key<a data-type="indexterm" data-primary="scalability" data-secondary="database types" data-tertiary="key-value scalable" id="idm45978845184992"></a> lookups are very fast as there are no <code>joins</code> or <code>order by</code> operations. The value is fetched and returned to the client, which allows for easier scaling and  higher throughput.</p>
+        </dd>
+        <dt>Availability/partition tolerance</dt>
+        <dd>
+        <p>Since there are many types of key-value databases and<a data-type="indexterm" data-primary="availability" data-secondary="database types" data-tertiary="key-value databases" id="idm45978845181312"></a> each has different properties, even the same database can be configured to act in different ways either for an installation or for each read. For example, in Riak users can use <em>quorum</em> properties such as <code>all</code>, <code>one</code>, <code>quorum</code>, and <code>default</code>. When we use <em>one</em> quorum, the query can return <code>success</code> when any one node responds. When the <code>all</code> quorum is used, all nodes have to respond for the query to return <code>success</code>.  Each query can tune the partition tolerance and availability. Hence, assuming that all key-value stores are the same is a mistake.</p>
+        </dd>
+        <dt>Consistency</dt>
+        <dd>
+        <p>During each write operation, we can apply configurations that are similar<a data-type="indexterm" data-primary="consistency" data-secondary="database types" data-tertiary="key-value tunable" id="idm45978845174128"></a><a data-type="indexterm" data-primary="consistency" data-secondary="tunable consistency" id="idm45978845172880"></a><a data-type="indexterm" data-primary="tunable consistency" id="idm45978845171936"></a><a data-type="indexterm" data-primary="consistency" data-secondary="majority quorum" id="idm45978845171264"></a><a data-type="indexterm" data-primary="majority quorum" id="idm45978845170320"></a><a data-type="indexterm" data-primary="quorum mechanism" id="idm45978845169648"></a> to applying quorum during read operations; these configurations provide what is known as <em>tunable consistency</em>. Higher consistency can be achieved by trading off latency. For a write to be highly consistent, all nodes have to respond, which reduces partition tolerance. Using a <em>majority quorum</em> is considered a good 
+        <span class="keep-together">trade-off</span>.</p>
+        </dd>
+        <dt>Programming language support, product maturity, SQL support, and community</dt>
+        <dd>
+        <p>Key-value databases have good programming language support, and many open source databases have an active community to help learn and understand them. Since most databases have an <em>HTTP REST API</em>, they are much easier to interface with.</p>
+        </dd>
+        <dt>Read/write priority</dt>
+        <dd>
+        <p>Since key-value databases are aggregate oriented, access to data via a key or ID is geared toward <em>read</em> priority. Key-value databases can be used for session storage, and can be used to cache user properties and preferences as well.<a data-type="indexterm" data-startref="ch06-kvd" id="idm45978845163136"></a><a data-type="indexterm" data-startref="ch06-kvd2" id="idm45978845162432"></a></p>
+        </dd>
+        </dl>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="sharding_databases">
+        <h5>Sharding in Databases</h5>
+        <p>The concept of partitioning is well-known in relational databases: the table data is partitioned into sets based on a <em>schema</em> on the same database <a data-type="indexterm" data-primary="sharding in databases" id="idm45978845159360"></a>server. <em>Sharding</em> is similar to partitioning, but data resides on different servers or nodes. Nodes collaborate to figure out where data exists or where data should be stored based on a sharding key. The word <em>shard</em> means <a href="https://oreil.ly/34AOj">horizontal partition</a> of data in a 
+        <span class="keep-together">database</span>.</p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Document Databases"><div class="sect2" id="idm45978845156096">
+        <h2>Document Databases</h2>
+        
+        <p>Documents such as JSON or XML are the basis of document databases.<a data-type="indexterm" data-primary="database types" data-secondary="document databases" id="idm45978845154592"></a><a data-type="indexterm" data-primary="document databases" id="idm45978845153536"></a><a data-type="indexterm" data-primary="NoSQL databases" data-secondary="document databases" id="idm45978845152864"></a> Documents are human-readable, self-describing, hierarchical tree structures. Document databases are another type of NoSQL database, whose ratings appear in <a data-type="xref" href="#fig-data-decomposition-star-rating-document-db">Figure 6-27</a>. These databases understand the structure of the data and can index multiple attributes of the documents, allowing for better query flexibility.</p>
+        
+        <figure><div id="fig-data-decomposition-star-rating-document-db" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0627.png" alt="Document databases and their ratings" width="600" height="385">
+        <h6><span class="label">Figure 6-27. </span>Document databases rated for various adoption characteristics</h6>
+        </div></figure>
+        <dl>
+        <dt>Ease-of-learning curve</dt>
+        <dd>
+        <p>Document databases are like key-value databases where the value is human readable. This makes learning the database much easier. Enterprises are used to dealing with documents, such as XML and JSON in different contexts, such as API payloads and JavaScript frontends.</p>
+        </dd>
+        <dt>Ease of data modeling</dt>
+        <dd>
+        <p>Just like key-value databases, data modeling involves modeling aggregates such as orders, tickets, and other domain objects. Document databases are forgiving when it comes to aggregate design, as the parts of the aggregate are queryable and can be indexed.</p>
+        </dd>
+        <dt>Scalability/throughput</dt>
+        <dd>
+        <p>Document databases are aggregate oriented and easy to<a data-type="indexterm" data-primary="scalability" data-secondary="database types" data-tertiary="document scalable" id="idm45978845144080"></a><a data-type="indexterm" data-primary="sharding in databases" data-secondary="document databases" id="idm45978845142832"></a> scale. Complex indexing reduces scalability, and increased data size leads to a need for partitioning or sharding. Once sharding is introduced, it increases the complexity and also forces the selection of a sharding key.</p>
+        </dd>
+        <dt>Availability/partition tolerance</dt>
+        <dd>
+        <p>Like key-value databases, document databases can be configured<a data-type="indexterm" data-primary="availability" data-secondary="database types" data-tertiary="document databases" id="idm45978845140272"></a> for higher availability. The setup gets complicated when there are replicated clusters for sharded collections. The cloud providers are trying to make these setups more usable.</p>
+        </dd>
+        <dt>Consistency</dt>
+        <dd>
+        <p>Some document databases have started supporting ACID<a data-type="indexterm" data-primary="ACID (atomicity, consistency, isolation, durability) transactions" data-secondary="database types" data-tertiary="document databases" id="idm45978845137280"></a><a data-type="indexterm" data-primary="consistency" data-secondary="database types" data-tertiary="document ACID" id="idm45978845135984"></a><a data-type="indexterm" data-primary="majority quorum" id="idm45978845134768"></a><a data-type="indexterm" data-primary="quorum mechanism" id="idm45978845134096"></a><a data-type="indexterm" data-primary="consistency" data-secondary="majority quorum" id="idm45978845133424"></a> transactions within a collection, but this may not work in some edge cases. Just like key-value databases, document databases provide the ability to tune the read and write operations using the quorum mechanism.</p>
+        </dd>
+        <dt>Programming language support, product maturity, SQL support, and community</dt>
+        <dd>
+        <p>Document databases are the most popular of the NoSQL databases, with an active user community, numerous online learning tutorials, and many programming language drivers that allow for easier adoption.</p>
+        </dd>
+        <dt>Read/write priority</dt>
+        <dd>
+        <p>Document databases are aggregate oriented and have secondary indexes to query, so these databases are favoring read priority.</p>
+        </dd>
+        </dl>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="schemaless_databases">
+        <h5>Schema-less Databases</h5>
+        <p>One common theme in NoSQL databases is duplication of data<a data-type="indexterm" data-primary="schemas for database tables" data-secondary="schema-less databases" id="idm45978845127984"></a><a data-type="indexterm" data-primary="database types" data-secondary="schema-less databases" id="idm45978845126960"></a><a data-type="indexterm" data-primary="NoSQL databases" data-secondary="schema-less databases" id="idm45978845126016"></a> and schema attribute names. No two entries have to be the same in terms of schema or attribute names. This introduces interesting change control dynamics and provides flexibility. The schema-less nature of the database is powerful, but it’s important to understand that the data always has a schema even if it’s implicit or defined elsewhere. The application needs to handle multiple versions of the schema returned by a database. The claim that NoSQL databases are entirely schema-less is misleading.</p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Column Family Databases"><div class="sect2" id="idm45978845124560">
+        <h2>Column Family Databases</h2>
+        
+        <p><em>Column family databases</em>, also known as <em>wide column databases</em><a data-type="indexterm" data-primary="database types" data-secondary="column family databases" id="idm45978845122096"></a><a data-type="indexterm" data-primary="column family databases" id="idm45978845121088"></a><a data-type="indexterm" data-primary="wide column databases" id="idm45978845120416"></a><a data-type="indexterm" data-primary="NoSQL databases" data-secondary="column family databases" id="idm45978845119744"></a> or <em>big table databases</em>, have rows with varying numbers of columns, where each column is a <em>name-value</em> pair. With columnar databases, the <code>name</code> is known as a <em>column-key</em>, the <code>value</code> is known as a <em>column-value</em>, and the primary key of a <code>row</code> is known as a <em>row key</em>. Column family databases are another type of NoSQL database that group related data that is accessed at the same time, and whose ratings appear in <a data-type="xref" href="#fig-data-decomposition-star-rating-column-family">Figure 6-28</a>.</p>
+        
+        <figure><div id="fig-data-decomposition-star-rating-column-family" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0628.png" alt="Column family databases and their ratings" width="600" height="385">
+        <h6><span class="label">Figure 6-28. </span>Column family databases rated for various adoption characteristics</h6>
+        </div></figure>
+        <dl>
+        <dt>Ease-of-learning curve</dt>
+        <dd>
+        <p>Column family databases are difficult to understand. Since a collection of name-value pairs belong to a row, each row can have different name-value pairs. Some name-value pairs can have a map of columns and are known as <em>super columns</em>. Understanding how to use these takes practice and time.</p>
+        </dd>
+        <dt>Ease of data modeling</dt>
+        <dd>
+        <p>Data modeling with column family databases takes some getting used to. Data needs to be arranged in groups of name-value pairs that have a single row identifier, and designing this row key takes multiple iterations. <a data-type="indexterm" data-primary="Apache Cassandra column family database" id="idm45978845107952"></a>Some column family databases like Apache Cassandra have introduced a SQL-like query language known as Cassandra Query Language (CQL) that makes data modeling 
+        <span class="keep-together">accessible</span>.</p>
+        </dd>
+        <dt>Scalability/throughput</dt>
+        <dd>
+        <p>All column family databases are highly scalable and suit use<a data-type="indexterm" data-primary="scalability" data-secondary="database types" data-tertiary="column family scalable" id="idm45978845105152"></a> cases where high write or read throughput is needed. Column family databases scale horizontally for read and write operations.</p>
+        </dd>
+        <dt>Availability/partition tolerance</dt>
+        <dd>
+        <p>Column family databases naturally operate in clusters, and when<a data-type="indexterm" data-primary="availability" data-secondary="database types" data-tertiary="column family databases" id="idm45978845102304"></a> some nodes of the cluster are down, it is transparent to the client. The default replication factor is three, which means at least three copies of data are made, improving availability and partition tolerance. Similar to key-value and document databases, column family databases can tune writes and reads based on quorum needs.</p>
+        </dd>
+        <dt>Consistency</dt>
+        <dd>
+        <p>Column family databases, like other NoSQL databases, follow<a data-type="indexterm" data-primary="consistency" data-secondary="database types" data-tertiary="column family tunable" id="idm45978845099216"></a><a data-type="indexterm" data-primary="consistency" data-secondary="tunable consistency" id="idm45978845097888"></a><a data-type="indexterm" data-primary="tunable consistency" id="idm45978845096944"></a> the concept of tunable consistency. This means that, based on needs, each operation can decide how much consistency is desired. For example, in <code>high write</code> scenarios where some data loss can be tolerated, the write consistency level of <code>ANY</code> could be used, which means at least one node has accepted the write, while a consistency level of <code>ALL</code> means all nodes have to accept the write and respond success. Similar consistency levels can be applied to read operations. It’s a trade-off—higher consistency levels reduce availability and partition tolerance.</p>
+        </dd>
+        <dt>Programming language support, product maturity, SQL support, and community</dt>
+        <dd>
+        <p>Column family databases like Cassandra and Scylla <a data-type="indexterm" data-primary="Scylla column family database" id="idm45978845093168"></a>have active communities, and the development of SQL-like interfaces has made the adoption of these databases easier.</p>
+        </dd>
+        <dt>Read/write priority</dt>
+        <dd>
+        <p>Column family databases use the concepts of <em>SSTables</em>, <em>commit logs</em>, and <em>memtables</em>, and since the name-value pairs are populated when data is present, they can handle sparse data much better than relational databases. They are ideal for high write-volume scenarios.</p>
+        </dd>
+        </dl>
+        
+        <p>All NoSQL databases are designed to understand <a data-type="indexterm" data-primary="aggregate orientation" data-secondary="NoSQL databases understanding" id="idm45978845088848"></a><a data-type="indexterm" data-primary="NoSQL databases" data-secondary="aggregate orientation understood" id="idm45978845087904"></a>aggregate orientation. Having aggregates improves read and write performance, and also allows for higher availability and partition tolerance when the databases are run as a cluster. The notion of CAP theorem is covered in <a data-type="xref" href="ch09.html#sec-cap-theorem">“Table Split Technique”</a> at more length.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Graph Databases"><div class="sect2" id="idm45978845085696">
+        <h2>Graph Databases</h2>
+        
+        <p>Unlike relational databases, where relations are implied based on<a data-type="indexterm" data-primary="tools" data-secondary="visualization" data-tertiary="graph databases" id="ch06-grphz"></a><a data-type="indexterm" data-primary="database types" data-secondary="graph databases" id="ch06-grph"></a><a data-type="indexterm" data-primary="graph databases" id="ch06-grph2"></a><a data-type="indexterm" data-primary="visualization tools" data-secondary="graph databases" id="ch06-grph3"></a> references, graph databases use nodes to store entities and their properties. These nodes are connected with <em>edges</em>, also known as <em>relationships</em>, which are explicit objects. Nodes are organized by relationships and allow for analysis of the connected data by traversing along specific edges.</p>
+        
+        <figure><div id="fig-data-decomposition-graph-direction" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0629.png" alt="Graph databases with directional edges" width="600" height="146">
+        <h6><span class="label">Figure 6-29. </span>In graph databases, direction of the edge has significance when querying</h6>
+        </div></figure>
+        
+        <p class="pagebreak-before">The edges in graph databases have directional significance. In Figure 6-29, an edge of type <code>TICKET_CREATED</code> connecting a <em>ticket</em> node with ID <code>4235143</code> to a <em>customer</em> node with ID <code>Neal</code>. We can traverse from  the ticket node via the <em>outgoing</em> edge <code>TICKET_CREATED</code> or the customer node via the <em>incoming</em> edge <code>TICKET_CREATED</code>. When the directions get mixed up, querying the graph becomes really difficult. The ratings for graph databases are illustrated in <a data-type="xref" href="#fig-data-decomposition-graph-direction">Figure 6-29</a>.</p>
+        
+        <figure><div id="fig-data-decomposition-star-rating-graph" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0630.png" alt="Graph databases and their ratings" width="600" height="377">
+        <h6><span class="label">Figure 6-30. </span>Graph databases rated for various adoption characteristics</h6>
+        </div></figure>
+        <dl>
+        <dt>Ease-of-learning curve</dt>
+        <dd>
+        <p>Graph databases have a steep learning curve. Understanding how to use the nodes, relations, relation type, and properties takes time.</p>
+        </dd>
+        <dt>Ease of data modeling</dt>
+        <dd>
+        <p>Understanding how to model the domains and convert them into nodes and relations is hard. In the beginning, the tendency is to add properties to relations. As modeling knowledge improves, increased usage of nodes and relations, and converting some relation properties to nodes with additional relation type takes place, which improves graph traversal.</p>
+        </dd>
+        <dt>Scalability/throughput</dt>
+        <dd>
+        <p>Replicated nodes improve read scaling, and throughput can be tuned for read loads.<a data-type="indexterm" data-primary="scalability" data-secondary="database types" data-tertiary="graph read versus write" id="idm45978845063312"></a> Since it’s difficult to split or shard graphs, write throughput is constrained with the type of graph database picked. Traversing the relationships is very fast, as the indexing and storage is persisted and not calculated at query time.</p>
+        </dd>
+        <dt>Availability/partition tolerance</dt>
+        <dd>
+        <p>Some of the graph databases that have high partition tolerance<a data-type="indexterm" data-primary="availability" data-secondary="database types" data-tertiary="graph databases" id="idm45978845060592"></a> and availability are distributed. Graph database clusters can use nodes that can be promoted as leaders when current leaders are unavailable.</p>
+        </dd>
+        <dt>Consistency</dt>
+        <dd>
+        <p>Many graph databases support ACID transactions. Some graph<a data-type="indexterm" data-primary="ACID (atomicity, consistency, isolation, durability) transactions" data-secondary="database types" data-tertiary="graph databases" id="idm45978845057696"></a><a data-type="indexterm" data-primary="consistency" data-secondary="database types" data-tertiary="graph ACID" id="idm45978845056320"></a><a data-type="indexterm" data-primary="Neo4j graph database" id="idm45978845055104"></a> databases, such as <a href="https://neo4j.com">Neo4j</a>, support transactions, so that data is always consistent.</p>
+        </dd>
+        <dt>Programming language support, product maturity, SQL support, and community</dt>
+        <dd>
+        <p>Graph databases have lots of support in the community. Many algorithms, like <a href="https://oreil.ly/TFr1D">Dijkstra’s algorithm</a> or <em>node similarity</em>, are implemented in the database, reducing the need to write them from scratch. <a data-type="indexterm" data-primary="Gremlin database language" id="idm45978845050704"></a>The language framework known as Gremlin works across many different databases, helping in the ease of use. <a href="https://neo4j.com">Neo4J</a> supports a query language known as Cypher, allowing developers to easily query the 
+        <span class="keep-together">database</span>.</p>
+        </dd>
+        <dt>Read/write priority</dt>
+        <dd>
+        <p>In graph databases, data storage is optimized for relationship traversal as opposed to relational databases, where we have to query the relationships and derive them at query time. Graph databases are better for read-heavy scenarios.</p>
+        </dd>
+        </dl>
+        
+        <p>Graph databases allow the same node to have various types of relationships. In the Sysops Squad example, a sample graph might look as follows: a <code>knowledge_base</code> was <code>created_by</code> user <code>sysops_user</code> and <code>knowledge_base</code> <code>used_by</code> <code>sysops_user</code>. Thus, the relationships <code>created_by</code> and <code>used_by</code> join the same nodes for different relationship types.<a data-type="indexterm" data-startref="ch06-grph" id="idm45978845042608"></a><a data-type="indexterm" data-startref="ch06-grph2" id="idm45978845041904"></a><a data-type="indexterm" data-startref="ch06-grph3" id="idm45978845041232"></a><a data-type="indexterm" data-startref="ch06-grphz" id="idm45978845040560"></a></p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="changing_relationship_type">
+        <h5>Changing Relationship Types</h5>
+        <p>Changing relationship types is an expensive operation, since each relationship type has to be re-created. When this happens, both nodes connected by the edge have to be visited, the new edge created, and the old edge removed. Hence, edge type or relationship types have to be thought about carefully.</p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="NewSQL Databases"><div class="sect2" id="idm45978845037968">
+        <h2>NewSQL Databases</h2>
+        
+        <p>Matthew Aslett first used the term <em>NewSQL</em> to define new<a data-type="indexterm" data-primary="Aslett, Matthew" id="idm45978845036048"></a><a data-type="indexterm" data-primary="ACID (atomicity, consistency, isolation, durability) transactions" data-secondary="database types" data-tertiary="NewSQL databases" id="idm45978845035312"></a><a data-type="indexterm" data-primary="database types" data-secondary="NewSQL databases" id="idm45978845034048"></a><a data-type="indexterm" data-primary="NewSQL databases" id="idm45978845033104"></a> databases that aimed to provide the scalability of NoSQL databases while supporting the features of relational databases like ACID. NewSQL databases use different types of storage mechanisms, and all of them support SQL.</p>
+        
+        <p>NewSQL databases, whose ratings appear in <a data-type="xref" href="#fig-data-decomposition-star-rating-new-sql">Figure 6-31</a>, improve upon relational databases by providing automated data partitioning or sharding, allowing for 
+        <span class="keep-together">horizontal</span> scaling and improved availability, while at the same time allowing an easy transition for developers to use the known paradigm of SQL and ACID.</p>
+        
+        <figure><div id="fig-data-decomposition-star-rating-new-sql" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0631.png" alt="New SQL databases and their ratings" width="600" height="377">
+        <h6><span class="label">Figure 6-31. </span>New SQL databases rated for various adoption characteristics</h6>
+        </div></figure>
+        <dl>
+        <dt>Ease-of-learning curve</dt>
+        <dd>
+        <p>Since NewSQL databases are just like relational databases (with SQL interface, added features of horizontal scaling, ACID compliant), the learning curve is much easier. <a data-type="indexterm" data-primary="Database as a Service (DBaaS)" data-secondary="NewSQL databases" id="idm45978845025616"></a>Some of them are available as only Database as a Service (DBaaS), which may make learning them more difficult.</p>
+        </dd>
+        <dt>Ease of data modeling</dt>
+        <dd>
+        <p>Since NewSQL databases are like relational databases, data modeling is familiar to many and easier to pick up. <a data-type="indexterm" data-primary="sharding in databases" data-secondary="NewSQL databases" id="idm45978845023008"></a>The extra wrinkle is sharding design, allowing sharded data placement in geographically different locations.</p>
+        </dd>
+        <dt>Scalability/throughput</dt>
+        <dd>
+        <p>NewSQL databases are designed to support horizontal scaling<a data-type="indexterm" data-primary="scalability" data-secondary="database types" data-tertiary="NewSQL scalable" id="idm45978845020496"></a> for distributed systems, allowing for multiple active nodes, unlike relational databases that have only one active leader, and the rest of the nodes are followers. The multiple active nodes allow NewSQL databases to be highly scalable and to have better 
+        <span class="keep-together">throughput</span>.</p>
+        </dd>
+        <dt>Availability/partition tolerance</dt>
+        <dd>
+        <p>Because of the multiple active nodes design, the benefits to<a data-type="indexterm" data-primary="availability" data-secondary="database types" data-tertiary="NewSQL databases" id="idm45978845016976"></a><a data-type="indexterm" data-primary="CockroachDB NewSQL database" id="idm45978845015648"></a> availability can be really high with greater partition tolerance. CockroachDB is a popular NewSQL database that survives disk, machine, and data center failures.</p>
+        </dd>
+        <dt>Consistency</dt>
+        <dd>
+        <p>NewSQL databases support strongly consistent ACID<a data-type="indexterm" data-primary="consistency" data-secondary="database types" data-tertiary="NewSQL ACID" id="idm45978845013504"></a> transactions. The data is always consistent, and this allows for relational database users to easily transition to NewSQL databases.</p>
+        </dd>
+        <dt>Programming language support, product maturity, SQL support, and community</dt>
+        <dd>
+        <p>There are many open source NewSQL databases, so learning them is accessible. Some of the databases also support wire-compatible protocols with existing relational databases, which allows them to replace relational databases without any compatibility problems.</p>
+        </dd>
+        <dt>Read/write priority</dt>
+        <dd>
+        <p>NewSQL databases are used just like relational databases, with added benefits of indexing and distributing geographically either to improve read performance or write performance.</p>
+        </dd>
+        </dl>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Cloud Native Databases"><div class="sect2" id="idm45978845008976">
+        <h2>Cloud Native Databases</h2>
+        
+        <p>With increased cloud usage, cloud databases such as<a data-type="indexterm" data-primary="database types" data-secondary="cloud native databases" id="idm45978845007424"></a><a data-type="indexterm" data-primary="cloud native databases" id="idm45978845006448"></a><a data-type="indexterm" data-primary="resources online" data-secondary="database links" data-tertiary="cloud native databases" id="idm45978845005776"></a><a data-type="indexterm" data-primary="Snowflake cloud native database" id="idm45978845004560"></a><a data-type="indexterm" data-primary="AWS Redshift cloud native database" id="idm45978845003920"></a><a data-type="indexterm" data-primary="Datomic cloud native database" id="idm45978845003232"></a><a data-type="indexterm" data-primary="Azure CosmosDB cloud native database" id="idm45978845002544"></a> <a href="https://snowflake.com">Snowflake</a>, <a href="https://aws.amazon.com/redshift">Amazon Redshift</a>, <a href="https://datomic.com">Datomic</a>, and <a href="https://oreil.ly/Tvkx3">Azure CosmosDB</a> have gained in popularity. These databases reduce operational burden, provide cost transparency, and are an easy way to experiment since no up-front investments are needed. Ratings for cloud native databases appear in <a data-type="xref" href="#fig-data-decomposition-star-rating-cloud">Figure 6-32</a>.</p>
+        
+        <figure><div id="fig-data-decomposition-star-rating-cloud" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0632.png" alt="Cloud native databases and their ratings" width="600" height="385">
+        <h6><span class="label">Figure 6-32. </span>Cloud native databases rated for various adoption characteristics</h6>
+        </div></figure>
+        <dl>
+        <dt>Ease-of-learning curve</dt>
+        <dd>
+        <p>Some cloud databases like AWS Redshift are like relational databases and therefore are easier to understand. Databases like Snowflake, which have a SQL interface but have different storage and compute mechanisms, require some practice. Datomic is totally different in terms of models and uses <code>immutable</code> atomic facts. Thus, the learning curve varies with each database offering.</p>
+        </dd>
+        <dt>Ease of data modeling</dt>
+        <dd>
+        <p>Datomic does not have the concept of tables or the need to define attributes in advance. It is necessary to define properties of individual attributes, and entities can have any attribute. Snowflake and Redshift are used more for data warehousing type workloads. Understanding the type of modeling provided by the database is critical in selecting the database to use.</p>
+        </dd>
+        <dt>Scalability/throughput</dt>
+        <dd>
+        <p>Since all these databases are cloud only, scaling them<a data-type="indexterm" data-primary="scalability" data-secondary="database types" data-tertiary="cloud native scalable" id="idm45978844990592"></a> is relatively simple since resources can be allocated automatically for a price. In these decisions, the trade-off typically relates to price.</p>
+        </dd>
+        <dt>Availability/partition tolerance</dt>
+        <dd>
+        <p>Databases in this category (such as Datomic) are highly<a data-type="indexterm" data-primary="availability" data-secondary="database types" data-tertiary="cloud native databases" id="idm45978844987744"></a><a data-type="indexterm" data-primary="deployment" data-secondary="cloud native Production Topology" id="idm45978844986496"></a> available when deployed using <em>Production Topology</em>. They have no single point of failure and are supported by extensive caching. Snowflake, for example, replicates its databases across regions and accounts. Other databases in this category support higher availability with various options to configure. For example, Redshift runs in a single availability zone and would need to be run in multiple clusters to support higher availability.</p>
+        </dd>
+        <dt>Consistency</dt>
+        <dd>
+        <p>Datomic supports ACID transactions using storage engines to<a data-type="indexterm" data-primary="consistency" data-secondary="database types" data-tertiary="cloud native ACID" id="idm45978844983264"></a><a data-type="indexterm" data-primary="ACID (atomicity, consistency, isolation, durability) transactions" data-secondary="database types" data-tertiary="cloud native databases" id="idm45978844981936"></a> store blocks in block storage. Other databases, like Snowflake and Redshift, support ACID 
+        <span class="keep-together">transactions</span>.</p>
+        </dd>
+        <dt>Programming language support, product maturity, SQL support, and community</dt>
+        <dd>
+        <p>Many of these databases are new, and finding experienced help can be difficult. Experimenting with these databases requires a cloud account, which can create another barrier. While cloud native databases reduce operational workload on the operational DBAs, they do have a higher learning curve for developers. Datomic uses <a href="https://clojure.org">Clojure</a> in all its examples, and stored procedures are written with Clojure, so not knowing Clojure maybe a barrier to usage.</p>
+        </dd>
+        <dt>Read/write priority</dt>
+        <dd>
+        <p>These databases can be used for both read-heavy or write-heavy loads. Snowflake and Redshift are geared more toward data warehouse type workloads, lending them toward read priority, while Datomic can support both type of loads with different indexes such as EAVT (Entity, Attribute, Value, then Transaction) first.</p>
+        </dd>
+        </dl>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Time-Series Databases"><div class="sect2" id="idm45978844975728">
+        <h2>Time-Series Databases</h2>
+        
+        <p>Given the trends, we see increased usage of IoT, microservices, self-driving cars,<a data-type="indexterm" data-primary="database types" data-secondary="time series databases" id="ch06-time"></a><a data-type="indexterm" data-primary="time series databases" id="ch06-time2"></a> and observability, all of which have driven a phenomenal increase in time-series analytics. This trend has given rise to databases optimized for storing sequences of data points collected during a time window, enabling users to track changes over any duration of time. The ratings for this database type appear in <a data-type="xref" href="#fig-data-decomposition-star-rating-time-series">Figure 6-33</a>.</p>
+        
+        <figure><div id="fig-data-decomposition-star-rating-time-series" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0633.png" alt="Time series databases and their ratings" width="600" height="377">
+        <h6><span class="label">Figure 6-33. </span>Time-series databases rated for various adoption characteristics</h6>
+        </div></figure>
+        <dl>
+        <dt>Ease-of-learning curve</dt>
+        <dd>
+        <p>Understanding time-series data is often easy—every data point is attached to a timestamp, and data is almost always inserted and never updated or deleted. Understanding append-only operations takes some unlearning from other database usage, where errors in the data can be corrected with an update. <a data-type="indexterm" data-primary="InfluxDB time series database" id="idm45978844966368"></a><a data-type="indexterm" data-primary="Kx time series database" id="idm45978844965648"></a><a data-type="indexterm" data-primary="TimeScale time series database" id="idm45978844964976"></a>InfluxDB, Kx, and TimeScale are some of the popular time-series databases.</p>
+        </dd>
+        <dt>Ease of data modeling</dt>
+        <dd>
+        <p>The underlying concept with time-series databases is to analyze changes in data over time. For example, with the Sysops Squad example, changes done to a ticket object can be stored in a time-series database, where the <code>timestamp</code> of change and <code>ticket_id</code> are tagged. It’s considered bad practice to add more than one piece of information in one tag. For example, <code>ticket_status=Open, ticket_id=374737</code> is better than <code>ticket_info=Open.374737</code>.</p>
+        </dd>
+        <dt>Scalability/throughput</dt>
+        <dd>
+        <p><em>Timescale</em> is based on PostgreSQL and allows for standard scaling and throughput improvement patterns.<a data-type="indexterm" data-primary="scalability" data-secondary="database types" data-tertiary="time series scalable" id="idm45978844958976"></a> Running InfluxDB in cluster mode by using <em>meta</em> nodes that manage metadata and <em>data</em> nodes that store actual data provides scaling and throughput improvements.</p>
+        </dd>
+        <dt>Availability/partition tolerance</dt>
+        <dd>
+        <p>Some databases like InfluxDB have better availability and partition<a data-type="indexterm" data-primary="availability" data-secondary="database types" data-tertiary="time series databases" id="idm45978844955424"></a> tolerance options with configurations for meta and data nodes, along with <em>replication</em> 
+        <span class="keep-together">factors</span>.</p>
+        </dd>
+        <dt>Consistency</dt>
+        <dd>
+        <p>Time-series databases that use relational databases as their<a data-type="indexterm" data-primary="consistency" data-secondary="database types" data-tertiary="time series ACID or tunable" id="idm45978844951104"></a><a data-type="indexterm" data-primary="ACID (atomicity, consistency, isolation, durability) transactions" data-secondary="database types" data-tertiary="time series databases" id="idm45978844949760"></a> storage engine get ACID properties for consistency, while other databases can tune consistency using <code>consistency-level</code> of <code>any</code>, <code>one</code>, or <code>quorum</code>. <a data-type="indexterm" data-primary="trade-off analysis" data-secondary="consistency and availability" id="idm45978844946528"></a>Higher consistency-level configuration generally results in higher <em>consistency</em> and lower <em>availability</em>, so it’s a trade-off that needs to be considered.</p>
+        </dd>
+        <dt>Programming language support, product maturity, SQL support, and community</dt>
+        <dd>
+        <p>Time-series databases have become popular lately, and there are many resources to learn from. Some of these databases, such as InfluxDB, provide a SQL-like query language known as InfluxQL.</p>
+        </dd>
+        <dt>Read/write priority</dt>
+        <dd>
+        <p>Time-series databases are append only and tend to be better suited for read-heavy workloads.</p>
+        </dd>
+        </dl>
+        
+        <p>When using time-series databases, the database automatically attaches a timestamp to every datum creation, and the data contains tags or attributes of information.  The data is queried based on some fact between specific time windows. Therefore, time-series databases are not general-purpose databases.<a data-type="indexterm" data-startref="ch06-time" id="idm45978844940832"></a><a data-type="indexterm" data-startref="ch06-time2" id="idm45978844940128"></a></p>
+        
+        <p>In summary of all the database types discussed in this section, <a data-type="xref" href="#table-database-type-product">Table&nbsp;6-6</a> shows some popular database products for the database type.<a data-type="indexterm" data-primary="database types" id="idm45978844938192"></a></p>
+        <table id="table-database-type-product" style="width: 100%">
+        <caption><span class="label">Table 6-6. </span>Summary of database types and products in the database type</caption>
+        <thead>
+        <tr>
+        <th>Database type</th>
+        <th>Products</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>Relational</p></td>
+        <td><p>PostgreSQL, Oracle, Microsoft SQL</p></td>
+        </tr>
+        <tr>
+        <td><p>Key-value</p></td>
+        <td><p>Riak KV, Amazon DynamoDB, Redis</p></td>
+        </tr>
+        <tr>
+        <td><p>Document</p></td>
+        <td><p>MongoDB, Couchbase, AWS DocumentDB</p></td>
+        </tr>
+        <tr>
+        <td><p>Column family</p></td>
+        <td><p>Cassandra, Scylla, Amazon SimpleDB</p></td>
+        </tr>
+        <tr>
+        <td><p>Graph</p></td>
+        <td><p>Neo4j, Infinite Graph, Tiger Graph</p></td>
+        </tr>
+        <tr>
+        <td><p>NewSQL</p></td>
+        <td><p>VoltDB, ClustrixDB, SimpleStore (aka MemSQL)</p></td>
+        </tr>
+        <tr>
+        <td><p>Cloud native</p></td>
+        <td><p>Snowflake, Datomic, Redshift</p></td>
+        </tr>
+        <tr>
+        <td><p>Time-series</p></td>
+        <td><p>InfluxDB, kdb+, Amazon Timestream</p></td>
+        </tr>
+        </tbody>
+        </table>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Sysops Squad Saga: Polyglot Databases"><div class="sect1" id="idm45978845284592">
+        <h1>Sysops Squad Saga: Polyglot Databases</h1>
+        
+        <p><code>Thursday, December 16, 16:05</code></p>
+        <div class="story">
+        
+        <p>Now that the team had formed data domains from the monolithic<a data-type="indexterm" data-primary="database types" data-secondary="Sysops Squad saga" id="idm45978844917952"></a><a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="monolithic application broken apart" data-tertiary="database types" id="idm45978844915600"></a> Sysops Squad database, Devon noticed that the Survey data domain would be a great candidate for migrating from a traditional relational database to a document database using JSON. However, Dana, the head of data architecture, didn’t agree and wanted to keep the tables as relational.</p>
+        
+        <p>“I simply don’t agree,” said Dana. “The survey tables have always worked in the past as relational tables, so I see no reason to change things around.	"</p>
+        
+        <p>“Actually,” said Skyler, “if you had originally talked with us about this when the system was first being developed, you would understand that from a user interface perspective, it’s really hard to deal with relational data for something like a customer survey. So I disagree. It may work out good for you, but from a user interface development standpoint, dealing with relational data for the survey stuff has been a major pain point.”</p>
+        
+        <p>“See, so there you are,” said Devon. “This is why we need to change it to a document database.”</p>
+        
+        <p>“You seem to forget that as the data architect for this company, I am the one who has ultimate responsibility for all these different databases. You can’t just start adding different database types to the system,” said Dana.</p>
+        
+        <p>“But it would be a much better solution,” said Devon.</p>
+        
+        <p>“Sorry, but I’m not going to cause a disruptor on the database teams just so Skyler can have an easier job maintaining the user interface. Things don’t work that way.”</p>
+        
+        <p>“Wait,” said Skyler, “didn’t we all agree that part of the problem of the current monolithic Sysops Squad application was that the development teams didn’t work close enough with the database teams?”</p>
+        
+        <p>“Yes,” said Dana.</p>
+        
+        <p>“Well then,” said Skyler, “let’s do that. Let’s work together to figure this out.”</p>
+        
+        <p>“OK,” said Dana, “but what I’m going to need from you and Devon is a good solid justification for introducing another type of database into the mix.”</p>
+        
+        <p>“You got it,” said Devon. “We’ll start working on that right away.”</p>
+        
+        <p>Devon and Skyler knew that a document database would be a much better solution for the customer survey data, but they weren’t sure how to build the right justifications for Dana to agree to migrate the data. Skyler suggested that they meet with Addison to get some help, since both agreed that this was somewhat an architectural concern. Addison agreed to help, and set up a meeting with Parker (the Sysops Squad product owner) to validate whether there was any business justification to migrating the customer survey tables to a document database.</p>
+        
+        <p>“Thanks for meeting with us, Parker,” said Addison. “As I mentioned to you before, we are thinking of changing the way the customer survey data is stored, and have a few questions for you.”</p>
+        
+        <p>“Well,” said Parker, “that was one of the reasons why I agreed to this meeting. You see, the customer survey part of the system has been a major pain point for the marketing department, as well as for me.”</p>
+        
+        <p>“Huh?” asked Skyler. “What do you mean?”</p>
+        
+        <p>“How long does it take you to apply even the smallest of change requests to the customer surveys?” asked Parker.</p>
+        
+        <p>“Well,” said Devon, “it’s not too bad from the database side. I mean, it’s a matter of adding a new column for a new question or changing the answer type.”</p>
+        
+        <p>“Hold on,” said Skyler. “Sorry, but for me it’s a major change, even when you add an additional question. You have no idea how hard it is to query all of that relational data and render a customer survey in the user interface. So, my answer is, a <em>very long time</em>.”</p>
+        
+        <p>“Listen,” said Parker. “We on the business side of things get very frustrated ourselves when even the simplest of changes take you literally days to do. It’s simply not acceptable.”</p>
+        
+        <p>“I think I can help here,” said Addison. “So Parker, what you’re saying is that the customer survey changes frequently, and it is taking too long to make the changes?”</p>
+        
+        <p>“Correct,” said Parker. “The marketing department not only wants better flexibility in the customer surveys, but better response from the IT department as well. Many times they don’t place change requests because they know it will just end in frustration and additional cost they didn’t plan for.”</p>
+        
+        <p>“What if I were to tell you that the lack of flexibility and responsiveness to change requests has everything to do with the technology used to store customer surveys, and that by changing the way we store data, we could significantly improve flexibility as well as response time for change requests?” asked Addison.</p>
+        
+        <p>“Then I would be the happiest person on Earth, as would the marketing department,” said Parker.</p>
+        
+        <p>“Devon and Skyler, I think we have our business justification,” said Addison.</p>
+        
+        <p>With the business justification established, Devon, Skyler, and Addison convinced Dana to use a document database. <a data-type="indexterm" data-primary="Sysops Squad sagas" data-secondary="monolithic application broken apart" data-tertiary="database structure" id="ch06-struc"></a><a data-type="indexterm" data-primary="database structure Sysops Squad saga" id="ch06-struc2"></a><a data-type="indexterm" data-primary="survey database structure" id="ch06-struc3"></a>Now the team had to figure out the optimal structure for the customer survey data. The existing relational database tables are illustrated in <a data-type="xref" href="#survey-rdbms-model">Figure 6-34</a>. Each customer survey 
+        <span class="keep-together">consisted</span> of two primary tables—a Survey table and a Question table, with a one-to-many relationship between the two tables.</p>
+        
+        <figure><div id="survey-rdbms-model" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0634.png" alt="Survey data model as an independent data domain" width="600" height="234">
+        <h6><span class="label">Figure 6-34. </span>Tables and relationships in the sysops survey data domain</h6>
+        </div></figure>
+        
+        <p>An example of the data contained in each table is shown <a data-type="xref" href="#survey-rdbms-data">Figure 6-35</a>, where the Question table contains the question, the answer options, and the data type for the answer.</p>
+        
+        <figure class="width-75"><div id="survey-rdbms-data" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0635.png" alt="Survey data for some sample surveys" width="600" height="335">
+        <h6><span class="label">Figure 6-35. </span>Relational data in tables for survey and question in the survey data domain</h6>
+        </div></figure>
+        
+        <p>“So, essentially we have two options for modeling the survey questions in a document database,” said Devon. “A single aggregate document or one that is split.”</p>
+        
+        <p>“How to we know which one to use?” asked Skyler, happy that the development teams were now finally working with the database teams to arrive at a unified solution.</p>
+        
+        <p>“I know,” said Addison, “let’s model both so we can visually see the trade-offs with each approach.”</p>
+        
+        <p>Devon showed the team that with the single aggregate option, as shown in <a data-type="xref" href="#survey-aggregate-model">Figure 6-36</a>, with the corresponding source code listing in <a data-type="xref" href="#json_single_aggregate">Example&nbsp;6-3</a>, both the survey data and all related question data were stored as one document. Therefore, the entire customer survey could be retrieved from the database by using a single <code>get</code> operation, making it easy for Skyler and others on the development team to work with the data.</p>
+        
+        <figure><div id="survey-aggregate-model" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0636.png" alt="Survey model as aggregate" width="600" height="644">
+        <h6><span class="label">Figure 6-36. </span>Survey model with single aggregate</h6>
+        </div></figure>
+        <div id="json_single_aggregate" data-type="example">
+        <h5><span class="label">Example 6-3. </span>JSON document for single aggregate design with children embedded</h5>
+        
+        <pre data-type="programlisting" data-code-language="json"><code class="err">#</code><code class="w"> </code><code class="err">Survey</code><code class="w"> </code><code class="err">aggrega</code><code class="kc">te</code><code class="w"> </code><code class="err">wi</code><code class="kc">t</code><code class="err">h</code><code class="w"> </code><code class="err">embedded</code><code class="w"> </code><code class="err">ques</code><code class="kc">t</code><code class="err">io</code><code class="kc">ns</code><code class="w"></code>
+        <code class="p">{</code><code class="w"></code>
+        <code class="w">    </code><code class="nt">"survey_id"</code><code class="p">:</code><code class="w"> </code><code class="s2">"19999"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">    </code><code class="nt">"created_date"</code><code class="p">:</code><code class="w"> </code><code class="s2">"Dec 28 2021"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">    </code><code class="nt">"description"</code><code class="p">:</code><code class="w"> </code><code class="s2">"Survey to gauge customer..."</code><code class="p">,</code><code class="w"></code>
+        <code class="w">    </code><code class="nt">"questions"</code><code class="p">:</code><code class="w"> </code><code class="p">[</code><code class="w"></code>
+        <code class="w">        </code><code class="p">{</code><code class="w"></code>
+        <code class="w">            </code><code class="nt">"question_id"</code><code class="p">:</code><code class="w"> </code><code class="s2">"50001"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">            </code><code class="nt">"question"</code><code class="p">:</code><code class="w"> </code><code class="s2">"Rate the expert"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">            </code><code class="nt">"answer_type"</code><code class="p">:</code><code class="w"> </code><code class="s2">"Option"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">            </code><code class="nt">"answer_options"</code><code class="p">:</code><code class="w"> </code><code class="s2">"1,2,3,4,5"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">            </code><code class="nt">"order"</code><code class="p">:</code><code class="w"> </code><code class="s2">"2"</code><code class="w"></code>
+        <code class="w">        </code><code class="p">},</code><code class="w"></code>
+        <code class="w">        </code><code class="p">{</code><code class="w"></code>
+        <code class="w">            </code><code class="nt">"question_id"</code><code class="p">:</code><code class="w"> </code><code class="s2">"50000"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">            </code><code class="nt">"question"</code><code class="p">:</code><code class="w"> </code><code class="s2">"Did the expert fix the problem?"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">            </code><code class="nt">"answer_type"</code><code class="p">:</code><code class="w"> </code><code class="s2">"Boolean"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">            </code><code class="nt">"answer_options"</code><code class="p">:</code><code class="w"> </code><code class="s2">"Yes,No"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">            </code><code class="nt">"order"</code><code class="p">:</code><code class="w"> </code><code class="s2">"1"</code><code class="w"></code>
+        <code class="w">        </code><code class="p">}</code><code class="w"></code>
+        <code class="w">    </code><code class="p">]</code><code class="w"></code>
+        <code class="p">}</code><code class="w"></code></pre></div>
+        
+        <p>“I really like that approach,” said Skyler. “Essentially, I wouldn’t have to worry so much about aggregating things myself in the user interface, meaning I could simply render the document I retrieve on the web page.”</p>
+        
+        <p>“Yeah,” said Devon, “but it would require additional work on the database side as questions would be replicated in each survey document. You know, the whole reuse argument. Here, let me show you the other approach.”</p>
+        
+        <p>Skyler explained that another way to think about aggregates was to split the <em>survey</em> and <em>question</em> model so that the questions could be operated on in an independent fashion, as shown in <a data-type="xref" href="#survey-aggregate-reference-model">Figure 6-37</a>, with the corresponding source code listing in <a data-type="xref" href="#aggregate_reference_data">Example&nbsp;6-4</a>. This would allow the same question to be used in multiple surveys, but would be harder to render and retrieve than the single aggregate.</p>
+        
+        <figure><div id="survey-aggregate-reference-model" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492086888/files/assets/sahp_0637.png" alt="Survey model as multiple aggregates with references" width="600" height="405">
+        <h6><span class="label">Figure 6-37. </span>Survey model with multiple aggregates with references</h6>
+        </div></figure>
+        <div id="aggregate_reference_data" data-type="example">
+        <h5><span class="label">Example 6-4. </span>JSON document with aggregates split and parent document showing references to children</h5>
+        
+        <pre data-type="programlisting" data-code-language="json"><code class="err">#</code><code class="w"> </code><code class="err">Survey</code><code class="w"> </code><code class="err">aggrega</code><code class="kc">te</code><code class="w"> </code><code class="err">wi</code><code class="kc">t</code><code class="err">h</code><code class="w"> </code><code class="err">re</code><code class="kc">feren</code><code class="err">ces</code><code class="w"> </code><code class="kc">t</code><code class="err">o</code><code class="w"> </code><code class="err">Ques</code><code class="kc">t</code><code class="err">io</code><code class="kc">ns</code><code class="w"></code>
+        <code class="p">{</code><code class="w"></code>
+        <code class="w">    </code><code class="nt">"survey_id"</code><code class="p">:</code><code class="w"> </code><code class="s2">"19999"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">    </code><code class="nt">"created_date"</code><code class="p">:</code><code class="w"> </code><code class="s2">"Dec 28"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">    </code><code class="nt">"description"</code><code class="p">:</code><code class="w"> </code><code class="s2">"Survey to gauge customer..."</code><code class="p">,</code><code class="w"></code>
+        <code class="w">    </code><code class="nt">"questions"</code><code class="p">:</code><code class="w"> </code><code class="p">[</code><code class="w"></code>
+        <code class="w">        </code><code class="p">{</code><code class="nt">"question_id"</code><code class="p">:</code><code class="w"> </code><code class="s2">"50001"</code><code class="p">,</code><code class="w"> </code><code class="nt">"order"</code><code class="p">:</code><code class="w"> </code><code class="s2">"2"</code><code class="p">},</code><code class="w"></code>
+        <code class="w">        </code><code class="p">{</code><code class="nt">"question_id"</code><code class="p">:</code><code class="w"> </code><code class="s2">"50000"</code><code class="p">,</code><code class="w"> </code><code class="nt">"order"</code><code class="p">:</code><code class="w"> </code><code class="s2">"1"</code><code class="p">}</code><code class="w"></code>
+        <code class="w">    </code><code class="p">]</code><code class="w"></code>
+        <code class="p">}</code><code class="w"></code>
+        <code class="err">#</code><code class="w"> </code><code class="err">Ques</code><code class="kc">t</code><code class="err">io</code><code class="kc">n</code><code class="w"> </code><code class="err">aggrega</code><code class="kc">te</code><code class="w"></code>
+        <code class="p">{</code><code class="w"></code>
+        <code class="w">    </code><code class="nt">"question_id"</code><code class="p">:</code><code class="w"> </code><code class="s2">"50001"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">    </code><code class="nt">"question"</code><code class="p">:</code><code class="w"> </code><code class="s2">"Rate the expert"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">    </code><code class="nt">"answer_type"</code><code class="p">:</code><code class="w"> </code><code class="s2">"Option"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">    </code><code class="nt">"answer_options"</code><code class="p">:</code><code class="w"> </code><code class="s2">"1,2,3,4,5"</code><code class="w"></code>
+        <code class="p">}</code><code class="w"></code>
+        <code class="p">{</code><code class="w"></code>
+        <code class="w">    </code><code class="nt">"question_id"</code><code class="p">:</code><code class="w"> </code><code class="s2">"50000"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">    </code><code class="nt">"question"</code><code class="p">:</code><code class="w"> </code><code class="s2">"Did the expert fix the problem?"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">    </code><code class="nt">"answer_type"</code><code class="p">:</code><code class="w"> </code><code class="s2">"Boolean"</code><code class="p">,</code><code class="w"></code>
+        <code class="w">    </code><code class="nt">"answer_options"</code><code class="p">:</code><code class="w"> </code><code class="s2">"Yes,No"</code><code class="w"></code>
+        <code class="p">}</code><code class="w"></code></pre></div>
+        
+        <p>Because most of the complexity and change issues were in the user interface, Skyler liked the single aggregate model better. Devon liked the multiple aggregate to avoid duplication of question data in each survey. However, Addison pointed out that there were only five survey types (one for each product category), and that most of the changes involved adding or removing questions. The team discussed the trade-offs, and all agreed that they were willing to trade off some duplication of question data for the ease of changes and rendering on the user interface side. Because of the difficulty of this decision and the structural nature of changing the data, Addison created an ADR to record the justifications of this decision: <a data-type="indexterm" data-startref="ch06-struc" id="idm45978844509152"></a><a data-type="indexterm" data-startref="ch06-struc2" id="idm45978844508544"></a><a data-type="indexterm" data-startref="ch06-struc3" id="idm45978844507936"></a></p>
+        <blockquote>
+        <p class="adr" id="adr_4"><em>ADR: Use of Document Database for Customer Survey</em><br></p>
+        
+        <p><em>Context</em><br>
+        Customers receive a survey after the work has been completed by the customer, which is rendered on a web page for the customer to fill out and submit. The customer receives one of five survey types based on the type of electronic product fixed or installed. The survey is currently stored in a relational database, but the team wants to migrate the survey to a document database using JSON.</p>
+        
+        <p><em>Decision</em><br>
+        We will use a document database for the customer survey.</p>
+        
+        <p>The Marketing Department requires more flexibility and timeliness for changes to the customer surveys. Moving to a document database would not only provide better flexibility, but also better timeliness for changes needed to the customer surveys.<br></p>
+        
+        <p>Using a document database would simplify the customer survey user interface and better facilitate changes to the surveys.<br></p>
+        
+        <p><em>Consequences</em><br>
+        Since we will be using a single aggregate, multiple documents would need to be changed when a common survey question is updated, added, or removed.<br></p>
+        
+        <p>Survey functionality will need to be shut down during the data migration from the relational database to the document database.<br></p></blockquote>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        </div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492086888/files/epub.css" crossorigin="anonymous"><script src="https://learning.oreilly.comhttps://cdn.jsdelivr.net/npm/mathjax@3/es5/mml-svg.js"></script></div></div></section>
+</div>
+
+https://learning.oreilly.com

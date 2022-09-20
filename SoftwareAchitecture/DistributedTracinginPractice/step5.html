@@ -1,0 +1,1028 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 5. Deploying Tracing"><div class="chapter" id="chapter_6">
+        <h1><span class="label">Chapter 5. </span>Deploying Tracing</h1>
+        
+        
+        <p>Understanding how to instrument code so that your application generates
+        quality telemetry is no small feat, so congratulations on making it this far!
+        However, that telemetry won’t amount to much without the rest of a tracing
+        deployment to consume those spans and use them to provide value to you and
+        other developers. We’ll spend this and the following chapter looking
+        underneath the hood of tracers and consider some of the common components in
+        those implementations as well as some of the trade-offs required. While not
+        many readers are likely to be considering building new tracing solutions from scratch, a
+        high-level understanding of what’s going on will help you to choose the best
+        tracer for your organization and to maximize the value that it can bring.</p>
+        
+        <p>Distributed tracing can offer a lot to organizations where individual teams
+        work independently. Tracing problems across the many layers of
+        your application helps you quickly identify which service is the
+        performance bottleneck or is responsible for a regression. However, this
+        independence can also be an obstacle to getting started with distributed
+        tracing: if you’re responsible for deploying tracing across your organization,
+        you’ll need to get these teams to work together.</p>
+        
+        <p>You’ll get the most value from tracing if it’s deployed consistently across
+        your organization and your application. However, you’ll face two sets of
+        challenges in doing so. First, you need to overcome some organizational
+        barriers: getting data from some teams may require those teams to instrument
+        their services, change configuration, or maybe just redeploy their services.
+        You may also need them to follow conventions about tags or at the very least
+        propagate tracing context.</p>
+        
+        <p>Second, you’ll need to make sure you have the right infrastructure in place.
+        While this can be partially outsourced to a vendor, some parts of the tracing
+        system will still run on your infrastructure or could affect the performance
+        of your application. And even if do you manage to offload most of the work,
+        understanding trade-offs in tracing system design can help you evaluate
+        different vendors and perhaps get some insight into how their pricing reflects
+        the underlying costs of processing, storing, and analyzing traces.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Organizational Adoption"><div class="sect1" id="idm45357000884696">
+        <h1>Organizational Adoption</h1>
+        
+        <p><a data-type="indexterm" data-primary="deployment of distributed tracing" data-secondary="organizational adoption" id="idm45357000883320"></a><a data-type="indexterm" data-primary="organizational buy-in" data-secondary="deployment" id="idm45357000882376"></a>If your organization is building a distributed application, chances are that
+        organization is not small. Successful adoption of distributed tracing will
+        require work not just from you and your team, but from many teams across your
+        organization—and perhaps even <em>outside</em> of your organization.</p>
+        
+        <p>In this context, you’re looking not just to get the most value from
+        distributed tracing early on, but to get the most <em>demonstrable</em> value. That
+        is, you’ll need to produce evidence of the value of tracing <em>for your
+        organization</em>. To do so, you’ll need to be thoughtful about where and how you
+        deploy it. Though it’s often considered a tool for “end-to-end
+        understanding,” tracing can also provide value for individual teams; showing
+        an example of this is the best way to convince other teams to adopt it as
+        well.</p>
+        
+        <p>In addition, deploying tracing at scale will also require considerable
+        computing and storage resources. We will cover the costs of these resources
+        in more detail in <a data-type="xref" href="ch06.html#chapter_7">Chapter&nbsp;6</a>, but when thinking about how to deploy
+        tracing, it’s important that you choose a tracing solution that can meet your
+        organization’s needs not just in terms of features, but in how those features
+        perform at scale. It’s also important to make sure that the incremental cost
+        of doing so doesn’t outpace the incremental value offered by tracing.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Start Close to Your Users"><div class="sect2" id="idm45357000876904">
+        <h2>Start Close to Your Users</h2>
+        
+        <p><a data-type="indexterm" data-primary="deployment of distributed tracing" data-secondary="beginning with users" id="idm45357000875768"></a>There’s no better way to ensure that tracing has business value than to start
+        close to the users of your application. How do they interact with your
+        application? Through a mobile app? A single-page web app or a more
+        traditional one? Through a specialized device? Perhaps your organization
+        only provides an API to your users, in which case, that API is as close as
+        you’ll be able to get. In any case, if you measure performance close to your
+        users, you can be sure that you are measuring something that matters. In our
+        experience, we’ve seen both large and small organizations fail to take this
+        approach and instead choose a service to instrument because it was <em>easy</em>.
+        Unfortunately, while the instrumentation was indeed easy, it didn’t help
+        build evidence that tracing should be a priority for the organization and it
+        didn’t help to surface challenges that developers faced as they continued to
+        roll out tracing.</p>
+        
+        <p>It is possible to start <em>too</em> close to your users for your initial foray into
+        tracing. For example, if your mobile app is on a slow release cadence, it
+        might take too long yo get the initial version of tracing deployed or be too slow to
+        iterate on instrumentation. Web apps or nightly builds of mobile apps can
+        make good choices. Get as close to your users as you reasonably can, but make
+        sure you can still move quickly.</p>
+        
+        <p>You should also consider specific types of requests or transactions that are
+        important to your users and your business. For example, it might be tempting
+        to choose an asynchronous request type that’s used to record some analytics
+        about user behavior: this might seem easy (it’s a simple request and changes
+        to it do not receive much scrutiny) and low risk (changes are unlikely to
+        negatively impact users). However, you also have far less to gain by starting
+        with this type of request. Instead, start with a type of request that
+        represents an important user conversion. For example, if your application is
+        part of an ecommerce solution, start with the point at which a purchase is
+        made.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Start Centrally: Load Balancers and Gateways"><div class="sect2" id="idm45357000870536">
+        <h2>Start Centrally: Load Balancers and Gateways</h2>
+        
+        <p><a data-type="indexterm" data-primary="deployment of distributed tracing" data-secondary="load balancers" id="idm45357000869128"></a><a data-type="indexterm" data-primary="load balancer tracing" id="idm45357000868088"></a>If you can’t start with a mobile app, web app, or other client of your
+        application, choose a part of your backend systems that is still relatively
+        close to your users: ingress load balancers or API gateways.</p>
+        
+        <p>Ingress load balancers, especially HTTP (or “level 7”) load balancers, are
+        good candidates for quickly getting started with tracing. Load balancers are
+        designed to efficiently pass through traffic, and it’s relatively easy for
+        them to generate spans in addition to other metrics and logs they might
+        already be emitting.</p>
+        
+        <p>Many widely used load balancers have support for tracing built in or have
+        existing plug-ins that make adding tracing easy. For example, <a data-type="indexterm" data-primary="Envoy" data-secondary="tracer support" id="idm45357000865768"></a>Envoy supports
+        several tracers out of the box; <a data-type="indexterm" data-primary="Linkerd" id="idm45357000864600"></a>Linkerd ships with support for the OpenCensus
+        collector; <a data-type="indexterm" data-primary="NGINX" data-secondary="tracer support" id="idm45357000863800"></a>NGINX supports an OpenTracing plug-in that can be used with several
+        tracing systems.</p>
+        
+        <p><a data-type="indexterm" data-primary="HTTP" data-secondary="load balancer tracing" id="idm45357000862392"></a>HTTP load balancers can add a number of interesting tags automatically,
+        including the request path, method, and protocol as well as status codes
+        indicating the success or failure of the request. These tags can be valuable
+        data sources when using distributed tracing to understand application
+        performance.</p>
+        
+        <p>Note that TCP (transmission control protocol, or “level 3/4”) load balancers provide significantly less value
+        since they do not have access to HTTP (or other application-level) request
+        data. We have seen few examples where instrumenting TCP load balancers
+        provides value as part of a distributed tracing solution.</p>
+        
+        <p><a data-type="indexterm" data-primary="deployment of distributed tracing" data-secondary="API gateways" id="idm45357000859960"></a><a data-type="indexterm" data-primary="API services" data-secondary="API gateway tracing" id="idm45357000858968"></a>API gateways also provide an opportunity to gather rich telemetry that is
+        relatively close to the user and also broad in scope. Teams who manage API
+        gateways often feel a lot of pain that can be alleviated with tracing and will
+        be willing allies. In particular, they are often held accountable for the
+        performance of the APIs that sit beneath the gateway or, at the least, get
+        paged frequently when those upstream systems perform poorly.</p>
+        
+        <p>If a gateway service can emit spans for the endpoints it serves
+        <em>and</em> for its view of the services for which it’s acting as a gateway, these
+        spans can be used to attribute slow performance to other backend services (and
+        their respective teams). This is important because API gateways frequently
+        make calls to several upstream systems, including authorization and other
+        common services, in addition to the services providing the business logic for
+        API requests that they are serving. An immediate effect of this approach is
+        that the team that owns the gateway service can more confidently identify
+        which other teams need to improve performance. This is an example of how
+        tracing can benefit even a single team: by tying the performance of a service
+        to the performance of its dependencies, even very short traces can provide
+        value.</p>
+        
+        <p>When starting a tracing deployment with either ingress load balancers or API
+        gateways, these initial traces can help inform your next steps in that
+        deployment. For example, if a particular upstream service is frequently a
+        bottleneck for request latency, that service would be a logical next step for
+        instrumentation (and that instrumentation hopefully will provide results that
+        directly impact user-perceived latency).</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Leverage Infrastructure: RPC Frameworks and Service Meshes"><div class="sect2" id="idm45357000854808">
+        <h2>Leverage Infrastructure: RPC Frameworks and Service Meshes</h2>
+        
+        <p><a data-type="indexterm" data-primary="deployment of distributed tracing" data-secondary="infrastructure leverage" id="idm45357000853384"></a><a data-type="indexterm" data-primary="RPCs (remote procedure calls)" data-secondary="deployment leveraging" id="idm45357000852440"></a><a data-type="indexterm" data-primary="service meshes" data-secondary="deployment leveraging" id="idm45357000851480"></a><a data-type="indexterm" data-primary="framework instrumentation" data-secondary="deployment leveraging framework" id="idm45357000850536"></a>Finally, a third approach to starting with tracing in a larger organization is
+        to leverage the infrastructure that connects services. If your organization
+        has a standard framework for making RPC calls or you use a service mesh, you
+        can get at least half the work done for a broad (though not deep) integration
+        with tracing very quickly.</p>
+        
+        <p>As we discussed in <a data-type="xref" href="ch04.html#chapter_5">Chapter&nbsp;4</a>, RPC frameworks and service meshes provide
+        standard ways of connecting services, and often provide support for security,
+        service discovery, load balancing, and (relevant to the current topic)
+        generating telemetry. Many frameworks and service meshes already support
+        tracing out of the box or can be easily extended to do so. As with ingress
+        load balancers, they may also be able to add some additional information to
+        those spans, possibly including request information and error codes. RPC
+        frameworks and service meshes can also facilitate propagating context
+        <em>between</em> services: they can make sure that span and trace IDs are included
+        among the headers or other metadata.</p>
+        
+        <p>Extracting context is another story, however. Since many of these frameworks
+        are not part of handling requests on the server side, you’ll need to find
+        another way to do this. If there is already common code used across your
+        organization as part of handling requests, then you can plug in additional
+        middleware at that point to extract trace context. Without any common
+        request-handling code, however, you will need to make some changes to the services
+        themselves to extract context from requests as they arrive. If you don’t have either of
+        these options, you’ll be left with a lot of single-span traces and not much to
+        say about getting better end-to-end visibility.</p>
+        
+        <p>In addition to instrumenting your framework, choose one service to start with
+        and make sure that context is being propagated properly through that service.
+        At the very least, the team that owns that service will be able to understand
+        how the performance of requests it handles relates to its upstream services.
+        As with the previous approach, even without deep instrumentation into all of
+        your organization’s services, a broad integration with tracing can help inform
+        the next steps for rolling out tracing.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45357000844584">
+        <h5>What About Service Orchestration?</h5>
+        <p><a data-type="indexterm" data-primary="container orchestration" data-secondary="deployment of tracing and" id="idm45357000843416"></a><a data-type="indexterm" data-primary="Kubernetes" data-secondary="deployment of tracing and" id="idm45357000842376"></a><a data-type="indexterm" data-primary="deployment of distributed tracing" data-secondary="orchestration tools and" id="idm45357000841416"></a><a data-type="indexterm" data-primary="orchestration tools and deployment" id="idm45357000840456"></a>We have discussed load balancers, service mesh, and other
+        infrastructure, but you may be wondering why we don’t mention Kubernetes or other
+        orchestration tools as part of deploying tracing. (After all, users of
+        Kubernetes certainly need distributed tracing, right?) While it might be
+        possible in the future, today orchestration systems don’t have much to offer
+        directly to speed the adoption of distributed tracing. (Of course, you might
+        use Kubernetes or other platforms as part of the infrastructure on which the
+        components of a tracing solution run, but here we’re talking about collecting
+        telemetry.)</p>
+        
+        <p>The fundamental reason for this is that most orchestration platforms,
+        including Kubernetes, focus on making sure that the right code is running in
+        the right places rather than on how individual requests are handled. When
+        they do help with things like service discovery, they aim to get out of the
+        way as quickly as possible. This is all to say, these platforms focus on the
+        <em>control plane</em> rather than the <em>data plane</em>.</p>
+        
+        <p>In many ways, orchestration tools like Kubernetes complement observability
+        tools like distributed tracing. Distributed tracing provides an understanding
+        of what is happening in a distributed system, while orchestration tools
+        provide a means to control these systems and effect change. Once you know
+        what service deployment is causing a problem, Kubernetes will help you to
+        quickly roll it back.</p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Make Adoption Repeatable"><div class="sect2" id="idm45357000836168">
+        <h2>Make Adoption Repeatable</h2>
+        
+        <p><a data-type="indexterm" data-primary="planning for instrumentation" id="idm45357000834824"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="plan for" id="idm45357000834104"></a><a data-type="indexterm" data-primary="deployment of distributed tracing" data-secondary="repeatability in organization" id="idm45357000833160"></a><a data-type="indexterm" data-primary="organizational buy-in" data-secondary="deployment" id="idm45357000832184"></a>After you’ve shown that one team can be successful with tracing, the next step
+        is, well, to help a second team do so. Take what you’ve learned from that
+        first team and use it to make the next steps easier. This can mean both
+        choosing which teams to go to next and knowing how to approach them. For example, did
+        any other teams get pulled in to help address performance problems with the
+        first roll-out of tracing? (Were any other teams implicated in those
+        problems?) Are there other teams that are facing similar problems to those
+        addressed by tracing in the initial roll-out?</p>
+        
+        <p>Also consider what worked and didn’t work for that first team. If there was a
+        particular type of request for which tracing offered a lot of value, look for
+        an analogue of that type of request. If particular tags were invaluable, make
+        sure that those are included for each new service. If particular use cases
+        came up a lot, consider how to automate anything necessary for new teams to
+        take advantage of those.</p>
+        
+        <p>If you didn’t instrument any of the frameworks or standard libraries used across
+        your organization as part of your initial deployment, now is a good time to
+        start planning that work. With the evidence you gathered in support
+        of tracing, it should be easy to make the case for the organization to invest
+        in tracing.</p>
+        
+        <p><a data-type="indexterm" data-primary="deployment of distributed tracing" data-secondary="standardization incorporated" id="idm45357000828664"></a><a data-type="indexterm" data-primary="standards" data-secondary="beginning with deployment" id="idm45357000827656"></a>One thing that we didn’t worry about with your first deployment was how to
+        standardize the process; this might be the time to start. As we
+        discussed in <a data-type="xref" href="ch04.html#chapter_5">Chapter&nbsp;4</a>, tracing is most effective when there are standards
+        around how operation names appear and the types of tags that are included
+        in spans. While this wasn’t necessary for the first team to adopt tracing
+        (and in fact, wouldn’t have provided any value), this may become important for
+        the second team—and certainly for the third, fourth, and fifth teams—to
+        get the most value from tracing. It’s also a good time to consider adding
+        tracing to launch checklists so that all new services will be built and
+        deployed with tracing enabled.</p>
+        
+        <p>While the goal of the initial roll-out was to prove the value of tracing,
+        moving forward it should be to reduce the friction for each subsequent
+        team and to help make sure that tracing is used consistently from team to
+        team.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Tracer Architecture"><div class="sect1" id="idm45357000824280">
+        <h1>Tracer Architecture</h1>
+        
+        <p><a data-type="indexterm" data-primary="deployment of distributed tracing" data-secondary="tracer architecture" id="idm45357000822744"></a><a data-type="indexterm" data-primary="traces" data-secondary="tracer architecture" id="idm45357000821800"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="tracer architecture" id="idm45357000820856"></a>As you roll out tracing across your organization, the tracer you use must be
+        prepared for greater and greater load. Whether you are deploying an open
+        source tracer or adopting a proprietary solution, understanding what’s going
+        on underneath the hood will help you deploy and scale up your tracing solution
+        smoothly. Though the architecture will vary from implementation to
+        implementation, this section presents a high-level view of the major
+        components of most tracers.</p>
+        
+        <p><a data-type="xref" href="#figure6-architecture">Figure&nbsp;5-1</a> shows a simplified view of a tracer architecture.
+        While some components may be combined in some implementations, the work of the
+        tracer can be logically divided as follows:</p>
+        <dl>
+        <dt>In-process libraries</dt>
+        <dd>
+        <p><a data-type="indexterm" data-primary="in-process libraries in tracer architecture" id="idm45357000816456"></a><a data-type="indexterm" data-primary="library-based instrumentation" data-secondary="tracer architecture" id="idm45357000815656"></a>Application code generally creates spans not by making network requests,
+        but instead by using an SDK. As discussed in
+        previous chapters, this SDK may be used as part of explicit instrumentation
+        or may use reflection or other features of dynamic languages to
+        automatically create spans.</p>
+        </dd>
+        <dt><a data-type="indexterm" data-primary="sidecar proxies of service meshes" data-secondary="tracer architecture" id="idm45357000813928"></a><a data-type="indexterm" data-primary="agent-based instrumentation" data-secondary="tracer architecture" id="idm45357000812984"></a>Sidecars and agents</dt>
+        <dd>
+        <p>Some parts of the tracing system run near the application and help to forward
+        data quickly to the rest of the tracer.</p>
+        </dd>
+        <dt><a data-type="indexterm" data-primary="collectors" data-secondary="tracer architecture" id="idm45357000810616"></a>Collectors</dt>
+        <dd>
+        <p>As opposed to sidecars or agents, which are generally stateless, collectors
+        may temporarily store spans, filter them, compute aggregate statistics about
+        them, or prepare them for storage and analysis.</p>
+        </dd>
+        <dt>Centralized storage and analysis</dt>
+        <dd>
+        <p><a data-type="indexterm" data-primary="data analysis" data-secondary="tracer architecture" id="idm45357000807400"></a>This is where the real magic happens: where traces are assembled from their
+        constituent spans and where global statistics about application performance
+        are computed. It also provides the user interface that lets developers
+        search traces and that visualizes those traces.</p>
+        </dd>
+        </dl>
+        
+        <p>We’ll cover each of these components in turn.</p>
+        
+        <figure><div id="figure6-architecture" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0501.png" alt="dtip 0501" width="1300" height="761">
+        <h6><span class="label">Figure 5-1. </span>Simplified tracer architecture.</h6>
+        </div></figure>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="In-Process Libraries"><div class="sect2" id="idm45357000803400">
+        <h2>In-Process Libraries</h2>
+        
+        <p><a data-type="indexterm" data-primary="in-process libraries in tracer architecture" id="idm45357000802024"></a><a data-type="indexterm" data-primary="library-based instrumentation" data-secondary="tracer architecture" id="idm45357000801224"></a><a data-type="indexterm" data-primary="deployment of distributed tracing" data-secondary="library deployment" id="idm45357000800216"></a>While applications could send spans over the network to a tracing system as
+        they are generated, there’s a lot to be gained from buffering them and sending
+        them in batches: some repeated parts of the spans need only be sent once, and
+        sending batches can reduce network overhead. We can’t expect every
+        service to reimplement this functionality, so nearly all tracers provide some
+        form of buffering as part of their SDKs.</p>
+        
+        <p>In addition, these libraries handle discovery of other components of the
+        tracer as well as network errors by retrying attempts to send spans (and
+        reporting those errors appropriately). They may also offer a number of
+        performance optimizations that are important for high-volume services:
+        optimizations in how spans are buffered (including how those buffers are
+        synchronized) and improvements in performance achieved through continuously
+        streaming many spans over a single network connection (reducing network
+        overhead, latency, and local memory consumption).</p>
+        
+        <p><a data-type="indexterm" data-primary="library-based instrumentation" data-secondary="deploying new libraries" id="idm45357000797448"></a>Depending on your position within your organization and the service in
+        question, deploying new tracing libraries might be a breeze or a Sisyphean
+        task. For the services that are deployed weekly (or even daily), adding a new
+        dependency might be a relatively easy task. If you are part of a platform
+        team, doing so might involve a little more work, including making the case for
+        the change, creating the pull request in an unfamiliar codebase, getting
+        approval, and deploying the change. In any case, the actual process will
+        depend on the language, platform, and package (or dependency) management
+        system.</p>
+        
+        <p>On some platforms, especially those that use interpreters, just-in-time
+        compilers, or dynamic linking, it’s possible to deploy in-process libraries
+        with no code changes (and no recompilation). For example, <a data-type="indexterm" data-primary="Java" data-secondary="Special Agent" id="idm45357000795096"></a>Java’s Special
+        Agent offers a means to dynamically link relevant instrumentation and tracer
+        libraries into the Java virtual machine (JVM) by inspecting the bytecode of modules that have already
+        been loaded. In those cases, redeploying services with new configurations may
+        be sufficient. (Note that services on these platforms make excellent
+        candidates for your initial roll-out of tracing!)</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Sidecars and Agents"><div class="sect2" id="idm45357000793448">
+        <h2>Sidecars and Agents</h2>
+        
+        <p><a data-type="indexterm" data-primary="sidecar proxies of service meshes" data-secondary="deployment of tracing" id="idm45357000792136"></a><a data-type="indexterm" data-primary="deployment of distributed tracing" data-secondary="sidecar proxies" id="idm45357000791144"></a><a data-type="indexterm" data-primary="agent-based instrumentation" data-secondary="deployment of tracing" id="idm45357000790184"></a><a data-type="indexterm" data-primary="deployment of distributed tracing" data-secondary="agent-based instrumentation" id="idm45357000789224"></a>The terms <em>sidecar</em> and <em>agent</em> can be used to mean a number of things, so if
+        you see them, take a closer look to be sure you understand what functions that
+        tracer component is implementing. In many cases, these are relatively
+        stand-alone components that, while deployed close to your application, are
+        isolated enough to have little opportunity to interfere with
+        application performance. A common motivation for creating this type of
+        component is to move as much functionality  as possible from the in-process library to a
+        sidecar, alleviating the need to reimplement this functionality for every
+        language or platform. Some of this functionality may include discovering
+        other tracer components and handling network errors.</p>
+        
+        <p>Depending on how you’ve set up your infrastructure, this might take the
+        form of a host-level daemon (for example, using <code>systemd</code>) or a sidecar
+        container running alongside your service container. One important
+        consideration will be budgeting for the resources required to run these
+        sidecars: though it’s likely to be a small amount of CPU per service instance,
+        the total cost can quickly add up as you deploy tracing for every service in
+        your application.</p>
+        
+        <p>Even in a containerized environment, you might consider running only one
+        sidecar per host (for example, using a <a data-type="indexterm" data-primary="Kubernetes" data-secondary="DaemonSet" id="idm45357000784680"></a>Kubernetes DaemonSet). This will
+        potentially save on some resources (since you will need to run fewer sidecars)
+        and can help collect better telemetry throughout the service life cycle
+        (running within the same <a data-type="indexterm" data-primary="Kubernetes" data-secondary="Pod and tracing" id="idm45357000783352"></a>Kubernetes Pod can mean that your tracing sidecar
+        can’t observe service shutdown, since it is shut down at the same time). On
+        the other hand, running only one sidecar per host can mean that one noisy
+        service instance on that host can generate so much telemetry that the tracing
+        sidecar is overwhelmed and data from it—and other service instances—is dropped.</p>
+        
+        <p>Historically, the term “agent” was used to describe processes that interacted
+        more directly—or even were part of—your service instances, often plugging
+        into the runtime of the service itself. While most modern tracing systems use
+        the terms “client” or “SDK” for this sort of functionality, you still might see
+        it in some cases. One reason that many of these systems stopped using this
+        term was that it can be associated with plug-ins that would significantly
+        impact performance, in some cases so much so that it could only be used in
+        staging or QA environments and never in customer-facing production
+        environments. <a data-type="indexterm" data-primary="Java" data-secondary="Special Agent" id="idm45357000780872"></a>Java’s Special Agent was named because it offers many of the
+        advantages of a more traditional agent (primarily that it’s easy to install)
+        without the runtime overhead.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Collectors"><div class="sect2" id="idm45357000779448">
+        <h2>Collectors</h2>
+        
+        <p>Span data is often emitted in a format that’s not optimized for storage or
+        analysis. At the same time, not all data will be kept in most tracing
+        deployments: most of these spans will not offer enough value, and, as we’ll
+        describe in <a data-type="xref" href="ch06.html#chapter_7">Chapter&nbsp;6</a>, the costs of doing so are quite high. As
+        such, it’s important to perform some translation, sampling, and aggregation of
+        spans. For these reasons, and generally to provide a level of abstraction
+        between the application and the rest of the tracing components, many tracers
+        include a component called a <a data-type="indexterm" data-primary="collectors" data-secondary="about" id="idm45357000776600"></a><em>collector</em>. What distinguishes a collector from
+        a sidecar or agent is that it’s usually running further away from application
+        services and may even run on dedicated hosts or virtual machines (VMs). The function of a
+        collector varies from implementation to implementation, but we will cover some
+        common cases here.</p>
+        
+        <p><a data-type="indexterm" data-primary="collectors" data-secondary="translation by" id="idm45357000774664"></a>Most in-process libraries and sidecars transmit spans in a way that minimizes
+        performance impact on the service process itself. This usually means
+        minimizing the amount of computation required by the service (since CPU is
+        often the scarcest resource). However, this is often not the most efficient way
+        to transmit spans from the point of view of network consumption, nor is it
+        usually a convenient format for querying, storing, or analyzing spans. One
+        common function of a collector is to translate incoming spans into a format
+        more amenable to these processes. For example, a simple translation would be
+        to compress spans using a generic compression algorithm. Another more
+        domain-specific compression technique would be to create dictionaries of
+        commonly appearing strings (for example, common service and operation names
+        and common tags) and then forward those dictionaries and spans that reference
+        them.</p>
+        
+        <p>Collectors may accept spans in a number of different formats and translate
+        spans into a single, uniform format. Others may forward spans to multiple
+        tracer systems and possibly even forward spans to these systems in different
+        formats. In cases where the in-process library or sidecar is shared across
+        multiple tracer implementations (as in the case of <a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="collectors" id="idm45357000771880"></a>OpenTelemetry), the
+        collector may be the first component to introduce a tracer-specific format.</p>
+        
+        <p><a data-type="indexterm" data-primary="collectors" data-secondary="sampling spans" id="idm45357000770408"></a><a data-type="indexterm" data-primary="sampling" data-secondary="collectors for" id="idm45357000769432"></a>Collectors are also often responsible (at least in part) for sampling spans:
+        that is, in implementations where only a subset of spans are processed,
+        collectors are responsible for selecting which spans should be forwarded to
+        other tracer components. There are a number of different ways that spans can
+        be sampled, including uniformly randomly, based on attributes of those spans
+        or other information. In some cases, sampling can be performed either
+        in-process or in a sidecar, but since there is often a need to change the
+        parameters controlling how spans are sampled, moving this functionality to a
+        smaller set of centrally controlled processes can make managing this
+        configuration easier. In other cases, spans must be buffered for a longer
+        period of time before they can be sampled, requiring more memory than would
+        typically be available in a sidecar.</p>
+        
+        <p><a data-type="indexterm" data-primary="collectors" data-secondary="aggregation by" id="idm45357000767336"></a><a data-type="indexterm" data-primary="data aggregation" data-secondary="collectors for" id="idm45357000766488"></a>Collectors may also be responsible for computing some aggregate statistics
+        about spans. For example, the spans that are <em>not</em> sampled may be
+        accounted for in various ways, including the total number of spans received
+        from a given service, the number of spans where an error occurred or with a
+        given tag key and value, and information about the latency of some or all
+        spans (including median and standard deviation), or even as a histogram.</p>
+        
+        <p>Computation of these statistics might be too expensive to do within the service
+        process or in a sidecar. These statistics will also be more
+        accurate if they are computed before significant sampling takes place. In all
+        cases, the goal of computing these aggregates is to preserve <em>some</em>
+        information about as many spans as possible, while reducing the total amount
+        of data that must be forwarded to other tracer <span class="keep-together">components</span>.</p>
+        
+        <p><a data-type="indexterm" data-primary="collectors" data-secondary="deployment" id="idm45357000762248"></a><a data-type="indexterm" data-primary="deployment of distributed tracing" data-secondary="collectors" id="idm45357000761272"></a>Collectors may be deployed in a number of different ways, depending on what
+        functionality they provide. In some cases, they may require significant
+        resources to store, index, or otherwise process spans. When they do, they’ll
+        often be deployed on dedicated hosts (to isolate them from the rest of the
+        application). If they perform significant sampling, it might be beneficial to
+        deploy them on the same network as the application because this can reduce network
+        costs, especially if other tracer components are <em>not</em> deployed on the same
+        network (and even if they are still on dedicated hosts).</p>
+        
+        <p>On the other hand, if a tracer implementation performs few of the kinds of
+        functionality described in this section, this functionality may be built into
+        the sidecar and agent. This is often the case when they store very little
+        state (and especially when that state is specific to a service instance).
+        Doing so simplifies tracer deployment, since there is one less component to
+        deploy.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Centralized Storage and Analysis"><div class="sect2" id="idm45357000758280">
+        <h2>Centralized Storage and Analysis</h2>
+        
+        <p><a data-type="indexterm" data-primary="data storage" data-secondary="deployment" id="idm45357000757016"></a><a data-type="indexterm" data-primary="centralized storage of tracings" data-see="data storage" id="idm45357000756040"></a><a data-type="indexterm" data-primary="storage of tracings" data-see="data storage" id="idm45357000755080"></a><a data-type="indexterm" data-primary="traces" data-secondary="storage of" id="idm45357000754136"></a><a data-type="indexterm" data-primary="data analysis" data-secondary="deployment" id="idm45357000753192"></a><a data-type="indexterm" data-primary="deployment of distributed tracing" data-secondary="data analysis" id="idm45357000752248"></a>Finally, tracers must take these spans (and any other information computed
+        from them) and provide some value to developers. This work is usually
+        performed not just by one component but by a set of components. Together they
+        are responsible for gathering <em>all</em> of the tracing telemetry from your
+        application, storing it, analyzing it, and visualizing it in useful ways. The
+        number of components and their function will vary widely based on the tracing
+        implementation you choose. Likewise, how you deploy these components of a
+        tracer will also vary significantly based on this choice.</p>
+        
+        <p>Tracers may store spans and other data in a variety of ways. Tracers may
+        include databases of spans or traces as well as time series data (including
+        request rates and latency). These storage systems will typically provide at
+        least a few different indices on these spans and time series. They may also
+        include temporary storage of spans that is used during the ingestion process
+        (for example, as a message queue). Tracers will also include components which
+        can search these storage systems, in response to developer queries or
+        automated analyses. In many cases, tracers are used as part of an incident
+        management process, and in those cases, they must be able to answer questions
+        about requests that have occurred in the last few minutes—if not the last
+        few seconds. As such, the process of receiving, storing, indexing, and
+        analyzing traces must also be completed in minutes or seconds after a request
+        is completed. Due to the volume of data, the tracer components
+        that ingest and store data often require significant effort to deploy and
+        maintain.</p>
+        
+        <p>The most important aspect of these tracer components is that they <em>centralize</em>
+        the functionality described earlier: since the whole point of traces is to
+        provide cross-service visibility, some components of the tracer must bring
+        together data from across all services. In most tracer implementations, the
+        in-process libraries, sidecars, and collectors all have only a narrow view of
+        the application, perhaps from one service instance or from a handful of them.
+        It’s the role of these centralized storage and analysis components to take
+        whatever data has been forwarded to them and build a unified view of the
+        application and its behavior.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Incremental Deployment"><div class="sect2" id="idm45357000746808">
+        <h2>Incremental Deployment</h2>
+        
+        <p><a data-type="indexterm" data-primary="deployment of distributed tracing" data-secondary="incremental" id="idm45357000745464"></a><a data-type="indexterm" data-primary="distributed tracing" data-secondary="challenges of" id="idm45357000744472"></a><a data-type="indexterm" data-primary="organizational buy-in" data-secondary="challenges of distributed tracing" id="idm45357000743528"></a>As you begin your journey toward adopting distributed tracing, think about
+        which aspects of the implementation could present the biggest challenges for your organization.
+        Perhaps your organization uses a large number of languages and frameworks;
+        perhaps teams in your organization make similar technology choices, but manage
+        releases using very different processes; perhaps some tracing use cases are
+        much more important than others; or perhaps your organization operates at a
+        scale much larger than most other organizations. Consider what makes your
+        organization different than others, and how these differences might impact choices related
+        to tracing.</p>
+        
+        <p><a data-type="indexterm" data-primary="open source instrumentation" data-secondary="benefits of" id="idm45357000741512"></a><a data-type="indexterm" data-primary="deployment of distributed tracing" data-secondary="open source implementations" id="idm45357000740520"></a>Despite all of these potential variations, we can unilaterally endorse the use
+        of open source APIs, SDKs, and libraries. A great deal of effort has gone
+        into building these tools in ways that minimize potential performance impact
+        on your application, while at the same time maximizing your options for other
+        choices about tracer implementations. A number of different open source and
+        commercial tracer implementations work with projects like OpenTracing,
+        OpenCensus, and OpenTelemetry; they make a great choice even if you
+        decide that your best path forward is to build a new tracer from scratch!</p>
+        
+        <p>Using an open source API and SDK will also enable you to compare tracer
+        implementations very early in the process: the functionality offered by
+        different tracers can vary a lot. As you are making the case for
+        tracing within your organization, make sure that you are using results of specific
+        implementations. As part of that comparison, also make sure that you test at
+        scale: you don’t want to find out several months into your project that your
+        favorite tracer can’t handle traffic from your production workload.</p>
+        
+        <p>Also, remember that—at least from your organization’s point of view—the
+        adoption of distributed tracing will continue for some time. Make sure that
+        the initial investment in terms of instrumentation and implementation makes
+        sense for both the short- and long-term value that your organization will be
+        deriving from it.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Data Provenance, Security, and Federation"><div class="sect1" id="idm45357000823688">
+        <h1>Data Provenance, Security, and Federation</h1>
+        
+        <p><a data-type="indexterm" data-primary="data collection" data-secondary="data outside your control" id="idm45357000735976"></a>So far, when we’ve discussed instrumenting your application and
+        deploying a tracer, we made a simplifying assumption that
+        all of the code was under your control. In fact, that code runs in a variety
+        of environments, including not only your datacenter or virtual private cloud
+        but also the phones and computers of your users and the environments
+        managed by any service providers that you might leverage as part of your
+        application. If telemetry is generated by code that runs outside of your
+        control, you should ask additional questions about the quality of that data.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Frontend Service Telemetry"><div class="sect2" id="idm45357000734184">
+        <h2>Frontend Service Telemetry</h2>
+        
+        <p><a data-type="indexterm" data-primary="backend services" data-secondary="data outside your control" id="idm45357000732712"></a><a data-type="indexterm" data-primary="backend services" data-secondary="clock skew" id="idm45357000731672"></a><a data-type="indexterm" data-primary="frontend services" data-secondary="data outside your control" id="idm45357000730728"></a><a data-type="indexterm" data-primary="mobile clients" data-secondary="data outside your control" id="idm45357000729768"></a><a data-type="indexterm" data-primary="web clients" data-secondary="data outside your control" id="idm45357000728808"></a>One powerful aspect of distributed tracing is its capacity to tie performance
+        from your frontend services (that is, your mobile app and web clients)
+        together with performance from your backend services, providing a complete
+        view of how your application is working. Capturing telemetry from frontend
+        services lets you measure performance from as close to your users as you
+        can get. However, because of its source, frontend telemetry must be given
+        special treatment in a couple of ways, and in the context of our current
+        discussion, it’s important to ask how much you can and should trust it.</p>
+        
+        <p><a data-type="indexterm" data-primary="clock skew in frontend telemetry" id="idm45357000726856"></a>Frontend telemetry can be suspect first because of the quality of the platforms
+        themselves. Mobile devices and desktops are notoriously prone to inaccurate
+        clocks; that is, the time reported by a mobile device may be seconds or even
+        minutes different from that reported on your backend servers. This leads to a
+        kind of clock skew where a span reported by a frontend service might look as
+        if it doesn’t start until <em>after</em> its child span (as reported by a backend
+        service). The top trace in <a data-type="xref" href="#fig6-clock-skew">Figure&nbsp;5-2</a> shows an example of how this
+        might appear; in the example span A is generated by a frontend service, and
+        the other four spans come from a backend service, including spans B and C,
+        which are child spans of A. While A starts before C (as it should), it
+        appears to start after B, which should not be possible.</p>
+        
+        <p><a data-type="indexterm" data-primary="Network Time Protocol for clock skew" id="idm45357000723704"></a>There are two common methods to address this problem. First, tracing
+        solutions can attempt to measure this clock skew using adaptations of the
+        Network Time Protocol.<sup><a data-type="noteref" id="idm45357000722680-marker" href="ch05.html#idm45357000722680">1</a></sup> This involves recording
+        timestamps both on the tracing library (running as part of the frontend
+        service) and within the tracing implementation, and comparing these timestamps
+        to estimate the clock skew. This skew can then be removed from frontend spans
+        by adding or subtracting it from the timestamps that appear in the span. In
+        our experience, this method is effective most of the time. However, when it
+        does fail (usually due to one of the many uncertainties of running code on a
+        mobile device), the results can be very confusing, and can offer results that
+        are even less accurate than the original timestamps. (It’s important to call
+        out when this is happening so that developers can disable it and restore the
+        original timestamps.)</p>
+        
+        <figure class="width-75"><div id="fig6-clock-skew" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0502.png" alt="dtip 0502" width="1235" height="1153">
+        <h6><span class="label">Figure 5-2. </span>Example tracing showing clock skew before (top) and after (bottom) <span class="keep-together">correction</span>.</h6>
+        </div></figure>
+        
+        <p>A second method to address clock skew between frontend and backend services is
+        to leverage the causal relationships between client and server spans. By
+        definition a client span <em>must</em> start before its associated server span
+        starts. And while it’s not always the case, in many applications server spans
+        end before their associated client spans end. Given this, the timestamps in
+        frontend spans can be adjusted to maintain these invariants. Unlike an
+        estimate of clock skew, these adjustments yield more predictable results.
+        However, these adjustments are quite coarse: they don’t establish exactly when
+        a frontend span should start, they only put an upper bound on it. As such,
+        it’s difficult to distinguish how much network time is consumed by the request as
+        opposed to the response.</p>
+        
+        <p>In our work on implementing tracing solutions, we’ve
+        used a combination of these two techniques: we use clock skew estimation to
+        try to build a precise model of performance, but use causal relationships as a
+        check to make sure that these estimates make sense. The bottom trace in
+        <a data-type="xref" href="#fig6-clock-skew">Figure&nbsp;5-2</a> shows what that same trace might look like after
+        timestamps in A have been corrected.</p>
+        
+        <p><a data-type="indexterm" data-primary="backend services" data-secondary="malicious users" id="idm45357000714168"></a><a data-type="indexterm" data-primary="frontend services" data-secondary="malicious users" id="idm45357000713192"></a><a data-type="indexterm" data-primary="malicious users and frontend services" id="idm45357000712248"></a>Frontend telemetry can also be suspect because of the actions of malicious
+        users. That is, these users might try to manipulate your telemetry to
+        disguise performance problems or distract you from other work by creating
+        spans that indicate spurious issues. Malicious users might also try to
+        overwhelm your tracing system by instigating a <a data-type="indexterm" data-primary="denial of service attacks" id="idm45357000711080"></a>denial-of-service attack
+        against it.</p>
+        
+        <p>One course of action that we’ve observed is to simply ignore the problem. The
+        cost of generating sufficient false telemetry is high enough—and the impact
+        of that telemetry sufficiently low—to discourage any users from carrying
+        out such an attack. <a data-type="xref" href="#fig6-frontend-spans-proxy">Figure&nbsp;5-3</a> (A) shows what this might
+        look like: spans are sent directly over the internet to tracing backends, in
+        parallel with requests made to other application backends. Depending on how
+        you are using spans from frontend services, this may be appropriate for your
+        organization.</p>
+        
+        <p>One variation of this approach is to make sure that any spans from frontend
+        services (that is, from untrusted sources) can be segregated from those
+        originating from backend services. That way, even if your tracing system were
+        to be attacked in some way, you could still be confident that spans
+        originating from <em>backend</em> services were accurate (and simply ignore frontend
+        ones until you could put another solution in place).</p>
+        
+        <p>OpenTelemetry’s concept of a “public endpoint” (as discussed in <a data-type="xref" href="ch04.html#chapter_5">Chapter&nbsp;4</a>)
+        is another way of marking this sort of trust boundary. By setting that
+        attribute, you’re indicating to the tracing system that you don’t completely
+        trust the context that was propagated to this point.</p>
+        
+        <figure><div id="fig6-frontend-spans-proxy" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0503.png" alt="dtip 0503" width="932" height="1476">
+        <h6><span class="label">Figure 5-3. </span>Three ways of sending spans from frontend services (for example, a mobile app) to tracing backends.</h6>
+        </div></figure>
+        
+        <p>An alternative to trusting frontend services is to synthesize these spans on
+        the backend. That is, rather than sending spans directly from frontend
+        services, those frontend services send enough data (for example, span start
+        and end times) to the backends that the backends can reconstruct those
+        spans and forward them to the tracing implementation.
+        <a data-type="xref" href="#fig6-frontend-spans-proxy">Figure&nbsp;5-3</a> (B) shows what this might look like. (Not shown
+        in the figure are spans sent from the application backends to the tracing
+        system.) This might mean extending the API provided by the application
+        backends, but because such an API is much narrower than a generic tracing API,
+        it limits the kinds of false information that an attacker can provide and also
+        increases the cost of doing so (since the attack must be customized to your
+        application).</p>
+        
+        <p>This approach also has a couple of other advantages: you might
+        be able to save on the number and size of network requests from frontend
+        services; you can also more easily upgrade the format of your frontend
+        telemetry, since it will only require a backend deployment to do so. However,
+        taking this approach means that when your backends are down, you will receive
+        neither any backend telemetry nor any frontend telemetry. It is also a lot
+        more work, since you are in some ways reimplementing part of the frontend
+        tracing SDK.</p>
+        
+        <p>Finally, the most secure way to accept spans from frontend services is
+        (perhaps unsurprisingly) to authenticate these requests. For example, you
+        can set up an authenticating proxy that can validate the users from which
+        spans are being sent, as shown in <a data-type="xref" href="#fig6-frontend-spans-proxy">Figure&nbsp;5-3</a> (C). In fact,
+        you probably already have one of these proxies, so authenticating telemetry
+        might just be a question of setting up a new route in its <span class="keep-together">configuration</span>.</p>
+        
+        <p>This approach has a couple of drawbacks: it doesn’t work if your application
+        accepts anonymous traffic and it is still possible for an attacker to send
+        spurious data through such a proxy (though it’s much harder to do so at
+        scale). And of course, if an attacker compromises your authentication system,
+        they could leverage that to confuse or overwhelm your tracing system…but in
+        that case, you’ve probably got bigger problems to consider.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Server-Side Telemetry for Managed Services"><div class="sect2" id="idm45357000733592">
+        <h2>Server-Side Telemetry for Managed Services</h2>
+        
+        <p><a data-type="indexterm" data-primary="managed service telemetry" id="idm45357000695736"></a><a data-type="indexterm" data-primary="data collection" data-secondary="managed service telemetry" id="idm45357000695064"></a>In some cases, you may now be able to let others take on some of the work of
+        deploying tracing for you: some managed service providers are now starting to
+        emit telemetry describing the services that they provide. This means that you
+        need to manage neither these services nor their telemetry. While this
+        practice is still in its infancy, it’s an important step forward for
+        observability.</p>
+        
+        <p>Managed service providers, whether they offer data storage, data analysis, or
+        integration with other services, are a great way to quickly implement parts of
+        your application or even extend it. And while these service providers
+        probably have an obligation to provide some sort of baseline performance,
+        there can still be variations in this performance that affect your application
+        (positively or negatively). Even if not, it can still be useful to understand
+        how managed service performance is related to the performance of the rest of
+        your application.</p>
+        
+        <p>Even without the cooperation of service providers, you can instrument your
+        application to provide some visibility into how these services are performing
+        by adding client-side spans to your application. The span labeled <code>GET
+        /&lt;key&gt;</code> shown in <a data-type="xref" href="#fig6-managed-service-span">Figure&nbsp;5-4</a> is an example of this. It’s
+        tagged <code>kind: client</code> to indicate that it represents time waiting for an
+        external request to complete. Without any managed service spans, this would
+        be the bottom span in this trace: you’d have no indication of what’s happening
+        within this request.</p>
+        
+        <figure><div id="fig6-managed-service-span" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0504.png" alt="dtip 0504" width="944" height="355">
+        <h6><span class="label">Figure 5-4. </span>An example trace that includes a span from a managed service provider.</h6>
+        </div></figure>
+        
+        <p>However, with managed service spans, you would also see the span labeled
+        <code>GetObject</code> (which is also tagged as <code>kind: server</code>), as shown in the figure.
+        This can then be used as part of the approaches described in <a data-type="xref" href="ch08.html#chapter_10">Chapter&nbsp;8</a>
+        and <a data-type="xref" href="ch09.html#chapter_11">Chapter&nbsp;9</a>, for example, using the difference between the client and
+        service spans to measure the impact of the network on request latency. In
+        fact, this trace looks like any other trace you’ll see in this book.
+        Depending on the level of visibility that the service provider is comfortable
+        with, you might also glean some information about how the request was handled.</p>
+        
+        <p>As with frontend spans, there can be some concerns about trusting the data
+        that comes from devices beyond your organization’s control. Since you have an
+        explicit relationship with this service provider, you can probably trust it
+        not to intentionally pollute your data. However, it still would be worthwhile
+        to identify these spans in some way: should a problem occur, doing so will
+        enable you to isolate data from external sources.</p>
+        
+        <p>There are still several challenges that need to be addressed to make it easy
+        to integrate managed service spans. For example:</p>
+        
+        <ul>
+        <li>
+        <p>How are spans transmitted to the tracing backends? (Directly from the
+        service provider or not?)</p>
+        </li>
+        <li>
+        <p>How is tracing context propagated to the managed service? (As part of
+        request metadata?)</p>
+        </li>
+        <li>
+        <p>What naming and other conventions are used for operation names, tags, and
+        other span data?</p>
+        </li>
+        </ul>
+        
+        <p>Ultimately, these are all questions about how to federate tracing. And while
+        these problems existed before (for example, when integrating several open
+        source projects), they are more acute when the software is not only
+        written by different organizations but also <em>managed</em> independently. In part,
+        efforts like <a data-type="indexterm" data-primary="open source instrumentation" data-secondary="managed service telemetry and" id="idm45357000678408"></a>OpenTelemetry can help address these problems. However, they
+        will also require some <a data-type="indexterm" data-primary="standards" data-secondary="managed service telemetry" id="idm45357000677224"></a>standardization (or at least coordination) of tracing
+        solutions as they concern not just the format of the telemetry data but also
+        how it is ingested.</p>
+        
+        <p>Managed service telemetry is still very new and only available for a handful
+        of services. If you see it, thank your provider…and take
+        advantage of it!</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" class="notoc" data-pdf-bookmark="Summary"><div class="sect1" id="idm45357000675288">
+        <h1>Summary</h1>
+        
+        <p>Properly instrumenting your services is the first step in distributed tracing,
+        and doing so will generate a lot of data, more than you or any other developer
+        has time to look at. Success in distributed tracing requires something to
+        sift through that data and find the insights you need to understand and
+        improve application performance; that’s the role of the rest of the tracer
+        implementation.</p>
+        
+        <p>In this chapter, we considered some of the human factors at play in deploying
+        tracing within a larger organization, as well as a high-level architecture of many
+        tracer implementations. A major factor driving the design of tracers is
+        managing infrastructure costs—computing, network, and storage. We’ll dive
+        into these costs and how different tracers handle them in more detail in the
+        next chapter.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        <div data-type="footnotes"><p data-type="footnote" id="idm45357000722680"><sup><a href="ch05.html#idm45357000722680-marker">1</a></sup> <a data-type="xref" href="bibliography01.html#Mil17">[Mil17]</a></p></div></div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492056621/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

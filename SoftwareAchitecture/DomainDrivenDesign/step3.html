@@ -1,0 +1,156 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 3. Managing Complexity with Bounded Contexts"><div class="chapter" id="managing_complexity_with_bounded_contexts">
+        <h1><span class="label">Chapter 3. </span>Managing Complexity with Bounded Contexts</h1>
+        <p>As you saw in the previous chapter, to ensure the success of a project it’s important to develop a ubiquitous language, which must be clear, consistent, and reflect the domain experts’ mental models of the business.</p>
+        <p>However, the domain experts’ mental models can be inconsistent themselves, which contradicts the core requirement of the ubiquitous language. Let’s take a look at an example.</p>
+        <section data-type="sect1" data-pdf-bookmark="Example: Inconsistent Models"><div class="sect1" id="example_inconsistent_models">
+          <h1>Example: Inconsistent Models</h1>
+          <p>Suppose we are working for a telemarketing company. The company’s marketing department generates leads through online advertisements. Its sales department is in charge of soliciting prospective customers to buy its products or services, a chain that is shown in <a data-type="xref" href="#fig_3_example_business_domain_telemarketing_company">Figure&nbsp;3-1</a>.</p>
+          <figure><div id="fig_3_example_business_domain_telemarketing_company" class="figure">
+            <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492057802/files/assets/widd_0301.png" alt="Example business domain telemarketing company" width="1167" height="112">
+            <h6><span class="label">Figure 3-1. </span>Example business domain—telemarketing company</h6>
+          </div></figure>
+          <p>Examination of the domain experts’ language reveals a peculiar observation. The term “lead” has different meanings in the marketing and sales departments:</p>
+          <dl>
+            <dt>Marketing department</dt>
+            <dd>
+              <p>For the marketing people, a lead represents a notification that somebody is interested in one of the products. The event of receiving the prospective customer’s contact details is considered a lead.</p>
+            </dd>
+            <dt>Sales department</dt>
+            <dd>
+              <p>In the context of the sales department, a lead is a much more complex entity. It represents the whole lifecycle of the sales process. It’s not a mere event, but a long-running process.</p>
+            </dd>
+          </dl>
+          <p>How do we formulate a ubiquitous language in the case of this telemarketing company? </p>
+          <p>On the one hand, we know that the ubiquitous language has to be consistent—each term should have one meaning. On the other hand, we know that the ubiquitous language has to reflect the domain experts’ mental models. In this case, the mental model of the “lead” is inconsistent between the domain experts in the sales and marketing departments.</p>
+          <p>This ambiguity doesn’t present that much of a challenge in person-to-person communications. Certainly, communication can be more challenging among people from different departments, but it’s easy enough for humans to infer the exact meaning from the interaction’s context.</p>
+          <p>It is more difficult, however, to represent such a divergent model of the business domain in software. Source code doesn’t cope well with ambiguity. If we were to bring the complicated model of the sales department into marketing, it would introduce complexity where it’s not needed. But if we were to try to simplify the sales model according to the marketing world view, it wouldn’t fit the needs of the sales subdomain. We’d have an overengineered solution in the first case, and an underengineered one in the second.</p>
+          <p>How do we solve this catch-22?</p>
+          <p>One solution would be to prefix the problematic term with a definition of the context: “marketing lead” and “sales lead.” That would alleviate the problem of implementing the model in code. However, no one would use the prefixes in conversations. People don’t need this extra information—they can rely on the conversation’s context. </p>
+          <p>Let’s turn to domain-driven design’s pattern for tackling such scenarios: the “bounded context” pattern.</p>
+        </div></section>
+        <section data-type="sect1" data-pdf-bookmark="What Is a Bounded Context?"><div class="sect1" id="what_is_a_bounded_context">
+          <h1>What Is a Bounded Context?</h1>
+          <p>The solution is trivial: divide the ubiquitous language into multiple smaller languages, then assign each one to the explicit context in which it can be applied—its bounded context.</p>
+          <p>In the preceding example, we can identify two bounded contexts: marketing and sales. The term “lead” exists in both bounded contexts, as shown in <a data-type="xref" href="#fig_4_tackling_inconsistencies_in_the_ubiquitous_languag">Figure&nbsp;3-2</a>. As long as it bears a single meaning in each bounded context, each of the fine-grained ubiquitous languages is both consistent and follows the domain experts’ mental models. </p>
+          <figure><div id="fig_4_tackling_inconsistencies_in_the_ubiquitous_languag" class="figure">
+            <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492057802/files/assets/widd_0302.png" alt="Tackling inconsistencies in the ubiquitous language by splitting it into bounded contexts" width="1260" height="639">
+            <h6><span class="label">Figure 3-2. </span>Tackling inconsistencies in the ubiquitous language by splitting it into bounded contexts</h6>
+          </div></figure>
+          <p>In a sense, terminology conflicts and implicit contexts are an inherent part of any decent-sized business. With the bounded context pattern, the contexts are modeled as an explicit and integral part of the business domain.</p>
+          <section data-type="sect2" data-pdf-bookmark="Model Boundaries"><div class="sect2" id="model_boundaries">
+            <h2>Model Boundaries</h2>
+            <p>As we discussed in the previous chapter, a model is not a copy of the real world, but a construct that helps to make sense of a complex system. The problem it is supposed to solve is an inherent part of a model—its purpose. A model cannot exist without a boundary; it will expand to become a copy of the real world. That makes bounded contexts an intrinsic part of the modeling process. </p>
+            <p>Let’s go back to the example of maps as models. We have seen that each map has its specific context—aerial, nautical, terrain, subway, etc. A map is only useful and consistent within the scope of its specific purpose.</p>
+            <p>Just as a subway map is useless for nautical navigation, a ubiquitous language in one bounded context can be irrelevant in another one. Bounded contexts define the applicability of a ubiquitous language, and of the model it represents. They allow defining distinct models, according to different problem domains. In other words, bounded contexts are the consistency boundaries of ubiquitous languages. A language’s terms are only consistent inside of its bounded context.</p>
+          </div></section>
+        </div></section>
+        <section data-type="sect1" data-pdf-bookmark="Scope of a Bounded Context"><div class="sect1" id="scope_of_a_bounded_context">
+          <h1>Scope of a Bounded Context</h1>
+          <p>The example at the beginning of the chapter demonstrated an inherent boundary of the business domain. Domain experts from different departments held conflicting mental models of the same business entity. To model the business domain, we had to divide the model and define a strict applicability context for each of the fine-grained models—its bounded context.</p>
+          <p>The consistency of the ubiquitous language only helps to identify the widest boundary of that language. It cannot be any larger, since then there will be inconsistent models and terminology. However, we can still decompose the models further, into even smaller bounded contexts, as shown in <a data-type="xref" href="#fig_5_bounded_contexts">Figure&nbsp;3-3</a>.</p>
+          <figure><div id="fig_5_bounded_contexts" class="figure">
+            <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492057802/files/assets/widd_0303.png" alt="Bounded contexts" width="1260" height="683">
+            <h6><span class="label">Figure 3-3. </span>Bounded contexts</h6>
+          </div></figure>
+          <p>Defining the scope of a ubiquitous language—its bounded context—is a strategic design decision. Boundaries can be wide, following the inherent contexts of the business domain, or narrow, dividing the business domain into smaller problem domains.</p>
+          <p>A bounded context’s size, by itself, is not a deciding factor. Models shouldn’t necessarily be big or small. Models need to be <em>clear</em>. The wider the boundary of the ubiquitous language is, the harder it is to keep it consistent. It may be beneficial to divide a large ubiquitous language into smaller, more manageable problem domains, but striving for small bounded contexts can backfire too. The smaller they are, the more integration overhead the design induces.</p>
+          <p>Hence, the decision of how big your bounded contexts should be depends on the specific problem domain. Sometimes using a wide boundary will be clearer, and sometimes decomposing it further will make more sense. We’ll discuss the factors that influence this decision further in <a data-type="xref" href="ch09.html#evolutionary_design">Chapter&nbsp;9</a>. </p>
+        </div></section>
+        <section data-type="sect1" data-pdf-bookmark="Bounded Contexts Versus Subdomains"><div class="sect1" id="bounded_contexts_versus_subdomains">
+          <h1>Bounded Contexts Versus Subdomains</h1>
+          <p>In <a data-type="xref" href="ch02.html#discovering_domain_knowledge">Chapter&nbsp;2</a>, we saw that a business domain consists of multiple subdomains. In this chapter, we explored decomposing a business domain into a set of fine-grained problem domains, or bounded contexts. At first, the two methods of decomposing business domains might seem redundant. However, that’s not the case. Let’s examine why.</p>
+          <section data-type="sect2" data-pdf-bookmark="Subdomains"><div class="sect2" id="subdomains">
+            <h2>Subdomains</h2>
+            <p>To comprehend a company’s business, we have to analyze its business domain. According to domain-driven design, the analysis phase involves the identification of the different types of subdomains (core, supporting, and generic). “Identification” is the keyword here. The subdomains are already there; they are a part of the business. That’s how the organization works and plans its competitive strategy. By analyzing business domains, we are discovering subdomains that already exist.</p>
+          </div></section>
+          <section data-type="sect2" data-pdf-bookmark="Bounded Contexts"><div class="sect2" id="bounded_contexts_3">
+            <h2>Bounded Contexts</h2>
+            <p>Bounded contexts, on the other hand, are designed. Choosing models’ boundaries is a strategic design decision. We decide how to divide the business domain into smaller, manageable problem domains.</p>
+          </div></section>
+          <section data-type="sect2" data-pdf-bookmark="The Interplay Between Subdomains and Bounded Contexts"><div class="sect2" id="the_interplay_between_subdomains_and_bounded_conte">
+            <h2>The Interplay Between Subdomains and Bounded Contexts</h2>
+            <p>Theoretically, though impractically, a single model could span the whole business domain. This strategy could work for a small system, as shown in <a data-type="xref" href="#fig_6_monolithic_bounded_context">Figure&nbsp;3-4</a>.</p>
+            <figure><div id="fig_6_monolithic_bounded_context" class="figure">
+              <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492057802/files/assets/widd_0304.png" alt="Monolithic bounded context" width="956" height="616">
+              <h6><span class="label">Figure 3-4. </span>Monolithic bounded context</h6>
+            </div></figure>
+            <p>If necessary, we can follow the domain experts’ mental models and decompose the model into bounded contexts, as shown in <a data-type="xref" href="#fig_7_bounded_contexts_driven_by_consistency_of_the_ubiq">Figure&nbsp;3-5</a>.</p>
+            <figure><div id="fig_7_bounded_contexts_driven_by_consistency_of_the_ubiq" class="figure">
+              <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492057802/files/assets/widd_0305.png" alt="Bounded contexts driven by consistency of the ubiquitous language" width="1261" height="638">
+              <h6><span class="label">Figure 3-5. </span>Bounded contexts driven by consistency of the ubiquitous language</h6>
+            </div></figure>
+            <p>If the models are still large and hard to maintain, we can decompose them into even smaller bounded contexts; for example, having a bounded context for each subdomain, as shown in <a data-type="xref" href="#fig_8_bounded_contexts_aligned_with_subdomains_boundari">Figure&nbsp;3-6</a>.</p>
+            <figure><div id="fig_8_bounded_contexts_aligned_with_subdomains_boundari" class="figure">
+              <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492057802/files/assets/widd_0306.png" alt="Bounded contexts aligned with subdomains  boundaries" width="1115" height="341">
+              <h6><span class="label">Figure 3-6. </span>Bounded contexts aligned with subdomains’ boundaries</h6>
+            </div></figure>
+            <p>Either way, this is a design decision. We design those boundaries as a part of the solution.</p>
+            <p>Having a one-to-one relationship between bounded contexts and subdomains can be tempting and reasonable in some scenarios. In others, however, different decomposition strategies can be more suitable.</p>
+            <p>It’s crucial to remember that <em>subdomains are discovered</em>, while <em>bounded contexts are designed</em>. You have to adapt the solution design to the specific project’s needs.</p>
+          </div></section>
+        </div></section>
+        <section data-type="sect1" data-pdf-bookmark="Physical Boundaries"><div class="sect1" id="physical_boundaries">
+          <h1>Physical Boundaries</h1>
+          <p>Bounded contexts serve not only as model boundaries but also as physical boundaries of the systems implementing them. Each bounded context should be implemented in a separate solution, meaning it is implemented, evolved, and versioned independently of other bounded contexts.</p>
+          <p>Clear physical boundaries between bounded contexts allow us to implement each bounded context with the technology stack that best fits its needs.</p>
+        </div></section>
+        <section data-type="sect1" data-pdf-bookmark="Ownership Boundaries"><div class="sect1" id="ownership_boundaries">
+          <h1>Ownership Boundaries</h1>
+          <p>Studies show that good fences do indeed make good neighbors.<sup><a data-type="noteref" id="idm46528345825704-marker" href="ch03.html#idm46528345825704">1</a></sup> In the case of software projects, we can leverage model boundaries—bounded contexts—for a peaceful coexistence of teams. The division of work between teams is another strategic decision that can be made using the bounded context pattern.</p>
+          <p>A bounded context should be implemented, evolved, and maintained by one team only. No two teams can work on the same bounded context. This segregation eliminates implicit assumptions that teams might make about each other’s models. Instead, they have to define communication protocols for integrating their models and systems explicitly.</p>
+          <p>It’s important to note that the relationship between teams and bounded contexts is one-directional: a bounded context should be owned by only one team. However, a single team can own multiple bounded contexts.</p>
+          <p>In the next chapter, we’ll talk about patterns for integrating bounded contexts.</p>
+        </div></section>
+        <section data-type="sect1" data-pdf-bookmark="Conclusion"><div class="sect1" id="conclusion_5">
+          <h1>Conclusion</h1>
+          <p>Whenever we stumble upon an inherent conflict in the domain experts’ mental models, we have to decompose the ubiquitous language into multiple bounded contexts. A ubiquitous language should be consistent within the scope of its bounded context. However, across bounded contexts, the same terms can have different meanings.</p>
+          <p>While subdomains are discovered, bounded contexts are designed. The division of the domain into bounded contexts is a strategic design decision.</p>
+          <p>A bounded context and its ubiquitous language can be implemented and maintained by one team. No two teams can share the work on the same bounded context. However, one team can work on multiple bounded contexts.</p>
+        </div></section>
+      <div data-type="footnotes"><p data-type="footnote" id="idm46528345825704"><sup><a href="ch03.html#idm46528345825704-marker">1</a></sup> Rutherford, Alex, et al. 2011. “Good Fences: The Importance of Setting Boundaries for Peaceful Coexistence.” arXiv preprint: <a class="orm:hideurl" href="https://arxiv.org/abs/1110.1409">https://arxiv.org/abs/1110.1409</a>.</p></div></div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492057802/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

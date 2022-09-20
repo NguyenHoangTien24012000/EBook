@@ -1,0 +1,1269 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 9. Restoring Baseline Performance"><div class="chapter" id="chapter_11">
+        <h1><span class="label">Chapter 9. </span>Restoring Baseline Performance</h1>
+        
+        
+        <p><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="about" id="idm45356999540888"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="restoring performance after incident" data-see="restoring baseline performance" id="idm45356999539944"></a>In the previous chapter, we discussed approaches to improving baseline
+        performance, usually with the goal of improving user experience, reducing
+        costs, or both. In this chapter, we’ll consider how distributed
+        tracing can help when a change—intentional or not—has caused a
+        degradation in performance, and you need to restore performance to its
+        previous levels quickly.</p>
+        
+        <p><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="incident response" id="idm45356999538056"></a><a data-type="indexterm" data-primary="incident response" id="idm45356999537064"></a>The way that your organization approaches problems like this may vary, but
+        most organizations will follow some sort of <em>incident response</em> plan. Such a
+        plan involves identifying when an incident occurs (either a partial or
+        complete interruption in service or a significant performance degradation), how
+        team members are notified, how they respond, and (once the incident is over)
+        what sorts of follow-up are required. While there are other types of
+        incidents besides those related to performance (for example, security
+        breaches), we will frame many of the approaches here in terms of incident
+        response.</p>
+        
+        <p>In this chapter we will also focus on performance from the perspective of
+        a single service. Most developers are responsible for at most a small number
+        of services, and so it’s natural to frame performance issues in terms of the
+        performance of a single service. Of course, what ultimately matters is the
+        overall application performance as perceived by your users; much of this
+        chapter will discuss how to relate application performance to the performance
+        of individual services.</p>
+        
+        <p>As the focus of this chapter is on restoring baseline performance, we assume
+        that performance has recently changed. And as software is (generally)
+        deterministic, changes in performance are usually driven by changes to
+        the software or to the environment in which it’s running. While that might
+        sound very broad, take comfort: <a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="changes that impact service performance" id="idm45356999533608"></a>changes that impact service performance
+        typically come from one of four different areas:</p>
+        <dl>
+        <dt>Changes to the service itself</dt>
+        <dd>
+        <p>New deployments or configuration changes</p>
+        </dd>
+        <dt>Changes in user behavior</dt>
+        <dd>
+        <p>New deployments or configuration changes to downstream
+        services that play the role of “users” of that service (including both end users and other services)</p>
+        
+        <p>New behavior in response to new features or external events</p>
+        </dd>
+        <dt>Changes to upstream dependencies</dt>
+        <dd>
+        <p>New deployments, configuration changes, or changes to traffic from other services
+        that share those dependencies (both direct and indirect)</p>
+        </dd>
+        <dt>Changes to underlying infrastructure</dt>
+        <dd>
+        <p>Changes to host, container, or network configuration</p>
+        
+        <p>Colocation of services contending for the same resources</p>
+        </dd>
+        </dl>
+        
+        <p><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="mitigating performance problems" id="idm45356999524920"></a>Mitigating performance problems typically means identifying which is the root
+        cause (or causes) of the problem and then undoing that change. In the case of
+        a new deployment, a configuration change, or possibly an infrastructure change,
+        this often means rolling back that change. In the case of a change in user
+        behavior, it might mean disabling a new feature or even blocking certain types
+        of requests or queries. In both cases, it can also mean provisioning
+        additional resources to account for slower code or more expensive queries.</p>
+        
+        <p>To undo these changes, it will be critical to identify which team of
+        developers was responsible for the original change. You must effectively
+        <a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="communication" id="idm45356999522664"></a><a data-type="indexterm" data-primary="communication, service incidents" id="idm45356999521672"></a><a data-type="indexterm" data-primary="incident response" data-secondary="communication during" id="idm45356999520984"></a>communicate with this team, both describing the problem and providing enough
+        evidence to convince them to stop their current work and roll back the change
+        (or disable the feature, etc.). And in all of these steps, time is of the
+        essence since performance regressions can have reputational, economic, and
+        even legal repercussions.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Defining the Problem"><div class="sect1" id="idm45356999519432">
+        <h1>Defining the Problem</h1>
+        
+        <p><a data-type="indexterm" data-primary="service level indicators (SLIs)" data-secondary="defining baseline performance" id="idm45356999517928"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="defining baseline performance" id="idm45356999516744"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="defining baseline" data-seealso="improving baseline performance; restoring baseline performance" id="idm45356999515768"></a><a data-type="indexterm" data-primary="baseline performance, defining" data-seealso="improving baseline performance; restoring baseline performance" id="idm45356999514488"></a>Before we can discuss how to <em>restore</em> baseline performance, we must first
+        <em>define</em> it. In <a data-type="xref" href="ch08.html#chapter_10">Chapter&nbsp;8</a>, we started with the “four golden signals”—latency,
+        failure rate, traffic rate, and saturation—but focused mostly on the
+        first two. <a data-type="indexterm" data-primary="performance considerations" data-secondary="traffic rate" id="idm45356999511480"></a><a data-type="indexterm" data-primary="traffic rate" data-secondary="as golden metric of performance" data-secondary-sortas="golden metric of performance" id="idm45356999510472"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="saturation" id="idm45356999509224"></a><a data-type="indexterm" data-primary="saturation" id="idm45356999508264"></a>While traffic rate and saturation are often used by developers and
+        operators to understand and predict system health, they have less direct
+        impact on end users of an application: their impact often manifests in terms
+        of latency. We will continue to focus on latency and failure rate here.</p>
+        
+        <p><a data-type="indexterm" data-primary="service level objectives (SLOs)" data-secondary="defining baseline performance" id="idm45356999507032"></a>In that chapter, we also defined SLIs as a
+        precise way of measuring performance. Defining a <em>baseline</em> for SLIs really
+        starts with declaring our intention for what <span class="keep-together">performance</span> <em>should</em> be. This
+        means defining an SLO. An SLO is an SLI together
+        with a goal for what the value of that indicator should be.</p>
+        
+        <p>For example, if one of your SLIs is 99th-percentile latency for your service
+        as measured over the last 5 minutes, then an SLO might be that this latency is
+        less than 1 second. Or if one of your SLIs is the error rate for your service
+        as measured over the last 10 minutes, then an SLO might be that this rate is
+        less than 0.1% of all requests.</p>
+        
+        <p><a data-type="indexterm" data-primary="errors seen via traces" data-secondary="error rates reported by and outside of service" id="idm45356999503048"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="error rates reported by and outside of service" id="idm45356999501752"></a>When we discussed errors in the previous chapter, we covered how an error
+        raised by one service might impact the behavior of another. However, we must
+        also consider the case where a service fails to respond at all. To understand
+        this case, it’s important to measure error rate not just by looking at how a
+        service reports its own error rate but by measuring it from <em>outside</em> that
+        service. When measured this way, we can talk about how much of the time the
+        <a data-type="indexterm" data-primary="microservices" data-secondary="availability" id="idm45356999499912"></a><a data-type="indexterm" data-primary="services" data-see="microservices" id="idm45356999498936"></a>service is available to answer requests, or its <em>availability</em>. Thus another
+        <a data-type="indexterm" data-primary="SLOs" data-see="service level objectives" id="idm45356999497480"></a>SLO might be that a service is available 99.9% of the time as measured once
+        per minute over the course of a calendar month.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45356999496184">
+        <h5>Business Metric-Based SLOs</h5>
+        <p><a data-type="indexterm" data-primary="service level objectives (SLOs)" data-secondary="business metric–based" id="idm45356999495080"></a>In this chapter, we focus on SLOs based on metrics like latency and error rate
+        that can easily be derived from spans and are present in many distributed
+        tracing solutions. However, you should also consider SLOs based on the
+        metrics that are most important to your business.</p>
+        
+        <p>For example, ecommerce applications might look at purchase rates or
+        time-to-purchase as SLOs. Products with a mobile app component might consider
+        key interactions with the app, including cold start, both in rate and duration.</p>
+        
+        <p><a data-type="indexterm" data-primary="tags" data-secondary="user actions for SLOs" id="idm45356999492712"></a>If spans are tagged with information about user actions (whether a
+        purchase was successful, etc.) these metrics can be derived from traces, and—importantly—regressions can be tied to specific (sets of) requests. This
+        will ensure that you are investigating the right sorts of regressions
+        effectively.</p>
+        </div></aside>
+        
+        <p>Choose an SLO with an eye toward historic values: there’s no sense in setting an
+        objective that you will immediately fail to meet. But SLOs should also
+        account for the expectations of your users. In some domains (for example, for
+        some financial applications), users are happy to sacrifice availability if
+        they are given higher assurances that an application will perform correctly.
+        In other domains (for example, observability platforms), users may tolerate
+        some loss of precision if the application is highly <span class="keep-together">available</span>.</p>
+        
+        <p><a data-type="indexterm" data-primary="service level objectives (SLOs)" data-secondary="failing to meet" id="idm45356999489240"></a>The final part of defining service levels is to describe what happens when you
+        fail to meet your SLOs. This usually takes the form of a <a data-type="indexterm" data-primary="service level agreement (SLA)" id="idm45356999487960"></a><em>service level
+        agreement</em> (SLA). An SLA is an SLO—an objective—together with some
+        consequence for failing to meet that objective. SLAs often involve some sort
+        of monetary compensation. For example, if you fail to meet your SLO, you may
+        be required to refund part of your customers’ fees. In other cases, it may
+        give your customers the option to terminate their contract with you before the
+        end of its term. Unlike SLIs and SLOs, which purely relate to your
+        application’s performance, SLAs put this performance into the context of real-world consequences.</p>
+        
+        <p>Setting SLOs and SLAs helps you to establish baseline performance and to
+        understand when you should take action. If your goal is to keep 99th-percentile latency below 1 second, and it’s increased from 200 ms to
+        250 ms, it’s probably not worth waking up in the middle of the night
+        for (though it might be a good place to start the next time you have some free
+        time to spend improving performance).</p>
+        
+        <p>While it may be tempting to define baseline performance simply as “however
+        it’s working today,” using a more rigorous definition will enable you to be
+        more confident in determining when you need to take action to restore that
+        performance. Perhaps more importantly, it will help you determine when you
+        <em>don’t</em> need to take action: after all, making changes to production systems
+        always involves risk, and you probably have better things to do with your
+        time.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Human Factors"><div class="sect1" id="idm45356999518840">
+        <h1>Human Factors</h1>
+        
+        <p><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="human responses to incident" id="idm45356999482872"></a>Before we dive into the details of how to use distributed tracing to determine
+        which changes are causing a performance regression, it’s useful to
+        consider how tracing can support people and processes in
+        incident response. Unlike improving baseline performance, responding to
+        an incident is <em>unplanned</em> work. Since time is usually of the essence,
+        <a data-type="indexterm" data-primary="incident response" data-secondary="communication during" id="idm45356999480984"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="communication" id="idm45356999480008"></a><a data-type="indexterm" data-primary="communication, service incidents" id="idm45356999479048"></a>facilitating communication and human interaction will play a much larger role
+        in incident response than in typical engineering work.</p>
+        
+        <p>Determining who has the knowledge to understand a problem and who will do the
+        work is often just as difficult as debugging the code itself. Moreover, once
+        those decisions have been made, they must be communicated effectively in the
+        moment and <a data-type="indexterm" data-primary="documentation" data-secondary="of performance incident" data-secondary-sortas="performance incident" id="idm45356999477448"></a>recorded so that they can be understood after the fact.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="(Avoiding) Finger-Pointing"><div class="sect2" id="idm45356999475880">
+        <h2>(Avoiding) Finger-Pointing</h2>
+        
+        <p><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="traces instead of blame" id="idm45356999474744"></a>No one likes to be at fault for a regression. In fact, teams are incentivized
+        to measure performance in a way that can quickly show that they are <em>not</em>
+        responsible for regressions. As a result, when a regression occurs, many
+        teams will produce evidence that they are not at fault. This leads to many
+        teams blaming others…but without evidence.</p>
+        
+        <p>For example, suppose that service A provides a shared storage solution that is
+        used by service B (among others). Service B’s latency is degrading, and the
+        team that owns service B is blaming service A. Service A’s metrics show that it
+        is still meeting its SLO, and the team that owns service A is claiming that
+        service B is probably misusing the API. Perhaps this reminds you of a meeting
+        you have attended?</p>
+        
+        <p>Traces can help resolve this sort of conflict. In this example, they would
+        provide a way of measuring the performance of service A from the perspectives
+        of both service A <em>and</em> service B. It might be that service A is meeting its
+        SLO in general but not for service B. Or we might see evidence that, in fact,
+        requests from service B to service A could be optimized. Or it might be that
+        the real culprit is neither service but a third party, like the network or
+        another client of service A that is abusing a shared resource. Using
+        distributed traces helps bring the conversation back to facts and,
+        importantly, ensures that everyone involved is talking about the same
+        requests.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="“Suppressing” the Messenger"><div class="sect2" id="idm45356999470088">
+        <h2>“Suppressing” the Messenger</h2>
+        
+        <p><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="error sources" id="idm45356999468744"></a><a data-type="indexterm" data-primary="errors seen via traces" data-secondary="sources of" id="idm45356999467704"></a>In many cases, there may be many services between the point at which the
+        offending change was made and where that change is adversely affecting an SLI.
+        For example, many services may pass through an error that occurred further
+        down the stack. It may look as if the error rate of these services has
+        increased during an incident (and in fact, it has), but these errors don’t
+        indicate a problem with that service, only that an error has occurred
+        elsewhere.</p>
+        
+        <p>When no changes were made to these intermediary services leading up to the
+        incident, then no changes to those services can likely resolve it. However,
+        the teams responsible for these intermediary services may still be interrupted
+        from their day-to-day work (including being paged); they may be called into
+        meetings to discuss the incident; or their time may be wasted in other ways.</p>
+        
+        <p>MTTR describes how long it takes
+        to address a regression. However, you might less frequently hear <a data-type="indexterm" data-primary="mean time to innocence (MTTI)" id="idm45356999464856"></a><em>mean time
+        to innocence</em> (MTTI). This term is used to describe how long it takes to
+        exonerate teams whose services were potentially—but ultimately not—at
+        fault in an incident. You can think of MTTI as the cost paid across your
+        organization for a lack of understanding about which service was responsible
+        for a given incident.</p>
+        
+        <p>The solution to these issues is to “suppress” the messenger. That is, rather
+        than shooting the messenger, we should look for ways to limit the participation of
+        teams whose services are merely conduits for errors or other problematic
+        requests. We use “suppress” in this context in the same way that we might
+        direct a compiler to suppress certain kinds of errors or warnings: while they
+        might be valuable at times, in these cases they are just another source of
+        noise.</p>
+        
+        <p>Traces can help to exonerate these teams quickly: when looking at a trace,
+        it’s easy to see the first point at which an error occurred and where that
+        error was simply passed through.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Incident Hand-off"><div class="sect2" id="idm45356999461768">
+        <h2>Incident Hand-off</h2>
+        
+        <p><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="incident hand-off" id="idm45356999460568"></a><a data-type="indexterm" data-primary="incident response" data-secondary="incident hand-off" id="idm45356999459624"></a>Unfortunately, some incidents will last for hours or even days. In these
+        cases, one person cannot reasonably lead—or even participate in—the
+        response for its full duration. In those cases, it’s necessary to hand off
+        responsibility for leading, investigating, or communicating about an incident.
+        One major challenge in incident hand-off is making sure information about the
+        incident is transferred from one set of humans to another.</p>
+        
+        <p>What makes that information transfer particularly challenging is that often
+        that information is incomplete. (After all, if you understood everything
+        about what was happening, you could make short work of the incident and
+        probably avoid the hand-off altogether.) Traces can help in this case as
+        well. If you can identify a class of requests that seem to be problematic and
+        then capture a set of traces for those requests, you need not understand every
+        detail of what’s happening with those requests for them to be useful. Because
+        traces capture not only a lot of detail about what’s happening but also the
+        causal relationships between your and other services, subsequent responders
+        can mine them to ask questions that you didn’t even consider. That is, traces
+        offer a way to capture a dataset that is both narrow and broad: narrow
+        because it represents only the problematic requests, and broad because it’s
+        not limited to the avenues of inquiry that you had time to pursue.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Good Postmortems"><div class="sect2" id="idm45356999456472">
+        <h2>Good Postmortems</h2>
+        
+        <p><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="postmortems" id="idm45356999455096"></a><a data-type="indexterm" data-primary="postmortems for incidents" id="idm45356999454104"></a><a data-type="indexterm" data-primary="incident response" data-secondary="postmortems" id="idm45356999453416"></a>If you are an adherent of DevOps culture (and you should be!), you
+        probably write and discuss postmortems for each incident in which your team
+        participates. A postmortem is an opportunity to document events leading up
+        to the incident, how it was handled, what was good about the response, and
+        what could have been better. A good postmortem will focus on the facts: to
+        avoid repeating either the incident itself or the mistake made in response to it,
+        it’s important to understand precisely what happened.</p>
+        
+        <p>As is sometimes repeated in <a data-type="indexterm" data-primary="site reliability engineering (SRE)" id="idm45356999451432"></a><a data-type="indexterm" data-primary="SRE" data-see="site reliability engineering" id="idm45356999450664"></a>SRE circles (and
+        playing off of a British motivational poster from World War II), “keep calm
+        and gather data for the postmortem.” It can be difficult in the heat of
+        incident response to keep good records of exactly what you discover. For
+        example, if an upstream service is discovered to have deployed a new release
+        coincidently with the performance regression, that team may be pressured into
+        quickly rolling back that release. When the performance regression disappears
+        minutes later, we might assume that the new release was responsible for that
+        regression. In fact, that release <em>might</em> have been responsible, but ideally
+        we would capture some evidence of that. However, we might not have adequate
+        staff to both respond to the incident and build meticulous records of what was
+        happening. Instead, we should consider tools that let us quickly capture
+        evidence—or even potential evidence—of what was going wrong during the
+        incident.</p>
+        
+        <p>Distributed tracing can provide an easy way to collect that evidence. Due to
+        the very detailed nature of each trace, even just a handful of traces can
+        provide ample information. For example, if spans are tagged with a software
+        release version, the traces of even a few slow requests can provide evidence
+        that that release was responsible for the regression.</p>
+        
+        <p><a data-type="indexterm" data-primary="documentation" data-secondary="postmortems for incidents" id="idm45356999447144"></a>Whether you record information for your postmortems in shared docs, in chat
+        rooms, or using other tools, dropping in links to potentially useful traces is
+        well worth your time, even while in the heat of the moment of incident response.
+        They can be used to validate theories of what was happening during the
+        incident. These traces can serve as powerful
+        visual aids during postmortems and operational reviews.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Approaches to Restoring Performance"><div class="sect1" id="idm45356999445480">
+        <h1>Approaches to Restoring Performance</h1>
+        
+        <p><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="approaches to" id="ch10_rest"></a><a data-type="indexterm" data-primary="latency" data-secondary="restoring performance after incident" data-see="restoring baseline performance" id="idm45356999442792"></a><a data-type="indexterm" data-primary="service level objectives (SLOs)" data-secondary="defining baseline performance" id="idm45356999441544"></a>With the right SLOs in place, you can be confident that you have made a good
+        start at understanding what baseline performance looks like and when your
+        service has deviated from it. As much as it might feel like a solo endeavor
+        at times, incident response is always a group effort.</p>
+        
+        <p>We continue with several approaches that show how distributed tracing can help
+        determine and mitigate the root cause of performance regressions. In most
+        cases, each approach will apply to a wide range of types of changes. For
+        example, whether you’ve just deployed a new version of your service, one of
+        your upstream dependencies has, or one of your downstream users has, tracing
+        can help you identify if and when those changes are affecting your service’s
+        performance.</p>
+        
+        <p><a data-type="indexterm" data-primary="incident response" data-secondary="communication during" id="idm45356999438968"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="communication" id="idm45356999437992"></a><a data-type="indexterm" data-primary="communication, service incidents" data-secondary="tracing as communication tool" id="idm45356999437032"></a>Tracing can also serve as a communication tool, and each of the following approaches provides ways of facilitating communication during or after incident
+        response.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Integration with Alerting Workflows"><div class="sect2" id="idm45356999435624">
+        <h2>Integration with Alerting Workflows</h2>
+        
+        <p><a data-type="indexterm" data-primary="incident response" data-secondary="alert data presented" id="idm45356999434312"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="alert data presented" id="idm45356999433336"></a><a data-type="indexterm" data-primary="service level indicators (SLIs)" data-secondary="automated alert data presented" id="idm45356999432328"></a>Incident response is often triggered by an automated alert. That is, some SLI
+        has crossed a predetermined threshold, escalation policies and on-call
+        schedules have been consulted, and someone’s phone starts ringing or buzzing
+        (or both). If this is your phone, you stumble out of bed, open your laptop,
+        and begin investigating. At a minimum, this alert includes the SLI and the
+        threshold. From there, it’s up to you to begin building theories about what’s
+        going wrong and how you might mitigate that problem. Typically this involves
+        opening one or more observability tools and looking for signs of the problem.</p>
+        
+        <p>In rest of the chapter, we’ll consider a number of different ways that
+        distributed tracing can help identify the root causes of regressions and
+        restore baseline performance. <a data-type="indexterm" data-primary="automated alerts, data presented" id="idm45356999430024"></a>These techniques are particularly effective if
+        some preliminary results are included as part of alerts. In that case, you
+        can simply click on a link to begin investigation.</p>
+        
+        <p>This should be relatively straightforward for all of the approaches we describe,
+        from the simplest to the most sophisticated. For example, if an alert
+        is triggered because an error rate has spiked, there must be at least one
+        failed request. Or if an SLI like latency has crossed some threshold, then
+        there will be a number of requests slower than that threshold that can form
+        the basis of an analysis. Including traces of those requests (as well as the
+        results of other analysis) as part of an alert can save you valuable time.
+        While raw metrics and logs can also be included as part of an alert, neither
+        offers the context that distributed traces can provide.</p>
+        
+        <p>It’s beyond the scope of this book to give a complete accounting of best
+        practices around alerting. However, it’s still worth a few words to remind
+        you to <a data-type="indexterm" data-primary="user impact of performance" data-secondary="automated alerts on symptoms" id="idm45356999427336"></a><em>alert on symptoms</em>, not causes. This means that alerts should be
+        triggered based on things that your users can observe, likely the same metrics
+        that you choose to be part of your SLOs and SLAs. Conveniently, there are
+        typically only a handful of symptoms that matter for most services (meaning that
+        you have only a small set of alerts to maintain and <a data-type="indexterm" data-primary="documentation" data-secondary="automated alerts" id="idm45356999425592"></a>document). On the other
+        hand, the number of possible causes of a performance regression is orders of
+        magnitude larger. It’s the role of tracing—and for that matter, any
+        observability tool—to reduce the number of possibilities that you must
+        consider when looking for a root cause. If information that helps expedite
+        this process can be included in the alert itself, all the better!</p>
+        
+        <p><a data-type="indexterm" data-primary="incident response" data-secondary="alert routing" id="idm45356999423832"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="human responses to incident" id="idm45356999422856"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="alert routing" id="idm45356999421880"></a>This can be taken one step further to help make sure the right people are
+        alerted when there is a regression. For example, if an SLO is about to be
+        violated, then <em>someone</em> should probably be alerted. But should it the
+        owner of the API gateway (which lies closest to the user and the definition of
+        the SLO) or of the backend service that ultimately served the requests (and
+        returned the errors)? Probably better to start with the backend service
+        owner, since that’s where the errors originated. They can always bring a
+        member of the API gateway team into the investigation if necessary. Using
+        information in the trace, alerting systems can route alerts to those
+        developers and operators most likely to be able to address the root cause.
+        This is a way of automating the technique described earlier as “suppressing” the
+        messenger: it can shave valuable minutes off of your MTTR and also
+        significantly reduce the number of interruptions to others’ work (and sleep)
+        across your organization.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Individual Traces"><div class="sect2" id="idm45356999419272">
+        <h2>Individual Traces</h2>
+        
+        <p><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="individual traces" id="idm45356999417896"></a><a data-type="indexterm" data-primary="root cause analysis" data-secondary="individual traces" id="idm45356999417016"></a>Looking at individual traces is one of the simplest ways of leveraging tracing
+        as part of incident response and root cause analysis. Individual traces are
+        particularly useful when failures are black and white: for example, when a
+        <a data-type="indexterm" data-primary="breaking change deployment" id="idm45356999415800"></a><a data-type="indexterm" data-primary="failure state" data-secondary="breaking change deployment" id="idm45356999415112"></a>breaking change is deployed to your service or to another. This means that all requests (or at least a significant number of them) are failing, so it’s easy
+        for you to identify one such request.</p>
+        
+        <p><a data-type="xref" href="#fig11-broken-api-call">Figure&nbsp;9-1</a> shows an example of a failed request. An error is
+        propagated from the span labeled D up through B up to the top of the
+        trace. (Spans which resulted in an error are loosely outlined.) Looking at
+        the logs associated with span D, we see that the error is related to the
+        response that it got from span E (that is, some invariant that it expected
+        was not met). This could mean one of a couple of things: either D
+        represents a recent deployment or E represents a recent deployment. Once
+        you’ve determined which service has recently deployed a new release,
+        mitigating the issue is just a matter of finding the appropriate service owner
+        and getting them to roll back that deployment. And as noted earlier, sending
+        along the trace shown in the figure will be a great way to motivate them to do
+        so! This example uses a combination of traces and logs: the trace
+        helps identify the impact of an error, and logs provide additional information
+        to help pinpoint the problem. In isolation, neither would be as powerful.</p>
+        
+        <figure><div id="fig11-broken-api-call" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0901.png" alt="dtip 0901" width="750" height="383">
+        <h6><span class="label">Figure 9-1. </span>Trace showing an error propagating up the stack.</h6>
+        </div></figure>
+        
+        <p>The risk of using individual traces during incident response is that, because
+        you are moving fast, it can be easy to overgeneralize from a single trace and
+        draw an incorrect conclusion about the cause of the incident. For example,
+        perhaps the error shown in <a data-type="xref" href="#fig11-broken-api-call">Figure&nbsp;9-1</a> has been occurring for a
+        long time and what’s changed recently is how that error is handled. Or
+        perhaps a change in user behavior is triggering that error. (In either case,
+        it would still be a good idea to eventually fix the error, but your focus in
+        responding to an incident should be to find the <em>safest</em> way to mitigate the
+        problem, not necessarily the cleanest way of fixing a bug.) Some of the
+        approaches later in this chapter will show how to leverage more than one trace—even
+        hundreds or thousands—to avoid this sort of “premature generalization.”</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Biased Sampling"><div class="sect2" id="idm45356999407032">
+        <h2>Biased Sampling</h2>
+        
+        <p><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="biased sampling" id="idm45356999405656"></a><a data-type="indexterm" data-primary="sampling" data-secondary="biased sampling" id="idm45356999404664"></a><a data-type="indexterm" data-primary="biased sampling" data-secondary="restoring performance" id="idm45356999403720"></a><a data-type="indexterm" data-primary="root cause analysis" data-secondary="biased sampling" id="idm45356999402776"></a>As described in the previous chapter, biasing trace sampling based on the SLIs
+        that are important to your business or organization is an effective way to
+        derive value from distributed tracing. As in that chapter, biasing toward
+        slower or failed requests can help make sure outliers are available for
+        analysis. However, in the context of restoring baseline performance, there
+        are a few other kinds of bias that can also be valuable.</p>
+        
+        <p>Most regressions in performance are caused by changes to the application or
+        its environment, so biasing sampling with an eye toward those changes can be
+        useful. For example:</p>
+        
+        <ul>
+        <li>
+        <p>If you are about to make an infrastructure configuration change, make sure
+        you have adequate traces from before and after the change.</p>
+        </li>
+        <li>
+        <p>As you deploy a new version of your service, make sure you have traces from
+        both the old and the new versions.</p>
+        </li>
+        <li>
+        <p>If you are starting an experiment or slowly rolling out a new and
+        significant feature, make sure you have traces from before, during, and
+        after the change.</p>
+        </li>
+        </ul>
+        
+        <p>To bias sampling during these sorts of events, there are a couple of possible
+        approaches to consider. First, your tracing tool may allow you to dynamically
+        trigger adjustments to the sampling algorithm using an API call or a
+        configuration change. For example, you may be able to temporarily increase
+        the number of traces collected from certain hosts. If you do so for hosts
+        running a new version of your service, you will bias sampling toward that
+        new version.</p>
+        
+        <p><a data-type="indexterm" data-primary="tags" data-secondary="version attributes" id="idm45356999395912"></a><a data-type="indexterm" data-primary="version attributes" id="idm45356999394936"></a><a data-type="indexterm" data-primary="documentation" data-secondary="version attributes" id="idm45356999394264"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="tags with version attributes" id="idm45356999393320"></a>A second approach is to add tags to spans to make these changes apparent in
+        the telemetry data itself. For example, adding tags that describe
+        infrastructure or software versions means that you can easily see when a given
+        request hit a new version or an old one (or in some cases, both). What’s
+        especially powerful about this approach is that it also means that the tracing
+        tool can detect these changes and automatically change the sampling algorithm
+        to account for this. For example, if a new version of a service is being
+        incrementally deployed, spans from the new version will have a tag that’s
+        never been seen before. This can be used to increase the sampling rate for
+        traces from the new version and also to increase the sampling rate for traces
+        from the <em>old</em> version (relative to services not undergoing any changes at the
+        moment). Having both facilitates better comparisons between the two versions.</p>
+        
+        <p>Integration with your infrastructure, deployment, and experiment management
+        tools can help make this sort of biased sampling easier to achieve.
+        Infrastructure and deployment tools can set environment variables that can be
+        used to include infrastructure configuration and software versions as part of
+        spans. Experiment management tools (including feature flagging systems) can
+        be configured or extended to annotate spans with the current active
+        experiments and feature configuration. In any case, when there are planned
+        changes to your software or infrastructure, making sure your distributed
+        tracing solution is aware (one way or another) of those changes will help
+        ensure that you have the data necessary to understand their impact.</p>
+        <aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm45356999389592">
+        <h5>Leveraging Tracing with Chaos Engineering</h5>
+        <p><a data-type="indexterm" data-primary="chaos engineering" id="idm45356999388360"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="chaos engineering" id="idm45356999387656"></a><a data-type="indexterm" data-primary="failure state" data-secondary="chaos engineering" id="idm45356999386696"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="chaos engineering" id="idm45356999385752"></a>One additional opportunity for integrating tracing with other production tools
+        is in chaos engineering: the practice of deliberately injecting failures into
+        your distributed system to understand how your software—and your team—will
+        respond to them. While not technically part of incident response or
+        restoring baseline performance, this practice can help you prepare for when
+        real issues do occur. Distributed tracing can help provide the data necessary
+        to address any issues that are discovered through this technique.</p>
+        
+        <p><a data-type="indexterm" data-primary="user impact of performance" data-secondary="chaos engineering" id="idm45356999383864"></a>Of course, the failures introduced as part of chaos engineering should be rare
+        enough that they don’t affect user-visible performance. Unfortunately, this
+        also means that requests with injected failures are unlikely to be collected
+        using uniform sampling techniques. As in the case of new releases and other
+        planned changes, adding tags to spans to indicate when failures are deliberate
+        can help address this issue and make sure that traces are collected for
+        analysis.</p>
+        
+        <p>Tracing can also help recognize cases when injected faults <em>are</em> affecting
+        users. Injected failures that are propagated all the way to the top of the
+        stack can be discovered by looking for traces that contain both a span with an
+        injected failure and a root span with an error. If these cases occur, a team
+        member can be immediately alerted or (even better) that type of injected
+        failure can be disabled.</p>
+        </div></aside>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Real-Time Response"><div class="sect2" id="idm45356999380776">
+        <h2>Real-Time Response</h2>
+        
+        <p><a data-type="indexterm" data-primary="root cause analysis" data-secondary="real-time response" id="idm45356999379240"></a><a data-type="indexterm" data-primary="observability" data-secondary="real-time response" id="idm45356999378264"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="real-time response" id="idm45356999377320"></a><a data-type="indexterm" data-primary="real-time response to incidents" id="idm45356999376408"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="trace searches" id="idm45356999375720"></a><a data-type="indexterm" data-primary="searches" data-secondary="traces" id="idm45356999374760"></a><a data-type="indexterm" data-primary="traces" data-secondary="searching" id="idm45356999373816"></a>Unlike planned performance improvement work, where you have plenty of time to
+        carefully gather data to support your decisions, it’s difficult to anticipate
+        what sorts of data will be necessary when responding to an incident, nor will you
+        have as much time as you’d like to collect it. However, distributed tracing
+        tools can provide real-time search functionality to get you up to speed
+        quickly on what’s happening.</p>
+        
+        <p><a data-type="xref" href="#fig11-trace-search">Figure&nbsp;9-2</a> shows an example of trace search functionality offered
+        by <a data-type="indexterm" data-primary="Zipkin (Twitter)" data-secondary="trace searches" id="idm45356999371224"></a>Zipkin. (Though you can see from the figure that this tool offers more
+        than just real-time search, we’ll ignore the “lookback” option in this
+        section.) Using this functionality, you can look for traces that include a
+        particular service, whose latency exceeds a given threshold, or that contain
+        some particular tag or other metadata. Using this, you can find traces that
+        are examples of slow or failed requests and—as you start to build a theory
+        as to what’s gone wrong—traces that exhibit other features that you believe
+        might help explain the issue. For example, you might suspect a canary release
+        is responsible for a regression, so searching for traces handled by that
+        canary is a good place to start. By performing multiple searches, you can
+        also compare traces to begin to understand their differences.</p>
+        
+        <figure><div id="fig11-trace-search" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0902.png" alt="dtip 0902" width="1211" height="398">
+        <h6><span class="label">Figure 9-2. </span>Screenshot of Zipkin’s trace search functionality.</h6>
+        </div></figure>
+        
+        <p>This functionality is similar to that provided by many <a data-type="indexterm" data-primary="logs" data-secondary="searching" id="idm45356999366760"></a><a data-type="indexterm" data-primary="searches" data-secondary="logs" id="idm45356999365784"></a>log aggregation tools—both provide for ad hoc searches over a large corpus of diagnostic data.
+        However, in most cases, logs that provide evidence of the problem will rarely
+        provide evidence of <em>the cause</em> of the problem. Tracking down logs from
+        service to service can be difficult, but (in contrast) distributed tracing
+        tools can easily put those logs in the context of an end-to-end request. That
+        is unless, of course, you’ve managed to add correlation IDs to all of your
+        logs. If you have included these sorts of identifiers throughout your logs,
+        you’ve essentially turned your logging system into a tracing one (though
+        probably not a very efficient one), as discussed in <a data-type="xref" href="ch07.html#chapter_9">Chapter&nbsp;7</a>.</p>
+        
+        <p>Different tracing tools collect and store data in different ways, so the exact
+        functionality offered by your tool might be different than what’s shown in
+        <a data-type="xref" href="#fig11-trace-search">Figure&nbsp;9-2</a>. Despite this, we can still speculate about what’s
+        possible with distributed tracing based on the following two observations:</p>
+        
+        <ul>
+        <li>
+        <p>Network performance (and in particular, <em>local</em> network performance)
+        continues to rapidly improve.</p>
+        </li>
+        <li>
+        <p>The <a data-type="indexterm" data-primary="data storage" data-secondary="real-time analysis requirements" id="idm45356999358696"></a><a data-type="indexterm" data-primary="cost of tracing" data-secondary="real-time analysis requirements" id="idm45356999357672"></a>data required for real-time response is, almost by definition, <span class="keep-together">short-lived</span>.</p>
+        </li>
+        </ul>
+        
+        <p>The first observation means that it should be possible to extract a large
+        portion, if not all, of the tracing data from the application at a reasonable cost.
+        This means that even rare events can be extracted and available for real-time
+        search and analysis. The second means that—at least for real-time analysis—tracing solutions are not required to persist data for extended periods of
+        time. This can greatly reduce the overall cost of storing traces and other
+        telemetry.</p>
+        
+        <p><a data-type="indexterm" data-primary="real-time response to incidents" data-secondary="meaning of real-time" id="idm45356999354360"></a>This raises a question: what does “real-time” mean in distributed tracing,
+        anyway? Given that most changes to a distributed application are instigated
+        by a human and take at least a few seconds to propagate and take effect,
+        getting results in less than a second is probably not necessary (especially
+        since many <em>requests</em> might even take a second or two). On the other hand,
+        waiting even one or two minutes for new data to appear in an observability
+        tool can be excruciating if you are trying to understand if the release you
+        just deployed has fixed a regression. Having to wait hours can make such a
+        tool all but useless!</p>
+        
+        <p>Ultimately, what “real-time” means will depend on other aspects of your
+        incident response process (including how fast you can detect changes and act to address them) and on the commitments you’ve made to your
+        users. If you are running a highly available application, every minute of
+        downtime matters, and so does every minute of delay between when a change
+        happens and when you can investigate it.</p>
+        
+        <p>If we expect that developers will be alerted within a few minutes of when
+        regressions occur, then most trace searches that occur as part of incident
+        response will also occur within a few minutes of those requests. All tracing
+        tools should capture and store some historical traces to help establish a
+        baseline; however, tracing solutions that specialize in supporting real-time
+        response can keep a much more detailed record of what’s occurred in the last
+        few minutes. In those cases, those responding to an incident have access to
+        nearly arbitrary data about what’s happened—precluding the need to know
+        what queries will be run in advance or to set up filters or triggers to make
+        sure useful traces are captured. By <em>temporarily</em> storing these traces,
+        tracing solutions can do so at a reasonable cost.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Knowing What’s Normal"><div class="sect2" id="idm45356999380184">
+        <h2>Knowing What’s Normal</h2>
+        
+        <p><a data-type="indexterm" data-primary="root cause analysis" data-secondary="defining normal" id="idm45356999348296"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="defining normal" id="idm45356999347320"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="defining normal" id="idm45356999346408"></a><a data-type="indexterm" data-primary="normal performance defined" id="idm45356999345448"></a>While setting an SLO can help set a simple expectation for baseline
+        performance, there will obviously be much more variation in actual
+        performance, even under normal conditions. For example, user behavior will
+        likely follow diurnal or weekly cycles which in turn will affect performance.
+        Given those <em>expected</em> changes, having a more refined definition of baseline
+        performance is key to effective incident response. One way to better
+        understand what’s normal is to compare current performance to one hour ago,
+        one day ago, or one week ago. (If your business is a retailer, you likely
+        need to consider other sorts of seasonality as well.)</p>
+        
+        <p>Understanding current performance relative to what’s normal will enable you to
+        make better decisions. For example, suppose your <a data-type="indexterm" data-primary="traffic rate" data-secondary="latency climbing" id="idm45356999343016"></a><a data-type="indexterm" data-primary="latency" data-secondary="traffic rate growing" id="idm45356999342040"></a>traffic rate is steadily
+        growing and that this increased load is (you believe) also causing increased
+        response latency. Though it is still below your SLO, if latency were to
+        continue to climb, you will soon cross that threshold. Should you provision
+        more instances to account for this load? Or wait it out (and avoid
+        unnecessary infrastructure costs)? Really the question you are asking is, are
+        you at peak traffic or not? The answer to this question is largely based on
+        when the peak occurred yesterday, last week, or last year.</p>
+        
+        <p><a data-type="xref" href="#fig11_know_whats_normal">Figure&nbsp;9-3</a> shows two examples of how <a data-type="indexterm" data-primary="visualization tools" data-secondary="historical data" id="idm45356999339320"></a><a data-type="indexterm" data-primary="historical data" data-secondary="visualization" id="idm45356999338376"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="historical data" id="idm45356999337432"></a>visualizations of
+        historical data can be used to understand baseline performance and how that
+        performance has changed. The left side is a time series graph showing
+        periodic behavior in both latency (top) and traffic rate (bottom). Two time
+        series are overlaid for both metrics. One graph (black) shows how the service
+        performed last week. The other graph (which ends at the vertical line corresponding to Friday evening) shows how the service is
+        performing so far this week. The traffic rate (bottom) shows both diurnal and
+        weekly cycles, with the highest peaks in the evenings over the weekend. The
+        vertical bar represents the current time. From looking at this graph at (1),
+        you can determine that load is close to, but not quite at, peak, so
+        provisioning a few more instances might be a good idea.</p>
+        
+        <figure><div id="fig11_know_whats_normal" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0903.png" alt="dtip 0903" width="1383" height="498">
+        <h6><span class="label">Figure 9-3. </span>Using historical performance to establish what’s normal.</h6>
+        </div></figure>
+        
+        <p>Interestingly, there was also a spike in 95th-percentile latency (top) that
+        occurred earlier in the week at (2). This did not correspond with an increase
+        in traffic nor was there a spike at this point in time during the previous week.
+        This indicates a deviation from normal and that some other event (for example,
+        a deployment) may have caused the change in latency.</p>
+        
+        <p><a data-type="indexterm" data-primary="histograms" data-secondary="historical data" id="idm45356999332376"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="histograms" id="idm45356999331400"></a>The right side of <a data-type="xref" href="#fig11_know_whats_normal">Figure&nbsp;9-3</a> is a histogram with an
+        overlay of past performance. The bars show the current distribution of
+        latencies (say, for requests in the last hour). The line shows the
+        distribution of requests for the same time period <em>yesterday</em>. In this case,
+        there is a second peak in today’s graph that did not appear in yesterday’s
+        graph. This would indicate that there is some new aspect of service
+        performance that didn’t exist yesterday or that some users’ behavior has
+        changed in a significant way.</p>
+        
+        <p>This analysis of histograms is related to the multimodal analysis described in
+        <a data-type="xref" href="ch08.html#chapter_10">Chapter&nbsp;8</a>. In this case, however, rather than simply comparing two or
+        more peaks within a single distribution, we are comparing the <em>number and
+        sizes</em> of the peaks in two different distributions.</p>
+        
+        <p><a data-type="indexterm" data-primary="data aggregation" data-secondary="aggregate user behavior" id="idm45356999326440"></a><a data-type="indexterm" data-primary="user impact of performance" data-secondary="aggregate user behavior" id="idm45356999325464"></a>Note that “what’s normal” need not be expressed solely in terms of software
+        performance like latency or error rates. For example, tracking aggregate user
+        behavior can also play a role in determining what’s normal. Knowing typical
+        conversion rates and session lengths can help to establish whether your
+        users are deviating from their usual behavior. Any deviation might be a key
+        symptom of a regression in software <span class="keep-together">performance</span>—or it might even be the
+        cause of a change in software performance. In either case, understanding user
+        behavior helps put application performance into the larger context of how it
+        matters to your business or organization.</p>
+        
+        <p><a data-type="indexterm" data-primary="automated data analysis" data-secondary="deviation from normal" id="idm45356999322760"></a><a data-type="indexterm" data-primary="data analysis" data-secondary="deviation from normal" id="idm45356999321784"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="automated analysis of latency distribution" id="idm45356999320840"></a><a data-type="indexterm" data-primary="latency" data-secondary="automated analysis of distribution" id="idm45356999319784"></a>Automated analysis of traces in can also help establish if performance has
+        deviated from normal. Up until now we’ve considered changes in performance
+        mostly as measured by metrics like high-percentile latency. However, while
+        looking at percentiles is often better than looking at just medium latency,
+        focusing only on percentiles can still cause you to miss significant changes
+        in performance. Here, we consider how an automated analysis can look at the
+        <em>shape</em> of a latency distribution and determine whether there’s likely
+        to have been a change.</p>
+        
+        <p><a data-type="indexterm" data-primary="histograms" data-secondary="historical data" id="idm45356999317432"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="histograms" id="idm45356999316456"></a><a data-type="indexterm" data-primary="historical data" data-secondary="visualization limitations" id="idm45356999315496"></a><a data-type="indexterm" data-primary="visualization tools" data-secondary="historical data" id="idm45356999314536"></a>Earlier we considered how current performance could be compared with past
+        performance by overlaying two latency histograms. While this can be a useful
+        way to identify many kinds of changes, it still has its limits. For example,
+        <a data-type="xref" href="#fig11_two_different_histograms">Figure&nbsp;9-4</a> shows latency histograms for two samples.
+        Suppose we were trying to decide if the second sample represents a change in
+        performance from the first or just more of the same. There is less than a 5%
+        difference in 99th-percentile latency and less than a 1% difference in 99.9th-percentile latency between the two samples. From these measurements and
+        looking at the two histograms, you might think that the two samples represent
+        the same underlying service behavior.</p>
+        
+        <p>However, a huge portion of the requests
+        on the right side (nearly half!) are significantly faster than those on
+        the left side. Most of these fast requests fall into the first bucket in
+        the histogram (as indicated by the arrow) and were only tens of
+        milliseconds in duration. (Remember that, like many of the histograms shown
+        in the book, the vertical axis is plotted on a logarithmic scale.) This could
+        be due to the introduction of a cache or some similar optimization.
+        Regardless of what caused it, if neither metrics like high-percentile latency
+        nor visual inspection are sufficient to tell <em>when</em> something has changed, we
+        must consider other tools.</p>
+        
+        <figure><div id="fig11_two_different_histograms" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0904.png" alt="dtip 0904" width="1440" height="605">
+        <h6><span class="label">Figure 9-4. </span>Two visually similar but very different histograms.</h6>
+        </div></figure>
+        
+        <p>Fortunately, there are a number of robust statistical techniques for
+        determining whether two sample sets are likely to be taken from the same
+        distribution. While a thorough description of these techniques (and how you
+        might choose among them) is beyond the scope of this book, we’ll consider one
+        technique and describe how you might use it to address this problem. What you
+        should take away is that, first, these techniques exist; and second, they have
+        powerful applications to measuring performance changes.</p>
+        
+        <p>The technique that we will consider here uses the <a data-type="indexterm" data-primary="root cause analysis" data-secondary="Kolmogorov-Smirnov statistic" id="idm45356999306824"></a><a data-type="indexterm" data-primary="root cause analysis" data-secondary="aggregate analysis" id="idm45356999305880"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="aggregate analysis" id="rbpAA"></a><a data-type="indexterm" data-primary="aggregate analysis" data-secondary="Kolmogorov-Smirnov statistic" id="idm45356999303704"></a><a data-type="indexterm" data-primary="statistics" data-secondary="Kolmogorov-Smirnov statistic" id="idm45356999302744"></a><a data-type="indexterm" data-primary="Kolmogorov-Smirnov (K-S) statistic" id="idm45356999301784"></a><a data-type="indexterm" data-primary="normal performance defined" data-secondary="Kolmogorov-Smirnov statistic" id="idm45356999301096"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="Kolmogorov-Smirnov statistic" id="idm45356999300120"></a>Kolmogorov-Smirnov (K-S)
+        statistic. The K-S statistic measures the difference between two
+        distributions as a single scalar number. To describe this technique we first
+        need to define one other concept from the study of statistics. So far we have
+        showed a number of histograms as a way of visualizing a distribution; here, we
+        will show a <a data-type="indexterm" data-primary="visualization tools" data-secondary="cumulative distribution function" id="idm45356999298664"></a><a data-type="indexterm" data-primary="cumulative distribution function (CDF)" id="idm45356999297704"></a><a data-type="indexterm" data-primary="histograms" data-secondary="cumulative distribution function versus" id="idm45356999297016"></a><em>cumulative distribution function</em> (CDF). This differs from
+        histograms in two ways. First, as the name suggests, we <em>accumulate</em> counts,
+        so each point on a CDF is the sum of all of the corresponding histogram points
+        to its left. Second, the vertical axis is normalized, so it ranges from zero
+        to one. Framing sample sets as CDFs will enable us to more easily compare
+        them.</p>
+        
+        <p><a data-type="xref" href="#fig11_KS2_example">Figure&nbsp;9-5</a> shows two cumulative distribution functions. While the
+        upper line grows more slowly initially than the lower one, it quickly
+        overtakes it. If rendered in a histogram, this would be shown as a steeper
+        peak that appeared farther to the left. The K-S statistic is generated from
+        the largest vertical distance between the two CDFs, as shown by the
+        arrow. The larger that distance, the more likely that the two CDFs were drawn
+        from different distributions; that is, that there was an actual change in
+        performance. As you can imagine, such a measure can be quickly and
+        automatically computed for a large number of histograms.</p>
+        
+        <p>How is such a statistic used? Is there a threshold for the K-S statistic (or
+        any similar statistic) that, when crossed, would mean that a regression has
+        occurred? In general, no, as the performance of many services will change
+        over time. Even if a service has experienced the largest change in
+        performance across your application, that doesn’t necessarily mean that anything is
+        wrong or, even if something is wrong, that that service is the root cause of
+        the issue. However, techniques like the K-S statistic are useful for
+        organizing information. For example, sorting services (or operations, etc.)
+        according to the K-S statistic or other measures of change can help human
+        responders identify root causes.</p>
+        
+        <figure class="width-75"><div id="fig11_KS2_example" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_0905.png" alt="dtip 0905" width="580" height="478">
+        <h6><span class="label">Figure 9-5. </span>Cumulative distribution functions of two sample sets; the arrow shows the Kolmogorov–Smirnov statistic<sup><a data-type="noteref" id="idm45356999289960-marker" href="ch09.html#idm45356999289960">1</a></sup>.</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Aggregate and Correlation Root Cause Analysis"><div class="sect2" id="idm45356999349208">
+        <h2>Aggregate and Correlation Root Cause Analysis</h2>
+        
+        <p><a data-type="indexterm" data-primary="root cause analysis" data-secondary="aggregate analysis" id="idm45356999286344"></a><a data-type="indexterm" data-primary="aggregate analysis" data-secondary="about" id="idm45356999285144"></a>The technique described in the previous section is one example of an
+        <em>aggregate</em> analysis: it used not just one or two traces but a statistically
+        significant sample to determine <em>if</em> a change in performance has occurred.
+        Once you’ve determined that there <em>has</em> been a change in performance,
+        restoring baseline performance usually comes down to finding the root cause or
+        causes of that change. (Sound simple enough?) In <a data-type="xref" href="ch08.html#chapter_10">Chapter&nbsp;8</a>, we showed
+        how aggregate analyses can be used to improve baseline performance; these
+        approaches also have powerful applications in understanding changes to your
+        application and its environment and, ultimately, in addressing performance
+        <span class="keep-together">regressions</span>.</p>
+        
+        <p><a data-type="indexterm" data-primary="historical data" data-secondary="aggregate analysis" id="idm45356999280744"></a><a data-type="indexterm" data-primary="past performance" data-see="historical data" id="idm45356999279656"></a>The first step in any of these approaches is to divide traces into two sample
+        sets; these will form the basis of any comparison. In the context of
+        restoring baseline performance, the first sample set should come from the
+        regression itself. This is usually easy if the regression is happening
+        right now. If you know that the regression is present in only a portion of
+        requests (for example, if you know there is a problem with a canary release)
+        then sampling from that portion is also important.</p>
+        
+        <p>The second sample set should represent baseline performance. This will likely
+        be a set of traces from before the regression started, perhaps from an hour, a
+        day, or a week ago: leverage your understanding of what’s normal for your
+        application and choose a baseline set from a similar point in whatever cyclic
+        behavior your application and users exhibit. As in the preceding section, using
+        overlaid time series or histogram graphs can help to understand how
+        performance varies over time, and therefore help you identify a sample set to
+        represent baseline performance.</p>
+        
+        <p><a data-type="indexterm" data-primary="root cause analysis" data-secondary="correlation analysis" id="idm45356999276808"></a><a data-type="indexterm" data-primary="statistics" data-secondary="correlation analysis" id="idm45356999275832"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="correlation analysis" id="idm45356999274888"></a><a data-type="indexterm" data-primary="correlation analysis" data-secondary="restoring performance" id="idm45356999273976"></a>Recall that correlation analysis means taking these two sample sets and then
+        finding features of traces that appear in one of those sets but not the
+        other. <a data-type="indexterm" data-primary="causal relationships" data-secondary="correlation analysis" id="idm45356999272728"></a>Although such correlation is not a guarantee of causation, it is often
+        a strong clue that can lead you to the cause of a regression.</p>
+        
+        <p>Latency, errors, tags, and other metadata can all be valuable features of
+        traces that you can use to understand what’s changed. It’s worth a reminder
+        that part of the <a data-type="indexterm" data-primary="distributed tracing" data-secondary="power of" id="idm45356999270936"></a>power of distributed tracing is that it puts performance
+        changes in the context of what’s happening <em>throughout</em> your application.
+        When determining which attributes of traces should be used as part of
+        correlation analysis, remember that these should come from <em>every</em> span in
+        these traces, not just the ones corresponding to your service. Even the
+        <em>existence</em> of certain spans within a trace can be a powerful signal in
+        understanding what’s changed.</p>
+        
+        <p><a data-type="indexterm" data-primary="examples" data-secondary="latency correlation analysis" id="idm45356999267848"></a><a data-type="indexterm" data-primary="latency" data-secondary="correlation analysis examples" id="idm45356999266904"></a>As an example, suppose that you believe that request latency has increased for
+        your service, and you compare a sample of traces that have occurred in the
+        last five minutes to those that occurred an hour ago.
+        <a data-type="xref" href="#tab11-correlation-example">Table&nbsp;9-1</a> shows a small set of features that might be
+        identified by this analysis.</p>
+        <table id="tab11-correlation-example" style="width: 70%">
+        <caption><span class="label">Table 9-1. </span>Example of correlation analysis used to determine what has changed</caption>
+        <thead>
+        <tr>
+        <th>Feature</th>
+        <th>Coefficient of correlation</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>service: inventory, service.version: 1.14.2</p></td>
+        <td><p>0.65</p></td>
+        </tr>
+        <tr>
+        <td><p>runinfo.host: vm73</p></td>
+        <td><p>0.41</p></td>
+        </tr>
+        <tr>
+        <td><p>service: inventory,service.version: 1.14.1</p></td>
+        <td><p>–0.65</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>The table shows that there is a strong correlation with a new version of the
+        <code>inventory</code> service and the latest traces; it also shows a strong correlation
+        between the previous version of that service and traces from an hour ago.
+        This provides enough evidence to take steps to mitigate the problem—by
+        rolling back the most recent release of the <code>inventory</code> service—and that
+        should be sufficient to let you defer further work until after business hours and to
+        assign it to the appropriate team. (This analysis also shows a correlation
+        between the latest traces and one of the hosts provided as part of the
+        infrastructure. This could be because the new instance of the inventory
+        service was deployed on that host.)</p>
+        
+        <p>Someone eventually needs to understand the root cause of this issue, and
+        correlation analysis can be used to further refine your understanding of
+        what was happening. Similar to the analysis described in the previous
+        chapter, you might compare slow requests from the last few minutes to faster
+        requests from before the regression. This can identify specific operations
+        that led to higher latency in the new version and help the team responsible
+        for the <code>inventory</code> service understand how to address them.</p>
+        
+        <p><a data-type="indexterm" data-startref="rbpAA" id="idm45356999252088"></a><a data-type="indexterm" data-primary="aggregate analysis" data-secondary="performance changes" id="idm45356999251384"></a><a data-type="indexterm" data-primary="latency" data-secondary="aggregate analysis" id="idm45356999250440"></a>Aggregate analysis can also help to identify more subtle changes in service
+        performance. When comparing two sets of traces, we can look at the latency
+        contributions related to arbitrary tags, operations, and services and how
+        those contributions changed over time.</p>
+        
+        <p><a data-type="indexterm" data-primary="critical path" data-secondary="deviation from normal" id="idm45356999248840"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="critical path changes" id="idm45356999247864"></a>One method for doing so is to consider how the critical path changes between
+        the baseline and regression sets. In this method, the critical path is
+        computed for each trace. (The definition of the “critical path” is covered in
+        <a data-type="xref" href="ch08.html#chapter_10">Chapter&nbsp;8</a>.) The average contribution for each service and operation is
+        then determined for each of the two sets. Services and operations are ranked
+        by the differences between these two averages.</p>
+        
+        <p><a data-type="xref" href="#tab11-critical-path-comparison">Table&nbsp;9-2</a> shows an example of this method. In this
+        example, the <code>inventory</code> service continues to have a big impact on the changes
+        in performance. Here the <code>write-cache</code> operation contributes more than five
+        times more to the critical path in the regression set than in the
+        baseline set. This is strong evidence that this operation is the cause of the
+        performance regression.</p>
+        <table id="tab11-critical-path-comparison" style="width: 65%">
+        <caption><span class="label">Table 9-2. </span>Critical path contributions in baseline and regression traces</caption>
+        <thead>
+        <tr>
+        <th>Service/Operation</th>
+        <th>Baseline</th>
+        <th>Regression</th>
+        <th>Change</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>inventory/write-cache</p></td>
+        <td><p>63.1 ms</p></td>
+        <td><p>368 ms</p></td>
+        <td><p>+305 ms</p></td>
+        </tr>
+        <tr>
+        <td><p>inventory-db/update</p></td>
+        <td><p>1.75 ms</p></td>
+        <td><p>2.26 ms</p></td>
+        <td><p>+516 ms</p></td>
+        </tr>
+        <tr>
+        <td><p>memcached/set</p></td>
+        <td><p>4.94 ms</p></td>
+        <td><p>4.71 ms</p></td>
+        <td><p>–230 ms</p></td>
+        </tr>
+        <tr>
+        <td><p>inventory/update-inventory</p></td>
+        <td><p>15.2 ms</p></td>
+        <td><p>14.8 ms</p></td>
+        <td><p>–470 ms</p></td>
+        </tr>
+        <tr>
+        <td><p>inventory/database-update</p></td>
+        <td><p>32 ms</p></td>
+        <td><p>30.6 ms</p></td>
+        <td><p>–1.4 ms</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p><a data-type="indexterm" data-primary="tags" data-secondary="tag durations" id="idm45356999224232"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="tag durations" id="idm45356999223224"></a>Another method for understanding performance changes is to consider every tag
+        found in either set of traces. For each tag, all spans in each set on which
+        that tag appears are enumerated and the average duration of those spans is
+        computed for each set. Tags are then ranked based on the difference
+        between those two averages.</p>
+        
+        <p><a data-type="xref" href="#tab11-tag-durations">Table&nbsp;9-3</a> shows an example of what this might look like. Four
+        tags are shown with changes in average duration between a few hundred
+        milliseconds and more than a second. The tag <code>item-time: new</code> undergoes the
+        biggest change between the baseline set and the regression, moving from 114 ms
+        to 1.24 seconds. This would be a great place to start looking for what code
+        changed between releases. In other cases, these results might indicate a
+        change not in the application itself but in the behavior of some
+        clients (<code>client.browser</code>) or in contention for a resource (<code>db.instance</code> or
+        <span class="keep-together"><code>runinfo.host</code></span>).</p>
+        <table id="tab11-tag-durations" style="width: 65%">
+        <caption><span class="label">Table 9-3. </span>Average duration for spans in baseline and regression traces</caption>
+        <thead>
+        <tr>
+        <th>Tag</th>
+        <th>Baseline (ms)</th>
+        <th>Regression (ms)</th>
+        <th>Change (ms)</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td><p>item-type: new</p></td>
+        <td><p>114</p></td>
+        <td><p>1240</p></td>
+        <td><p>+1130</p></td>
+        </tr>
+        <tr>
+        <td><p>client.browser: mozilla68</p></td>
+        <td><p>111</p></td>
+        <td><p>548</p></td>
+        <td><p>+437</p></td>
+        </tr>
+        <tr>
+        <td><p>db.instance: cassandra.4</p></td>
+        <td><p>117</p></td>
+        <td><p>464</p></td>
+        <td><p>+348</p></td>
+        </tr>
+        <tr>
+        <td><p>runinfo.host: vm123</p></td>
+        <td><p>116</p></td>
+        <td><p>453</p></td>
+        <td><p>+337</p></td>
+        </tr>
+        </tbody>
+        </table>
+        
+        <p>Both the contribution to the critical path and total duration can play roles
+        in finding the root cause—or causes—of a performance problem. The
+        critical path is often better in isolating what code is consuming more
+        resources as part of the regression; total duration can detect changes that
+        occurred outside a single piece of code. Sometimes a change is solely a
+        result of new code or configuration being deployed but sometimes it is also a
+        result of the interaction between old code and new code. For example, a new
+        version of your mobile app may make API calls using a different set of
+        parameters. This change may show up as a tag on the span emitted from the
+        mobile app or from the API gateway, but that span may not contribute much time
+        to the critical path. Using both methods will help you to mitigate the
+        problem (perhaps by provisioning additional resources) as well as put a longer-term fix into place (perhaps by optimizing the old code).<a data-type="indexterm" data-startref="ch10_rest" id="idm45356999200680"></a></p>
+        
+        <p><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="automated root cause analysis" id="idm45356999199720"></a><a data-type="indexterm" data-primary="aggregate analysis" data-secondary="automated root cause analysis" id="idm45356999198664"></a>Aggregate root cause analysis overcomes many of the problems with analyses
+        based on just a few traces: when using a small number of examples, it’s easy to
+        build—and justify—false theories that “explain” performance regressions.
+        Moreover, automating this process can eliminate many of the problems with
+        doing this sort of analysis manually: it can take a long time for developers
+        to consider a significant number of traces.</p>
+        
+        <p>With approaches like aggregate root cause analysis, distributed tracing not
+        only enables developers to validate or refute hypotheses that they may have
+        created through intuition or previous experience but can also help developers to
+        <em>form those hypotheses</em> in the first place. This is especially important in a
+        distributed system, as there may be thousands (or even millions) of different
+        signals that can potentially point to the root cause, but even more so
+        during an incident, when intuition and previous experience
+        aren’t always enough.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" class="notoc pagebreak-before less_space" data-pdf-bookmark="Summary"><div class="sect1" id="idm45356999444888">
+        <h1>Summary</h1>
+        
+        <p><a data-type="indexterm" data-primary="incident response" data-secondary="distributed tracing for" id="idm45356999194696"></a><a data-type="indexterm" data-primary="restoring baseline performance" data-secondary="distributed tracing for" id="idm45356999193720"></a>Some readers may be surprised at the approaches described in this and the
+        previous chapters, since they might not be considered traditional applications
+        of distributed tracing. Many developers think of tracing only as an option of
+        last resort, to be used when other tools (including metric and log aggregation
+        tools) fail. This could be because tracing is still unfamiliar to many
+        developers, as tracing is the newest of the three so-called “pillars” of
+        observability and has only become an important tool since the adoption of
+        microservices and other distributed architectures.</p>
+        
+        <p>This is unfortunate because tracing has a lot to offer to developers. When we
+        considered a scorecard for observability tools in <a data-type="xref" href="ch07.html#chapter_9">Chapter&nbsp;7</a>, we noted the
+        importance of providing context, prioritizing by impact, and automating
+        correlation. <a data-type="indexterm" data-primary="observability" data-secondary="tool scorecard" id="idm45356999190568"></a>Observability tools must be able to:</p>
+        
+        <ul>
+        <li>
+        <p>Show how performance problems in one service are related to the behavior of
+        other services</p>
+        </li>
+        <li>
+        <p>Show how a service’s performance impacts <em>user-visible</em> performance (or not)</p>
+        </li>
+        <li>
+        <p>Automatically identify which changes in a distributed application might be
+        the root causes of performance issues</p>
+        </li>
+        </ul>
+        
+        <p><a data-type="indexterm" data-primary="performance considerations" data-secondary="prioritization of problems" id="idm45356999185448"></a><a data-type="indexterm" data-primary="prioritization of problems" id="idm45356999184392"></a>All three of these are important in prioritizing work on improving performance
+        and in responding to incidents quickly; in the latter case, they’re especially so
+        since these capabilities mean that developers can more effectively and efficiently
+        communicate with each other and across teams.</p>
+        
+        <p>Unfortunately, it’s not sufficient to simply layer distributed tracing on top
+        of existing observability tools. This might be enough to enable developers to
+        look at individual traces, but as we’ve shown, the real power of tracing comes
+        through approaches like aggregate analysis that use hundreds or thousands of
+        traces to draw conclusions. As many of our examples demonstrate, for
+        distributed tracing to really deliver on all of the aspects of our scorecard,
+        it must be used in a way where trace data is used alongside metrics and logs.</p>
+        
+        <p>Put another way, while looking at <em>traces</em> can offer some insight to
+        developers, the real value of <em>tracing</em> ultimately comes from using trace data—along with metrics and logs—to quickly understand when performance
+        problems are occurring and to identify the root causes of those problems. It
+        does so by explaining variation in performance: both offering hypotheses that
+        succinctly describe the cause and providing evidence to support those
+        hypotheses.</p>
+        
+        <p>Tracing makes this possible by making the relationships between causes and
+        effects explicit. It ties different kinds of telemetry together using
+        end-to-end requests to reveal the structure of your application. Without
+        tracing, you will often see a (<span class="keep-together">potentially</span> large) set of metrics that are all
+        changing at the same time, and you won’t be able to figure out which are the
+        root causes. With tracing, you can identify which metrics are relevant to the
+        issue you are trying to address <em>and</em> have the context to understand why.
+        While tracing by itself isn’t a complete observability solution, it is a
+        necessary part of observability for any distributed system.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        <div data-type="footnotes"><p data-type="footnote" id="idm45356999289960"><sup><a href="ch09.html#idm45356999289960-marker">1</a></sup> Source: <a href="https://oreil.ly/Sc0wk">Wikipedia</a>.</p></div></div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492056621/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

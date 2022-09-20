@@ -1,0 +1,521 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 8. Functions and Event-Driven Processing"><div class="chapter" id="functions_id">
+        <h1><span class="label">Chapter 8. </span>Functions and Event-Driven Processing</h1>
+        
+        
+        <p><a data-type="indexterm" data-primary="event-driven processing, functions and" data-seealso="function-as-a-service" id="ix_ch10-asciidoc0"></a><a data-type="indexterm" data-primary="function-as-a-service (FaaS)" id="ix_ch10-asciidoc1"></a><a data-type="indexterm" data-primary="serving patterns" data-secondary="functions and event-driven processing" id="ix_ch10-asciidoc2"></a>So far, we have examined design for systems with long-running computation. The servers that handle user requests are always up and running. This pattern is the right one for many applications that are under heavy load, keep a large amount of data in memory, or require some sort of background processing. However, there is a class of applications that might only need to temporarily come into existence to handle a single request, or simply
+        need to respond to a specific event. This style of request or event-driven application design has flourished recently as large-scale public cloud providers have developed <em>function-as-a-service</em> (FaaS) products. More recently, FaaS implementations have also emerged running on top of cluster orchestrators in private cloud or physical environments. This chapter describes emerging architectures for this new style of computing. In many cases, FaaS is a component in a broader architecture rather than a complete solution.</p>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p><a data-type="indexterm" data-primary="event-driven FaaS" id="idm139824736867152"></a><a data-type="indexterm" data-primary="function-as-a-service (FaaS)" data-secondary="serverless computing and" id="idm139824736866448"></a><a data-type="indexterm" data-primary="serverless computing, FaaS vs." id="idm139824736865472"></a>Oftentimes, FaaS is referred to as <em>serverless</em> computing. And while this is true (you don’t see the servers in FaaS) it’s worth differentiating between event-driven FaaS and the broader notion of serverless computing. Indeed, serverless computing can apply to a wide variety of computing services; for example, a multi-tenant container orchestrator (container-as-a-service) is serverless but not event-driven.
+        Conversely, an open source FaaS running on a cluster of physical machines that you own and administer is event-driven but not serverless. Understanding this distinction enables you to determine when event-driven, serverless, or both is the right choice for your application.</p>
+        </div>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Determining When FaaS Makes Sense"><div class="sect1" id="idm139824736863360">
+        <h1>Determining When FaaS Makes Sense</h1>
+        
+        <p><a data-type="indexterm" data-primary="function-as-a-service (FaaS)" data-secondary="when to use" id="ix_ch10-asciidoc3"></a>As with many tools for developing a distributed system, it can be tempting to see a particular solution like event-driven processing as a universal hammer. However, the truth is that it is best suited to a particular set of problems. Within a particular context it is a powerful tool, but stretching it to fit all applications or systems will lead to overly complicated, brittle designs. Especially since FaaS is such a new computing tool, before discussing specific design patterns, it is worth discussing the benefits, limitations, and optimal situations for employing event-driven computing.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="The Benefits of FaaS"><div class="sect2" id="idm139824736859728">
+        <h2>The Benefits of FaaS</h2>
+        
+        <p><a data-type="indexterm" data-primary="function-as-a-service (FaaS)" data-secondary="benefits of" id="idm139824736858560"></a>The benefits of FaaS are primarily for the developer.  It dramatically simplifies the distance from code to running service. Because there is no artifact to create or push beyond the source code itself, FaaS makes it simple to go from code on a laptop or web browser to running code in the cloud.</p>
+        
+        <p>Likewise, the code that is deployed is managed and scaled automatically. As more traffic is loaded onto the service, more instances of the function are created to handle that increase in traffic. If a function fails due to application or machine failures, it is automatically restarted on some other machine.</p>
+        
+        <p>Finally, much like containers, functions are an even more granular building block for designing distributed systems. Functions are stateless and thus any system you build on top of functions
+        is inherently more modular and decoupled than a similar system built into a single binary. But, of
+        course, this is also the challenge of developing systems in FaaS. The decoupling
+        is both a strength and a weakness. The following section describes some of the challenges that come from developing systems using FaaS.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="The Challenges of FaaS"><div class="sect2" id="idm139824736855216">
+        <h2>The Challenges of FaaS</h2>
+        
+        <p><a data-type="indexterm" data-primary="background processing, FaaS and" id="idm139824736853776"></a><a data-type="indexterm" data-primary="function-as-a-service (FaaS)" data-secondary="challenges of" id="idm139824736853056"></a><a data-type="indexterm" data-primary="function-as-a-service (FaaS)" data-secondary="and situations that require background processing" id="idm139824736852096"></a>As described in the previous section, developing systems using FaaS forces you to strongly decouple each piece of your service. Each function is entirely independent. The only communication is across the network, and each function instance cannot have local memory, requiring all states to be stored in a storage service. This forced decoupling can improve the agility and speed with which you can develop services, but it can also significantly complicate the operations of the same service.</p>
+        
+        <p>In particular, it is often quite difficult to obtain a comprehensive view of your service, determine how the various functions integrate with one another, and understand when things go wrong, and why they go wrong.
+        Additionally, the request-based and serverless nature of functions means that certain problems are quite difficult to detect. As an example, consider the following functions:</p>
+        
+        <ul class="pagebreak-before">
+        <li>
+        <p><em><code>functionA()</code></em> which calls <em><code>functionB()</code></em></p>
+        </li>
+        <li>
+        <p><em><code>functionB()</code></em> which calls <em><code>functionC()</code></em></p>
+        </li>
+        <li>
+        <p><em><code>functionC()</code></em> which calls back to <em><code>functionA()</code></em></p>
+        </li>
+        </ul>
+        
+        <p>Now consider what happens when a request comes into any of these functions: it kicks off an infinite loop that only terminates when the original request times out (and possibly not even then) or when you run out of money to pay for requests in the system. Obviously, the above example is quite contrived, but it is actually quite difficult to detect in your code. Since each function is radically decoupled from the other functions, there is no real representation of the dependencies or interactions between different functions. These problems are not unsolvable, and I expect that as FaaSs mature, more analysis and debugging tools will provide a richer experience to understand how and why an application comprised of FaaS is performing the way that it does.</p>
+        
+        <p>For now, when adopting FaaS, you must be vigilant to adopt rigorous monitoring and alerting for how your system is behaving so that you can detect situations and correct them before they become significant problems. Of course, the complexity introduced by monitoring flies somewhat in the face of the simplicity of deploying to FaaS, which is friction that your developers must overcome.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="The Need for Background Processing"><div class="sect2" id="idm139824736826752">
+        <h2>The Need for Background Processing</h2>
+        
+        <p>FaaS is inherently an event-based application model. Functions are executed in response to discrete events that occur and trigger the execution of the functions. Additionally, because of the serverless nature of the implementation of theses services, the runtime of any particular function instance is generally time bounded. This means that FaaS is
+        usually a poor fit for situations that require processing.
+        Examples of such background processing might be transcoding a video, compressing log files, or other sorts of low-priority, long-running computations. In many cases, it is possible to set up a scheduled trigger that synthetically generates events in your functions on a particular schedule. Though this is a good fit for responding to temporal events (e.g., firing a text-message alarm to wake someone up), it is still not sufficient infrastructure for generic
+        background processing. To achieve that, you need to launch your code in an environment that supports long-running processes. And this generally means switching to a pay-per-consumption rather than pay-per-request model for the parts of your application that do background processing.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="The Need to Hold Data in Memory"><div class="sect2" id="idm139824736824032">
+        <h2>The Need to Hold Data in Memory</h2>
+        
+        <p><a data-type="indexterm" data-primary="function-as-a-service (FaaS)" data-secondary="and need to hold data in memory" id="idm139824736823024"></a>In addition to the operational challenges, there are some architectural limitations that make FaaS ill-suited for some types of applications. The first of these limitations is the need to have a significant amount of data loaded into memory in order to process user requests.
+        There are a variety of services (e.g., serving a search index of documents) that require a great deal of data to be loaded in memory in order to service user requests. Even with a relatively fast storage layer, loading such data can take significantly longer than the desired time to service a user request. Because with FaaS, the function itself may be dynamically spun up in response to a user request <em>while the user is waiting</em>, the need to load a lot of detail may significantly impact the latency that the user perceives while interacting with
+        your service.  Of course, once your FaaS has been created, it may handle a large number of requests, so this loading cost can be amortized across a large number of requests. But if you have a sufficient number of requests to keep a function active, then
+        it’s likely you are overpaying for the requests you are processing.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="The Costs of Sustained Request-Based Processing"><div class="sect2" id="idm139824736820144">
+        <h2>The Costs of Sustained Request-Based Processing</h2>
+        
+        <p><a data-type="indexterm" data-primary="function-as-a-service (FaaS)" data-secondary="costs of sustained request-based processing" id="idm139824736818928"></a><a data-type="indexterm" data-primary="pricing, FaaS and" id="idm139824736817792"></a><a data-type="indexterm" data-primary="request-based processing, FaaS and" id="idm139824736817120"></a>The cost model of public cloud FaaS is based on per-request pricing. This approach is great if you only have a few requests per minute or hour. In such a situation, you are idle most of the time, and given a pay-per-request model, you are only paying for the time when your service is actively serving requests. In contrast, if you service requests via a long-running service either in a container or a virtual machine, then you are always paying for processor cycles that is largely sitting around waiting for a user request.</p>
+        
+        <p>However, as a service grows, the number of requests that you are servicing grows to the point where you can keep a processor continuously active servicing user requests. At this point, the economics of a pay-per-request model start to become bad, and only get worse because the cost of cloud virtual machines generally decreases as you add more cores (and also via committed resources like reservations or sustained use discounts), whereas the cost per-request largely grows linearly with the number of requests.</p>
+        
+        <p>Consequently, as your service grows and evolves, it’s highly likely that your use of FaaS will evolve as well. <a data-type="indexterm" data-primary="scaling" data-secondary="FaaS" id="idm139824736814304"></a>One ideal way to scale FaaS is to run an open source FaaS that runs on a container orchestrator like Kubernetes. That way, you can still take advantage of the developer benefits of FaaS, while taking advantage of the pricing models of virtual machines.<a data-type="indexterm" data-startref="ix_ch10-asciidoc3" id="idm139824736812928"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Patterns for FaaS"><div class="sect1" id="idm139824736812000">
+        <h1>Patterns for FaaS</h1>
+        
+        <p><a data-type="indexterm" data-primary="function-as-a-service (FaaS)" data-secondary="patterns for" id="ix_ch10-asciidoc4"></a><a data-type="indexterm" data-primary="patterns" data-secondary="for FaaS" id="ix_ch10-asciidoc5"></a>In addition to understanding the trade-offs in deploying event-driven or FaaS architectures as part of your distributed system, understanding the best ways to
+        deploy FaaS is critical to the design of a successful system. This section describes some canonical patterns for incorporating FaaS.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="The Decorator Pattern: Request or Response Transformation"><div class="sect2" id="idm139824736807648">
+        <h2>The Decorator Pattern: Request or Response Transformation</h2>
+        
+        <p><a data-type="indexterm" data-primary="decorator pattern" id="idm139824736806256"></a><a data-type="indexterm" data-primary="function-as-a-service (FaaS)" data-secondary="decorator pattern" id="idm139824736805552"></a><a data-type="indexterm" data-primary="Python" data-secondary="decorator pattern" id="idm139824736804592"></a><a data-type="indexterm" data-primary="request decorator" id="idm139824736803648"></a><a data-type="indexterm" data-primary="response decorator" id="idm139824736802976"></a>FaaS is ideal for deploying simple functions that can take an input, transform it into an output, and then pass it on to a different service. This general pattern can be used to augment or decorate HTTP requests to or from a different service. A basic illustration of this pattern is shown in <a data-type="xref" href="#decorator-pattern-http-apis">Figure&nbsp;8-1</a>.</p>
+        
+        <figure><div id="decorator-pattern-http-apis" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781491983638/files/assets/ddis_10in01.png" alt="An illustration of the decorator pattern applied to HTTP APIs" width="486" height="548">
+        <h6><span class="label">Figure 8-1. </span>The decorator pattern applied to HTTP APIs</h6>
+        </div></figure>
+        
+        <p>Interestingly, there are several analogies to this pattern in programming languages. In particular, the <em>decorator</em> pattern from Python is a close analogue for the services that a request or response decorator can perform. Because decoration transformations are generally stateless, and also because they are often added after the fact to existing code as the service evolves, they are ideal services to implement via FaaS. Additionally, the lightness of FaaS means that you can experiment with a variety of different decorators before finally adopting one and pulling it more completely into the implementation of the service.</p>
+        
+        <p>A great example of the value of the decorator pattern is adding defaults to the input to an HTTP RESTFul API.  In many cases in the API, there are fields whose values should have sane defaults if they are left empty. For example, you may want a field to default to <code>true</code>, but it’s difficult to accomplish this in classical JSON, because the default value for a field is <code>null</code>, which is generally understood to be <code>false</code>.  To resolve this, we can add defaulting logic either in the front of the API server or within the application code itself (e.g., <code>if (field == null) field = true</code>). However, both of these solutions are somewhat unappealing since the defaulting mechanism is fairly conceptually independent from the handling of the request. Instead, we can use the FaaS decorator pattern to transform the request in between the user and the service implementation.</p>
+        
+        <p>Given the previous discussion of the adapter pattern in the single-node section, you may be wondering why we don’t simply package this defaulting as an adapter container. And this is a totally reasonable approach, but it does mean that we are going to couple the scale of the defaulting service with the API service itself. The defaulting is actually a lightweight operation, and we are likely to need far fewer instances of it than the service itself to handle the load.</p>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p><a data-type="indexterm" data-primary="Kubeless" id="idm139824736792800"></a><a data-type="indexterm" data-primary="Kubernetes" data-secondary="Kubeless and" id="idm139824736791872"></a>For the examples in this chapter, we are going to use the <a href="https://github.com/kubeless/kubeless"><code>kubeless</code></a> FaaS framework.
+        Kubeless is deployed on top of the Kubernetes container orchestration
+        service. Assuming that you have provisioned a Kubernetes cluster, you
+        can install Kubeless from its <a href="https://github.com/kubeless/kubeless/releases">releases page</a>. Once you have the <code>kubeless</code> binary installed, you can install it into your cluster with the following commands: <code>kubeless install</code>.</p>
+        
+        <p>Kubeless installs itself as a native Kubernetes third-party API. This
+        means that once it is installed, you can use the native <code>kubectl</code> command-line tool. For example,
+        you can see deployed functions using <code>kubectl get functions</code>. Currently,
+        you should have no functions deployed.</p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Hands On: Adding Request Defaulting Prior to Request Processing"><div class="sect2" id="idm139824736786464">
+        <h2>Hands On: Adding Request Defaulting Prior to Request Processing</h2>
+        
+        <p><a data-type="indexterm" data-primary="function-as-a-service (FaaS)" data-secondary="adding request defaulting prior to request processing" id="idm139824736785040"></a>To demonstrate the utility of the decorator pattern for FaaS, consider the task of adding default values to a RESTful
+        function call if the values are missing. This is quite straightforward
+        to do using FaaS. We’ll write the defaulting function
+        using the Python programming language:</p>
+        
+        <pre data-type="programlisting"># Simple handler function for adding default values
+        def handler(context):
+          # Get the input value
+          obj = context.json
+          # If the 'name' field is not present, set it randomly
+          if obj.get("name", None) is None:
+            obj["name"] = random_name()
+          # If the 'color' field is not present, set it to 'blue'
+          if obj.get("color", None) is None:
+            obj["color"] = "blue"
+          # Call the actual API, potentially with the new default
+          # values, and return the result
+          return call_my_api(obj)</pre>
+        
+        <p>Save this function in a file named <em>defaults.py</em>. You obviously will want to update the <code>call_my_api</code> code so that it points to the actual
+        API you want to call.  Once you have finished writing the code, this defaulting function can be installed as a <code>kubeless</code> function
+        using:</p>
+        
+        <pre data-type="programlisting">kubeless function deploy add-defaults \
+            --runtime python27 \
+            --handler defaults.handler \
+            --from-file defaults.py \
+            --trigger-http</pre>
+        
+        <p>If you want to test the handling of this function, you can also use
+        the <code>kubeless</code> tool:</p>
+        
+        <pre data-type="programlisting">kubeless function call add-defaults --data '{"name": "foo"}'</pre>
+        
+        <p>The decorator pattern shows just how easy it is to adapt and extend
+        existing APIs with additional features like validation or defaulting.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Handling Events"><div class="sect2" id="idm139824736777456">
+        <h2>Handling Events</h2>
+        
+        <p><a data-type="indexterm" data-primary="event handling, FaaS and" id="ix_ch10-asciidoc6"></a><a data-type="indexterm" data-primary="function-as-a-service (FaaS)" data-secondary="handling events" id="ix_ch10-asciidoc7"></a>While most systems are request driven, handling a steady stream of user and API requests, many other systems are more event-driven in nature.  <a data-type="indexterm" data-primary="events, requests vs." id="idm139824736773568"></a><a data-type="indexterm" data-primary="requests, events vs." id="idm139824736772896"></a><a data-type="indexterm" data-primary="sessions, requests and" id="idm139824736772224"></a>The differentiation, in my mind at least, between a request and an event have to do with the notion of <em>session</em>. Requests are part of a larger series of interactions or sessions; generally each user request is part of a larger interaction with a complete web application or API. <em>Events</em>, as I see them, instead tend to be single-instance and asynchronous in nature. Events are important and need to be properly handled, but they are fired off from a main interaction and responded to some time later. Examples of events include a user signing up for a new service (which might trigger a welcome email, someone uploading a file to a shared folder (which might send notifications to everyone who has access to the folder), or even a machine being about to reboot (which might notify an operator or automated system to take appropriate action).</p>
+        
+        <p>Because these events tend to be largely independent and stateless in nature, and because the rate of events can be highly variable, they are ideal candidates for event-driven and FaaS architectures. In this role, they are often deployed alongside a production application server as augmentation to the main user experience, or to handle some sort of reactive, background processing. Additionally, because new events are often dynamically added to the service, the lightweight nature of deploying functions is a good match for defining new event handlers. Likewise, because each event is conceptually independent, the forced decoupling of a functions-based system actually helps <em>reduce</em> the conceptual complexity by enabling a developer to focus on the steps required to handle just a single type of event.</p>
+        
+        <p>A concrete example of integrating an event-based component to an existing service is implementing two-factor authentication. In this case, the event is the user logging into a service. The service can generate an event for this action, fire it into a function-based handler that takes the code and the user’s contact information, and sends the two-factor code via text message.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Hands On: Implementing Two-Factor Authentication"><div class="sect2" id="idm139824736767040">
+        <h2>Hands On: Implementing Two-Factor Authentication</h2>
+        
+        <p><a data-type="indexterm" data-primary="authentication, FaaS for" id="ix_ch10-asciidoc8"></a><a data-type="indexterm" data-primary="function-as-a-service (FaaS)" data-secondary="implementing two-factor authentication" id="ix_ch10-asciidoc9"></a><a data-type="indexterm" data-primary="two-factor authentication, FaaS for" id="ix_ch10-asciidoc10"></a>Two-factor
+        authentication requires that the user both have something that they
+        know (e.g., a password) as well as something that they possess (e.g., a
+        phone) to be able to log in to the system. Two-factor
+        authentication is significantly more secure than passwords alone since
+        it requires two different security compromises (a thief learning your
+        password <em>and</em> a thief stealing your phone) to enable a true security
+        problem.</p>
+        
+        <p>When considering how to implement two-factor authentication, one of the
+        challenges is how to handle the request to generate a random code and
+        register it with the login service as well as send the text
+        message. It is possible to add this code to the main login web server. But it is complicated and monolithic, and forces the act of sending a text message, which can have some latency, to be inline with the code that renders the login web page. This latency produces a substandard
+        user experience.</p>
+        
+        <p>A better option is to register a FaaS to asynchronously
+        generate the random number, register it with the login service, and send
+        the number to the user’s phone. In this way, the login server can
+        simply fire an asynchronous web-hook request to a FaaS,
+        and that FaaS can handle the somewhat slow and asynchronous task of registering the two-factor code and sending the
+        text message.</p>
+        
+        <p>To see how this works in practice, consider the following code:</p>
+        
+        <pre data-type="programlisting">def two_factor(context):
+          # Generate a random six digit code
+          code = random.randint(100000, 999999)
+        
+          # Register the code with the login service
+          user = context.json["user"]
+          register_code_with_login_service(user, code)
+        
+          # Use the twillio library to send texts
+          account = "my-account-sid"
+          token = "my-token"
+          client = twilio.rest.Client(account, token)
+        
+          user_number = context.json["phoneNumber"]
+          msg = "Hello {} your authentication code is: {}.".format(user, code)
+          message = client.api.account.messages.create(to=user_number,
+                                                       from_="+12065251212",
+                                                       body=msg)
+          return {"status": "ok"}</pre>
+        
+        <p>We can then register this FaaS with <code>kubeless</code>:</p>
+        
+        <pre data-type="programlisting">kubeless function deploy add-two-factor \
+            --runtime python27 \
+            --handler two_factor.two_factor \
+            --from-file two_factor.py \
+            --trigger-http</pre>
+        
+        <p>This function can then be made asynchronously from client-side
+        JavaScript whenever the user successfully provides their password.
+        The web UX can then immediately display a page to enter the code, and
+        the user (once they receive the code as a text message) can supply it
+        to the service, where the code has already been registered via our
+        FaaS.</p>
+        
+        <p>Again, developing a simple, asynchronous, event-based service that is triggered
+        whenever a user logs in is made dramatically simpler using FaaS<a data-type="indexterm" data-startref="ix_ch10-asciidoc10" id="idm139824736754672"></a><a data-type="indexterm" data-startref="ix_ch10-asciidoc9" id="idm139824736753968"></a><a data-type="indexterm" data-startref="ix_ch10-asciidoc8" id="idm139824736753296"></a>.<a data-type="indexterm" data-startref="ix_ch10-asciidoc7" id="idm139824736752496"></a><a data-type="indexterm" data-startref="ix_ch10-asciidoc6" id="idm139824736751792"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Event-Based Pipelines"><div class="sect2" id="idm139824736766384">
+        <h2>Event-Based Pipelines</h2>
+        
+        <p><a data-type="indexterm" data-primary="event-based pipelines" data-secondary="FaaS and" id="ix_ch10-asciidoc11"></a><a data-type="indexterm" data-primary="function-as-a-service (FaaS)" data-secondary="event-based pipelines" id="ix_ch10-asciidoc12"></a>There are some applications that are inherently easier to think about in terms of a pipeline of decoupled events. These event pipelines often resemble the flowcharts of old. They can be represented as a directed graph of connected event syncs. In the event pipeline pattern, each node is a different function or webhook, and the edges linking the graph together are HTTP or other network calls to the function/webhook. In general, there is no shared state between the
+        different pieces of the pipeline, but there may be a context or other reference point that can be used to look up information in shared storage.</p>
+        
+        <p><a data-type="indexterm" data-primary="microservices" data-secondary="event-based pipelines vs." id="idm139824736746496"></a>So what is the difference between this type of pipeline and a “microservices” architecture? There are two central differences. The first is the main difference between functions in general and long-running services, which is that an event-based pipeline is by its very nature event-driven. Conversely, a microservices architecture features a collection of long-running services. Additionally, event-driven pipelines may be highly asynchronous and diverse in the things that they connect together. For example, while it is difficult to see how a human approving a ticket in a ticketing system like Jira could be integrated into a microservices application, it’s quite easy to see how that event could be incorporated into a event-driven pipeline.</p>
+        
+        <p>As an example of this, imagine a pipeline in which the original event is code being submitted into a source control system. This event then triggers a build. The build may take multiple minutes to complete, and when it does, it fires an event to a build analysis function. This function takes different actions if the build is successful or fails. If the build succeeded, a ticket is created for a human to approve it to be pushed to production. Once the ticket is closed, the act of closing is an event that triggers the actual push to production. If the build failed, a bug is filed on the failure, and the event pipeline terminates.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Hands On: Implementing a Pipeline for New-User Signup"><div class="sect2" id="idm139824736743312">
+        <h2>Hands On: Implementing a Pipeline for New-User Signup</h2>
+        
+        <p><a data-type="indexterm" data-primary="event-based pipelines" data-secondary="for new-user signup" id="ix_ch10-asciidoc13"></a><a data-type="indexterm" data-primary="new-user signup" data-secondary="implementing a pipeline for" id="ix_ch10-asciidoc14"></a><a data-type="indexterm" data-primary="user signup" data-secondary="implementing a pipeline for" id="ix_ch10-asciidoc15"></a>Consider the task of implementing a new-user signup flow. When a new
+        user account is created, there are certain things that are always done,
+        such as sending a welcome email. And there are some things that
+        are optionally done, such as registering a user to receive product
+        updates (sometimes known as “spam”) via their email.</p>
+        
+        <p>One approach to implementing this logic would be to place everything
+        into a single monolithic <em>user-creation</em> server. However, this factoring
+        means that a single team owns the entirety of the user-creation service, and that the entire experience is deployed as a single service. Both of these
+        mean that it is more difficult to perform experiments or make changes
+        to the user experience.</p>
+        
+        <p>Consider, instead, implementing the user login experience as an event
+        pipeline with a series of FaaS. In this factoring,
+        the user-creation function is actually unaware of the
+        details of what happens on user login. Instead, the main user-creation
+        service simply has two lists:</p>
+        
+        <ul>
+        <li>
+        <p>A list of required actions (e.g., sending a welcome mail)</p>
+        </li>
+        <li>
+        <p>A list of optional actions (e.g., subscribing the user to a mailing list)</p>
+        </li>
+        </ul>
+        
+        <p>Each of these actions is also implemented as a FaaS, and the list of actions is actually just a list of webhooks.
+        Consequently, the main user creation function looks like this:</p>
+        
+        <pre data-type="programlisting">def create_user(context):
+          # For required event handlers, call them universally
+          for key, value in required.items():
+            call_function(value.webhook, context.json)
+        
+          # For optional event handlers, check and call them
+          # conditionally
+          for key, value in optional.items():
+            if context.json.get(key, None) is not None:
+              call_function(value.webhook, context.json)</pre>
+        
+        <p>Now we can also use FaaS to implement each of these handlers:</p>
+        
+        <pre data-type="programlisting">def email_user(context):
+          # Get the user name
+          user = context.json['username']
+        
+          msg = 'Hello {} thanks for joining my awesome service!".format(user)
+        
+          send_email(msg, contex.json['email])
+        
+        
+        def subscribe_user(context):
+          # Get the user name
+          email = context.json['email']
+          subscribe_user(email)</pre>
+        
+        <p>Factored in this way, each FaaS is simple, containing only
+        a few lines of code and focused on implementing one specific piece
+        of functionality. This microservices-based approach is simple to write
+        but might lead to complexity if we actually had to deploy and manage
+        three different microservices. This is where FaaS
+        can shine, since it makes it trivially easy to host these small
+        code snippets. Additionally, by visualizing our user-creation flow
+        as an event-driven pipeline, it is also straightforward to have a
+        high-level understanding of what exactly happens on user login, simply
+        by following the flow of the context through the various functions<a data-type="indexterm" data-startref="ix_ch10-asciidoc15" id="idm139824736728896"></a><a data-type="indexterm" data-startref="ix_ch10-asciidoc14" id="idm139824736728192"></a><a data-type="indexterm" data-startref="ix_ch10-asciidoc13" id="idm139824736727520"></a>
+        in the <a data-type="indexterm" data-startref="ix_ch10-asciidoc12" id="idm139824736726720"></a><a data-type="indexterm" data-startref="ix_ch10-asciidoc11" id="idm139824736726016"></a>pipeline<a data-type="indexterm" data-startref="ix_ch10-asciidoc5" id="idm139824736725216"></a><a data-type="indexterm" data-startref="ix_ch10-asciidoc4" id="idm139824736724512"></a>.<a data-type="indexterm" data-startref="ix_ch10-asciidoc2" id="idm139824736723712"></a><a data-type="indexterm" data-startref="ix_ch10-asciidoc1" id="idm139824736723008"></a><a data-type="indexterm" data-startref="ix_ch10-asciidoc0" id="idm139824736722336"></a></p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        </div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781491983638/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

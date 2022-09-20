@@ -1,0 +1,435 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 12. Beyond Spans"><div class="chapter" id="chapter_beyond_spans">
+        <h1><span class="label">Chapter 12. </span>Beyond Spans</h1>
+        
+        
+        <p><a data-type="indexterm" data-primary="beyond spans" data-secondary="tree of spans abstraction" id="idm45356998570616"></a><a data-type="indexterm" data-primary="spans" data-secondary="beyond spans" data-see="beyond spans" id="idm45356998569672"></a><a data-type="indexterm" data-primary="spans" data-secondary="tree of spans abstraction" id="idm45356998568456"></a><a data-type="indexterm" data-primary="spans" data-secondary="about" id="idm45356998567544"></a>Most distributed tracing systems that run in production today represent requests as a tree of spans. This representation is simple to understand and well-suited to a large number of common workloads, but it isn’t a good fit for all of them. In this chapter we’ll look at how the span came to be the first-class citizen of tracing, and then explore its shortcomings for systems like machine learning models, streaming, <span class="keep-together">pub-sub</span>, and distributed dataflow. Devising new abstractions for tracing is an exciting area of active research and development and we’ll try to give you a flavor of what’s coming in the near future.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Why Spans Have Prevailed"><div class="sect1" id="idm45356998565048">
+        <h1>Why Spans Have Prevailed</h1>
+        
+        <p><a data-type="indexterm" data-primary="spans" data-secondary="benefits" id="idm45356998563640"></a><a data-type="indexterm" data-primary="history of distributed systems" data-secondary="spans" id="idm45356998562504"></a><a data-type="indexterm" data-primary="spans" data-secondary="history of" id="idm45356998561544"></a><a data-type="indexterm" data-primary="beyond spans" data-secondary="span benefits" id="idm45356998560600"></a>In <a data-type="xref" href="ch10.html#chapter_12">Chapter&nbsp;10</a>, we described how early tracing systems influenced the design, and even the terminology, of present-day systems. As distributed systems evolved and became more complicated, users had a pressing need to understand <a data-type="indexterm" data-primary="history of distributed systems" data-secondary="request-response systems" id="idm45356998558472"></a><a data-type="indexterm" data-primary="request-response systems" id="idm45356998557496"></a>request-response slowdowns, especially when requests were interleaved and executed concurrently. This led to a <a data-type="indexterm" data-primary="RPCs (remote procedure calls)" data-secondary="history of" id="idm45356998556552"></a>remote procedure call (RPC)-centric approach, tightly integrated with the way that the systems being traced were implemented. These days, distributed systems have more diverse execution and communication patterns, and for many popular systems the “traditional” request-oriented tracing design is not a good fit. Nevertheless, having the RPC—represented by a span—as the core datatype in distributed tracing has served us well over many years. Let’s start by looking at the <span class="keep-together">reasons</span>.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Visibility"><div class="sect2" id="idm45356998554312">
+        <h2>Visibility</h2>
+        
+        <p><a data-type="indexterm" data-primary="RPCs (remote procedure calls)" data-secondary="as requests to be traced" data-secondary-sortas="requests to be traced" id="idm45356998553080"></a>It is self-evident that tracing RPCs shows you which components of your system communicate using RPCs. In microservice applications, RPCs enable the loose coupling of independent services, a key feature of the modularity, scalablity, and <span class="keep-together">maintainability</span> of those applications. At the same time, this decoupling makes the end-to-end picture of how the microservices communicate to serve an individual request murky, to say the least. We already talked a great deal about how important tracing is for understanding the behavior of your microservice architecture—here we want to emphasize that a trace comprising a <a data-type="indexterm" data-primary="distributed applications" data-secondary="tree of spans abstraction" id="idm45356998550424"></a>tree of spans is the perfect abstraction for visibility into this style of distributed system.</p>
+        
+        <p>Similarly, we use RPCs in many distributed systems that are not microservice architectures. RPCs are so pervasive that tracing them invariably tells us something about what’s going on, even when they aren’t the primary mechanism for communication. The upshot is that while we continue to use RPCs in our distributed systems (which is probably forever), we will continue to use spans in our distributed traces!</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Pragmatism"><div class="sect2" id="idm45356998548104">
+        <h2>Pragmatism</h2>
+        
+        <p>It is hugely convenient for users if the low-level tracing mechanisms, such as context propagation and emitting the trace records themselves, are built into the RPC subsystem. Integration at this level typically provides a simple API for users to create instrumentation, and takes care of all the messy and sometimes complex implementation details (see <a data-type="xref" href="ch02.html#Chapter3">Chapter&nbsp;2</a>). The ubiquity of RPCs means that once tracing support has been added to an RPC subsystem, you get tracing—and spans—for very little extra effort.</p>
+        
+        <p>However, there is a price for this convenience, paid in the form of spans as the one-size-fits-all abstraction. Because RPC systems are the common base layer of many different applications, adding support for specialized tracing abstractions that might only apply to a handful of applications is not generally practical. Alternatively, you could have a completely separate tracing system, not tied to RPCs and thus more flexible, but then you’d have to deploy and maintain it separately, adding operational burden. As a result, to make use of the convenience of the RPC layer to record stuff that doesn’t look like a span, you have to shoehorn your information into something that does. We will describe a few examples of this later.</p>
+        
+        <p>In practice, the operators of distributed tracing systems tend to favor convenience over flexibility, but it’s possible that the scales are tipping—perhaps after reading this chapter you will come to your own conclusions.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Portability"><div class="sect2" id="idm45356998511912">
+        <h2>Portability</h2>
+        
+        <p><a data-type="indexterm" data-primary="RPCs (remote procedure calls)" data-secondary="unique position in software stack" id="idm45356998510872"></a><a data-type="indexterm" data-primary="distributed applications" data-secondary="RPC position in software stack" id="idm45356998509688"></a><a data-type="indexterm" data-primary="spans" data-secondary="RPC position in software stack" id="idm45356998508712"></a>The RPC layer of a distributed system occupies a unique place in the software stack, existing <em>below</em> applications and <em>above</em> the operating system and system-level services. This means that <a data-type="indexterm" data-primary="distributed tracing" data-secondary="agnostic nature of" id="idm45356998506680"></a><a data-type="indexterm" data-primary="agnostic nature of distributed tracing" data-secondary="spans agnostic" id="idm45356998505704"></a>spans are agnostic to both the application and the system and thus inherently portable to different applications and different platforms.</p>
+        
+        <p>It’s interesting to note that when spans incorporate information from both layers they can provide a unique window onto how application-level actions map onto the physical world. A good example of this is when a span reports the IP addresses of the hosts involved in the RPC—a performance engineer might use that information to diagnose why the RPC is slow. Without the information that identifies the servers, the engineer can detect the slowness, but has less data to help find the root cause.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Compatibility"><div class="sect2" id="idm45356998503432">
+        <h2>Compatibility</h2>
+        
+        <p>Spans represent a fairly low-level abstraction, capturing the bare minimum of details of a request-response communication style. With just a handful of conventions for representing spans in common use, compatibility between software systems from multiple sources is straightforward, making it feasible to collect end-to-end traces across diverse components and to reuse existing visualization and analysis tools. The fact that spans have become such a basic building block of tracing is also to our advantage when converting spans from one format (say, OpenTracing) to another (say, Zipkin), because both forms broadly capture the same information.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Flexibility"><div class="sect2" id="idm45356998501176">
+        <h2>Flexibility</h2>
+        
+        <p>Finally, the “killer feature” of spans is that in most popular tracing systems they are defined with a minimum of structure. You may argue that this is a drawback, leading to ambiguity and imprecision, but it also results in tremendous adaptability. If you want to reuse the span data structure to represent some activity that is not an RPC, it may be possible to do so simply by defining custom tags.</p>
+        
+        <p>The case for spans is strong, but let’s take a look at the other side of the argument.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Why Spans Aren’t Enough"><div class="sect1" id="idm45356998498648">
+        <h1>Why Spans Aren’t Enough</h1>
+        
+        <p><a data-type="indexterm" data-primary="beyond spans" data-secondary="span benefits not enough" id="idm45356998497304"></a><a data-type="indexterm" data-primary="spans" data-secondary="benefits not enough" id="idm45356998496360"></a>With all these good reasons for the continuing prevalence of spans, what then is the problem? What do we mean when we say that spans aren’t a good fit for all distributed systems, and why does this matter? Spans have prevailed because they are well suited to the dominant request-response style of distributed computation, but other communication paradigms are becoming more popular. These new systems are a lot like the old ones in that they can have complex interdependencies between components, and performance debugging is challenging. <a data-type="indexterm" data-primary="distributed tracing" data-secondary="spans becoming awkward" id="idm45356998494728"></a>Distributed tracing seems like it ought to be just as valuable for the new systems, but trying to capture their behavior using spans can be awkward, as we’ll now describe.</p>
+        
+        <p><a data-type="indexterm" data-primary="beyond spans" data-secondary="about" id="idm45356998493208"></a>As a running example, we’ll use a hypothetical social media platform that operates out of several datacenters. It runs a microservice architecture and serves each individual request entirely out of one datacenter, with a frontend load balancer that spreads requests evenly across the datacenters. Each request corresponds to an HTTP-based API endpoint, so there are requests for fetching the user’s feed, personalized recommendations and ads, and so on. On the face of it, this <em>sounds</em> like a perfect fit for the tree-of-spans tracing approach, so let’s look at where it falls short.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Graphs, Not Trees"><div class="sect2" id="idm45356998490984">
+        <h2>Graphs, Not Trees</h2>
+        
+        <p><a data-type="indexterm" data-primary="beyond spans" data-secondary="tree of spans abstraction" id="idm45356998489608"></a><a data-type="indexterm" data-primary="spans" data-secondary="tree of spans abstraction" id="idm45356998488440"></a><a data-type="indexterm" data-primary="distributed applications" data-secondary="tree of spans abstraction" id="idm45356998487480"></a>The first problem is when an end-to-end trace is a <em>graph</em> rather than a <em>tree</em>. In other words, the flow of control contains <em>joins</em> (where a child span has multiple parents) as well as <em>forks</em> (where a parent has multiple children). As we mentioned earlier, spans don’t have a great deal of predefined structure, but one thing they do require is for each span to have no more than one parent (and a span with no parents is the root of the trace).</p>
+        
+        <p>One common cause of this behavior is when <a data-type="indexterm" data-primary="RPCs (remote procedure calls)" data-secondary="batching" id="idm45356998483928"></a><a data-type="indexterm" data-primary="batching RPCs" id="idm45356998482952"></a>multiple RPCs are <em>batched</em> into a single onward RPC. Batching is often used to improve the efficiency of repeated requests to the same server—instead of sending many small messages, send a single large one. In the <a data-type="indexterm" data-primary="beyond spans" data-secondary="batching RPCs" id="idm45356998481528"></a>social media example there are many places where batching will likely be happening in the backend. For instance, a single timeline request might fetch multiple items for the timeline in parallel. If some of those items involve retrieving data from the <em>same</em> servers, then the system might batch those requests into a single RPC.</p>
+        
+        <p><a data-type="xref" href="#figure13-1">Figure&nbsp;12-1</a> shows how batching produces graphs of spans, rather than trees. In the diagram, multiple incoming requests to service A are combined into a batch that results in a single outgoing request to service B. Now, what is the parent of the span representing the call from A to B? In reality, the outgoing RPC depends on all of the incoming RPCs, but we can’t represent this directly in current tracing systems. Instead, we have to find a workaround.</p>
+        
+        <p>One reasonable approach is to pick the first or the last request added to the batch to be the parent. The right side of <a data-type="xref" href="#figure13-1">Figure&nbsp;12-1</a> shows the actual trace graph together with the compromise tree resulting from the workaround (the paths from X/Y/Z back to the root are elided in the diagram). Clearly, the compromise tree doesn’t correctly represent the true dependencies. For instance, the RPCs from X and Y that contributed to the batch will appear to terminate at A, becoming leaf nodes in the trace tree. Moreover, from the point of view of the performance engineer, the latency introduced by batching may be a significant contribution to overall latency, and so the time spent waiting by each parent request should also be recorded. Once again, you can work around the lack of expressivity by adding timestamped annotations that record when items are inserted into the batch, but you will need custom processing to subsequently extract and process the information.</p>
+        
+        <figure><div id="figure13-1" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_1201.png" alt="RPC batching leads to spans with multiple parents" width="1375" height="891">
+        <h6><span class="label">Figure 12-1. </span>RPC batching leads to spans with multiple parents.</h6>
+        </div></figure>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Inter-Request Dependencies"><div class="sect2" id="idm45356998473816">
+        <h2>Inter-Request Dependencies</h2>
+        
+        <p><a data-type="indexterm" data-primary="RPCs (remote procedure calls)" data-secondary="inter-request dependencies" id="idm45356998472472"></a><a data-type="indexterm" data-primary="inter-request dependencies" id="idm45356998471464"></a>A generalization of the previous problem is when multiple <em>traces</em> (rather than spans within a single trace) are interdependent, as if Service A in <a data-type="xref" href="#figure13-1">Figure&nbsp;12-1</a> batched incoming requests that belonged to multiple different traces into the outgoing request to Service B. In our example <a data-type="indexterm" data-primary="beyond spans" data-secondary="inter-request dependencies" id="idm45356998469288"></a>social media platform, we can image a “RemoteReplicaUpdaterService” that batches unrelated updates in one datacenter in order to send fewer, larger RPCs across the wide area network to the other datacenters.</p>
+        
+        <p>Fortunately, with this batching style of inter-request dependencies, you can take advantage of the flexibility of spans to use existing tracing systems without much disruption. Simply add a tag to the nonterminating trace that records the other TraceIDs (and perhaps also information about nontraced requests) that went into the batch. Indeed, <a data-type="indexterm" data-primary="OpenTracing" data-secondary="inter-request dependencies" id="idm45356998467224"></a><code>FollowsFrom</code> references in OpenTracing are intended to handle this use case.</p>
+        
+        <p>Another, more significant challenge for inter-request dependencies with conventional tree-of-spans tracing arises when the definition of a trace is too restrictive for the type of end-to-end type request that you are interested in. <a data-type="indexterm" data-primary="beyond spans" data-secondary="client app tracing challenges" id="idm45356998465176"></a><a data-type="indexterm" data-primary="mobile clients" data-secondary="client app tracing challenges" id="idm45356998464184"></a><a data-type="indexterm" data-primary="web clients" data-secondary="client app tracing challenges" id="idm45356998463224"></a><a data-type="indexterm" data-primary="frontend services" data-secondary="client app tracing challenges" id="idm45356998462264"></a><a data-type="indexterm" data-primary="backend services" data-secondary="client app tracing challenges" id="idm45356998461304"></a>Let’s explore this scenario by assuming that our example social media platform operates a conventional tracing system. Its frontend server makes the decision to sample a request (i.e., to trace it) at the ingress to the set of microservices that comprise the backend serving system. This means that a trace is implicitly defined as the set of actions involved in serving a single HTTP request. So far, so good.</p>
+        
+        <p>However, if the social media company decides in the future that it wants to extend its tracing system out to clients, for example by adding tracing logic into its bespoke mobile app, then this notion of a trace suddenly doesn’t work as well. In client apps, a single user action typically involves <em>many</em> requests to the backend, each of which is sampled independently by the frontend server. Thus, although inside the datacenter each trace corresponds to a single HTTP-based API endpoint, from the perspective of the user, an action like navigating to the home page might involve RPCs to several different endpoints, to fetch content, ads, and profile information.</p>
+        
+        <p>To make a single trace that represents one of these user actions you could combine multiple traces after the fact, provided they are tied together with some common tag. But how do you ensure that your frontend sampler will choose all (or none) of the traces for a given user action? Perhaps you could sample on the client, but now you have devolved the sampling decision from a handful of servers in your datacenter to potentially millions of clients that may fail frequently, not have good connectivity, or be running an old version of the software. Alternatively you might consider extending your external API to indicate to the backend that some set of RPCs belongs to a single trace, but this could leave you vulnerable to denial-of-service attacks.</p>
+        
+        <p>There are many other subtle issues at play here, but the takeaway point is that additional complexity is inevitable when the conventional notion of a trace is insufficiently expressive.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Decoupled Dependencies"><div class="sect2" id="idm45356998456344">
+        <h2>Decoupled Dependencies</h2>
+        
+        <p><a data-type="indexterm" data-primary="publish-subscribe (pub-sub) systems" id="idm45356998454968"></a><a data-type="indexterm" data-primary="microservices" data-secondary="publish-subscribe systems" id="idm45356998454296"></a><a data-type="indexterm" data-primary="beyond spans" data-secondary="publish-subscribe systems" id="idm45356998453336"></a>Publish-subscribe (pub-sub) systems play an important role in many microservices architectures. By decoupling the writer of a message from its readers, pub-sub smooths out load spikes, allows publishers and subscribers to scale and evolve independently, and lets subscribers come and go without needing to notify the publishing service. A consequence of this decoupling is a dilemma for tracing, illustrated in <a data-type="xref" href="#pubsub_system">Figure&nbsp;12-2</a>: should the loosely coupled communication via the pub-sub system be treated as a single trace or many?</p>
+        
+        <figure><div id="pubsub_system" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_1202.png" alt="How do you trace a pub-sub system?" width="1364" height="447">
+        <h6><span class="label">Figure 12-2. </span>How do you trace a pub-sub system?</h6>
+        </div></figure>
+        
+        <p>Let’s consider the single-trace solution, which may indeed be appropriate for some microservice systems. When the writer publishes a message to the pub-sub system, you trace it as a one-way RPC (most tracing systems have support for such messages), and propagate the trace context as normal. Subscribers pick up the context along with the message and continue propagation, giving a single, unbroken end-to-end trace that includes <em>all</em> your dependent services. One of the benefits of pub-sub is its loose coupling, but this can easily have the unfortunate consequence of obscuring which services are interdependent. Tracing across the pub-sub boundary solves this problem, and also has the advantage of treating the pub-sub system like any other microservice, giving visibility into how the pub-sub system itself fits into the overall ecosystem of microservices.</p>
+        
+        <p>However, this model isn’t necessarily the right choice. Turning again to our social media platform, let’s assume its “RemoteReplicaUpdaterService” uses a pub-sub system to asynchronously disseminate state updates to storage replicas in its other datacenters. Here, the single-trace approach becomes awkward: There may be a large number of subscribers for each publisher, different subscribers to the same publisher may be involved in unrelated activities that don’t belong in the same trace, and there can be a delay between writing and reading a message.</p>
+        
+        <p>You can handle these issues by starting a new trace for each message read by a subscriber, perhaps retaining a reference to the message writer’s <code>TraceID</code> as a tag in the new trace. But now, even though the tracing mechanisms themselves are straightforward, you’ve made it more complicated to track end-to-end dependencies.</p>
+        
+        <p>Returning to our example: maybe the social media platform also runs a second pub-sub system that it configures with much tighter delay bounds in order to propagate user-visible changes in a timely fashion. When a follower is blocked, it’s important that the change appears as quickly as possible in every copy of the follower graph. End-to-end tracing through the pub-sub system may be an important debugging tool for these types of requests, and now someone has to choose which mode of tracing to adopt, or else configure the two pub-sub systems differently. The tracing dilemma for decoupled dependencies has become an operational burden.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Distributed Dataflow"><div class="sect2" id="idm45356998443944">
+        <h2>Distributed Dataflow</h2>
+        
+        <p><a data-type="indexterm" data-primary="beyond spans" data-secondary="distributed dataflow" id="idm45356998442744"></a><a data-type="indexterm" data-primary="distributed dataflow" id="idm45356998441768"></a><a data-type="indexterm" data-primary="microservices" data-secondary="distributed dataflow lacking tracing" id="idm45356998441096"></a>In the last 15 years or so, data-parallel, distributed execution frameworks like <a data-type="indexterm" data-primary="Hadoop" id="idm45356998440056"></a>Hadoop and <a data-type="indexterm" data-primary="Spark" id="idm45356998439160"></a>Spark have become tremendously popular. In contrast to request-oriented systems, distributed tracing for these frameworks is almost nonexistent, with developers relying on metrics, logs, profilers, and debuggers to monitor performance and solve problems. Why is this? The answer is not clear, especially given that a framework like Spark is more homogeneous and self-contained than most microservice architectures, and thus potentially less effort to instrument for tracing.</p>
+        
+        <p>However, there are other challenges: distributed dataflow is designed to operate at very large scales and as a result a single job could run for hours (or longer!) and may comprise millions of RPCs. The <a data-type="indexterm" data-primary="control plane of distributed dataflow" id="idm45356998437224"></a><em>control plane</em>, which includes services like the cluster scheduler and resource manager, can play a significant part in the end-to-end completion time of a job. Should you instrument the control plane for tracing also? Finally, the distributed dataflow paradigm executes programs as directed by acyclic graphs, and as discussed earlier, graphs are not well supported by existing tracing <span class="keep-together">systems</span>.</p>
+        
+        <p><a data-type="indexterm" data-primary="streaming systems challenges" id="idm45356998434632"></a><a data-type="indexterm" data-primary="beyond spans" data-secondary="streaming systems challenges" id="idm45356998433912"></a><a data-type="indexterm" data-primary="request-response systems" data-secondary="streaming systems versus" id="idm45356998432952"></a>Streaming systems, often built over the top of distributed dataflow systems, offer yet another challenge to the spans-oriented tracing model. How should you define the concept of “request” for processing that runs over a continuously arriving, infinite stream of data? Perhaps you should consider a different core abstraction, like tracing how specific data items are passed between processes, read, and mutated (this is known as <a data-type="indexterm" data-primary="data prevenance" id="idm45356998431400"></a><em>data provenance</em> in the academic community)? Alternatively, you could forget about tracking an individual activity or piece of state, and instead just snapshot the execution of the entire system during a fixed time window. New styles of trace will require new tools for analysis and visualization, so you would have to start from scratch to extract value from your traces.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Machine Learning"><div class="sect2" id="idm45356998429720">
+        <h2>Machine Learning</h2>
+        
+        <p><a data-type="indexterm" data-primary="beyond spans" data-secondary="machine learning systems" id="idm45356998428312"></a><a data-type="indexterm" data-primary="machine learning (ML)" data-secondary="tracing tools" id="idm45356998427368"></a><a data-type="indexterm" data-primary="distributed applications" data-secondary="machine learning" data-tertiary="tracing tools" id="idm45356998426424"></a>Machine learning (ML) systems comprise yet another style of distributed computing, with performance analysis and debugging challenges for which existing distributed tracing systems have no out-of-the-box solutions. Because of this, ML systems tend to have their own custom tracing tools, such as the trace viewer built into the <a data-type="indexterm" data-primary="visualization tools" data-secondary="TensorFlow TensorBoard" id="idm45356998424712"></a><a data-type="indexterm" data-primary="TensorFlow TensorBoard visualization kit" id="idm45356998423768"></a>TensorFlow TensorBoard visualization toolkit. For service owners that run machine learning as just one part of their infrastructure (say, to predict the best ad to serve for a specific web page request), this has the drawback that the <a data-type="indexterm" data-primary="observability" data-secondary="machine learning outside of" id="idm45356998422616"></a>ML systems operate outside the regular observability framework, which is especially undesirable when the ML is production-critical and resource-intensive.</p>
+        
+        <p>Although there are many types of ML models (logistic regression, support vector machines, deep neural networks, etc.), they have in common (at least) two ways that RPC-based tracing is not a good fit:</p>
+        <dl>
+        <dt>Steps, not requests</dt>
+        <dd>
+        <p><a data-type="indexterm" data-primary="machine learning (ML)" data-secondary="steps not requests" id="idm45356998419368"></a>Training a machine learning process involves repeated <em>steps</em>, in which operators—schedulable units of work like matrix multiply, or the reading of a file—compute over the current state of the training data and produce updates. At the end of each step, the operators exchange updated values. Although you can think of each operation within a step as being a span, causally related to its parents and children by its input and output, respectively, there is no conceptual equivalent of an end-to-end request. Instead, because a key metric is the time taken per step, ML tracing tools typically provide the ability to look deeply into the concurrency and scheduling of operators within a single training step.</p>
+        
+        <p>In contrast, <a data-type="indexterm" data-primary="machine learning (ML)" data-secondary="inference" id="idm45356998416696"></a><a data-type="indexterm" data-primary="batching RPCs" data-secondary="machine learning inference" id="idm45356998415688"></a><a data-type="indexterm" data-primary="inter-request dependencies" data-secondary="machine learning inference" id="idm45356998414728"></a>ML <em>inference</em> has a more request-oriented flavor. However, to improve efficiency, inference models batch requests (similar to the situation we showed in <a data-type="xref" href="#figure13-1">Figure&nbsp;12-1</a>), leading to the issue of inter-request dependencies that we discussed earlier.</p>
+        </dd>
+        <dt>Multilayer performance monitoring</dt>
+        <dd>
+        <p>Hardware acceleration is often a key component of machine learning deployments. Particularly during training, the movement of data between devices over the PCI bus and/or the network can be a major bottleneck, and whether an operation is scheduled on CPU or GPU can affect its running time significantly. As a result, to debug performance problems in a distributed ML job, you need visibility into how the runtime schedules work on each server individually, as well as across the cluster.</p>
+        
+        <p>In addition, different ML models have diverse characteristics—for example, language models often use large tables, known as <a data-type="indexterm" data-primary="embeddings in machine learning" id="idm45356998409896"></a><a data-type="indexterm" data-primary="machine learning (ML)" data-secondary="embeddings" id="idm45356998409128"></a><a data-type="indexterm" data-primary="data storage" data-secondary="embeddings in machine learning" id="idm45356998408184"></a><em>embeddings</em>, that can be hundreds of gigabytes and hence have to be shared across multiple devices. However, the model may only access a handful of rows in each step, leading to complicated scatter-gather communication patterns. Similarly, models that rely on <a data-type="indexterm" data-primary="machine learning (ML)" data-secondary="AllReduce communication" id="idm45356998406472"></a><a data-type="indexterm" data-primary="AllReduce communication in ML" id="idm45356998405496"></a><a data-type="indexterm" data-primary="ML" data-see="machine learning" id="idm45356998404808"></a>AllReduce, an efficient group communication primitive for updating state across many nodes, may be highly sensitive to its implementation specifics, which in turn depend on the available device and network hardware.</p>
+        
+        <p>As a consequence, distributed tracing for ML systems must incorporate data not only at the level of RPCs (or AllReduce operations) between computers, but also at the level of the low-level behavior and causal dependencies within each <span class="keep-together">computer</span>.</p>
+        </dd>
+        </dl>
+        
+        <p>In fact, the second of these problems is more general—metrics from components <em>underneath</em> the RPC layer are critical to understanding the performance of requests, as we explain next.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Low-Level Performance Metrics"><div class="sect2" id="idm45356998400824">
+        <h2>Low-Level Performance Metrics</h2>
+        
+        <p><a data-type="indexterm" data-primary="metrics" data-secondary="low-level performance" id="idm45356998399480"></a><a data-type="indexterm" data-primary="performance considerations" data-secondary="low-level performance" id="idm45356998398280"></a><a data-type="indexterm" data-primary="events" data-secondary="low-level events" id="idm45356998397368"></a><a data-type="indexterm" data-primary="beyond spans" data-secondary="low-level performance" id="idm45356998396424"></a>Performance debugging is often about <em>detecting</em> problems by looking across the entire system, followed by zooming in deep to <em>diagnose</em> the cause. Distributed tracing is great for the first task, especially when using aggregate analysis of traces, as we discuss in <a data-type="xref" href="ch11.html#chapter_beyond_individual_requests">Chapter&nbsp;11</a>. On the other hand, when it comes to explaining a slow RPC that might be caused by a low-level issue like a VM hiccup, suboptimal thread scheduling, or network packet loss, span-oriented tracing is not a good fit. Low-level events are <em>usually</em> not caused by the activities on behalf of any one request, but rather the set of all things currently running on the server. So in some sense, attribution to a specific trace isn’t terribly meaningful.</p>
+        
+        <p><a data-type="indexterm" data-primary="timescales of timestamps versus aggregation" id="idm45356998392520"></a>Another problem with incorporating fine-grained performance metrics is timescale. RPCs happen quickly—very quickly. Tracing systems use microsecond or even nanosecond timestamps for good reason. Yet, for reasons of scale and performance, observability systems typically aggregate metrics every minute, or at best every few seconds. These timescales are orders of magnitude different!</p>
+        
+        <p>The trend to move performance-critical functionality from software into hardware is another challenge for span-oriented tracing systems. We already mentioned the prevalence of accelerators for ML. Another increasingly widespread example is the use of <a data-type="indexterm" data-primary="remote direct memory access (RDMA)" id="idm45356998390504"></a><a data-type="indexterm" data-primary="distributed applications" data-secondary="remote direct memory access" id="idm45356998389832"></a>remote direct memory access (RDMA) for distributed applications with stringent network performance requirements. Meanwhile, the research community is advancing the state of the art exploring how to use programmable network switches for complex tasks like executing consensus protocols.<sup><a data-type="noteref" id="idm45356998388424-marker" href="ch12.html#idm45356998388424">1</a></sup> How to associate low-level hardware counters with the high-level concept of a trace is an open problem, as is how to surface this information in a way that is useful for performance debugging of slow requests, or for the aggregate analysis of multiple traces.</p>
+        
+        <p>But what about metrics from <em>within</em> the application, like requests per second? If your service is experiencing high sustained load, could this be a useful indicator as to why an RPC is slow? Well, maybe! Perhaps the high load is occurring now, but won’t start impacting requests until later (e.g., once the queues are full). Perhaps the high load is having an adverse effect, but the trace sampling just so happens not to select any of the suffering requests.</p>
+        
+        <p>This is not to say that system metrics together with traces can’t be useful for performance debugging. Indeed, we talked about the idea of a unified observability platform in <a data-type="xref" href="ch06.html#chapter_7">Chapter&nbsp;6</a> and pointed out some of its advantages. However, the alliance of spans and metrics is an uneasy one that must be handled with care.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="New Abstractions"><div class="sect1" id="idm45356998383992">
+        <h1>New Abstractions</h1>
+        
+        <p><a data-type="indexterm" data-primary="beyond spans" data-secondary="new abstractions" id="idm45356998382680"></a>We’ve described a selection of the issues that arise when spans are not the right abstraction for the task at hand. In this section we’ll discuss some of the changes afoot to help overcome some of the shortcomings of the tree-of-spans approach to distributed tracing.</p>
+        
+        <p>The tracing community has been well aware of the problems with spans for years; there is a great deal of fascinating, and often quite nuanced, discussion in various online forums. Efforts are underway to address some of the more pressing problems by evolving the specifications for <a data-type="indexterm" data-primary="OpenTracing" data-secondary="multi-parent spans" id="idm45356998380600"></a>OpenTracing and <a data-type="indexterm" data-primary="Zipkin (Twitter)" data-secondary="OpenZipkin" id="idm45356998379496"></a><a data-type="indexterm" data-primary="OpenZipkin" data-secondary="multi-parent spans" id="idm45356998378520"></a>OpenZipkin, for example supporting multiparent spans by means of the OpenTracing tag <code>FollowsFrom</code>.</p>
+        
+        <p><a data-type="indexterm" data-primary="OpenCensus" data-secondary="new wave tracing paradigm" id="idm45356998376648"></a>OpenCensus (now part of <a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="new wave tracing paradigm" id="idm45356998375192"></a><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="OpenCensus as metrics of" id="idm45356998374184"></a><a data-type="indexterm" data-primary="OpenCensus" data-secondary="as OpenTelemetry metrics" data-secondary-sortas="OpenTelemetry metrics" id="idm45356998373224"></a>OpenTelemetry) is one of the “new wave” of tracing paradigms. It supports the propagation of <a data-type="indexterm" data-primary="tags in new tracing paradigms" id="idm45356998371752"></a><a data-type="indexterm" data-primary="RPCs (remote procedure calls)" data-secondary="tags into" id="idm45356998371064"></a><em>tags</em> (not to be confused with the explicit tags we write into spans) between services, along with the usual trace context information like the <code>TraceID</code>. <a data-type="indexterm" data-primary="metrics" data-secondary="associating with traces" id="idm45356998369144"></a>Tags act like labels, which the system associates with metrics collected at each node in the trace tree and subsequently aggregated. This is pretty neat: a tag like <code>originator:photo-app</code>, combined with a measure like <code>vm_cpu_cycles</code>, lets you see the end-to-end CPU costs for requests coming from <code>photo-app</code>, and moreover, to compare them with the CPU costs for requests coming from a different originator, say, <code>video-app</code>.</p>
+        
+        <p>Essentially, <a data-type="indexterm" data-primary="OpenCensus" data-secondary="associating metrics with traces" id="idm45356998365832"></a><a data-type="indexterm" data-primary="OpenTelemetry" data-secondary="associating metrics with traces" id="idm45356998364808"></a><a data-type="indexterm" data-primary="metrics" data-secondary="OpenCensus associating with traces" id="idm45356998363848"></a>OpenCensus gives you a way to associate metrics with traces. It doesn’t fix the problem we described earlier of precise attribution of low-level metrics to a particular request, so you still need to choose your metrics carefully. Some types of measures (like counting CPU cycles on a thread while it’s doing work on behalf of exactly one request) are well suited to this use, others (like network link utilization) are not. We will describe OpenCensus in more detail in <a data-type="xref" href="ch13.html#ch15_census">“Census”</a>.</p>
+        
+        <p>Production tracing systems must use caution when adopting new abstractions so as not to disrupt existing infrastructure. However, the research community does not have such constraints and has explored some interesting approaches. For example, to mention an idea that is particularly well suited to systems like streaming distributed dataflow, rather than attempting to correlate related events on different machines, collect performance data from every machine in the cluster at the same time. In theory, you could do this by firing off a sampling profiler, or a kernel trace, to run for 30 seconds (say) on every server at the same time. But then you would have to backhaul all the profiles and run an expensive computation to merge them after the fact, and in a large cluster the cost of doing this could be prohibitive.</p>
+        
+        <p>An alternative approach is to push the trace analysis into the same cluster that is being traced. This idea has been at the heart of various research systems, for example the <a data-type="indexterm" data-primary="Fay system" id="idm45356998359608"></a>Fay system published in 2011.<sup><a data-type="noteref" id="idm45356998358776-marker" href="ch12.html#idm45356998358776">2</a></sup> In Fay, the user provided a declarative query that the system parsed and turned into <a data-type="indexterm" data-primary="dynamic instrumentation" data-secondary="Fay" id="idm45356998357544"></a><a data-type="indexterm" data-primary="instrumentation" data-secondary="dynamic instrumentation" id="idm45356998356632"></a>dynamic instrumentation, customized to just that query. It used a runtime module on each server to filter and aggregate the outputs from the instrumentation before uploading the results for further processing (such as for aggregation and visualization).</p>
+        
+        <p>Dynamic instrumentation would be a bold undertaking in a production cluster, especially when the cluster supports multiple tenants and resource isolation is important. Perhaps inspired by the ideas in Fay, you can imagine a rolling buffer of locally <span class="keep-together">collected</span> trace data, sampled, filtered and even joined on the spot with data from other servers on demand. In <a data-type="xref" href="ch13.html#chapter_15">Chapter&nbsp;13</a>, we’ll describe another research system, Pivot Tracing, that does exactly this.</p>
+        
+        <p>Could such distributed-tracing-plus-analysis techniques be combined with the familiar trace context propagation mechanism to enable a different form of distributed tracing? Or will some other approach be sufficiently compelling that it finds widespread adoption? It’s hard to tell at this point where we are headed, but there’s no doubt that exciting times are ahead for distributed tracing.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Seeing Causality"><div class="sect1" id="idm45356998351976">
+        <h1>Seeing Causality</h1>
+        
+        <p><a data-type="indexterm" data-primary="beyond spans" data-secondary="causality" id="idm45356998350440"></a><a data-type="indexterm" data-primary="causal relationships" data-secondary="causality in debugging" id="idm45356998349464"></a><a data-type="indexterm" data-primary="root cause analysis" data-secondary="causality" id="idm45356998348520"></a>For users of distributed tracing, one of the most important questions to answer is “Why was this request slow?” The answer is hopefully contained within a trace, or in how it differs from comparable traces. But sometimes you cannot find the answer just by looking at traces: you can see there was a problem, and you may even see which service was unusually slow, but there are no obvious clues as to the cause.</p>
+        
+        <p>One explanation is that the tracing instrumentation is insufficient to debug the particular problem. For instance, if you don’t record when a timeout expires, then you may not be able to tell when that timeout causes an error response. But in other cases, your trace was slow because of external factors. If a server experiences a transient period of CPU overload, for example, and the thread processing your request simply doesn’t get enough CPU time to complete the work, then you will not capture this in a trace. Another tricky scenario is if your request is blocked waiting for a lock—perhaps a lock in a third-party library that you don’t even know existed—and unless you instrument the wait and hold times for synchronization primitives, which would add overhead to a performance-critical operation, then you simply don’t have the visibility to diagnose such a problem.</p>
+        
+        <p>These examples illustrate the limitations of the visibility you get from traces alone. Fortunately, you may be able to correlate the slowness in your trace with <em>logs</em> and <em>metrics</em> (see <a data-type="xref" href="ch07.html#chapter_9">Chapter&nbsp;7</a>). Because tracing shows you where and when to look, it’s feasible to use the other observability pillars to diagnose the problem. As long as the full tree of causal relationships is captured in the trace, you can take advantage of other data sources to fill in the visibility gaps when required.</p>
+        
+        <p>But what about when causality is not tracked completely? If you rely on components in your distributed system that don’t support tracing (in other words, that don’t propagate the trace context and/or record spans) then you may not even be aware that you have a dependence on them. This may sound like poor operational practice, but it’s surprisingly easy for this to happen with complex, distributed systems running a variety of in-house and open source software.</p>
+        
+        <p>The research world has proposed ways to <em>infer</em> causality just from the black box behavior of a distributed system. Back in 2003, <a data-type="indexterm" data-primary="Project 5 for inferring causality" id="idm45356998341064"></a>Project5 explored whether the timing of messages between components could reveal causal relationships, especially for nested RPCs.<sup><a data-type="noteref" id="idm45356998340120-marker" href="ch12.html#idm45356998340120">3</a></sup> More recently, the <a data-type="indexterm" data-primary="The Mystery Machine (Facebook)" data-primary-sortas="Mystery Machine (Facebook)" id="idm45356998338888"></a><a data-type="indexterm" data-primary="Facebook" data-secondary="The Mystery Machine" data-secondary-sortas="Mystery Machine" id="idm45356998337912"></a>Mystery Machine takes a different tack, applying hypothesis testing about program behavior to the information in large numbers of system logs in order to deduce a causal model of system behavior.<sup><a data-type="noteref" id="idm45356998336360-marker" href="ch12.html#idm45356998336360">4</a></sup> These ideas are promising, and perhaps in future we will use such techniques to automatically fill in missing dependencies in traces.</p>
+        
+        <p>Returning to the question “Why was this request slow?,” we have discussed how missing instrumentation or dependencies in traces can make the question hard to answer. A different challenge for tracing, that is very common in practice, is when the root cause originates outside the scope of visibility (or perhaps even the lifetime) of the request suffering the slowdown. Traces capture direct dependencies, but sometimes the problem comes from <a data-type="indexterm" data-primary="indirect dependencies" id="idm45356998334264"></a><em>indirect</em> dependencies.</p>
+        
+        <p>Let’s look at the shared queue shown in <a data-type="xref" href="#figure13-3">Figure&nbsp;12-3</a>, where the expensive request A is at the front of the queue, slowing down requests B and C which are queued behind it. The queue introduces an ordering of requests that can result in head-of-line blocking. Typically you wouldn’t instrument fine-grained operations like enqueue and dequeue because of the overhead, so how do you detect when the queueing delay is adversely impacting some requests?</p>
+        
+        <figure><div id="figure13-3" class="figure">
+        <img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492056621/files/assets/dtip_1203.png" alt="Head-of-line blocking in a shared queue" width="926" height="117">
+        <h6><span class="label">Figure 12-3. </span>In a shared queue, request A slows down requests B and C.</h6>
+        </div></figure>
+        
+        <p>Once again, the tree-of-spans tracing model doesn’t easily express what’s going on here. There is an implicit dependency between requests that is <em>temporal</em> rather than <em>functional</em>. Requests may interfere if one of them is slow, but if the queue never backed up, there would be no dependency between them. There is some exciting research work in this direction (including, for example, the recent <a data-type="indexterm" data-primary="Zeno temporal provenance" id="idm45356998327448"></a>Zeno project that describes this idea using the term <a data-type="indexterm" data-primary="temporal provenance" id="idm45356998326584"></a><em>temporal provenance</em>),<sup><a data-type="noteref" id="idm45356998325528-marker" href="ch12.html#idm45356998325528">5</a></sup> but detecting and diagnosing such interference from sequencing remains an open problem.</p>
+        
+        <p>In this chapter we’ve looked at the kinds of distributed systems for which the tracing model of a tree of spans is not well suited, along with a taste of some new abstractions on the horizon.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        <div data-type="footnotes"><p data-type="footnote" id="idm45356998388424"><sup><a href="ch12.html#idm45356998388424-marker">1</a></sup> <a data-type="xref" href="bibliography01.html#Dan15">[Dan15]</a></p><p data-type="footnote" id="idm45356998358776"><sup><a href="ch12.html#idm45356998358776-marker">2</a></sup> <a data-type="xref" href="bibliography01.html#Erl11">[Erl11]</a></p><p data-type="footnote" id="idm45356998340120"><sup><a href="ch12.html#idm45356998340120-marker">3</a></sup> <a data-type="xref" href="bibliography01.html#Agu03">[Agu03]</a></p><p data-type="footnote" id="idm45356998336360"><sup><a href="ch12.html#idm45356998336360-marker">4</a></sup> <a data-type="xref" href="bibliography01.html#Cho14">[Cho14]</a></p><p data-type="footnote" id="idm45356998325528"><sup><a href="ch12.html#idm45356998325528-marker">5</a></sup> <a data-type="xref" href="bibliography01.html#Wu19">[Wu19]</a></p></div></div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781492056621/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com
