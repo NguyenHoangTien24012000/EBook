@@ -1,0 +1,1022 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h1 class="chapnum"><a id="chap5"></a>CHAPTER <i>5</i></h1>
+        <h1 class="chaptitle">Process Synchronization</h1>
+        <p class="text"><a id="page_203"></a>A <b>cooperating process</b> is one that can affect or be affected by other processes executing in the system. Cooperating processes can either directly share a logical address space (that is, both code and data) or be allowed to share data only through files or messages. The former case is achieved through the use of threads, discussed in <a href="11_chapter04.html#chap4">Chapter 4</a>. Concurrent access to shared data may result in data inconsistency, however. In this chapter, we discuss various mechanisms to ensure the orderly execution of cooperating processes that share a logical address space, so that data consistency is maintained.</p>
+        <div class="bgbox">
+        <p class="boxtitle1">CHAPTER OBJECTIVES</p>
+        <ul style="list-style-type:disc;">
+        <li>To introduce the critical-section problem, whose solutions can be used to ensure the consistency of shared data.</li>
+        <li>To present both software and hardware solutions of the critical-section problem.</li>
+        <li>To examine several classical process-synchronization problems.</li>
+        <li>To explore several tools that are used to solve process synchronization problems.</li>
+        </ul>
+        </div>
+        <h2 class="subtitle"><a id="sec5.1"></a>5.1 Background</h2>
+        <p class="text">We've already seen that processes can execute concurrently or in parallel. <a href="10_chapter03.html#sec3.2.2">Section 3.2.2</a> introduced the role of process scheduling and described how the CPU scheduler switches rapidly between processes to provide concurrent execution. This means that one process may only partially complete execution before another process is scheduled. In fact, a process may be interrupted at any point in its instruction stream, and the processing core may be assigned to execute instructions of another process. Additionally, <a href="11_chapter04.html#sec4.2">Section 4.2</a> introduced parallel execution, in which two instruction streams (representing different processes) execute simultaneously on separate processing cores. In this chapter, <a id="page_204"></a>we explain how concurrent or parallel execution can contribute to issues involving the integrity of data shared by several processes.</p>
+        <p class="text-indent">Let's consider an example of how this can happen. In <a href="10_chapter03.html#chap3">Chapter 3</a>, we developed a model of a system consisting of cooperating sequential processes or threads, all running asynchronously and possibly sharing data. We illustrated this model with the producer–consumer problem, which is representative of operating systems. Specifically, in <a href="10_chapter03.html#sec3.4.1">Section 3.4.1</a>, we described how a bounded buffer could be used to enable processes to share memory.</p>
+        <p class="text-indent">We now return to our consideration of the bounded buffer. As we pointed out, our original solution allowed at most BUFFER_SIZE − 1 items in the buffer at the same time. Suppose we want to modify the algorithm to remedy this deficiency. One possibility is to add an integer variable <span class="inlinecode">counter</span>, initialized to 0. <span class="inlinecode">counter</span> is incremented every time we add a new item to the buffer and is decremented every time we remove one item from the buffer. The code for the producer process can be modified as follows:</p>
+        <div class="code">
+        <pre class="codesnippet">   while (true) {
+                /* produce an item in next_produced */
+        
+                while (counter == BUFFER_SIZE)
+                  ; /* do nothing */
+        
+                buffer[in] = next_produced;
+                in = (in + 1) % BUFFER_SIZE;
+                counter++;
+           }
+        </pre>
+        </div>
+        <p class="text">The code for the consumer process can be modified as follows:</p>
+        <div class="code">
+        <pre class="codesnippet">while (true) {
+             while (counter == 0)
+                ; /* do nothing */
+        
+             next_consumed = buffer[out];
+             out = (out + 1) % BUFFER_SIZE;
+             counter--;
+        
+             /* consume the item in next_consumed */
+        }
+        </pre>
+        </div>
+        <p class="text-indent">Although the producer and consumer routines shown above are correct separately, they may not function correctly when executed concurrently. As an illustration, suppose that the value of the variable <span class="inlinecode">counter</span> is currently 5 and that the producer and consumer processes concurrently execute the statements “<span class="inlinecode">counter++</span>” and “<span class="inlinecode">counter−−</span>”. Following the execution of these two statements, the value of the variable <span class="inlinecode">counter</span> may be 4, 5, or 6! The only correct result, though, is <span class="inlinecode">counter</span> == 5, which is generated correctly if the producer and consumer execute separately.</p>
+        <p class="text-indent"><a id="page_205"></a>We can show that the value of <span class="inlinecode">counter</span> may be incorrect as follows. Note that the statement “<span class="inlinecode">counter++</span>” may be implemented in machine language (on a typical machine) as follows:</p>
+        <div class="code">
+        <span class="codesnippet">
+        <i>register</i><sub>1</sub> = counter
+        <i>register</i><sub>1</sub> = <i>register</i><sub>1</sub> + 1
+        <span class="inlinecodenormal">counter</span> = <i>register</i><sub>1</sub>
+        </span>
+        </div>
+        <p class="text">where <i>register</i><sub>1</sub> is one of the local CPU registers. Similarly, the statement “<span class="inlinecode">counter−−</span>” is implemented as follows:</p>
+        <div class="code">
+        <span class="codesnippet">
+        <i>register</i><sub>2</sub> = <span class="inlinecodenormal">counter</span>
+        <i>register</i><sub>2</sub> = <i>register</i><sub>2</sub> − 1
+        <span class="inlinecodenormal">counter</span> = <i>register</i><sub>2</sub>
+        </span>
+        </div>
+        <p class="text">where again <i>register</i><sub>2</sub> is one of the local CPU registers. Even though <i>register</i><sub>1</sub> and <i>register</i><sub>2</sub> may be the same physical register (an accumulator, say), remember that the contents of this register will be saved and restored by the interrupt handler (<a href="07_chapter01.html#sec1.2.3">Section 1.2.3</a>).</p>
+        <p class="text-indent">The concurrent execution of “<span class="inlinecode">counter++</span>” and “<span class="inlinecode">counter−−</span>” is equivalent to a sequential execution in which the lower-level statements presented previously are interleaved in some arbitrary order (but the order within each high-level statement is preserved). One such interleaving is the following:</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/p205-001.jpg" alt="image" class="imgepub" width="577" height="128"></p>
+        <p class="text">Notice that we have arrived at the incorrect state “<span class="inlinecode">counter</span> == 4”, indicating that four buffers are full, when, in fact, five buffers are full. If we reversed the order of the statements at <i>T</i><sub>4</sub> and <i>T</i><sub>5</sub>, we would arrive at the incorrect state “<span class="inlinecode">counter</span> == 6”.</p>
+        <p class="text-indent">We would arrive at this incorrect state because we allowed both processes to manipulate the variable <span class="inlinecode">counter</span> concurrently. A situation like this, where several processes access and manipulate the same data concurrently and the outcome of the execution depends on the particular order in which the access takes place, is called a <b>race condition</b>. To guard against the race condition above, we need to ensure that only one process at a time can be manipulating the variable <span class="inlinecode">counter</span>. To make such a guarantee, we require that the processes be synchronized in some way.</p>
+        <p class="text-indent">Situations such as the one just described occur frequently in operating systems as different parts of the system manipulate resources. Furthermore, as we have emphasized in earlier chapters, the growing importance of multicore systems has brought an increased emphasis on developing multithreaded applications. In such applications, several threads—which are quite possibly sharing data—are running in parallel on different processing cores. Clearly, <a id="page_206"></a>we want any changes that result from such activities not to interfere with one another. Because of the importance of this issue, we devote a major portion of this chapter to <b>process synchronization</b> and <b>coordination</b> among cooperating processes.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f001.jpg" alt="image" class="imgepub" width="227" height="233"></p>
+        <p class="caption"><a id="fig5.1"></a><b>Figure 5.1</b> General structure of a typical process <i>P<sub>i</sub></i>.</p>
+        <h2 class="subtitle"><a id="sec5.2"></a>5.2 The Critical-Section Problem</h2>
+        <p class="text">We begin our consideration of process synchronization by discussing the so-called critical-section problem. Consider a system consisting of <i>n</i> processes {<i>P</i><sub>0</sub>, <i>P</i><sub>1</sub>, …, <i>P</i><sub><i>n</i>−1</sub>}. Each process has a segment of code, called a <b>critical section</b>, in which the process may be changing common variables, updating a table, writing a file, and so on. The important feature of the system is that, when one process is executing in its critical section, no other process is allowed to execute in its critical section. That is, no two processes are executing in their critical sections at the same time. The <b><i>critical-section problem</i></b> is to design a protocol that the processes can use to cooperate. Each process must request permission to enter its critical section. The section of code implementing this request is the <b>entry section</b>. The critical section may be followed by an <b>exit section</b>. The remaining code is the <b>remainder section</b>. The general structure of a typical process <i>P<sub>i</sub></i> is shown in <a href="12_chapter05.html#fig5.1">Figure 5.1</a>. The entry section and exit section are enclosed in boxes to highlight these important segments of code.</p>
+        <p class="text-indent">A solution to the critical-section problem must satisfy the following three requirements:</p>
+        <ol style="list-style-type:decimal;">
+        <li><b>Mutual exclusion</b>. If process <i>P<sub>i</sub></i> is executing in its critical section, then no other processes can be executing in their critical sections.</li>
+        <li><b>Progress</b>. If no process is executing in its critical section and some processes wish to enter their critical sections, then only those processes that are not executing in their remainder sections can participate in deciding which will enter its critical section next, and this selection cannot be postponed indefinitely.</li>
+        <li><b>Bounded waiting</b>. There exists a bound, or limit, on the number of times that other processes are allowed to enter their critical sections after a <a id="page_207"></a>process has made a request to enter its critical section and before that request is granted.</li>
+        </ol>
+        <p class="text">We assume that each process is executing at a nonzero speed. However, we can make no assumption concerning the relative speed of the <i>n</i> processes.</p>
+        <p class="text-indent">At a given point in time, many kernel-mode processes may be active in the operating system. As a result, the code implementing an operating system (<b><i>kernel code</i></b>) is subject to several possible race conditions. Consider as an example a kernel data structure that maintains a list of all open files in the system. This list must be modified when a new file is opened or closed (adding the file to the list or removing it from the list). If two processes were to open files simultaneously, the separate updates to this list could result in a race condition. Other kernel data structures that are prone to possible race conditions include structures for maintaining memory allocation, for maintaining process lists, and for interrupt handling. It is up to kernel developers to ensure that the operating system is free from such race conditions.</p>
+        <p class="text-indent">Two general approaches are used to handle critical sections in operating systems: <b>preemptive kernels</b> and <b>nonpreemptive kernels</b>. A preemptive kernel allows a process to be preempted while it is running in kernel mode. A nonpreemptive kernel does not allow a process running in kernel mode to be preempted; a kernel-mode process will run until it exits kernel mode, blocks, or voluntarily yields control of the CPU.</p>
+        <p class="text-indent">Obviously, a nonpreemptive kernel is essentially free from race conditions on kernel data structures, as only one process is active in the kernel at a time. We cannot say the same about preemptive kernels, so they must be carefully designed to ensure that shared kernel data are free from race conditions. Preemptive kernels are especially difficult to design for SMP architectures, since in these environments it is possible for two kernel-mode processes to run simultaneously on different processors.</p>
+        <p class="text-indent">Why, then, would anyone favor a preemptive kernel over a nonpreemptive one? A preemptive kernel may be more responsive, since there is less risk that a kernel-mode process will run for an arbitrarily long period before relinquishing the processor to waiting processes. (Of course, this risk can also be minimized by designing kernel code that does not behave in this way.) Furthermore, a preemptive kernel is more suitable for real-time programming, as it will allow a real-time process to preempt a process currently running in the kernel. Later in this chapter, we explore how various operating systems manage preemption within the kernel.</p>
+        <h2 class="subtitle"><a id="sec5.3"></a>5.3 Peterson's Solution</h2>
+        <p class="text">Next, we illustrate a classic software-based solution to the critical-section problem known as <b>Peterson's solution</b>. Because of the way modern computer architectures perform basic machine-language instructions, such as <span class="inlinecode">load</span> and <span class="inlinecode">store</span>, there are no guarantees that Peterson's solution will work correctly on such architectures. However, we present the solution because it provides a good algorithmic description of solving the critical-section problem and illustrates some of the complexities involved in designing software that addresses the requirements of mutual exclusion, progress, and bounded waiting.</p>
+        <p class="center"><a id="page_208"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f002.jpg" alt="image" class="imgepub" width="351" height="278"></p>
+        <p class="caption"><a id="fig5.2"></a><b>Figure 5.2</b> The structure of process <i>P<sub>i</sub></i> in Peterson's solution.</p>
+        <p class="text-indent">Peterson's solution is restricted to two processes that alternate execution between their critical sections and remainder sections. The processes are numbered <i>P</i><sub>0</sub> and <i>P</i><sub>1</sub>. For convenience, when presenting <i>P<sub>i</sub></i>, we use <i>P<sub>j</sub></i> to denote the other process; that is, <span class="inlinecode">j</span> equals 1 − <span class="inlinecode">i</span>.</p>
+        <p class="text-indent">Peterson's solution requires the two processes to share two data items:</p>
+        <div class="code">
+        <pre class="codesnippet">int turn;
+        boolean flag[2];
+        </pre>
+        </div>
+        <p class="text">The variable <span class="inlinecode">turn</span> indicates whose turn it is to enter its critical section. That is, if <span class="inlinecode">turn == i</span>, then process <i>P<sub>i</sub></i> is allowed to execute in its critical section. The <span class="inlinecode">flag</span> array is used to indicate if a process is ready to enter its critical section. For example, if <span class="inlinecode">flag[i]</span> is <span class="inlinecode">true</span>, this value indicates that <i>P<sub>i</sub></i> is ready to enter its critical section. With an explanation of these data structures complete, we are now ready to describe the algorithm shown in <a href="12_chapter05.html#fig5.2">Figure 5.2</a>.</p>
+        <p class="text-indent">To enter the critical section, process <i>P<sub>i</sub></i> first sets <span class="inlinecode">flag[i]</span> to be <span class="inlinecode">true</span> and then sets <span class="inlinecode">turn</span> to the value <span class="inlinecode">j</span>, thereby asserting that if the other process wishes to enter the critical section, it can do so. If both processes try to enter at the same time, <span class="inlinecode">turn</span> will be set to both <span class="inlinecode">i</span> and <span class="inlinecode">j</span> at roughly the same time. Only one of these assignments will last; the other will occur but will be overwritten immediately. The eventual value of <span class="inlinecode">turn</span> determines which of the two processes is allowed to enter its critical section first.</p>
+        <p class="text-indent">We now prove that this solution is correct. We need to show that:</p>
+        <ol style="list-style-type:decimal;">
+        <li>Mutual exclusion is preserved.</li>
+        <li>The progress requirement is satisfied.</li>
+        <li>The bounded-waiting requirement is met.</li>
+        </ol>
+        <p class="text-indent">To prove property 1, we note that each <i>P<sub>i</sub></i> enters its critical section only if either <span class="inlinecode">flag[j]</span> == <span class="inlinecode">false</span> or <span class="inlinecode">turn</span> == <span class="inlinecode">i</span>. Also note that, if both processes can be executing in their critical sections at the same time, then <span class="inlinecode">flag[0]</span> == <span class="inlinecode">flag[1]</span> == <span class="inlinecode">true</span>. These two observations imply that <i>P</i><sub>0</sub> and <i>P</i><sub>1</sub> could not have successfully executed their <span class="inlinecode">while</span> statements at about the same time, since the <a id="page_209"></a>value of <span class="inlinecode">turn</span> can be either 0 or 1 but cannot be both. Hence, one of the processes—say, <i>P<sub>j</sub></i>—must have successfully executed the <span class="inlinecode">w</span>hile statement, whereas <i>P<sub>i</sub></i> had to execute at least one additional statement (“<span class="inlinecode">turn</span> == <span class="inlinecode">j</span>”). However, at that time, <span class="inlinecode">flag[j]</span> == <span class="inlinecode">true</span> and <span class="inlinecode">turn</span> == <span class="inlinecode">j</span>, and this condition will persist as long as <i>P<sub>j</sub></i> is in its critical section; as a result, mutual exclusion is preserved.</p>
+        <p class="text-indent">To prove properties 2 and 3, we note that a process <i>P<sub>i</sub></i> can be prevented from entering the critical section only if it is stuck in the <span class="inlinecode">w</span>hile loop with the condition <span class="inlinecode">flag[j]</span> == <span class="inlinecode">true</span> and <span class="inlinecode">turn</span> == <span class="inlinecode">j</span>; this loop is the only one possible. If <i>P<sub>j</sub></i> is not ready to enter the critical section, then <span class="inlinecode">flag[j]</span> == <span class="inlinecode">false</span>, and <i>P<sub>i</sub></i> can enter its critical section. If <i>P<sub>j</sub></i> has set <span class="inlinecode">flag[j]</span> to <span class="inlinecode">true</span> and is also executing in its <span class="inlinecode">while</span> statement, then either <span class="inlinecode">turn</span> == <span class="inlinecode">i</span> or <span class="inlinecode">turn</span> == <span class="inlinecode">j</span>. If <span class="inlinecode">turn</span> == <span class="inlinecode">i</span>, then <i>P<sub>i</sub></i> will enter the critical section. If <span class="inlinecode">turn</span> == <span class="inlinecode">j</span>, then <i>P<sub>j</sub></i> will enter the critical section. However, once <i>P<sub>j</sub></i> exits its critical section, it will reset <span class="inlinecode">flag[j]</span> to <span class="inlinecode">false</span>, allowing <i>P<sub>i</sub></i> to enter its critical section. If <i>P<sub>j</sub></i> resets <span class="inlinecode">flag[j]</span> to <span class="inlinecode">true</span>, it must also set <span class="inlinecode">turn</span> to <span class="inlinecode">i</span>. Thus, since <i>P<sub>i</sub></i> does not change the value of the variable <span class="inlinecode">turn</span> while executing the <span class="inlinecode">while</span> statement, <i>P<sub>i</sub></i> will enter the critical section (progress) after at most one entry by <i>P<sub>j</sub></i> (bounded waiting).</p>
+        <h2 class="subtitle"><a id="sec5.4"></a>5.4 Synchronization Hardware</h2>
+        <p class="text">We have just described one software-based solution to the critical-section problem. However, as mentioned, software-based solutions such as Peterson's are not guaranteed to work on modern computer architectures. In the following discussions, we explore several more solutions to the critical-section problem using techniques ranging from hardware to software-based APIs available to both kernel developers and application programmers. All these solutions are based on the premise of <b>locking</b> —that is, protecting critical regions through the use of locks. As we shall see, the designs of such locks can be quite sophisticated.</p>
+        <p class="text-indent">We start by presenting some simple hardware instructions that are available on many systems and showing how they can be used effectively in solving the critical-section problem. Hardware features can make any programming task easier and improve system efficiency.</p>
+        <p class="text-indent">The critical-section problem could be solved simply in a single-processor environment if we could prevent interrupts from occurring while a shared variable was being modified. In this way, we could be sure that the current sequence of instructions would be allowed to execute in order without preemption. No other instructions would be run, so no unexpected modifications could be made to the shared variable. This is often the approach taken by nonpreemptive kernels.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f003.jpg" alt="image" class="imgepub" width="395" height="126"></p>
+        <p class="caption"><a id="fig5.3"></a><b>Figure 5.3</b> The definition of the <span class="inlinecode">test_and_set()</span> instruction.</p>
+        <p class="center"><a id="page_210"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f004.jpg" alt="image" class="imgepub" width="296" height="211"></p>
+        <p class="caption"><a id="fig5.4"></a><b>Figure 5.4</b> Mutual-exclusion implementation with <span class="inlinecode">test_and_set()</span>.</p>
+        <p class="text-indent">Unfortunately, this solution is not as feasible in a multiprocessor environment. Disabling interrupts on a multiprocessor can be time consuming, since the message is passed to all the processors. This message passing delays entry into each critical section, and system efficiency decreases. Also consider the effect on a system's clock if the clock is kept updated by interrupts.</p>
+        <p class="text-indent">Many modern computer systems therefore provide special hardware instructions that allow us either to test and modify the content of a word or to swap the contents of two words <b>atomically</b>—that is, as one uninterruptible unit. We can use these special instructions to solve the critical-section problem in a relatively simple manner. Rather than discussing one specific instruction for one specific machine, we abstract the main concepts behind these types of instructions by describing the <span class="inlinecode">test_and_set()</span> and <span class="inlinecode">compare_and_swap()</span> instructions.</p>
+        <p class="text-indent">The <span class="inlinecode">test_and_set()</span> instruction can be defined as shown in <a href="12_chapter05.html#fig5.3">Figure 5.3</a>. The important characteristic of this instruction is that it is executed atomically. Thus, if two <span class="inlinecode">test_and_set()</span> instructions are executed simultaneously (each on a different CPU), they will be executed sequentially in some arbitrary order. If the machine supports the <span class="inlinecode">test_and_set()</span> instruction, then we can implement mutual exclusion by declaring a boolean variable <span class="inlinecode">lock</span>, initialized to <span class="inlinecode">false</span>. The structure of process <i>P<sub>i</sub></i> is shown in <a href="12_chapter05.html#fig5.4">Figure 5.4</a>.</p>
+        <p class="text-indent">The <span class="inlinecode">compare_and_swap()</span> instruction, in contrast to the <span class="inlinecode">test_and_set()</span> instruction, operates on three operands; it is defined in <a href="12_chapter05.html#fig5.5">Figure 5.5</a>. The operand <span class="inlinecode">value</span> is set to <span class="inlinecode">new_value</span> only if the expression <span class="inlinecode">(*value == exected)</span> is true. Regardless, <span class="inlinecode">compare_and_swap()</span> always returns the original value of the variable <span class="inlinecode">value</span>. Like the <span class="inlinecode">test_and_set()</span> instruction, <span class="inlinecode">compare_and_swap()</span> is <a id="page_211"></a>executed atomically. Mutual exclusion can be provided as follows: a global variable (<span class="inlinecode">lock</span>) is declared and is initialized to 0. The first process that invokes <span class="inlinecode">compare_and_swap()</span> will set <span class="inlinecode">lock</span> to 1. It will then enter its critical section, because the original value of <span class="inlinecode">lock</span> was equal to the expected value of 0. Subsequent calls to <span class="inlinecode">compare_and_swap()</span> will not succeed, because <span class="inlinecode">lock</span> now is not equal to the expected value of 0. When a process exits its critical section, it sets <span class="inlinecode">lock</span> back to 0, which allows another process to enter its critical section. The structure of process <i>P<sub>i</sub></i> is shown in <a href="12_chapter05.html#fig5.6">Figure 5.6</a>.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f005.jpg" alt="image" class="imgepub" width="638" height="169"></p>
+        <p class="caption"><a id="fig5.5"></a><b>Figure 5.5</b> The definition of the <span class="inlinecode">compare_and_swap()</span> instruction.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f006.jpg" alt="image" class="imgepub" width="451" height="211"></p>
+        <p class="caption"><a id="fig5.6"></a><b>Figure 5.6</b> Mutual-exclusion implementation with the <span class="inlinecode">compare_and_swap()</span> instruction.</p>
+        <p class="text-indent">Although these algorithms satisfy the mutual-exclusion requirement, they do not satisfy the bounded-waiting requirement. In <a href="12_chapter05.html#fig5.7">Figure 5.7</a>, we present another algorithm using the <span class="inlinecode">test_and_set()</span> instruction that satisfies all the critical-section requirements. The common data structures are</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f007.jpg" alt="image" class="imgepub" width="343" height="425"></p>
+        <p class="caption"><a id="fig5.7"></a><b>Figure 5.7</b> Bounded-waiting mutual exclusion with <span class="inlinecode">test_and_set()</span>.</p>
+        <div class="code">
+        <pre class="codesnippet"><a id="page_212"></a>boolean waiting[n];
+        boolean lock;
+        </pre>
+        </div>
+        <p class="text">These data structures are initialized to <span class="inlinecode">false</span>. To prove that the mutual-exclusion requirement is met, we note that process <i>P<sub>i</sub></i> can enter its critical section only if either <span class="inlinecode">waiting[i]</span> == <span class="inlinecode">false</span> or <span class="inlinecode">key</span> == <span class="inlinecode">false</span>. The value of <span class="inlinecode">key</span> can become <span class="inlinecode">false</span> only if the <span class="inlinecode">test_and_set()</span> is executed. The first process to execute the <span class="inlinecode">test_and_set()</span> will find <span class="inlinecode">key</span> == <span class="inlinecode">false</span>; all others must wait. The variable <span class="inlinecode">waiting[i]</span> can become <span class="inlinecode">false</span> only if another process leaves its critical section; only one <span class="inlinecode">waiting[i]</span> is set to <span class="inlinecode">false</span>, maintaining the mutual-exclusion requirement.</p>
+        <p class="text-indent">To prove that the progress requirement is met, we note that the arguments presented for mutual exclusion also apply here, since a process exiting the critical section either sets <span class="inlinecode">lock</span> to <span class="inlinecode">false</span> or sets <span class="inlinecode">waiting[j]</span> to <span class="inlinecode">false</span>. Both allow a process that is waiting to enter its critical section to proceed.</p>
+        <p class="text-indent">To prove that the bounded-waiting requirement is met, we note that, when a process leaves its critical section, it scans the array <span class="inlinecode">waiting</span> in the cyclic ordering (<i>i</i> + 1, <i>i</i> + 2, …, <i>n</i> − 1, 0, …, <i>i</i> − 1). It designates the first process in this ordering that is in the entry section (<span class="inlinecode">waiting[j]</span> == <span class="inlinecode">true</span>) as the next one to enter the critical section. Any process waiting to enter its critical section will thus do so within <i>n</i> − 1 turns.</p>
+        <p class="text-indent">Details describing the implementation of the atomic <span class="inlinecode">test_and_set()</span> and <span class="inlinecode">compare_and_swap()</span> instructions are discussed more fully in books on computer architecture.</p>
+        <h2 class="subtitle"><a id="sec5.5"></a>5.5 Mutex Locks</h2>
+        <p class="text">The hardware-based solutions to the critical-section problem presented in <a href="12_chapter05.html#sec5.4">Section 5.4</a> are complicated as well as generally inaccessible to application programmers. Instead, operating-systems designers build software tools to solve the critical-section problem. The simplest of these tools is the <b>mutex lock</b>. (In fact, the term <b><i>mutex</i></b> is short for <b><i>mut</i></b>ual <b><i>ex</i></b>clusion.) We use the mutex lock to protect critical regions and thus prevent race conditions. That is, a process must acquire the lock before entering a critical section; it releases the lock when it exits the critical section. The <span class="inlinecode">acquire()</span> function acquires the lock, and the <span class="inlinecode">release()</span> function releases the lock, as illustrated in <a href="12_chapter05.html#fig5.8">Figure 5.8</a>.</p>
+        <p class="text-indent">A mutex lock has a boolean variable <span class="inlinecode">available</span> whose value indicates if the lock is available or not. If the lock is available, a call to <span class="inlinecode">acquire()</span> succeeds, and the lock is then considered unavailable. A process that attempts to acquire an unavailable lock is blocked until the lock is released.</p>
+        <p class="text-indent">The definition of <span class="inlinecode">acquire()</span> is as follows:</p>
+        <p class="center"><a id="page_213"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f008.jpg" alt="image" class="imgepub" width="236" height="352"></p>
+        <p class="caption"><a id="fig5.8"></a><b>Figure 5.8</b> Solution to the critical-section problem using mutex locks.</p>
+        <p class="text">The definition of <span class="inlinecode">release()</span> is as follows:</p>
+        <div class="code">
+        <pre class="codesnippet">release() {
+          available = true;
+        }
+        </pre>
+        </div>
+        <p class="text-indent">Calls to either <span class="inlinecode">acquire()</span> or <span class="inlinecode">release()</span> must be performed atomically. Thus, mutex locks are often implemented using one of the hardware mechanisms described in <a href="12_chapter05.html#sec5.4">Section 5.4</a>, and we leave the description of this technique as an exercise.</p>
+        <p class="text-indent">The main disadvantage of the implementation given here is that it requires <b>busy waiting</b>. While a process is in its critical section, any other process that tries to enter its critical section must loop continuously in the call to <span class="inlinecode">acquire()</span>. In fact, this type of mutex lock is also called a <b>spinlock</b> because the process “spins” while waiting for the lock to become available. (We see the same issue with the code examples illustrating the <span class="inlinecode">test_and_set()</span> instruction and the <span class="inlinecode">compare_and_swap()</span> instruction.) This continual looping is clearly a problem in a real multiprogramming system, where a single CPU is shared among many processes. Busy waiting wastes CPU cycles that some other process might be able to use productively.</p>
+        <p class="text-indent">Spinlocks do have an advantage, however, in that no context switch is required when a process must wait on a lock, and a context switch may take considerable time. Thus, when locks are expected to be held for short times, spinlocks are useful. They are often employed on multiprocessor systems where one thread can “spin” on one processor while another thread performs its critical section on another processor.</p>
+        <p class="text-indent">Later in this chapter (<a href="12_chapter05.html#sec5.7">Section 5.7</a>), we examine how mutex locks can be used to solve classical synchronization problems. We also discuss how these locks are used in several operating systems, as well as in Pthreads.</p>
+        <h2 class="subtitle"><a id="sec5.6"></a>5.6 Semaphores</h2>
+        <p class="text">Mutex locks, as we mentioned earlier, are generally considered the simplest of synchronization tools. In this section, we examine a more robust tool that can <a id="page_214"></a>behave similarly to a mutex lock but can also provide more sophisticated ways for processes to synchronize their activities.</p>
+        <p class="text-indent">A <b>semaphore</b> <span class="inlinecode">S</span> is an integer variable that, apart from initialization, is accessed only through two standard atomic operations: <span class="inlinecode">wait()</span> and <span class="inlinecode">signal()</span>. The <span class="inlinecode">wait()</span> operation was originally termed <span class="inlinecode">P</span> (from the Dutch <b><i>proberen</i>,</b> “to test”); <span class="inlinecode">signal()</span> was originally called <span class="inlinecode">V</span> (from <b><i>verhogen</i>,</b> “to increment”). The definition of <span class="inlinecode">wait()</span> is as follows:</p>
+        <div class="code">
+        <pre class="codesnippet">wait(S){
+           while (S &lt;= 0)
+             ; // busy wait
+           S--;
+        }
+        </pre>
+        </div>
+        <p class="text">The definition of <span class="inlinecode">signal()</span> is as follows:</p>
+        <div class="code">
+        <pre class="codesnippet">signal(S) {
+           S++;
+        }
+        </pre>
+        </div>
+        <p class="text-indent">All modifications to the integer value of the semaphore in the <span class="inlinecode">wait()</span> and <span class="inlinecode">signal()</span> operations must be executed indivisibly. That is, when one process modifies the semaphore value, no other process can simultaneously modify that same semaphore value. In addition, in the case of <span class="inlinecode">wait(S)</span>, the testing of the integer value of <span class="inlinecode">S</span> (<span class="inlinecode">S</span> ≤ 0), as well as its possible modification (<span class="inlinecode">S−−</span>), must be executed without interruption. We shall see how these operations can be implemented in <a href="12_chapter05.html#sec5.6.2">Section 5.6.2</a>. First, let's see how semaphores can be used.</p>
+        <h3 class="subtitle"><a id="sec5.6.1"></a>5.6.1 Semaphore Usage</h3>
+        <p class="text">Operating systems often distinguish between counting and binary semaphores. The value of a <b>counting semaphore</b> can range over an unrestricted domain. The value of a <b>binary semaphore</b> can range only between 0 and 1. Thus, binary semaphores behave similarly to mutex locks. In fact, on systems that do not provide mutex locks, binary semaphores can be used instead for providing mutual exclusion.</p>
+        <p class="text-indent">Counting semaphores can be used to control access to a given resource consisting of a finite number of instances. The semaphore is initialized to the number of resources available. Each process that wishes to use a resource performs a <span class="inlinecode">wait()</span> operation on the semaphore (thereby decrementing the count). When a process releases a resource, it performs a <span class="inlinecode">signal()</span> operation (incrementing the count). When the count for the semaphore goes to 0, all resources are being used. After that, processes that wish to use a resource will block until the count becomes greater than 0.</p>
+        <p class="text-indent">We can also use semaphores to solve various synchronization problems. For example, consider two concurrently running processes: <i>P</i><sub>1</sub> with a statement <i>S</i><sub>1</sub> and <i>P</i><sub>2</sub> with a statement <i>S</i><sub>2</sub>. Suppose we require that <i>S</i><sub>2</sub> be executed only after <i>S</i><sub>1</sub> has completed. We can implement this scheme readily by letting <i>P</i><sub>1</sub> and <i>P</i><sub>2</sub> share a common semaphore <span class="inlinecode">synch</span>, initialized to 0. In process <i>P</i><sub>1</sub>, we insert the statements</p>
+        <div class="code">
+        <span class="codesnippet">
+        <a id="page_215"></a><i>S</i><sub>1</sub>;
+        signal(synch);
+        </span>
+        </div>
+        <p class="text">In process <i>P</i><sub>2</sub>, we insert the statements</p>
+        <div class="code">
+        <span class="codesnippet">
+        wait(synch);
+        <i>S</i><sub>2</sub>;
+        </span>
+        </div>
+        <p class="text">Because <span class="inlinecode">synch</span> is initialized to 0, <i>P</i><sub>2</sub> will execute <i>S</i><sub>2</sub> only after <i>P</i><sub>1</sub> has invoked <span class="inlinecode">signal(synch)</span>, which is after statement <i>S</i><sub>1</sub> has been executed.</p>
+        <h3 class="subtitle"><a id="sec5.6.2"></a>5.6.2 Semaphore Implementation</h3>
+        <p class="text">Recall that the implementation of mutex locks discussed in <a href="12_chapter05.html#sec5.5">Section 5.5</a> suffers from busy waiting. The definitions of the <span class="inlinecode">wait()</span> and <span class="inlinecode">signal()</span> semaphore operations just described present the same problem. To overcome the need for busy waiting, we can modify the definition of the <span class="inlinecode">wait()</span> and <span class="inlinecode">signal()</span> operations as follows: When a process executes the <span class="inlinecode">wait()</span> operation and finds that the semaphore value is not positive, it must wait. However, rather than engaging in busy waiting, the process can block itself. The block operation places a process into a waiting queue associated with the semaphore, and the state of the process is switched to the waiting state. Then control is transferred to the CPU scheduler, which selects another process to execute.</p>
+        <p class="text-indent">A process that is blocked, waiting on a semaphore <span class="inlinecode">S</span>, should be restarted when some other process executes a <span class="inlinecode">signal()</span> operation. The process is restarted by a <span class="inlinecode">wakeup()</span> operation, which changes the process from the waiting state to the ready state. The process is then placed in the ready queue. (The CPU may or may not be switched from the running process to the newly ready process, depending on the CPU-scheduling algorithm.)</p>
+        <p class="text-indent">To implement semaphores under this definition, we define a semaphore as follows:</p>
+        <div class="code">
+        <pre class="codesnippet">    typedef struct {
+                int value;
+                struct process *list;
+            } semaphore;
+        </pre>
+        </div>
+        <p class="text">Each semaphore has an integer <span class="inlinecode">value</span> and a list of processes <span class="inlinecode">list</span>. When a process must wait on a semaphore, it is added to the list of processes. A <span class="inlinecode">signal()</span> operation removes one process from the list of waiting processes and awakens that process.</p>
+        <p class="text-indent">Now, the <span class="inlinecode">wait()</span> semaphore operation can be defined as</p>
+        <div class="code">
+        <pre class="codesnippet">    wait(semaphore *S) {
+                   S-&gt;value--;
+                   if (S-&gt;value &lt; 0) {
+                          <span class="inlinecodenormal">add this process to</span> S-&gt;list;
+                          block();
+                   }
+            }
+        </pre>
+        </div>
+        <p class="text"><a id="page_216"></a>and the <span class="inlinecode">signal()</span> semaphore operation can be defined as</p>
+        <div class="code">
+        <pre class="codesnippet">   signal(semaphore *S) {
+                    S-&gt;value++;
+                    if (S-&gt;value &lt;= 0) {
+                           <span class="inlinecodenormal">remove a process <i>P</i> from</span> S-&gt;list;
+                           wakeup(P);
+                    }
+           }
+        </pre>
+        </div>
+        <p class="text">The <span class="inlinecode">block()</span> operation suspends the process that invokes it. The <span class="inlinecode">wakeup(P)</span> operation resumes the execution of a blocked process <span class="inlinecode">P</span>. These two operations are provided by the operating system as basic system calls.</p>
+        <p class="text-indent">Note that in this implementation, semaphore values may be negative, whereas semaphore values are never negative under the classical definition of semaphores with busy waiting. If a semaphore value is negative, its magnitude is the number of processes waiting on that semaphore. This fact results from switching the order of the decrement and the test in the implementation of the <span class="inlinecode">wait()</span> operation.</p>
+        <p class="text-indent">The list of waiting processes can be easily implemented by a link field in each process control block (PCB). Each semaphore contains an integer value and a pointer to a list of PCBs. One way to add and remove processes from the list so as to ensure bounded waiting is to use a FIFO queue, where the semaphore contains both head and tail pointers to the queue. In general, however, the list can use any queueing strategy. Correct usage of semaphores does not depend on a particular queueing strategy for the semaphore lists.</p>
+        <p class="text-indent">It is critical that semaphore operations be executed atomically. We must guarantee that no two processes can execute <span class="inlinecode">wait()</span> and <span class="inlinecode">signal()</span> operations on the same semaphore at the same time. This is a critical-section problem; and in a single-processor environment, we can solve it by simply inhibiting interrupts during the time the <span class="inlinecode">wait()</span> and <span class="inlinecode">signal()</span> operations are executing. This scheme works in a single-processor environment because, once interrupts are inhibited, instructions from different processes cannot be interleaved. Only the currently running process executes until interrupts are reenabled and the scheduler can regain control.</p>
+        <p class="text-indent">In a multiprocessor environment, interrupts must be disabled on every processor. Otherwise, instructions from different processes (running on different processors) may be interleaved in some arbitrary way. Disabling interrupts on every processor can be a difficult task and furthermore can seriously diminish performance. Therefore, SMP systems must provide alternative locking techniques—such as <span class="inlinecode">compare_and_swap()</span> or spinlocks—to ensure that <span class="inlinecode">wait()</span> and <span class="inlinecode">signal()</span> are performed atomically.</p>
+        <p class="text-indent">It is important to admit that we have not completely eliminated busy waiting with this definition of the <span class="inlinecode">wait()</span> and <span class="inlinecode">signal()</span> operations. Rather, we have moved busy waiting from the entry section to the critical sections of application programs. Furthermore, we have limited busy waiting to the critical sections of the <span class="inlinecode">wait()</span> and <span class="inlinecode">signal()</span> operations, and these sections are short (if properly coded, they should be no more than about ten instructions). Thus, the critical section is almost never occupied, and busy waiting occurs <a id="page_217"></a>rarely, and then for only a short time. An entirely different situation exists with application programs whose critical sections may be long (minutes or even hours) or may almost always be occupied. In such cases, busy waiting is extremely inefficient.</p>
+        <h3 class="subtitle"><a id="sec5.6.3"></a>5.6.3 Deadlocks and Starvation</h3>
+        <p class="text">The implementation of a semaphore with a waiting queue may result in a situation where two or more processes are waiting indefinitely for an event that can be caused only by one of the waiting processes. The event in question is the execution of a <span class="inlinecode">signal()</span> operation. When such a state is reached, these processes are said to be <b>deadlocked</b>.</p>
+        <p class="text-indent">To illustrate this, consider a system consisting of two processes, <i>P</i><sub>0</sub> and <i>P</i><sub>1</sub>, each accessing two semaphores, <span class="inlinecode">S</span> and <span class="inlinecode">Q</span>, set to the value 1:</p>
+        <div class="code">
+        <span class="codesnippet">
+             <span class="inlinecodenormal"><i>P</i><sub>0</sub></span>             <span class="inlinecodenormal"><i>P</i><sub>1</sub></span>
+        
+        wait(S);       wait(Q);
+        wait(Q);       wait(S);
+             .              .
+             .              .
+             .              .
+        signal(S);     signal(Q);
+        signal(Q);     signal(S);
+        </span>
+        </div>
+        <p class="text-indent">Suppose that <i>P</i><sub>0</sub> executes <span class="inlinecode">wait(S)</span> and then <i>P</i><sub>1</sub> executes <span class="inlinecode">wait(Q)</span>. When <i>P</i><sub>0</sub> executes <span class="inlinecode">wait(Q)</span>, it must wait until <i>P</i><sub>1</sub> executes <span class="inlinecode">signal(Q)</span>. Similarly, when <i>P</i><sub>1</sub> executes <span class="inlinecode">wait(S)</span>, it must wait until <i>P</i><sub>0</sub> executes <span class="inlinecode">signal(S)</span>. Since these <span class="inlinecode">signal()</span> operations cannot be executed, <i>P</i><sub>0</sub> and <i>P</i><sub>1</sub> are deadlocked.</p>
+        <p class="text-indent">We say that a set of processes is in a deadlocked state when every process in the set is waiting for an event that can be caused only by another process in the set. The events with which we are mainly concerned here are resource acquisition and release. Other types of events may result in deadlocks, as we show in <a href="14_chapter07.html#chap7">Chapter 7</a>. In that chapter, we describe various mechanisms for dealing with the deadlock problem.</p>
+        <p class="text-indent">Another problem related to deadlocks is <b>indefinite blocking</b> or <b>starvation</b>, a situation in which processes wait indefinitely within the semaphore. Indefinite blocking may occur if we remove processes from the list associated with a semaphore in LIFO (last-in, first-out) order.</p>
+        <h3 class="subtitle"><a id="sec5.6.4"></a>5.6.4 Priority Inversion</h3>
+        <p class="text">A scheduling challenge arises when a higher-priority process needs to read or modify kernel data that are currently being accessed by a lower-priority process—or a chain of lower-priority processes. Since kernel data are typically protected with a lock, the higher-priority process will have to wait for a lower-priority one to finish with the resource. The situation becomes more complicated if the lower-priority process is preempted in favor of another process with a higher priority.</p>
+        <p class="text-indent">As an example, assume we have three processes—<i>L</i>, <i>M</i>, and <i>H</i>—whose priorities follow the order <i>L &lt; M &lt; H</i>. Assume that process <i>H</i> requires <a id="page_218"></a>resource <i>R</i>, which is currently being accessed by process <i>L</i>. Ordinarily, process <i>H</i> would wait for <i>L</i> to finish using resource <i>R</i>. However, now suppose that process <i>M</i> becomes runnable, thereby preempting process <i>L</i>. Indirectly, a process with a lower priority—process <i>M</i>—has affected how long process <i>H</i> must wait for <i>L</i> to relinquish resource <i>R</i>.</p>
+        <div class="bgbox">
+        <p class="boxtitle"><i>PRIORITY INVERSION AND THE MARS PATHFINDER</i></p>
+        <p class="text">Priority inversion can be more than a scheduling inconvenience. On systems with tight time constraints—such as real-time systems—priority inversion can cause a process to take longer than it should to accomplish a task. When that happens, other failures can cascade, resulting in system failure.</p>
+        <p class="text-indent">Consider the Mars Pathfinder, a NASA space probe that landed a robot, the Sojourner rover, on Mars in 1997 to conduct experiments. Shortly after the Sojourner began operating, it started to experience frequent computer resets. Each reset reinitialized all hardware and software, including communications. If the problem had not been solved, the Sojourner would have failed in its mission.</p>
+        <p class="text-indent">The problem was caused by the fact that one high-priority task, “bc_dist,” was taking longer than expected to complete its work. This task was being forced to wait for a shared resource that was held by the lower-priority “ASI/MET” task, which in turn was preempted by multiple medium-priority tasks. The “bc_dist” task would stall waiting for the shared resource, and ultimately the “bc_sched” task would discover the problem and perform the reset. The Sojourner was suffering from a typical case of priority inversion.</p>
+        <p class="text-indent">The operating system on the Sojourner was the VxWorks real-time operating system, which had a global variable to enable priority inheritance on all semaphores. After testing, the variable was set on the Sojourner (on Mars!), and the problem was solved.</p>
+        <p class="text-indent">A full description of the problem, its detection, and its solution was written by the software team lead and is available at <a href="http://research.microsoft.com/en-us/um/people/mbj/mars_pathfinder/authoritative_account.html">http://research.microsoft.com/en-us/um/people/mbj/mars_pathfinder/authoritative_account.html</a>.</p>
+        </div>
+        <p class="text-indent">This problem is known as <b>priority inversion</b>. It occurs only in systems with more than two priorities, so one solution is to have only two priorities. That is insufficient for most general-purpose operating systems, however. Typically these systems solve the problem by implementing a <b>priority-inheritance protocol</b>. According to this protocol, all processes that are accessing resources needed by a higher-priority process inherit the higher priority until they are finished with the resources in question. When they are finished, their priorities revert to their original values. In the example above, a priority-inheritance protocol would allow process <i>L</i> to temporarily inherit the priority of process <i>H</i>, thereby preventing process <i>M</i> from preempting its execution. When process <i>L</i> had finished using resource <i>R</i>, it would relinquish its inherited priority from <i>H</i> and assume its original priority. Because resource <i>R</i> would now be available, process <i>H</i>—not <i>M</i>—would run next.</p>
+        <p class="center"><a id="page_219"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f009.jpg" alt="image" class="imgepub" width="414" height="254"></p>
+        <p class="caption"><a id="fig5.9"></a><b>Figure 5.9</b> The structure of the producer process.</p>
+        <h2 class="subtitle"><a id="sec5.7"></a>5.7 Classic Problems of Synchronization</h2>
+        <p class="text">In this section, we present a number of synchronization problems as examples of a large class of concurrency-control problems. These problems are used for testing nearly every newly proposed synchronization scheme. In our solutions to the problems, we use semaphores for synchronization, since that is the traditional way to present such solutions. However, actual implementations of these solutions could use mutex locks in place of binary semaphores.</p>
+        <h3 class="subtitle"><a id="sec5.7.1"></a>5.7.1 The Bounded-Buffer Problem</h3>
+        <p class="text">The <b><i>bounded-buffer problem</i></b> was introduced in <a href="12_chapter05.html#sec5.1">Section 5.1</a>; it is commonly used to illustrate the power of synchronization primitives. Here, we present a general structure of this scheme without committing ourselves to any particular implementation. We provide a related programming project in the exercises at the end of the chapter.</p>
+        <p class="text-indent">In our problem, the producer and consumer processes share the following data structures:</p>
+        <div class="code">
+        <pre class="codesnippet">int n;
+        semaphore mutex = 1;
+        semaphore empty = n;
+        semaphore full = 0
+        </pre>
+        </div>
+        <p class="text">We assume that the pool consists of <span class="inlinecode">n</span> buffers, each capable of holding one item. The <span class="inlinecode">mutex</span> semaphore provides mutual exclusion for accesses to the buffer pool and is initialized to the value 1. The <span class="inlinecode">empty</span> and <span class="inlinecode">full</span> semaphores count the number of empty and full buffers. The semaphore <span class="inlinecode">empty</span> is initialized to the value <span class="inlinecode">n</span>; the semaphore <span class="inlinecode">full</span> is initialized to the value 0.</p>
+        <p class="text-indent">The code for the producer process is shown in <a href="12_chapter05.html#fig5.9">Figure 5.9</a>, and the code for the consumer process is shown in <a href="12_chapter05.html#fig5.10">Figure 5.10</a>. Note the symmetry between the producer and the consumer. We can interpret this code as the producer producing full buffers for the consumer or as the consumer producing empty buffers for the producer.</p>
+        <p class="center"><a id="page_220"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f010.jpg" alt="image" class="imgepub" width="527" height="254"></p>
+        <p class="caption"><a id="fig5.10"></a><b>Figure 5.10</b> The structure of the consumer process.</p>
+        <h3 class="subtitle"><a id="sec5.7.2"></a>5.7.2 The Readers–Writers Problem</h3>
+        <p class="text">Suppose that a database is to be shared among several concurrent processes. Some of these processes may want only to read the database, whereas others may want to update (that is, to read and write) the database. We distinguish between these two types of processes by referring to the former as <b><i>readers</i></b> and to the latter as <b><i>writers</i></b>. Obviously, if two readers access the shared data simultaneously, no adverse effects will result. However, if a writer and some other process (either a reader or a writer) access the database simultaneously, chaos may ensue.</p>
+        <p class="text-indent">To ensure that these difficulties do not arise, we require that the writers have exclusive access to the shared database while writing to the database. This synchronization problem is referred to as the <b>readers–writers problem</b>. Since it was originally stated, it has been used to test nearly every new synchronization primitive. The readers–writers problem has several variations, all involving priorities. The simplest one, referred to as the <b><i>first</i></b> readers–writers problem, requires that no reader be kept waiting unless a writer has already obtained permission to use the shared object. In other words, no reader should wait for other readers to finish simply because a writer is waiting. The <b><i>second</i></b> readers–writers problem requires that, once a writer is ready, that writer perform its write as soon as possible. In other words, if a writer is waiting to access the object, no new readers may start reading.</p>
+        <p class="text-indent">A solution to either problem may result in starvation. In the first case, writers may starve; in the second case, readers may starve. For this reason, other variants of the problem have been proposed. Next, we present a solution to the first readers–writers problem. See the bibliographical notes at the end of the chapter for references describing starvation-free solutions to the second readers–writers problem.</p>
+        <p class="text-indent">In the solution to the first readers–writers problem, the reader processes share the following data structures:</p>
+        <div class="code">
+        <pre class="codesnippet">semaphore rw_mutex = 1;
+        semaphore mutex = 1;
+        int read_count = 0;
+        </pre>
+        </div>
+        <p class="text-indent">The semaphores <span class="inlinecode">mutex</span> and <span class="inlinecode">rw_mutex</span> are initialized to 1; <span class="inlinecode">read_count</span> is initialized to 0. The semaphore <span class="inlinecode">rw_mutex</span> is common to both reader and writer <a id="page_221"></a>processes. The <span class="inlinecode">mutex</span> semaphore is used to ensure mutual exclusion when the variable <span class="inlinecode">read_count</span> is updated. The <span class="inlinecode">read_count</span> variable keeps track of how many processes are currently reading the object. The semaphore <span class="inlinecode">rw_mutex</span> functions as a mutual exclusion semaphore for the writers. It is also used by the first or last reader that enters or exits the critical section. It is not used by readers who enter or exit while other readers are in their critical sections.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f011.jpg" alt="image" class="imgepub" width="294" height="147"></p>
+        <p class="caption"><a id="fig5.11"></a><b>Figure 5.11</b> The structure of a writer process.</p>
+        <p class="text-indent">The code for a writer process is shown in <a href="12_chapter05.html#fig5.11">Figure 5.11</a>; the code for a reader process is shown in <a href="12_chapter05.html#fig5.12">Figure 5.12</a>. Note that, if a writer is in the critical section and <i>n</i> readers are waiting, then one reader is queued on <span class="inlinecode">rw_mutex</span>, and <i>n</i> − 1 readers are queued on <span class="inlinecode">mutex</span>. Also observe that, when a writer executes <span class="inlinecode">signal(rw_mutex)</span>, we may resume the execution of either the waiting readers or a single waiting writer. The selection is made by the scheduler.</p>
+        <p class="text-indent">The readers–writers problem and its solutions have been generalized to provide <b>reader–writer</b> locks on some systems. Acquiring a reader–writer lock requires specifying the mode of the lock: either <i>read</i> or <i>write</i> access. When a process wishes only to read shared data, it requests the reader–writer lock in read mode. A process wishing to modify the shared data must request the lock in write mode. Multiple processes are permitted to concurrently acquire a reader–writer lock in read mode, but only one process may acquire the lock for writing, as exclusive access is required for writers.</p>
+        <p class="text-indent">Reader–writer locks are most useful in the following situations:</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f012.jpg" alt="image" class="imgepub" width="294" height="318"></p>
+        <p class="caption"><a id="fig5.12"></a><b>Figure 5.12</b> The structure of a reader process.</p>
+        <p class="center"><a id="page_222"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f013.jpg" alt="image" class="imgepub" width="263" height="253"></p>
+        <p class="caption"><a id="fig5.13"></a><b>Figure 5.13</b> The situation of the dining philosophers.</p>
+        <ul style="list-style-type:disc;">
+        <li>In applications where it is easy to identify which processes only read shared data and which processes only write shared data.</li>
+        <li>In applications that have more readers than writers. This is because reader–writer locks generally require more overhead to establish than semaphores or mutual-exclusion locks. The increased concurrency of allowing multiple readers compensates for the overhead involved in setting up the reader–writer lock.</li>
+        </ul>
+        <h3 class="subtitle"><a id="sec5.7.3"></a>5.7.3 The Dining-Philosophers Problem</h3>
+        <p class="text">Consider five philosophers who spend their lives thinking and eating. The philosophers share a circular table surrounded by five chairs, each belonging to one philosopher. In the center of the table is a bowl of rice, and the table is laid with five single chopsticks (<a href="12_chapter05.html#fig5.13">Figure 5.13</a>). When a philosopher thinks, she does not interact with her colleagues. From time to time, a philosopher gets hungry and tries to pick up the two chopsticks that are closest to her (the chopsticks that are between her and her left and right neighbors). A philosopher may pick up only one chopstick at a time. Obviously, she cannot pick up a chopstick that is already in the hand of a neighbor. When a hungry philosopher has both her chopsticks at the same time, she eats without releasing the chopsticks. When she is finished eating, she puts down both chopsticks and starts thinking again.</p>
+        <p class="text-indent">The <b>dining-philosophers problem</b> is considered a classic synchronization problem neither because of its practical importance nor because computer scientists dislike philosophers but because it is an example of a large class of concurrency-control problems. It is a simple representation of the need to allocate several resources among several processes in a deadlock-free and starvation-free manner.</p>
+        <p class="text-indent">One simple solution is to represent each chopstick with a semaphore. A philosopher tries to grab a chopstick by executing a <span class="inlinecode">wait()</span> operation on that semaphore. She releases her chopsticks by executing the <span class="inlinecode">signal()</span> operation on the appropriate semaphores. Thus, the shared data are</p>
+        <p class="center"><a id="page_223"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f014.jpg" alt="image" class="imgepub" width="253" height="292"></p>
+        <p class="caption"><a id="fig5.14"></a><b>Figure 5.14</b> The structure of philosopher <i>i</i>.</p>
+        <p class="text">where all the elements of <span class="inlinecode">chopstick</span> are initialized to 1. The structure of philosopher <i>i</i> is shown in <a href="12_chapter05.html#fig5.14">Figure 5.14</a>.</p>
+        <p class="text-indent">Although this solution guarantees that no two neighbors are eating simultaneously, it nevertheless must be rejected because it could create a deadlock. Suppose that all five philosophers become hungry at the same time and each grabs her left chopstick. All the elements of <span class="inlinecode">chopstick</span> will now be equal to 0. When each philosopher tries to grab her right chopstick, she will be delayed forever.</p>
+        <p class="text-indent">Several possible remedies to the deadlock problem are replaced by:</p>
+        <ul style="list-style-type:disc;">
+        <li>Allow at most four philosophers to be sitting simultaneously at the table.</li>
+        <li>Allow a philosopher to pick up her chopsticks only if both chopsticks are available (to do this, she must pick them up in a critical section).</li>
+        <li>Use an asymmetric solution—that is, an odd-numbered philosopher picks up first her left chopstick and then her right chopstick, whereas an even-numbered philosopher picks up her right chopstick and then her left chopstick.</li>
+        </ul>
+        <p class="text-indent">In <a href="12_chapter05.html#sec5.8">Section 5.8</a>, we present a solution to the dining-philosophers problem that ensures freedom from deadlocks. Note, however, that any satisfactory solution to the dining-philosophers problem must guard against the possibility that one of the philosophers will starve to death. A deadlock-free solution does not necessarily eliminate the possibility of starvation.</p>
+        <h2 class="subtitle"><a id="sec5.8"></a>5.8 Monitors</h2>
+        <p class="text">Although semaphores provide a convenient and effective mechanism for process synchronization, using them incorrectly can result in timing errors that are difficult to detect, since these errors happen only if particular execution sequences take place and these sequences do not always occur.</p>
+        <p class="text-indent">We have seen an example of such errors in the use of counters in our solution to the producer–consumer problem (<a href="12_chapter05.html#sec5.1">Section 5.1</a>). In that example, the timing problem happened only rarely, and even then the counter value <a id="page_224"></a>appeared to be reasonable—off by only 1. Nevertheless, the solution is obviously not an acceptable one. It is for this reason that semaphores were introduced in the first place.</p>
+        <p class="text-indent">Unfortunately, such timing errors can still occur when semaphores are used. To illustrate how, we review the semaphore solution to the critical-section problem. All processes share a semaphore variable <span class="inlinecode">mutex</span>, which is initialized to 1. Each process must execute <span class="inlinecode">wait(mutex)</span> before entering the critical section and <span class="inlinecode">signal(mutex)</span> afterward. If this sequence is not observed, two processes may be in their critical sections simultaneously. Next, we examine the various difficulties that may result. Note that these difficulties will arise even if a <b><i>single</i></b> process is not well behaved. This situation may be caused by an honest programming error or an uncooperative programmer.</p>
+        <ul style="list-style-type:disc;">
+        <li>Suppose that a process interchanges the order in which the <span class="inlinecode">wait()</span> and <span class="inlinecode">signal()</span> operations on the semaphore <span class="inlinecode">mutex</span> are executed, resulting in the following execution:
+        <div class="code">
+        <pre class="codesnippet">signal(mutex);
+            …
+          <span class="inlinecodenormal">critical section</span>
+            …
+        wait(mutex);
+        </pre>
+        </div>
+        <p class="text">In this situation, several processes may be executing in their critical sections simultaneously, violating the mutual-exclusion requirement. This error may be discovered only if several processes are simultaneously active in their critical sections. Note that this situation may not always be reproducible.</p></li>
+        <li>Suppose that a process replaces <span class="inlinecode">signal(mutex)</span> with <span class="inlinecode">wait(mutex)</span>. That is, it executes
+        <div class="code">
+        <pre class="codesnippet">wait(mutex);
+            …
+          <span class="inlinecodenormal">critical section</span>
+            …
+        wait(mutex);
+        </pre>
+        </div>
+        <p class="text">In this case, a deadlock will occur.</p></li>
+        <li>Suppose that a process omits the <span class="inlinecode">wait(mutex)</span>, or the <span class="inlinecode">signal(mutex)</span>, or both. In this case, either mutual exclusion is violated or a deadlock will occur.</li>
+        </ul>
+        <p class="text">These examples illustrate that various types of errors can be generated easily when programmers use semaphores incorrectly to solve the critical-section problem. Similar problems may arise in the other synchronization models discussed in <a href="12_chapter05.html#sec5.7">Section 5.7</a>.</p>
+        <p class="text-indent">To deal with such errors, researchers have developed high-level language constructs. In this section, we describe one fundamental high-level synchronization construct—the <b>monitor</b> type.</p>
+        <p class="center"><a id="page_225"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f015.jpg" alt="image" class="imgepub" width="377" height="489"></p>
+        <p class="caption"><a id="fig5.15"></a><b>Figure 5.15</b> Syntax of a monitor.</p>
+        <h3 class="subtitle"><a id="sec5.8.1"></a>5.8.1 Monitor Usage</h3>
+        <p class="text">An <b>abstract data type</b>—or <b>ADT</b>—encapsulates data with a set of functions to operate on that data that are independent of any specific implementation of the ADT. A <b><i>monitor type</i></b> is an ADT that includes a set of programmer-defined operations that are provided with mutual exclusion within the monitor. The monitor type also declares the variables whose values define the state of an instance of that type, along with the bodies of functions that operate on those variables. The syntax of a monitor type is shown in <a href="12_chapter05.html#fig5.15">Figure 5.15</a>. The representation of a monitor type cannot be used directly by the various processes. Thus, a function defined within a monitor can access only those variables declared locally within the monitor and its formal parameters. Similarly, the local variables of a monitor can be accessed by only the local functions.</p>
+        <p class="text-indent">The monitor construct ensures that only one process at a time is active within the monitor. Consequently, the programmer does not need to code this synchronization constraint explicitly (<a href="12_chapter05.html#fig5.16">Figure 5.16</a>). However, the monitor construct, as defined so far, is not sufficiently powerful for modeling some synchronization schemes. For this purpose, we need to define additional synchronization mechanisms. These mechanisms are provided by the <span class="inlinecode">condition</span> construct. A programmer who needs to write a tailor-made synchronization scheme can define one or more variables of type <i>condition</i>:</p>
+        <div class="code">
+        <pre class="codesnippet">condition x, y;
+        </pre>
+        </div>
+        <p class="center"><a id="page_226"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f016.jpg" alt="image" class="imgepub" width="445" height="422"></p>
+        <p class="caption"><a id="fig5.16"></a><b>Figure 5.16</b> Schematic view of a monitor.</p>
+        <p class="text-indent">The only operations that can be invoked on a condition variable are <span class="inlinecode">wait()</span> and <span class="inlinecode">signal()</span>. The operation</p>
+        <p class="center"><span class="inlinecode">x.wait();</span></p>
+        <p class="text">means that the process invoking this operation is suspended until another process invokes</p>
+        <p class="center"><span class="inlinecode">x.signal();</span></p>
+        <p class="text-indent">The <span class="inlinecode">x.signal()</span> operation resumes exactly one suspended process. If no process is suspended, then the <span class="inlinecode">signal()</span> operation has no effect; that is, the state of <span class="inlinecode">x</span> is the same as if the operation had never been executed (<a href="12_chapter05.html#fig5.17">Figure 5.17</a>). Contrast this operation with the <span class="inlinecode">signal()</span> operation associated with semaphores, which always affects the state of the semaphore.</p>
+        <p class="text-indent">Now suppose that, when the <span class="inlinecode">x.signal()</span> operation is invoked by a process <i>P</i>, there exists a suspended process <i>Q</i> associated with condition <span class="inlinecode">x</span>. Clearly, if the suspended process <i>Q</i> is allowed to resume its execution, the signaling process <i>P</i> must wait. Otherwise, both <i>P</i> and <i>Q</i> would be active simultaneously within the monitor. Note, however, that conceptually both processes can continue with their execution. Two possibilities exist:</p>
+        <ol style="list-style-type:decimal">
+        <li><b>Signal and wait</b>. <i>P</i> either waits until <i>Q</i> leaves the monitor or waits for another condition.</li>
+        <li><b>Signal and continue</b>. <i>Q</i> either waits until <i>P</i> leaves the monitor or waits for another condition.</li>
+        </ol>
+        <p class="center"><a id="page_227"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f017.jpg" alt="image" class="imgepub" width="611" height="422"></p>
+        <p class="caption"><a id="fig5.17"></a><b>Figure 5.17</b> Monitor with condition variables.</p>
+        <p class="text-indent">There are reasonable arguments in favor of adopting either option. On the one hand, since <i>P</i> was already executing in the monitor, the <b><i>signal-and-continue</i></b> method seems more reasonable. On the other, if we allow thread <i>P</i> to continue, then by the time <i>Q</i> is resumed, the logical condition for which <i>Q</i> was waiting may no longer hold. A compromise between these two choices was adopted in the language Concurrent Pascal. When thread <i>P</i> executes the signal operation, it immediately leaves the monitor. Hence, <i>Q</i> is immediately resumed.</p>
+        <p class="text-indent">Many programming languages have incorporated the idea of the monitor as described in this section, including Java and C# (pronounced “C-sharp”). Other languages—such as Erlang—provide some type of concurrency support using a similar mechanism.</p>
+        <h3 class="subtitle"><a id="sec5.8.2"></a>5.8.2 Dining-Philosophers Solution Using Monitors</h3>
+        <p class="text">Next, we illustrate monitor concepts by presenting a deadlock-free solution to the dining-philosophers problem. This solution imposes the restriction that a philosopher may pick up her chopsticks only if both of them are available. To code this solution, we need to distinguish among three states in which we may find a philosopher. For this purpose, we introduce the following data structure:</p>
+        <p class="center"><span class="inlinecode">enum {THINKING, HUNGRY, EATING} state[5];</span></p>
+        <p class="text">Philosopher <i>i</i> can set the variable <span class="inlinecode">state[i] = EATING</span> only if her two neighbors are not eating: (<span class="inlinecode">state[(i+4) % 5] != EATING</span>) and (<span class="inlinecode">state[(i+1) % 5] != EATING</span>).</p>
+        <p class="center"><a id="page_228"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f018.jpg" alt="image" class="imgepub" width="445" height="680"></p>
+        <p class="caption"><a id="fig5.18"></a><b>Figure 5.18</b> A monitor solution to the dining-philosopher problem.</p>
+        <p class="text-indent">We also need to declare</p>
+        <p class="center"><span class="inlinecode">condition self[5];</span></p>
+        <p class="text">This allows philosopher <i>i</i> to delay herself when she is hungry but is unable to obtain the chopsticks she needs.</p>
+        <p class="text-indent">We are now in a position to describe our solution to the dining-philosophers problem. The distribution of the chopsticks is controlled by the monitor <span class="inlinecode">DiningPhilosophers</span>, whose definition is shown in <a href="12_chapter05.html#fig5.18">Figure 5.18</a>. Each philosopher, before starting to eat, must invoke the operation <span class="inlinecode">pickup()</span>. This act may result in the suspension of the philosopher process. After the successful completion of the operation, the philosopher may eat. Following this, the philosopher invokes the <span class="inlinecode">putdown()</span> operation. Thus, philosopher <i>i</i> must invoke the operations <span class="inlinecode">pickup()</span> and <span class="inlinecode">putdown()</span> in the following sequence:</p>
+        <div class="code">
+        <pre class="codesnippet"><a id="page_229"></a>
+        DiningPhilosophers.pickup(i);
+                        <span class="inlinecodenormal">…</span>
+                        <span class="inlinecodenormal">eat</span>
+                        <span class="inlinecodenormal">…</span>
+        DiningPhilosophers.putdown(i);
+        </pre>
+        </div>
+        <p class="text-indent">It is easy to show that this solution ensures that no two neighbors are eating simultaneously and that no deadlocks will occur. We note, however, that it is possible for a philosopher to starve to death. We do not present a solution to this problem but rather leave it as an exercise for you.</p>
+        <h3 class="subtitle"><a id="sec5.8.3"></a>5.8.3 Implementing a Monitor Using Semaphores</h3>
+        <p class="text">We now consider a possible implementation of the monitor mechanism using semaphores. For each monitor, a semaphore <span class="inlinecode">mutex</span> (initialized to 1) is provided. A process must execute <span class="inlinecode">wait(mutex)</span> before entering the monitor and must execute <span class="inlinecode">signal(mutex)</span> after leaving the monitor.</p>
+        <p class="text-indent">Since a signaling process must wait until the resumed process either leaves or waits, an additional semaphore, <span class="inlinecode">next</span>, is introduced, initialized to 0. The signaling processes can use <span class="inlinecode">next</span> to suspend themselves. An integer variable <span class="inlinecode">next_count</span> is also provided to count the number of processes suspended on <span class="inlinecode">next</span>. Thus, each external function <span class="inlinecode">F</span> is replaced by</p>
+        <div class="code">
+        <pre class="codesnippet">wait(mutex);
+           <span class="inlinecodenormal">…</span>
+          <span class="inlinecodenormal">body of</span> F
+           <span class="inlinecodenormal">…</span>
+        if (next_count &gt; 0)
+          signal(next);
+        else
+          signal(mutex);
+        </pre>
+        </div>
+        <p class="text">Mutual exclusion within a monitor is ensured.</p>
+        <p class="text-indent">We can now describe how condition variables are implemented as well. For each condition <span class="inlinecode">x</span>, we introduce a semaphore <span class="inlinecode">x_sem</span> and an integer variable <span class="inlinecode">x_count</span>, both initialized to 0. The operation <span class="inlinecode">x.wait()</span> can now be implemented as</p>
+        <div class="code">
+        <pre class="codesnippet">x_count++;
+        if (next_count &gt; 0)
+          signal(next);
+        else
+          signal(mutex);
+        wait(x_sem);
+        x_count--;
+        </pre>
+        </div>
+        <p class="text-indent">The operation <span class="inlinecode">x.signal()</span> can be implemented as</p>
+        <div class="code">
+        <pre class="codesnippet"><a id="page_230"></a>if (x_count &gt; 0) {
+          next_count++;
+          signal(x_sem);
+          wait(next);
+          next_count−−;
+        }
+        </pre>
+        </div>
+        <p class="text-indent">This implementation is applicable to the definitions of monitors given by both Hoare and Brinch-Hansen (see the bibliographical notes at the end of the chapter). In some cases, however, the generality of the implementation is unnecessary, and a significant improvement in efficiency is possible. We leave this problem to you in Exercise 5.30.</p>
+        <h3 class="subtitle"><a id="sec5.8.4"></a>5.8.4 Resuming Processes within a Monitor</h3>
+        <p class="text">We turn now to the subject of process-resumption order within a monitor. If several processes are suspended on condition <span class="inlinecode">x</span>, and an <span class="inlinecode">x.signal()</span> operation is executed by some process, then how do we determine which of the suspended processes should be resumed next? One simple solution is to use a first-come, first-served (FCFS) ordering, so that the process that has been waiting the longest is resumed first. In many circumstances, however, such a simple scheduling scheme is not adequate. For this purpose, the <b>conditional-wait</b> construct can be used. This construct has the form</p>
+        <p class="center"><span class="inlinecode">x.wait(c);</span></p>
+        <p class="text">where <span class="inlinecode">c</span> is an integer expression that is evaluated when the <span class="inlinecode">wait()</span> operation is executed. The value of <span class="inlinecode">c</span>, which is called a <b>priority number</b>, is then stored with the name of the process that is suspended. When <span class="inlinecode">x.signal()</span> is executed, the process with the smallest priority number is resumed next.</p>
+        <p class="text-indent">To illustrate this new mechanism, consider the <span class="inlinecode">ResourceAllocator</span> monitor shown in <a href="12_chapter05.html#fig5.19">Figure 5.19</a>, which controls the allocation of a single resource among competing processes. Each process, when requesting an allocation of this resource, specifies the maximum time it plans to use the resource. The monitor allocates the resource to the process that has the shortest time-allocation request. A process that needs to access the resource in question must observe the following sequence:</p>
+        <div class="code">
+        <pre class="codesnippet">R.acquire(t);
+            <span class="inlinecodenormal">…</span>
+          <span class="inlinecodenormal">access the resource;</span>
+            <span class="inlinecodenormal">…</span>
+        R.release();
+        </pre>
+        </div>
+        <p class="text">where <span class="inlinecode">R</span> is an instance of type <span class="inlinecode">ResourceAllocator</span>.</p>
+        <p class="text-indent">Unfortunately, the monitor concept cannot guarantee that the preceding access sequence will be observed. In particular, the following problems can occur:</p>
+        <ul style="list-style-type:disc;">
+        <li>A process might access a resource without first gaining access permission to the resource.
+        <p class="center"><a id="page_231"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f019.jpg" alt="image" class="imgepub" width="273" height="423"></p>
+        <p class="caption"><a id="fig5.19"></a><b>Figure 5.19</b> A monitor to allocate a single resource.</p></li>
+        <li>A process might never release a resource once it has been granted access to the resource.</li>
+        <li>A process might attempt to release a resource that it never requested.</li>
+        <li>A process might request the same resource twice (without first releasing the resource).</li>
+        </ul>
+        <p class="text-indent">The same difficulties are encountered with the use of semaphores, and these difficulties are similar in nature to those that encouraged us to develop the monitor constructs in the first place. Previously, we had to worry about the correct use of semaphores. Now, we have to worry about the correct use of higher-level programmer-defined operations, with which the compiler can no longer assist us.</p>
+        <p class="text-indent">One possible solution to the current problem is to include the resource-access operations within the <span class="inlinecode">ResourceAllocator</span> monitor. However, using this solution will mean that scheduling is done according to the built-in monitor-scheduling algorithm rather than the one we have coded.</p>
+        <p class="text-indent">To ensure that the processes observe the appropriate sequences, we must inspect all the programs that make use of the <span class="inlinecode">ResourceAllocator</span> monitor and its managed resource. We must check two conditions to establish the correctness of this system. First, user processes must always make their calls on the monitor in a correct sequence. Second, we must be sure that an uncooperative process does not simply ignore the mutual-exclusion gateway provided by the monitor and try to access the shared resource directly, without using the access protocols. Only if these two conditions can be ensured can we guarantee that no time-dependent errors will occur and that the scheduling algorithm will not be defeated.</p>
+        <div class="bgbox">
+        <p class="boxtitle"><a id="page_232"></a><b><i>JAVA MONITORS</i></b></p>
+        <p class="text">Java provides a monitor-like concurrency mechanism for thread synchronization. Every object in Java has associated with it a single lock. When a method is declared to be <span class="inlinecode">synchronized</span>, calling the method requires owning the lock for the object. We declare a <span class="inlinecode">synchronized</span> method by placing the <span class="inlinecode">synchronized</span> keyword in the method definition. The following defines <span class="inlinecode">safeMethod()</span> as <span class="inlinecode">synchronized</span>, for example:</p>
+        <div class="code">
+        <pre class="codesnippet">public class SimpleClass {
+          …
+          public synchronized void safeMethod() {
+           …
+           /* Implementation of safeMethod() */
+           …
+          }
+        }
+        </pre>
+        </div>
+        <p class="text">Next, we create an object instance of <span class="inlinecode">SimpleClass</span>, such as the following:</p>
+        <div class="code">
+        <pre class="codesnippet">SimpleClass sc = new SimpleClass();</pre>
+        </div>
+        <p class="text">Invoking <span class="inlinecode">sc.safeMethod()</span> method requires owning the lock on the object instance <span class="inlinecode">sc</span>. If the lock is already owned by another thread, the thread calling the <span class="inlinecode">synchronized</span> method blocks and is placed in the <b><i>entry set</i></b> for the object's lock. The entry set represents the set of threads waiting for the lock to become available. If the lock is available when a <span class="inlinecode">synchronized</span> method is called, the calling thread becomes the owner of the object's lock and can enter the method. The lock is released when the thread exits the method. A thread from the entry set is then selected as the new owner of the lock.</p>
+        <p class="text-indent">Java also provides <span class="inlinecode">wait()</span> and <span class="inlinecode">notify()</span> methods, which are similar in function to the <span class="inlinecode">wait()</span> and <span class="inlinecode">signal()</span> statements for a monitor. The Java API provides support for semaphores, condition variables, and mutex locks (among other concurrency mechanisms) in the <span class="inlinecode">java.util.concurrent</span> package.</p>
+        </div>
+        <p class="text-indent">Although this inspection may be possible for a small, static system, it is not reasonable for a large system or a dynamic system. This access-control problem can be solved only through the use of the additional mechanisms that are described in <a href="24_chapter14.html#chap14">Chapter 14</a>.</p>
+        <h2 class="subtitle"><a id="sec5.9"></a>5.9 Synchronization Examples</h2>
+        <p class="text">We next describe the synchronization mechanisms provided by the Windows, Linux, and Solaris operating systems, as well as the Pthreads API. We have chosen these three operating systems because they provide good examples of different approaches to synchronizing the kernel, and we have included the <a id="page_233"></a>Pthreads API because it is widely used for thread creation and synchronization by developers on UNIX and Linux systems. As you will see in this section, the synchronization methods available in these differing systems vary in subtle and significant ways.</p>
+        <h3 class="subtitle"><a id="sec5.9.1"></a>5.9.1 Synchronization in Windows</h3>
+        <p class="text">The Windows operating system is a multithreaded kernel that provides support for real-time applications and multiple processors. When the Windows kernel accesses a global resource on a single-processor system, it temporarily masks interrupts for all interrupt handlers that may also access the global resource. On a multiprocessor system, Windows protects access to global resources using spinlocks, although the kernel uses spinlocks only to protect short code segments. Furthermore, for reasons of efficiency, the kernel ensures that a thread will never be preempted while holding a spinlock.</p>
+        <p class="text-indent">For thread synchronization outside the kernel, Windows provides <b>dispatcher objects</b>. Using a dispatcher object, threads synchronize according to several different mechanisms, including mutex locks, semaphores, events, and timers. The system protects shared data by requiring a thread to gain ownership of a mutex to access the data and to release ownership when it is finished. Semaphores behave as described in <a href="12_chapter05.html#sec5.6">Section 5.6</a>. <b>Events</b> are similar to condition variables; that is, they may notify a waiting thread when a desired condition occurs. Finally, timers are used to notify one (or more than one) thread that a specified amount of time has expired.</p>
+        <p class="text-indent">Dispatcher objects may be in either a signaled state or a nonsignaled state. An object in a <b>signaled state</b> is available, and a thread will not block when acquiring the object. An object in a <b>nonsignaled state</b> is not available, and a thread will block when attempting to acquire the object. We illustrate the state transitions of a mutex lock dispatcher object in <a href="12_chapter05.html#fig5.20">Figure 5.20</a>.</p>
+        <p class="text-indent">A relationship exists between the state of a dispatcher object and the state of a thread. When a thread blocks on a nonsignaled dispatcher object, its state changes from ready to waiting, and the thread is placed in a waiting queue for that object. When the state for the dispatcher object moves to signaled, the kernel checks whether any threads are waiting on the object. If so, the kernel moves one thread—or possibly more—from the waiting state to the ready state, where they can resume executing. The number of threads the kernel selects from the waiting queue depends on the type of dispatcher object for which it is waiting. The kernel will select only one thread from the waiting queue for a mutex, since a mutex object may be “owned” by only a single <a id="page_234"></a>thread. For an event object, the kernel will select all threads that are waiting for the event.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f020.jpg" alt="image" class="imgepub" width="392" height="121"></p>
+        <p class="caption"><a id="fig5.20"></a><b>Figure 5.20</b> Mutex dispatcher object.</p>
+        <p class="text-indent">We can use a mutex lock as an illustration of dispatcher objects and thread states. If a thread tries to acquire a mutex dispatcher object that is in a nonsignaled state, that thread will be suspended and placed in a waiting queue for the mutex object. When the mutex moves to the signaled state (because another thread has released the lock on the mutex), the thread waiting at the front of the queue will be moved from the waiting state to the ready state and will acquire the mutex lock.</p>
+        <p class="text-indent">A <b>critical-section object</b> is a user-mode mutex that can often be acquired and released without kernel intervention. On a multiprocessor system, a critical-section object first uses a spinlock while waiting for the other thread to release the object. If it spins too long, the acquiring thread will then allocate a kernel mutex and yield its CPU. Critical-section objects are particularly efficient because the kernel mutex is allocated only when there is contention for the object. In practice, there is very little contention, so the savings are significant.</p>
+        <p class="text-indent">We provide a programming project at the end of this chapter that uses mutex locks and semaphores in the Windows API.</p>
+        <h3 class="subtitle"><a id="sec5.9.2"></a>5.9.2 Synchronization in Linux</h3>
+        <p class="text">Prior to Version 2.6, Linux was a nonpreemptive kernel, meaning that a process running in kernel mode could not be preempted—even if a higher-priority process became available to run. Now, however, the Linux kernel is fully preemptive, so a task can be preempted when it is running in the kernel.</p>
+        <p class="text-indent">Linux provides several different mechanisms for synchronization in the kernel. As most computer architectures provide instructions for atomic versions of simple math operations, the simplest synchronization technique within the Linux kernel is an atomic integer, which is represented using the opaque data type <span class="inlinecode">atomic_t</span>. As the name implies, all math operations using atomic integers are performed without interruption. The following code illustrates declaring an atomic integer <span class="inlinecode">counter</span> and then performing various atomic operations:</p>
+        <div class="code">
+        <pre class="codesnippet">atomic_t counter;
+        int value;
+        
+        atomic_set(&amp;counter,5); /* counter = 5 */
+        atomic_add(10, &amp;counter); /* counter = counter + 10 */
+        atomic_sub(4, &amp;counter); /* counter = counter − 4 */
+        atomic_inc(&amp;counter); /* counter = counter + 1 */
+        value = atomic_read(&amp;counter); /* value = 12 */
+        </pre>
+        </div>
+        <p class="text">Atomic integers are particularly efficient in situations where an integer variable—such as a counter—needs to be updated, since atomic operations do not require the overhead of locking mechanisms. However, their usage is limited to these sorts of scenarios. In situations where there are several variables contributing to a possible race condition, more sophisticated locking tools must be used.</p>
+        <p class="text-indent">Mutex locks are available in Linux for protecting critical sections within the kernel. Here, a task must invoke the <span class="inlinecode">mutex_lock()</span> function prior to entering <a id="page_235"></a>a critical section and the <span class="inlinecode">mutex_unlock()</span> function after exiting the critical section. If the mutex lock is unavailable, a task calling <span class="inlinecode">mutex_lock()</span> is put into a sleep state and is awakened when the lock's owner invokes <span class="inlinecode">mutex_unlock()</span>.</p>
+        <p class="text-indent">Linux also provides spinlocks and semaphores (as well as reader–writer versions of these two locks) for locking in the kernel. On SMP machines, the fundamental locking mechanism is a spinlock, and the kernel is designed so that the spinlock is held only for short durations. On single-processor machines, such as embedded systems with only a single processing core, spinlocks are inappropriate for use and are replaced by enabling and disabling kernel preemption. That is, on single-processor systems, rather than holding a spinlock, the kernel disables kernel preemption; and rather than releasing the spinlock, it enables kernel preemption. This is summarized below:</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/p235-001.jpg" alt="images" class="imgepub" width="432" height="98"></p>
+        <p class="text-indent">Linux uses an interesting approach to disable and enable kernel preemption. It provides two simple system calls—<span class="inlinecode">preempt_disable()</span> and <span class="inlinecode">preempt_enable()</span>—for disabling and enabling kernel preemption. The kernel is not preemptible, however, if a task running in the kernel is holding a lock. To enforce this rule, each task in the system has a <span class="inlinecode">thread-info</span> structure containing a counter, <span class="inlinecode">preempt_count</span>, to indicate the number of locks being held by the task. When a lock is acquired, <span class="inlinecode">preempt_count</span> is incremented. It is decremented when a lock is released. If the value of <span class="inlinecode">preempt_count</span> for the task currently running in the kernel is greater than 0, it is not safe to preempt the kernel, as this task currently holds a lock. If the count is 0, the kernel can safely be interrupted (assuming there are no outstanding calls to <span class="inlinecode">preempt_disable()</span>).</p>
+        <p class="text-indent">Spinlocks—along with enabling and disabling kernel preemption—are used in the kernel only when a lock (or disabling kernel preemption) is held for a short duration. When a lock must be held for a longer period, semaphores or mutex locks are appropriate for use.</p>
+        <h3 class="subtitle"><a id="sec5.9.3"></a>5.9.3 Synchronization in Solaris</h3>
+        <p class="text">To control access to critical sections, Solaris provides adaptive mutex locks, condition variables, semaphores, reader–writer locks, and turnstiles. Solaris implements semaphores and condition variables essentially as they are presented in <a href="12_chapter05.html#sec5.6">Sections 5.6</a> and <a href="12_chapter05.html#sec5.7">5.7</a> In this section, we describe adaptive mutex locks, reader–writer locks, and turnstiles.</p>
+        <p class="text-indent">An <b>adaptive mutex</b> protects access to every critical data item. On a multiprocessor system, an adaptive mutex starts as a standard semaphore implemented as a spinlock. If the data are locked and therefore already in use, the adaptive mutex does one of two things. If the lock is held by a thread that is currently running on another CPU, the thread spins while waiting for the lock to become available, because the thread holding the lock is likely to finish soon. If the thread holding the lock is not currently in run state, the thread <a id="page_236"></a>blocks, going to sleep until it is awakened by the release of the lock. It is put to sleep so that it will not spin while waiting, since the lock will not be freed very soon. A lock held by a sleeping thread is likely to be in this category. On a single-processor system, the thread holding the lock is never running if the lock is being tested by another thread, because only one thread can run at a time. Therefore, on this type of system, threads always sleep rather than spin if they encounter a lock.</p>
+        <p class="text-indent">Solaris uses the adaptive-mutex method to protect only data that are accessed by short code segments. That is, a mutex is used if a lock will be held for less than a few hundred instructions. If the code segment is longer than that, the spin-waiting method is exceedingly inefficient. For these longer code segments, condition variables and semaphores are used. If the desired lock is already held, the thread issues a wait and sleeps. When a thread frees the lock, it issues a signal to the next sleeping thread in the queue. The extra cost of putting a thread to sleep and waking it, and of the associated context switches, is less than the cost of wasting several hundred instructions waiting in a spinlock.</p>
+        <p class="text-indent">Reader–writer locks are used to protect data that are accessed frequently but are usually accessed in a read-only manner. In these circumstances, reader–writer locks are more efficient than semaphores, because multiple threads can read data concurrently, whereas semaphores always serialize access to the data. Reader–writer locks are relatively expensive to implement, so again they are used only on long sections of code.</p>
+        <p class="text-indent">Solaris uses turnstiles to order the list of threads waiting to acquire either an adaptive mutex or a reader–writer lock. A <b>turnstile</b> is a queue structure containing threads blocked on a lock. For example, if one thread currently owns the lock for a synchronized object, all other threads trying to acquire the lock will block and enter the turnstile for that lock. When the lock is released, the kernel selects a thread from the turnstile as the next owner of the lock. Each synchronized object with at least one thread blocked on the object's lock requires a separate turnstile. However, rather than associating a turnstile with each synchronized object, Solaris gives each kernel thread its own turnstile. Because a thread can be blocked only on one object at a time, this is more efficient than having a turnstile for each object.</p>
+        <p class="text-indent">The turnstile for the first thread to block on a synchronized object becomes the turnstile for the object itself. Threads subsequently blocking on the lock will be added to this turnstile. When the initial thread ultimately releases the lock, it gains a new turnstile from a list of free turnstiles maintained by the kernel. To prevent a priority inversion, turnstiles are organized according to a <b>priority-inheritance protocol</b>. This means that if a lower-priority thread currently holds a lock on which a higher-priority thread is blocked, the thread with the lower priority will temporarily inherit the priority of the higher-priority thread. Upon releasing the lock, the thread will revert to its original priority.</p>
+        <p class="text-indent">Note that the locking mechanisms used by the kernel are implemented for user-level threads as well, so the same types of locks are available inside and outside the kernel. A crucial implementation difference is the priority-inheritance protocol. Kernel-locking routines adhere to the kernel priority-inheritance methods used by the scheduler, as described in <a href="12_chapter05.html#sec5.6.4">Section 5.6.4</a>. User-level thread-locking mechanisms do not provide this functionality.</p>
+        <p class="text-indent"><a id="page_237"></a>To optimize Solaris performance, developers have refined and fine-tuned the locking methods. Because locks are used frequently and typically are used for crucial kernel functions, tuning their implementation and use can produce great performance gains.</p>
+        <h3 class="subtitle"><a id="sec5.9.4"></a>5.9.4 Pthreads Synchronization</h3>
+        <p class="text">Although the locking mechanisms used in Solaris are available to user-level threads as well as kernel threads, basically the synchronization methods discussed thus far pertain to synchronization within the kernel. In contrast, the Pthreads API is available for programmers at the user level and is not part of any particular kernel. This API provides mutex locks, condition variables, and read–write locks for thread synchronization.</p>
+        <p class="text-indent">Mutex locks represent the fundamental synchronization technique used with Pthreads. A mutex lock is used to protect critical sections of code—that is, a thread acquires the lock before entering a critical section and releases it upon exiting the critical section. Pthreads uses the <span class="inlinecode">pthread_mutex_t</span> data type for mutex locks. A mutex is created with the <span class="inlinecode">pthread_mutex_init()</span> function. The first parameter is a pointer to the mutex. By passing <span class="inlinecode">NULL</span> as a second parameter, we initialize the mutex to its default attributes. This is illustrated below:</p>
+        <div class="code">
+        <pre class="codesnippet">#include &lt;pthread.h&gt;
+        
+        pthread_mutex_t mutex;
+        
+        /* create the mutex lock */
+        pthread_mutex_init(&amp;mutex,NULL);
+        </pre>
+        </div>
+        <p class="text-indent">The mutex is acquired and released with the <span class="inlinecode">pthread_mutex_lock()</span> and <span class="inlinecode">pthread_mutex_unlock()</span> functions. If the mutex lock is unavailable when <span class="inlinecode">pthread_mutex_lock()</span> is invoked, the calling thread is blocked until the owner invokes <span class="inlinecode">pthread_mutex_unlock()</span>. The following code illustrates protecting a critical section with mutex locks:</p>
+        <div class="code">
+        <pre class="codesnippet">/* acquire the mutex lock */
+        pthread_mutex_lock(&amp;mutex);
+        
+        /* critical section */
+        
+        /* release the mutex lock */
+        pthread_mutex_unlock(&amp;mutex);
+        </pre>
+        </div>
+        <p class="text">All mutex functions return a value of 0 with correct operation; if an error occurs, these functions return a nonzero error code. Condition variables and read–write locks behave similarly to the way they are described in <a href="12_chapter05.html#sec5.8">Sections 5.8</a> and <a href="12_chapter05.html#sec5.7.2">5.7.2</a>, respectively.</p>
+        <p class="text-indent">Many systems that implement Pthreads also provide semaphores, although semaphores are not part of the Pthreads standard and instead belong to the POSIX SEM extension. POSIX specifies two types of semaphores—<b>named</b> and <a id="page_238"></a><b>unnamed</b>. The fundamental distinction between the two is that a named semaphore has an actual name in the file system and can be shared by multiple unrelated processes. Unnamed semaphores can be used only by threads belonging to the same process. In this section, we describe unnamed semaphores.</p>
+        <p class="text-indent">The code below illustrates the <span class="inlinecode">sem_init()</span> function for creating and initializing an unnamed semaphore:</p>
+        <div class="code">
+        <pre class="codesnippet">#include &lt;semaphore.h&gt;
+        sem_t sem;
+        
+        /* Create the semaphore and initialize it to 1 */
+        sem_init(&amp;sem, 0, 1);
+        </pre>
+        </div>
+        <p class="text">The <span class="inlinecode">sem_init()</span> function is passed three parameters:</p>
+        <ol style="list-style-type:decimal">
+        <li>A pointer to the semaphore</li>
+        <li>A flag indicating the level of sharing</li>
+        <li>The semaphore's initial value</li>
+        </ol>
+        <p class="text">In this example, by passing the flag 0, we are indicating that this semaphore can be shared only by threads belonging to the process that created the semaphore. A nonzero value would allow other processes to access the semaphore as well. In addition, we initialize the semaphore to the value 1.</p>
+        <p class="text-indent">In <a href="12_chapter05.html#sec5.6">Section 5.6</a>, we described the classical <span class="inlinecode">wait()</span> and <span class="inlinecode">signal()</span> semaphore operations. Pthreads names these operations <span class="inlinecode">sem_wait()</span> and <span class="inlinecode">sem_post()</span>, respectively. The following code sample illustrates protecting a critical section using the semaphore created above:</p>
+        <div class="code">
+        <pre class="codesnippet">/* acquire the semaphore */
+        sem_wait(&amp;sem);
+        
+        /* critical section */
+        
+        /* release the semaphore */
+        sem_post(&amp;sem);
+        </pre>
+        </div>
+        <p class="text">Just like mutex locks, all semaphore functions return 0 when successful, and nonzero when an error condition occurs.</p>
+        <p class="text-indent">There are other extensions to the Pthreads API — including spinlocks — but it is important to note that not all extensions are considered portable from one implementation to another. We provide several programming problems and projects at the end of this chapter that use Pthreads mutex locks and condition variables as well as POSIX semaphores.</p>
+        <h2 class="subtitle"><a id="sec5.10"></a>5.10 Alternative Approaches</h2>
+        <p class="text">With the emergence of multicore systems has come increased pressure to develop multithreaded applications that take advantage of multiple processing <a id="page_239"></a>cores. However, multithreaded applications present an increased risk of race conditions and deadlocks. Traditionally, techniques such as mutex locks, semaphores, and monitors have been used to address these issues, but as the number of processing cores increases, it becomes increasingly difficult to design multithreaded applications that are free from race conditions and deadlocks.</p>
+        <p class="text-indent">In this section, we explore various features provided in both programming languages and hardware that support designing thread-safe concurrent applications.</p>
+        <h3 class="subtitle"><a id="sec5.10.1"></a>5.10.1 Transactional Memory</h3>
+        <p class="text">Quite often in computer science, ideas from one area of study can be used to solve problems in other areas. The concept of <b>transactional memory</b> originated in database theory, for example, yet it provides a strategy for process synchronization. A <b>memory transaction</b> is a sequence of memory read–write operations that are atomic. If all operations in a transaction are completed, the memory transaction is committed. Otherwise, the operations must be aborted and rolled back. The benefits of transactional memory can be obtained through features added to a programming language.</p>
+        <p class="text-indent">Consider an example. Suppose we have a function <span class="inlinecode">update()</span> that modifies shared data. Traditionally, this function would be written using mutex locks (or semaphores) such as the following:</p>
+        <div class="code">
+        <pre class="codesnippet">void update ()
+        {
+           acquire();
+        
+           /* modify shared data */
+        
+           release();
+        }
+        </pre>
+        </div>
+        <p class="text">However, using synchronization mechanisms such as mutex locks and semaphores involves many potential problems, including deadlock. Additionally, as the number of threads increases, traditional locking scales less well, because the level of contention among threads for lock ownership becomes very high.</p>
+        <p class="text-indent">As an alternative to traditional locking methods, new features that take advantage of transactional memory can be added to a programming language. In our example, suppose we add the construct <span class="inlinecode">atomic{S}</span>, which ensures that the operations in <span class="inlinecode">S</span> execute as a transaction. This allows us to rewrite the <span class="inlinecode">update()</span> function as follows:</p>
+        <div class="code">
+        <pre class="codesnippet">void update ()
+        {
+           atomic {
+              /* modify shared data */
+           }
+        }
+        </pre>
+        </div>
+        <p class="text-indent">The advantage of using such a mechanism rather than locks is that the transactional memory system—not the developer—is responsible for <a id="page_240"></a>guaranteeing atomicity. Additionally, because no locks are involved, deadlock is not possible. Furthermore, a transactional memory system can identify which statements in atomic blocks can be executed concurrently, such as concurrent read access to a shared variable. It is, of course, possible for a programmer to identify these situations and use reader–writer locks, but the task becomes increasingly difficult as the number of threads within an application grows.</p>
+        <p class="text-indent">Transactional memory can be implemented in either software or hardware. <b>Software transactional memory</b> (STM), as the name suggests, implements transactional memory exclusively in software—no special hardware is needed. STM works by inserting instrumentation code inside transaction blocks. The code is inserted by a compiler and manages each transaction by examining where statements may run concurrently and where specific low-level locking is required. <b>Hardware transactional memory</b> (HTM) uses hardware cache hierarchies and cache coherency protocols to manage and resolve conflicts involving shared data residing in separate processors' caches. HTM requires no special code instrumentation and thus has less overhead than STM. However, HTM does require that existing cache hierarchies and cache coherency protocols be modified to support transactional memory.</p>
+        <p class="text-indent">Transactional memory has existed for several years without widespread implementation. However, the growth of multicore systems and the associated emphasis on concurrent and parallel programming have prompted a significant amount of research in this area on the part of both academics and commercial software and hardware vendors.</p>
+        <h3 class="subtitle"><a id="sec5.10.2"></a>5.10.2 OpenMP</h3>
+        <p class="text">In <a href="11_chapter04.html#sec4.5.2">Section 4.5.2</a>, we provided an overview of OpenMP and its support of parallel programming in a shared-memory environment. Recall that OpenMP includes a set of compiler directives and an API. Any code following the compiler directive <span class="inlinecode">#pragma omp parallel</span> is identified as a parallel region and is performed by a number of threads equal to the number of processing cores in the system. The advantage of OpenMP (and similar tools) is that thread creation and management are handled by the OpenMP library and are not the responsibility of application developers.</p>
+        <p class="text-indent">Along with its <span class="inlinecode">#pragma omp parallel</span> compiler directive, OpenMP provides the compiler directive <span class="inlinecode">#pragma omp critical</span>, which specifies the code region following the directive as a critical section in which only one thread may be active at a time. In this way, OpenMP provides support for ensuring that threads do not generate race conditions.</p>
+        <p class="text-indent">As an example of the use of the critical-section compiler directive, first assume that the shared variable <span class="inlinecode">counter</span> can be modified in the <span class="inlinecode">update()</span> function as follows:</p>
+        <div class="code">
+        <pre class="codesnippet">void update(int value)
+        {
+            counter += value;
+        }
+        </pre>
+        </div>
+        <p class="text">If the <span class="inlinecode">update()</span> function can be part of—or invoked from—a parallel region, a race condition is possible on the variable <span class="inlinecode">counter</span>.</p>
+        <p class="text-indent"><a id="page_241"></a>The critical-section compiler directive can be used to remedy this race condition and is coded as follows:</p>
+        <div class="code">
+        <pre class="codesnippet">void update(int value)
+        {
+           #pragma omp critical
+           {
+               counter += value;
+           }
+        }
+        </pre>
+        </div>
+        <p class="text">The critical-section compiler directive behaves much like a binary semaphore or mutex lock, ensuring that only one thread at a time is active in the critical section. If a thread attempts to enter a critical section when another thread is currently active in that section (that is, <b><i>owns</i></b> the section), the calling thread is blocked until the owner thread exits. If multiple critical sections must be used, each critical section can be assigned a separate name, and a rule can specify that no more than one thread may be active in a critical section of the same name simultaneously.</p>
+        <p class="text-indent">An advantage of using the critical-section compiler directive in OpenMP is that it is generally considered easier to use than standard mutex locks. However, a disadvantage is that application developers must still identify possible race conditions and adequately protect shared data using the compiler directive. Additionally, because the critical-section compiler directive behaves much like a mutex lock, deadlock is still possible when two or more critical sections are identified.</p>
+        <h3 class="subtitle"><a id="sec5.10.3"></a>5.10.3 Functional Programming Languages</h3>
+        <p class="text">Most well-known programming languages—such as C, C++, Java, and C#—are known as <b>imperative</b> (or <b>procedural</b>) languages. Imperative languages are used for implementing algorithms that are state-based. In these languages, the flow of the algorithm is crucial to its correct operation, and state is represented with variables and other data structures. Of course, program state is mutable, as variables may be assigned different values over time.</p>
+        <p class="text-indent">With the current emphasis on concurrent and parallel programming for multicore systems, there has been greater focus on <b>functional</b> programming languages, which follow a programming paradigm much different from that offered by imperative languages. The fundamental difference between imperative and functional languages is that functional languages do not maintain state. That is, once a variable has been defined and assigned a value, its value is immutable—it cannot change. Because functional languages disallow mutable state, they need not be concerned with issues such as race conditions and deadlocks. Essentially, most of the problems addressed in this chapter are nonexistent in functional languages.</p>
+        <p class="text-indent">Several functional languages are presently in use, and we briefly mention two of them here: Erlang and Scala. The Erlang language has gained significant attention because of its support for concurrency and the ease with which it can be used to develop applications that run on parallel systems. Scala is a functional language that is also object-oriented. In fact, much of the syntax of Scala is similar to the popular object-oriented languages Java and C#. Readers <a id="page_242"></a>interested in Erlang and Scala, and in further details about functional languages in general, are encouraged to consult the bibliography at the end of this chapter for additional references.</p>
+        <h2 class="subtitle"><a id="sec5.11"></a>5.11 Summary</h2>
+        <p class="text">Given a collection of cooperating sequential processes that share data, mutual exclusion must be provided to ensure that a critical section of code is used by only one process or thread at a time. Typically, computer hardware provides several operations that ensure mutual exclusion. However, such hardware-based solutions are too complicated for most developers to use. Mutex locks and semaphores overcome this obstacle. Both tools can be used to solve various synchronization problems and can be implemented efficiently, especially if hardware support for atomic operations is available.</p>
+        <p class="text-indent">Various synchronization problems (such as the bounded-buffer problem, the readers–writers problem, and the dining-philosophers problem) are important mainly because they are examples of a large class of concurrency-control problems. These problems are used to test nearly every newly proposed synchronization scheme.</p>
+        <p class="text-indent">The operating system must provide the means to guard against timing errors, and several language constructs have been proposed to deal with these problems. Monitors provide a synchronization mechanism for sharing abstract data types. A condition variable provides a method by which a monitor function can block its execution until it is signaled to continue.</p>
+        <p class="text-indent">Operating systems also provide support for synchronization. For example, Windows, Linux, and Solaris provide mechanisms such as semaphores, mutex locks, spinlocks, and condition variables to control access to shared data. The Pthreads API provides support for mutex locks and semaphores, as well as condition variables.</p>
+        <p class="text-indent">Several alternative approaches focus on synchronization for multicore systems. One approach uses transactional memory, which may address synchronization issues using either software or hardware techniques. Another approach uses the compiler extensions offered by OpenMP. Finally, functional programming languages address synchronization issues by disallowing mutability.</p>
+        <h2 class="subhead">Practice Exercises</h2>
+        <p class="list">&nbsp;&nbsp;<b>5.1</b>&nbsp;&nbsp;&nbsp;In <a href="12_chapter05.html#sec5.4">Section 5.4</a>, we mentioned that disabling interrupts frequently can affect the system's clock. Explain why this can occur and how such effects can be minimized.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.2</b>&nbsp;&nbsp;&nbsp;Explain why Windows, Linux, and Solaris implement multiple locking mechanisms. Describe the circumstances under which they use spinlocks, mutex locks, semaphores, adaptive mutex locks, and condition variables. In each case, explain why the mechanism is needed.</p>
+        <p class="list">&nbsp;&nbsp;<a id="page_243"></a><b>5.3</b>&nbsp;&nbsp;&nbsp;What is the meaning of the term <b><i>busy waiting</i></b>? What other kinds of waiting are there in an operating system? Can busy waiting be avoided altogether? Explain your answer.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.4</b>&nbsp;&nbsp;&nbsp;Explain why spinlocks are not appropriate for single-processor systems yet are often used in multiprocessor systems.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.5</b>&nbsp;&nbsp;&nbsp;Show that, if the <span class="inlinecode">wait()</span> and <span class="inlinecode">signal()</span> semaphore operations are not executed atomically, then mutual exclusion may be violated.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.6</b>&nbsp;&nbsp;&nbsp;Illustrate how a binary semaphore can be used to implement mutual exclusion among <i>n</i> processes.</p>
+        <h3 class="subtitle"><a id="chap5-exer"></a>Exercises</h3>
+        <p class="list">&nbsp;&nbsp;<b>5.7</b>&nbsp;&nbsp;&nbsp;Race conditions are possible in many computer systems. Consider a banking system that maintains an account balance with two functions: <span class="inlinecode">deposit(amount)</span> and <span class="inlinecode">withdraw(amount)</span>. These two functions are passed the <span class="inlinecode">amount</span> that is to be deposited or withdrawn from the bank account balance. Assume that a husband and wife share a bank account. Concurrently, the husband calls the <span class="inlinecode">withdraw()</span> function and the wife calls <span class="inlinecode">deposit()</span>. Describe how a race condition is possible and what might be done to prevent the race condition from occurring.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.8</b>&nbsp;&nbsp;&nbsp;The first known correct software solution to the critical-section problem for two processes was developed by Dekker. The two processes, <i>P</i><sub>0</sub> and <i>P</i><sub>1</sub>, share the following variables:</p>
+        <div class="code">
+        <pre class="codesnippet">boolean flag[2]; /* initially false */
+        int turn;
+        </pre>
+        </div>
+        <p class="list-text">The structure of process <i>P<sub>i</sub></i> (<span class="inlinecode">i</span> == 0 or 1) is shown in <a href="12_chapter05.html#fig5.21">Figure 5.21</a>. The other process is <i>P<sub>j</sub></i> (<span class="inlinecode">j</span> == 1 or 0). Prove that the algorithm satisfies all three requirements for the critical-section problem.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.9</b>&nbsp;&nbsp;&nbsp;The first known correct software solution to the critical-section problem for <i>n</i> processes with a lower bound on waiting of <i>n</i> − 1 turns was presented by Eisenberg and McGuire. The processes share the following variables:</p>
+        <div class="code">
+        <pre class="codesnippet">enum pstate {idle, want_in, in_cs};
+        pstate flag[n];
+        int turn;
+        </pre>
+        </div>
+        <p class="list-text">All the elements of <span class="inlinecode">flag</span> are initially <span class="inlinecode">idle</span>. The initial value of <span class="inlinecode">turn</span> is immaterial (between 0 and <span class="inlinecode">n−1</span>). The structure of process <i>P<sub>i</sub></i> is shown in <a href="12_chapter05.html#fig5.22">Figure 5.22</a>. Prove that the algorithm satisfies all three requirements for the critical-section problem.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.10</b> Explain why implementing synchronization primitives by disabling interrupts is not appropriate in a single-processor system if the synchronization primitives are to be used in user-level programs.</p>
+        <p class="center"><a id="page_244"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f021.jpg" alt="image" class="imgepub" width="289" height="404"></p>
+        <p class="caption"><a id="fig5.21"></a><b>Figure 5.21</b> The structure of process <i>P<sub>i</sub></i> in Dekker's algorithm.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.11</b> Explain why interrupts are not appropriate for implementing synchronization primitives in multiprocessor systems.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.12</b> The Linux kernel has a policy that a process cannot hold a spinlock while attempting to acquire a semaphore. Explain why this policy is in place.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.13</b> Describe two kernel data structures in which race conditions are possible. Be sure to include a description of how a race condition can occur.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.14</b> Describe how the <span class="inlinecode">compare_and_swap()</span> instruction can be used to provide mutual exclusion that satisfies the bounded-waiting requirement.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.15</b> Consider how to implement a mutex lock using an atomic hardware instruction. Assume that the following structure defining the mutex lock is available:</p>
+        <div class="code">
+        <pre class="codesnippet">typedef struct {
+            int available;
+        } lock;
+        </pre>
+        </div>
+        <p class="list-text"><span class="inlinecode">(available == 0)</span> indicates that the lock is available, and a value of 1 indicates that the lock is unavailable. Using this <span class="inlinecode">struct</span>, illustrate how the following functions can be implemented using the <span class="inlinecode">test_and_set()</span> and <span class="inlinecode">compare_and_swap()</span> instructions:</p>
+        <ul style="list-style-type:disc;margin-left:1.5em;">
+        <li><span class="inlinecode">void acquire(lock *mutex)</span></li>
+        <li><span class="inlinecode">void release(lock *mutex)</span></li>
+        </ul>
+        <p class="list-text">Be sure to include any initialization that may be necessary.</p>
+        <p class="center"><a id="page_245"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f022.jpg" alt="image" class="imgepub" width="575" height="724"></p>
+        <p class="caption"><a id="fig5.22"></a><b>Figure 5.22</b> The structure of process <i>P<sub>i</sub></i> in Eisenberg and McGuire's algorithm.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.16</b> The implementation of mutex locks provided in <a href="12_chapter05.html#sec5.5">Section 5.5</a> suffers from busy waiting. Describe what changes would be necessary so that a process waiting to acquire a mutex lock would be blocked and placed into a waiting queue until the lock became available.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.17</b> Assume that a system has multiple processing cores. For each of the following scenarios, describe which is a better locking mechanism—a spinlock or a mutex lock where waiting processes sleep while waiting for the lock to become available:</p>
+        <ul style="list-style-type:disc;margin-left:1.5em;">
+        <li>The lock is to be held for a short duration.</li>
+        <li>The lock is to be held for a long duration.</li>
+        <li>A thread may be put to sleep while holding the lock.</li>
+        </ul>
+        <p class="center"><a id="page_246"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f023.jpg" alt="image" class="imgepub" width="556" height="466"></p>
+        <p class="caption"><a id="fig5.23"></a><b>Figure 5.23</b> Allocating and releasing processes.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.18</b> Assume that a context switch takes <i>T</i> time. Suggest an upper bound (in terms of <i>T</i>) for holding a spinlock. If the spinlock is held for any longer, a mutex lock (where waiting threads are put to sleep) is a better alternative.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.19</b> A multithreaded web server wishes to keep track of the number of requests it services (known as <b><i>hits</i></b>). Consider the two following strategies to prevent a race condition on the variable <span class="inlinecode">hits</span>. The first strategy is to use a basic mutex lock when updating <span class="inlinecode">hits</span>:</p>
+        <div class="code">
+        <pre class="codesnippet">int hits;
+        mutex_lock hit_lock;
+        
+        hit_lock.acquire();
+        hits++;
+        hit_lock.release();
+        </pre>
+        </div>
+        <p class="list-text">A second strategy is to use an atomic integer:</p>
+        <div class="code">
+        <pre class="codesnippet">atomic_t hits;
+        atomic_inc(&amp;hits);
+        </pre>
+        </div>
+        <p class="list-text">Explain which of these two strategies is more efficient.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.20</b> Consider the code example for allocating and releasing processes shown in <a href="12_chapter05.html#fig5.23">Figure 5.23</a>.</p>
+        <ol style="list-style-type:lower-alpha;margin-left:2em;">
+        <li><a id="page_247"></a>Identify the race condition(s).</li>
+        <li>Assume you have a mutex lock named <span class="inlinecode">mutex</span> with the operations <span class="inlinecode">acquire()</span> and <span class="inlinecode">release()</span>. Indicate where the locking needs to be placed to prevent the race condition(s).</li>
+        <li>Could we replace the integer variable
+        <div class="code2">
+        <pre class="codesnippet">int number_of_processes = 0</pre>
+        </div>
+        <p class="text">with the atomic integer</p>
+        <div class="code2">
+        <pre class="codesnippet">atomic_t number_of_processes = 0</pre>
+        </div>
+        <p class="text">to prevent the race condition(s)?</p></li>
+        </ol>
+        <p class="list">&nbsp;&nbsp;<b>5.21</b> Servers can be designed to limit the number of open connections. For example, a server may wish to have only <i>N</i> socket connections at any point in time. As soon as <i>N</i> connections are made, the server will not accept another incoming connection until an existing connection is released. Explain how semaphores can be used by a server to limit the number of concurrent connections.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.22</b> Windows Vista provides a lightweight synchronization tool called <b>slim reader–writer</b> locks. Whereas most implementations of reader–writer locks favor either readers or writers, or perhaps order waiting threads using a FIFO policy, slim reader–writer locks favor neither readers nor writers, nor are waiting threads ordered in a FIFO queue. Explain the benefits of providing such a synchronization tool.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.23</b> Show how to implement the <span class="inlinecode">wait()</span> and <span class="inlinecode">signal()</span> semaphore operations in multiprocessor environments using the <span class="inlinecode">test_and_set()</span> instruction. The solution should exhibit minimal busy waiting.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.24</b> Exercise 4.26 requires the parent thread to wait for the child thread to finish its execution before printing out the computed values. If we let the parent thread access the Fibonacci numbers as soon as they have been computed by the child thread—rather than waiting for the child thread to terminate—what changes would be necessary to the solution for this exercise? Implement your modified solution.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.25</b> Demonstrate that monitors and semaphores are equivalent insofar as they can be used to implement solutions to the same types of synchronization problems.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.26</b> Design an algorithm for a bounded-buffer monitor in which the buffers (portions) are embedded within the monitor itself.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.27</b> The strict mutual exclusion within a monitor makes the bounded-buffer monitor of Exercise 5.26 mainly suitable for small portions.</p>
+        <ol style="list-style-type:lower-alpha;margin-left:2em;">
+        <li>Explain why this is true.</li>
+        <li>Design a new scheme that is suitable for larger portions.</li>
+        </ol>
+        <p class="list">&nbsp;&nbsp;<b>5.28</b> Discuss the tradeoff between fairness and throughput of operations in the readers–writers problem. Propose a method for solving the readers–writers problem without causing starvation.</p>
+        <p class="list"><a id="page_248"></a>&nbsp;&nbsp;<b>5.29</b> How does the <span class="inlinecode">signal()</span> operation associated with monitors differ from the corresponding operation defined for semaphores?</p>
+        <p class="list">&nbsp;&nbsp;<b>5.30</b> Suppose the <span class="inlinecode">signal()</span> statement can appear only as the last statement in a monitor function. Suggest how the implementation described in <a href="12_chapter05.html#sec5.8">Section 5.8</a> can be simplified in this situation.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.31</b> Consider a system consisting of processes <i>P</i><sub>1</sub>, <i>P</i><sub>2</sub>, …, <i>P<sub>n</sub></i>, each of which has a unique priority number. Write a monitor that allocates three identical printers to these processes, using the priority numbers for deciding the order of allocation.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.32</b> A file is to be shared among different processes, each of which has a unique number. The file can be accessed simultaneously by several processes, subject to the following constraint: the sum of all unique numbers associated with all the processes currently accessing the file must be less than <i>n</i>. Write a monitor to coordinate access to the file.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.33</b> When a signal is performed on a condition inside a monitor, the signaling process can either continue its execution or transfer control to the process that is signaled. How would the solution to the preceding exercise differ with these two different ways in which signaling can be performed?</p>
+        <p class="list">&nbsp;&nbsp;<b>5.34</b> Suppose we replace the <span class="inlinecode">wait()</span> and <span class="inlinecode">signal()</span> operations of monitors with a single construct <span class="inlinecode">await(B)</span>, where <span class="inlinecode">B</span> is a general Boolean expression that causes the process executing it to wait until <span class="inlinecode">B</span> becomes <span class="inlinecode">true</span>.</p>
+        <ol style="list-style-type:lower-alpha;margin-left:2em;">
+        <li>Write a monitor using this scheme to implement the readers–writers problem.</li>
+        <li>Explain why, in general, this construct cannot be implemented efficiently.</li>
+        <li>What restrictions need to be put on the <span class="inlinecode">await</span> statement so that it can be implemented efficiently? (Hint: Restrict the generality of <span class="inlinecode">B</span>; see [Kessels (1977)].)</li>
+        </ol>
+        <p class="list">&nbsp;&nbsp;<b>5.35</b> Design an algorithm for a monitor that implements an <i>alarm clock</i> that enables a calling program to delay itself for a specified number of time units (<i>ticks</i>). You may assume the existence of a real hardware clock that invokes a function <span class="inlinecode">tick()</span> in your monitor at regular intervals.</p>
+        <h2 class="subhead">Programming Problems</h2>
+        <p class="list">&nbsp;&nbsp;<b>5.36</b> Programming Exercise 3.20 required you to design a PID manager that allocated a unique process identifier to each process. Exercise 4.20 required you to modify your solution to Exercise 3.20 by writing a program that created a number of threads that requested and released process identifiers. Now modify your solution to Exercise 4.20 by ensuring that the data structure used to represent the availability of process identifiers is safe from race conditions. Use Pthreads mutex locks, described in <a href="12_chapter05.html#sec5.9.4">Section 5.9.4</a>.</p>
+        <p class="list">&nbsp;&nbsp;<a id="page_249"></a><b>5.37</b> Assume that a finite number of resources of a single resource type must be managed. Processes may ask for a number of these resources and will return them once finished. As an example, many commercial software packages provide a given number of <b><i>licenses</i></b>, indicating the number of applications that may run concurrently. When the application is started, the license count is decremented. When the application is terminated, the license count is incremented. If all licenses are in use, requests to start the application are denied. Such requests will only be granted when an existing license holder terminates the application and a license is returned.</p>
+        <p class="list-indent">The following program segment is used to manage a finite number of instances of an available resource. The maximum number of resources and the number of available resources are declared as follows:</p>
+        <div class="code">
+        <pre class="codesnippet">#define MAX_RESOURCES 5
+        int available_resources = MAX_RESOURCES;
+        </pre>
+        </div>
+        <p class="list-text">When a process wishes to obtain a number of resources, it invokes the <span class="inlinecode">decrease_count()</span> function:</p>
+        <div class="code">
+        <pre class="codesnippet">/* decrease available_resources by count resources */
+        /* return 0 if sufficient resources available, */
+        /* otherwise return −1 */
+        int decrease_count(int count) {
+          if (available_resources &lt; count)
+            return −1;
+          else {
+            available_resources −= count;
+        
+            return 0;
+          }
+        }
+        </pre>
+        </div>
+        <p class="list-text">When a process wants to return a number of resources, it calls the <span class="inlinecode">increase_count()</span> function:</p>
+        <div class="code">
+        <pre class="codesnippet">/* increase available_resources by count */
+        int increase_count(int count) {
+           available_resources += count;
+        
+           return 0;
+        }
+        </pre>
+        </div>
+        <p class="list-text">The preceding program segment produces a race condition. Do the following:</p>
+        <ol style="list-style-type:lower-alpha;margin-left:2em;">
+        <li>Identify the data involved in the race condition.</li>
+        <li>Identify the location (or locations) in the code where the race condition occurs.</li>
+        <li><a id="page_250"></a>Using a semaphore or mutex lock, fix the race condition. It is permissible to modify the <span class="inlinecode">decrease_count()</span> function so that the calling process is blocked until sufficient resources are available.</li>
+        </ol>
+        <p class="list">&nbsp;&nbsp;<b>5.38</b> The <span class="inlinecode">decrease_count()</span> function in the previous exercise currently returns 0 if sufficient resources are available and −1 otherwise. This leads to awkward programming for a process that wishes to obtain a number of resources:</p>
+        <div class="code">
+        <pre class="codesnippet">while (decrease_count(count) == −1)
+          ;
+        </pre>
+        </div>
+        <p class="list-text">Rewrite the resource-manager code segment using a monitor and condition variables so that the <span class="inlinecode">decrease_count()</span> function suspends the process until sufficient resources are available. This will allow a process to invoke <span class="inlinecode">decrease_count()</span> by simply calling</p>
+        <div class="code">
+        <pre class="codesnippet">decrease_count(count);
+        </pre>
+        </div>
+        <p class="list-text">The process will return from this function call only when sufficient resources are available.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.39</b> Exercise 4.22 asked you to design a multithreaded program that estimated π using the Monte Carlo technique. In that exercise, you were asked to create a single thread that generated random points, storing the result in a global variable. Once that thread exited, the parent thread performed the calcuation that estimated the value of π. Modify that program so that you create several threads, each of which generates random points and determines if the points fall within the circle. Each thread will have to update the global count of all points that fall within the circle. Protect against race conditions on updates to the shared global variable by using mutex locks.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.40</b> Exercise 4.23 asked you to design a program using OpenMP that estimated π using the Monte Carlo technique. Examine your solution to that program looking for any possible race conditions. If you identify a race condition, protect against it using the strategy outlined in <a href="12_chapter05.html#sec5.10.2">Section 5.10.2</a>.</p>
+        <p class="list">&nbsp;&nbsp;<b>5.41</b> A <b>barrier</b> is a tool for synchronizing the activity of a number of threads. When a thread reaches a <b>barrier point</b>, it cannot proceed until all other threads have reached this point as well. When the last thread reaches the barrier point, all threads are released and can resume concurrent execution.</p>
+        <p class="list-text">Assume that the barrier is initialized to <i>N</i>—the number of threads that must wait at the barrier point:</p>
+        <div class="code">
+        <pre class="codesnippet">init(N);</pre>
+        </div>
+        <p class="list-text">Each thread then performs some work until it reaches the barrier point:</p>
+        <div class="code">
+        <pre class="codesnippet"><a id="page_251"></a>/* do some work for awhile */
+        
+        barrier_point();
+        
+        /* do some work for awhile */
+        </pre>
+        </div>
+        <p class="list-text">Using synchronization tools described in this chapter, construct a barrier that implements the following API:</p>
+        <ul style="list-style-type:disc;margin-left:1.5em;">
+        <li><span class="inlinecode">int init(int n)</span>—Initializes the barrier to the specified size.</li>
+        <li><span class="inlinecode">int barrier_point(void)</span>—Identifies the barrier point. All threads are released from the barrier when the last thread reaches this point.</li>
+        </ul>
+        <p class="list-text">The return value of each function is used to identify error conditions. Each function will return 0 under normal operation and will return −1 if an error occurs. A testing harness is provided in the source code download to test your implementation of the barrier.</p>
+        <h2 class="subhead">Programming Projects</h2>
+        <p class="subhead1"><b>Project 1—The Sleeping Teaching Assistant</b></p>
+        <p class="text">A university computer science department has a teaching assistant (TA) who helps undergraduate students with their programming assignments during regular office hours. The TA's office is rather small and has room for only one desk with a chair and computer. There are three chairs in the hallway outside the office where students can sit and wait if the TA is currently helping another student. When there are no students who need help during office hours, the TA sits at the desk and takes a nap. If a student arrives during office hours and finds the TA sleeping, the student must awaken the TA to ask for help. If a student arrives and finds the TA currently helping another student, the student sits on one of the chairs in the hallway and waits. If no chairs are available, the student will come back at a later time.</p>
+        <p class="text-indent">Using POSIX threads, mutex locks, and semaphores, implement a solution that coordinates the activities of the TA and the students. Details for this assignment are provided below.</p>
+        <p class="subhead2"><b>The Students and the TA</b></p>
+        <p class="text">Using Pthreads (<a href="11_chapter04.html#sec4.4.1">Section 4.4.1</a>), begin by creating <i>n</i> students. Each will run as a separate thread. The TA will run as a separate thread as well. Student threads will alternate between programming for a period of time and seeking help from the TA. If the TA is available, they will obtain help. Otherwise, they will either sit in a chair in the hallway or, if no chairs are available, will resume programming and will seek help at a later time. If a student arrives and notices that the TA is sleeping, the student must notify the TA using a semaphore. When the TA finishes helping a student, the TA must check to see if there are students waiting for help in the hallway. If so, the TA must help each of these students in turn. If no students are present, the TA may return to napping.</p>
+        <p class="text-indent"><a id="page_252"></a>Perhaps the best option for simulating students programming—as well as the TA providing help to a student—is to have the appropriate threads sleep for a random period of time.</p>
+        <p class="subhead2"><b>POSIX Synchronization</b></p>
+        <p class="text">Coverage of POSIX mutex locks and semaphores is provided in <a href="12_chapter05.html#sec5.9.4">Section 5.9.4</a>. Consult that section for details.</p>
+        <p class="subhead1"><b>Project 2—The Dining Philosophers Problem</b></p>
+        <p class="text">In <a href="12_chapter05.html#sec5.7.3">Section 5.7.3</a>, we provide an outline of a solution to the dining-philosophers problem using monitors. This problem will require implementing a solution using Pthreads mutex locks and condition variables.</p>
+        <p class="subhead2"><b>The Philosophers</b></p>
+        <p class="text">Begin by creating five philosophers, each identified by a number 0 . . 4. Each philosopher will run as a separate thread. Thread creation using Pthreads is covered in <a href="11_chapter04.html#sec4.4.1">Section 4.4.1</a>. Philosophers alternate between thinking and eating. To simulate both activities, have the thread sleep for a random period between one and three seconds. When a philosopher wishes to eat, she invokes the function</p>
+        <div class="code1">
+        <pre class="codesnippet">pickup_forks(int philosopher_number)
+        </pre>
+        </div>
+        <p class="text">where <span class="inlinecode">philosopher_number</span> identifies the number of the philosopher wishing to eat. When a philosopher finishes eating, she invokes</p>
+        <div class="code1">
+        <pre class="codesnippet">return_forks(int philosopher_number)
+        </pre>
+        </div>
+        <p class="subhead2"><b>Pthreads Condition Variables</b></p>
+        <p class="text">Condition variables in Pthreads behave similarly to those described in <a href="12_chapter05.html#sec5.8">Section 5.8</a>. However, in that section, condition variables are used within the context of a monitor, which provides a locking mechanism to ensure data integrity. Since Pthreads is typically used in C programs—and since C does not have a monitor—we accomplish locking by associating a condition variable with a mutex lock. Pthreads mutex locks are covered in <a href="12_chapter05.html#sec5.9.4">Section 5.9.4</a>. We cover Pthreads condition variables here.</p>
+        <p class="text-indent">Condition variables in Pthreads use the <span class="inlinecode">pthread_cond_t</span> data type and are initialized using the <span class="inlinecode">pthread_cond_init()</span> function. The following code creates and initializes a condition variable as well as its associated mutex lock:</p>
+        <div class="code1">
+        <pre class="codesnippet">pthread_mutex_t mutex;
+        pthread_cond_t cond_var;
+        
+        pthread_mutex_init(&amp;mutex,NULL);
+        pthread_cond_init(&amp;cond_var,NULL);
+        </pre>
+        </div>
+        <p class="text-indent"><a id="page_253"></a>The <span class="inlinecode">pthread_cond_wait()</span> function is used for waiting on a condition variable. The following code illustrates how a thread can wait for the condition <span class="inlinecode">a == b</span> to become true using a Pthread condition variable:</p>
+        <div class="code">
+        <pre class="codesnippet">pthread_mutex_lock(&amp;mutex);
+        while (a != b)
+             pthread_cond_wait(&amp;mutex, &amp;cond_var);
+        
+        pthread_mutex_unlock(&amp;mutex);
+        </pre>
+        </div>
+        <p class="text-indent">The mutex lock associated with the condition variable must be locked before the <span class="inlinecode">pthread_cond_wait()</span> function is called, since it is used to protect the data in the conditional clause from a possible race condition. Once this lock is acquired, the thread can check the condition. If the condition is not true, the thread then invokes <span class="inlinecode">pthread_cond_wait()</span>, passing the mutex lock and the condition variable as parameters. Calling <span class="inlinecode">pthread_cond_wait()</span> releases the mutex lock, thereby allowing another thread to access the shared data and possibly update its value so that the condition clause evaluates to true. (To protect against program errors, it is important to place the conditional clause within a loop so that the condition is rechecked after being signaled.)</p>
+        <p class="text-indent">A thread that modifies the shared data can invoke the <span class="inlinecode">pthread_cond_signal()</span> function, thereby signaling one thread waiting on the condition variable. This is illustrated below:</p>
+        <div class="code">
+        <pre class="codesnippet">pthread_mutex_lock(&amp;mutex);
+        a = b;
+        pthread_cond_signal(&amp;cond_var);
+        pthread_mutex_unlock(&amp;mutex);
+        </pre>
+        </div>
+        <p class="text-indent">It is important to note that the call to <span class="inlinecode">pthread_cond_signal()</span> does not release the mutex lock. It is the subsequent call to <span class="inlinecode">pthread_mutex_unlock()</span> that releases the mutex. Once the mutex lock is released, the signaled thread becomes the owner of the mutex lock and returns control from the call to <span class="inlinecode">pthread_cond_wait()</span>.</p>
+        <p class="subhead1"><b>Project 3—Producer–Consumer Problem</b></p>
+        <p class="text">In <a href="12_chapter05.html#sec5.7.1">Section 5.7.1</a>, we presented a semaphore-based solution to the producer–consumer problem using a bounded buffer. In this project, you will design a programming solution to the bounded-buffer problem using the producer and consumer processes shown in <a href="12_chapter05.html#fig5.9">Figures 5.9</a> and <a href="12_chapter05.html#fig5.10">5.10</a>. The solution presented in <a href="12_chapter05.html#sec5.7.1">Section 5.7.1</a> uses three semaphores: <span class="inlinecode">empty</span> and <span class="inlinecode">full</span>, which count the number of empty and full slots in the buffer, and <span class="inlinecode">mutex</span>, which is a binary (or mutual-exclusion) semaphore that protects the actual insertion or removal of items in the buffer. For this project, you will use standard counting semaphores for <span class="inlinecode">empty</span> and <span class="inlinecode">full</span> and a mutex lock, rather than a binary semaphore, to represent <span class="inlinecode">mutex</span>. The producer and consumer—running as separate threads—will move items to and from a buffer that is synchronized with the <span class="inlinecode">empty</span>, <span class="inlinecode">full</span>, and <span class="inlinecode">mutex</span> structures. You can solve this problem using either Pthreads or the Windows API.</p>
+        <p class="center"><a id="page_254"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f024.jpg" alt="image" class="imgepub" width="469" height="359"></p>
+        <p class="caption"><a id="fig5.24"></a><b>Figure 5.24</b> Outline of buffer operations.</p>
+        <p class="subhead2"><b>The Buffer</b></p>
+        <p class="text">Internally, the buffer will consist of a fixed-size array of type <span class="inlinecode">buffer_item</span> (which will be defined using a <span class="inlinecode">typedef</span>). The array of <span class="inlinecode">buffer_item</span> objects will be manipulated as a circular queue. The definition of <span class="inlinecode">buffer_item</span>, along with the size of the buffer, can be stored in a header file such as the following:</p>
+        <div class="code">
+        <pre class="codesnippet">/* buffer.h */
+        typedef int buffer_item;
+        #define BUFFER_SIZE 5
+        </pre>
+        </div>
+        <p class="text">The buffer will be manipulated with two functions, <span class="inlinecode">insert_item()</span> and <span class="inlinecode">remove_item()</span>, which are called by the producer and consumer threads, respectively. A skeleton outlining these functions appears in <a href="12_chapter05.html#fig5.24">Figure 5.24</a>.</p>
+        <p class="text-indent">The <span class="inlinecode">insert_item()</span> and <span class="inlinecode">remove_item()</span> functions will synchronize the producer and consumer using the algorithms outlined in <a href="12_chapter05.html#fig5.9">Figures 5.9</a> and <a href="12_chapter05.html#fig5.10">5.10</a>. The buffer will also require an initialization function that initializes the mutual-exclusion object <span class="inlinecode">mutex</span> along with the <span class="inlinecode">empty</span> and <span class="inlinecode">full</span> semaphores.</p>
+        <p class="text-indent">The <span class="inlinecode">main()</span> function will initialize the buffer and create the separate producer and consumer threads. Once it has created the producer and consumer threads, the <span class="inlinecode">main()</span> function will sleep for a period of time and, upon awakening, will terminate the application. The <span class="inlinecode">main()</span> function will be passed three parameters on the command line:</p>
+        <ol style="list-style-type:decimal">
+        <li>How long to sleep before terminating</li>
+        <li>The number of producer threads</li>
+        <li>The number of consumer threads</li>
+        </ol>
+        <p class="center"><a id="page_255"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f025.jpg" alt="image" class="imgepub" width="620" height="209"></p>
+        <p class="caption"><a id="fig5.25"></a><b>Figure 5.25</b> Outline of skeleton program.</p>
+        <p class="text">A skeleton for this function appears in <a href="12_chapter05.html#fig5.25">Figure 5.25</a>.</p>
+        <p class="subhead2"><b>The Producer and Consumer Threads</b></p>
+        <p class="text">The producer thread will alternate between sleeping for a random period of time and inserting a random integer into the buffer. Random numbers will be produced using the <span class="inlinecode">rand()</span> function, which produces random integers between 0 and RAND_MAX. The consumer will also sleep for a random period of time and, upon awakening, will attempt to remove an item from the buffer. An outline of the producer and consumer threads appears in <a href="12_chapter05.html#fig5.26">Figure 5.26</a>.</p>
+        <p class="text-indent">As noted earlier, you can solve this problem using either Pthreads or the Windows API. In the following sections, we supply more information on each of these choices.</p>
+        <p class="subhead2"><b>Pthreads Thread Creation and Synchronization</b></p>
+        <p class="text">Creating threads using the Pthreads API is discussed in <a href="11_chapter04.html#sec4.4.1">Section 4.4.1</a>. Coverage of mutex locks and semaphores using Pthreads is provided in <a href="12_chapter05.html#sec5.9.4">Section 5.9.4</a>. Refer to those sections for specific instructions on Pthreads thread creation and synchronization.</p>
+        <p class="subhead2"><b>Windows</b></p>
+        <p class="text"><a href="11_chapter04.html#sec4.4.2">Section 4.4.2</a> discusses thread creation using the Windows API. Refer to that section for specific instructions on creating threads.</p>
+        <p class="subhead2"><b>Windows Mutex Locks</b></p>
+        <p class="text">Mutex locks are a type of dispatcher object, as described in <a href="12_chapter05.html#sec5.9.1">Section 5.9.1</a>. The following illustrates how to create a mutex lock using the <span class="inlinecode">CreateMutex()</span> function:</p>
+        <p class="center"><a id="page_256"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch005-f026.jpg" alt="image" class="imgepub" width="412" height="694"></p>
+        <p class="caption"><a id="fig5.26"></a><b>Figure 5.26</b> An outline of the producer and consumer threads.</p>
+        <p class="text">The first parameter refers to a security attribute for the mutex lock. By setting this attribute to <span class="inlinecode">NULL</span>, we disallow any children of the process creating this mutex lock to inherit the handle of the lock. The second parameter indicates whether the creator of the mutex lock is the lock's initial owner. Passing a value of <span class="inlinecode">FALSE</span> indicates that the thread creating the mutex is not the initial owner. (We shall soon see how mutex locks are acquired.) The third parameter allows us to name the mutex. However, because we provide a value of <span class="inlinecode">NULL</span>, we do not name the mutex. If successful, <span class="inlinecode">CreateMutex()</span> returns a <span class="inlinecode">HANDLE</span> to the mutex lock; otherwise, it returns <span class="inlinecode">NULL</span>.</p>
+        <p class="text-indent">In <a href="12_chapter05.html#sec5.9.1">Section 5.9.1</a>, we identified dispatcher objects as being either <b><i>signaled</i></b> or <b><i>nonsignaled</i></b>. A signaled dispatcher object (such as a mutex lock) is available for ownership. Once it is acquired, it moves to the nonsignaled state. When it is released, it returns to signaled.</p>
+        <p class="text-indent">Mutex locks are acquired by invoking the <span class="inlinecode">WaitForSingleObject()</span> function. The function is passed the <span class="inlinecode">HANDLE</span> to the lock along with a flag indicating how long to wait. The following code demonstrates how the mutex lock created above can be acquired:</p>
+        <div class="code">
+        <pre class="codesnippet">WaitForSingleObject(Mutex, INFINITE);
+        </pre>
+        </div>
+        <p class="text"><a id="page_257"></a>The parameter value <span class="inlinecode">INFINITE</span> indicates that we will wait an infinite amount of time for the lock to become available. Other values could be used that would allow the calling thread to time out if the lock did not become available within a specified time. If the lock is in a signaled state, <span class="inlinecode">WaitForSingleObject()</span> returns immediately, and the lock becomes nonsignaled. A lock is released (moves to the signaled state) by invoking <span class="inlinecode">ReleaseMutex()</span>—for example, as follows:</p>
+        <div class="code">
+        <pre class="codesnippet">ReleaseMutex(Mutex);
+        </pre>
+        </div>
+        <p class="subhead2"><b>Windows Semaphores</b></p>
+        <p class="text">Semaphores in the Windows API are dispatcher objects and thus use the same signaling mechanism as mutex locks. Semaphores are created as follows:</p>
+        <div class="code">
+        <pre class="codesnippet">#include &lt;windows.h&gt;
+        
+        HANDLE Sem;
+        Sem = CreateSemaphore(NULL, 1, 5, NULL);
+        </pre>
+        </div>
+        <p class="text">The first and last parameters identify a security attribute and a name for the semaphore, similar to what we described for mutex locks. The second and third parameters indicate the initial value and maximum value of the semaphore. In this instance, the initial value of the semaphore is 1, and its maximum value is 5. If successful, <span class="inlinecode">CreateSemaphore()</span> returns a <span class="inlinecode">HANDLE</span> to the mutex lock; otherwise, it returns <span class="inlinecode">NULL</span>.</p>
+        <p class="text-indent">Semaphores are acquired with the same <span class="inlinecode">WaitForSingleObject()</span> function as mutex locks. We acquire the semaphore <span class="inlinecode">Sem</span> created in this example by using the following statement:</p>
+        <div class="code">
+        <pre class="codesnippet">WaitForSingleObject(Semaphore, INFINITE);
+        </pre>
+        </div>
+        <p class="text">If the value of the semaphore is &gt; 0, the semaphore is in the signaled state and thus is acquired by the calling thread. Otherwise, the calling thread blocks indefinitely—as we are specifying <span class="inlinecode">INFINITE</span>—until the semaphore returns to the signaled state.</p>
+        <p class="text-indent">The equivalent of the <span class="inlinecode">signal()</span> operation for Windows semaphores is the <span class="inlinecode">ReleaseSemaphore()</span> function. This function is passed three parameters:</p>
+        <ol style="list-style-type:decimal">
+        <li>The HANDLE of the semaphore</li>
+        <li>How much to increase the value of the semaphore</li>
+        <li>A pointer to the previous value of the semaphore</li>
+        </ol>
+        <p class="text">We can use the following statement to increase <span class="inlinecode">Sem</span> by 1:</p>
+        <div class="code">
+        <pre class="codesnippet">ReleaseSemaphore(Sem, 1, <span class="inlinecodenormal">NULL</span>);
+        </pre>
+        </div>
+        <p class="text">Both <span class="inlinecode">ReleaseSemaphore()</span> and <span class="inlinecode">ReleaseMutex()</span> return a nonzero value if successful and 0 otherwise.</p>
+        <h3 class="subtitle"><a id="chap5-bibli"></a>Bibliographical Notes</h3>
+        <p class="text"><a id="page_258"></a>The mutual-exclusion problem was first discussed in a classic paper by [Dijkstra (1965)]. Dekker's algorithm (Exercise 5.8)—the first correct software solution to the two-process mutual-exclusion problem—was developed by the Dutch mathematician T. Dekker. This algorithm also was discussed by [Dijkstra (1965)]. A simpler solution to the two-process mutual-exclusion problem has since been presented by [Peterson (1981)] (<a href="12_chapter05.html#fig5.2">Figure 5.2</a>). The semaphore concept was suggested by [Dijkstra (1965)].</p>
+        <p class="text-indent">The classic process-coordination problems that we have described are paradigms for a large class of concurrency-control problems. The bounded-buffer problem and the dining-philosophers problem were suggested in [Dijkstra (1965)] and [Dijkstra (1971)]. The readers–writers problem was suggested by [Courtois et al. (1971)].</p>
+        <p class="text-indent">The critical-region concept was suggested by [Hoare (1972)] and by [Brinch-Hansen (1972)]. The monitor concept was developed by [Brinch-Hansen (1973)]. [Hoare (1974)] gave a complete description of the monitor.</p>
+        <p class="text-indent">Some details of the locking mechanisms used in Solaris were presented in [Mauro and McDougall (2007)]. As noted earlier, the locking mechanisms used by the kernel are implemented for user-level threads as well, so the same types of locks are available inside and outside the kernel. Details of Windows 2000 synchronization can be found in [Solomon and Russinovich (2000)]. [Love (2010)] describes synchronization in the Linux kernel.</p>
+        <p class="text-indent">Information on Pthreads programming can be found in [Lewis and Berg (1998)] and [Butenhof (1997)]. [Hart (2005)] describes thread synchronization using Windows. [Goetz et al. (2006)] present a detailed discussion of concurrent programming in Java as well as the <span class="inlinecode">java.util.concurrent</span> package. [Breshears (2009)] and [Pacheco (2011)] provide detailed coverage of synchronization issues in relation to parallel programming. [Lu et al. (2008)] provide a study of concurrency bugs in real-world applications.</p>
+        <p class="text-indent">[Adl-Tabatabai et al. (2007)] discuss transactional memory. Details on using OpenMP can be found at <b><a href="http://openmp.org">http://openmp.org</a></b>. Functional programming using Erlang and Scala is covered in [Armstrong (2007)] and [Odersky et al. ()] respectively.</p>
+        <h2 class="subhead">Bibliography</h2>
+        <p class="reference"><b>[Adl-Tabatabai et al. (2007)]</b> A.-R. Adl-Tabatabai, C. Kozyrakis, and B. Saha, “Unlocking Concurrency”, <i>Queue</i>, Volume 4, Number 10 (2007), pages 24–33.</p>
+        <p class="reference"><b>[Armstrong (2007)]</b> J. Armstrong, <i>Programming Erlang Software for a Concurrent World</i>, The Pragmatic Bookshelf (2007).</p>
+        <p class="reference"><b>[Breshears (2009)]</b> C. Breshears, <i>The Art of Concurrency</i>, O'Reilly &amp; Associates (2009).</p>
+        <p class="reference"><b>[Brinch-Hansen (1972)]</b> P. Brinch-Hansen, “Structured Multiprogramming”, <i>Communications of the ACM</i>, Volume 15, Number 7 (1972), pages 574–578.</p>
+        <p class="reference"><a id="page_259"></a><b>[Brinch-Hansen (1973)]</b> P. Brinch-Hansen, <i>Operating System Principles</i>, Prentice Hall (1973).</p>
+        <p class="reference"><b>[Butenhof (1997)]</b> D. Butenhof, <i>Programming with POSIX Threads</i>, Addison-Wesley (1997).</p>
+        <p class="reference"><b>[Courtois et al. (1971)]</b> P. J. Courtois, F. Heymans, and D. L. Parnas, “Concurrent Control with ‘Readers’ and ‘Writers’”, <i>Communications of the ACM</i>, Volume 14, Number 10 (1971), pages 667–668.</p>
+        <p class="reference"><b>[Dijkstra (1965)]</b> E. W. Dijkstra, “Cooperating Sequential Processes”, Technical report, Technological University, Eindhoven, the Netherlands (1965).</p>
+        <p class="reference"><b>[Dijkstra (1971)]</b> E. W. Dijkstra, “Hierarchical Ordering of Sequential Processes”, <i>Acta Informatica</i>, Volume 1, Number 2 (1971), pages 115–138.</p>
+        <p class="reference"><b>[Goetz et al. (2006)]</b> B. Goetz, T. Peirls, J. Bloch, J. Bowbeer, D. Holmes, and D. Lea, <i>Java Concurrency in Practice</i>, Addison-Wesley (2006).</p>
+        <p class="reference"><b>[Hart (2005)]</b> J. M. Hart, <i>Windows System Programming</i>, Third Edition, Addison-Wesley (2005).</p>
+        <p class="reference"><b>[Hoare (1972)]</b> C. A. R. Hoare, “Towards a Theory of Parallel Programming”, in <b>[Hoare and Perrott 1972]</b> (1972), pages 61–71.</p>
+        <p class="reference"><b>[Hoare (1974)]</b> C. A. R. Hoare, “Monitors: An Operating System Structuring Concept”, <i>Communications of the ACM</i>, Volume 17, Number 10 (1974), pages 549–557.</p>
+        <p class="reference"><b>[Kessels (1977)]</b> J. L. W. Kessels, “An Alternative to Event Queues for Synchronization in Monitors”, <i>Communications of the ACM</i>, Volume 20, Number 7 (1977), pages 500–503.</p>
+        <p class="reference"><b>[Lewis and Berg (1998)]</b> B. Lewis and D. Berg, <i>Multithreaded Programming with Pthreads</i>, Sun Microsystems Press (1998).</p>
+        <p class="reference"><b>[Love (2010)]</b> R. Love, <i>Linux Kernel Development</i>, Third Edition, Developer's Library (2010).</p>
+        <p class="reference"><b>[Lu et al. (2008)]</b> S. Lu, S. Park, E. Seo, and Y. Zhou, “Learning from mistakes: a comprehensive study on real world concurrency bug characteristics”, <i>SIGPLAN Notices</i>, Volume 43, Number 3 (2008), pages 329–339.</p>
+        <p class="reference"><b>[Mauro and McDougall (2007)]</b> J. Mauro and R. McDougall, <i>Solaris Internals: Core Kernel Architecture</i>, Prentice Hall (2007).</p>
+        <p class="reference"><b>[Odersky et al. ()]</b> M. Odersky, V. Cremet, I. Dragos, G. Dubochet, B. Emir, S. Mcdirmid, S. Micheloud, N. Mihaylov, M. Schinz, E. Stenman, L. Spoon, and M. Zenger.</p>
+        <p class="reference"><b>[Pacheco (2011)]</b> P. S. Pacheco, <i>An Introduction to Parallel Programming</i>, Morgan Kaufmann (2011).</p>
+        <p class="reference"><b>[Peterson (1981)]</b> G. L. Peterson, “Myths About the Mutual Exclusion Problem”, <i>Information Processing Letters</i>, Volume 12, Number 3 (1981).</p>
+        <p class="reference"><b>[Solomon and Russinovich (2000)]</b> D. A. Solomon and M. E. Russinovich, <i>Inside Microsoft Windows 2000</i>, Third Edition, Microsoft Press (2000).</p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781118063330/files/9781118063330.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

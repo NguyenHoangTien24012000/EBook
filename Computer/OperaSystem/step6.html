@@ -1,0 +1,575 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h1 class="chapnum"><a id="chap4"></a>CHAPTER <i>4</i></h1>
+        <h1 class="chaptitle">Threads</h1>
+        <p class="text"><a id="page_163"></a>The process model introduced in <a href="10_chapter03.html#chap3">Chapter 3</a> assumed that a process was an executing program with a single thread of control. Virtually all modern operating systems, however, provide features enabling a process to contain multiple threads of control. In this chapter, we introduce many concepts associated with multithreaded computer systems, including a discussion of the APIs for the Pthreads, Windows, and Java thread libraries. We look at a number of issues related to multithreaded programming and its effect on the design of operating systems. Finally, we explore how the Windows and Linux operating systems support threads at the kernel level.</p>
+        <div class="bgbox">
+        <p class="boxtitle1">CHAPTER OBJECTIVES</p>
+        <ul style="list-style-type:disc;">
+        <li>To introduce the notion of a thread—a fundamental unit of CPU utilization that forms the basis of multithreaded computer systems.</li>
+        <li>To discuss the APIs for the Pthreads, Windows, and Java thread libraries.</li>
+        <li>To explore several strategies that provide implicit threading.</li>
+        <li>To examine issues related to multithreaded programming.</li>
+        <li>To cover operating system support for threads in Windows and Linux.</li>
+        </ul>
+        </div>
+        <h2 class="subtitle"><a id="sec4.1"></a>4.1 Overview</h2>
+        <p class="text">A thread is a basic unit of CPU utilization; it comprises a thread ID, a program counter, a register set, and a stack. It shares with other threads belonging to the same process its code section, data section, and other operating-system resources, such as open files and signals. A traditional (or <i>heavyweight</i>) process has a single thread of control. If a process has multiple threads of control, it can perform more than one task at a time. <a href="11_chapter04.html#fig4.1">Figure 4.1</a> illustrates the difference between a traditional <b>single-threaded</b> process and a <b>multithreaded</b> process.</p>
+        <h3 class="subtitle"><a id="sec4.1.1"></a>4.1.1 Motivation</h3>
+        <p class="text">Most software applications that run on modern computers are multithreaded. An application typically is implemented as a separate process with several <a id="page_164"></a>threads of control. A web browser might have one thread display images or text while another thread retrieves data from the network, for example. A word processor may have a thread for displaying graphics, another thread for responding to keystrokes from the user, and a third thread for performing spelling and grammar checking in the background. Applications can also be designed to leverage processing capabilities on multicore systems. Such applications can perform several CPU-intensive tasks in parallel across the multiple computing cores.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f001.jpg" alt="image" class="imgepub" width="604" height="348"></p>
+        <p class="caption"><a id="fig4.1"></a><b>Figure 4.1</b> Single-threaded and multithreaded processes.</p>
+        <p class="text-indent">In certain situations, a single application may be required to perform several similar tasks. For example, a web server accepts client requests for web pages, images, sound, and so forth. A busy web server may have several (perhaps thousands of) clients concurrently accessing it. If the web server ran as a traditional single-threaded process, it would be able to service only one client at a time, and a client might have to wait a very long time for its request to be serviced.</p>
+        <p class="text-indent">One solution is to have the server run as a single process that accepts requests. When the server receives a request, it creates a separate process to service that request. In fact, this process-creation method was in common use before threads became popular. Process creation is time consuming and resource intensive, however. If the new process will perform the same tasks as the existing process, why incur all that overhead? It is generally more efficient to use one process that contains multiple threads. If the web-server process is multithreaded, the server will create a separate thread that listens for client requests. When a request is made, rather than creating another process, the server creates a new thread to service the request and resume listening for additional requests. This is illustrated in <a href="11_chapter04.html#fig4.2">Figure 4.2</a>.</p>
+        <p class="text-indent">Threads also play a vital role in remote procedure call (RPC) systems. Recall from <a href="10_chapter03.html#chap3">Chapter 3</a> that RPCs allow interprocess communication by providing a communication mechanism similar to ordinary function or procedure calls. Typically, RPC servers are multithreaded. When a server receives a message, it <a id="page_165"></a>services the message using a separate thread. This allows the server to service several concurrent requests.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f002.jpg" alt="image" class="imgepub" width="569" height="201"></p>
+        <p class="caption"><a id="fig4.2"></a><b>Figure 4.2</b> Multithreaded server architecture.</p>
+        <p class="text-indent">Finally, most operating-system kernels are now multithreaded. Several threads operate in the kernel, and each thread performs a specific task, such as managing devices, managing memory, or interrupt handling. For example, Solaris has a set of threads in the kernel specifically for interrupt handling; Linux uses a kernel thread for managing the amount of free memory in the system.</p>
+        <h3 class="subtitle"><a id="sec4.1.2"></a>4.1.2 Benefits</h3>
+        <p class="text">The benefits of multithreaded programming can be broken down into four major categories:</p>
+        <ol style="list-style-type:decimal;">
+        <li><b>Responsiveness</b>. Multithreading an interactive application may allow a program to continue running even if part of it is blocked or is performing a lengthy operation, thereby increasing responsiveness to the user. This quality is especially useful in designing user interfaces. For instance, consider what happens when a user clicks a button that results in the performance of a time-consuming operation. A single-threaded application would be unresponsive to the user until the operation had completed. In contrast, if the time-consuming operation is performed in a separate thread, the application remains responsive to the user.</li>
+        <li><b>Resource sharing</b>. Processes can only share resources through techniques such as shared memory and message passing. Such techniques must be explicitly arranged by the programmer. However, threads share the memory and the resources of the process to which they belong by default. The benefit of sharing code and data is that it allows an application to have several different threads of activity within the same address space.</li>
+        <li><b>Economy</b>. Allocating memory and resources for process creation is costly. Because threads share the resources of the process to which they belong, it is more economical to create and context-switch threads. Empirically gauging the difference in overhead can be difficult, but in general it is significantly more time consuming to create and manage processes than threads. In Solaris, for example, creating a process is about thirty times <a id="page_166"></a>slower than is creating a thread, and context switching is about five times slower.
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f003.jpg" alt="image" class="imgepub" width="570" height="64"></p>
+        <p class="caption"><a id="fig4.3"></a><b>Figure 4.3</b> Concurrent execution on a single-core system.</p></li>
+        <li><b>Scalability.</b> The benefits of multithreading can be even greater in a multiprocessor architecture, where threads may be running in parallel on different processing cores. A single-threaded process can run on only one processor, regardless how many are available. We explore this issue further in the following section.</li>
+        </ol>
+        <h2 class="subtitle"><a id="sec4.2"></a>4.2 Multicore Programming</h2>
+        <p class="text">Earlier in the history of computer design, in response to the need for more computing performance, single-CPU systems evolved into multi-CPU systems. A more recent, similar trend in system design is to place multiple computing cores on a single chip. Each core appears as a separate processor to the operating system (<a href="07_chapter01.html#sec1.3.2">Section 1.3.2</a>). Whether the cores appear across CPU chips or within CPU chips, we call these systems <b>multicore</b> or <b>multiprocessor</b> systems. Multithreaded programming provides a mechanism for more efficient use of these multiple computing cores and improved concurrency. Consider an application with four threads. On a system with a single computing core, concurrency merely means that the execution of the threads will be interleaved over time (<a href="11_chapter04.html#fig4.3">Figure 4.3</a>), because the processing core is capable of executing only one thread at a time. On a system with multiple cores, however, concurrency means that the threads can run in parallel, because the system can assign a separate thread to each core (<a href="11_chapter04.html#fig4.4">Figure 4.4</a>).</p>
+        <p class="text-indent">Notice the distinction between <b><i>parallelism</i></b> and <b><i>concurrency</i></b> in this discussion. A system is parallel if it can perform more than one task simultaneously. In contrast, a concurrent system supports more than one task by allowing all the tasks to make progress. Thus, it is possible to have concurrency without parallelism. Before the advent of SMP and multicore architectures, most computer systems had only a single processor. CPU schedulers were designed to provide the illusion of parallelism by rapidly switching between processes in <a id="page_167"></a>the system, thereby allowing each process to make progress. Such processes were running concurrently, but not in parallel.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f004.jpg" alt="image" class="imgepub" width="357" height="125"></p>
+        <p class="caption"><a id="fig4.4"></a><b>Figure 4.4</b> Parallel execution on a multicore system.</p>
+        <div class="bgbox">
+        <p class="boxtitle"><b><i>AMDAHL'S LAW</i></b></p>
+        <p class="text">Amdahl's Law is a formula that identifies potential performance gains from adding additional computing cores to an application that has both serial (nonparallel) and parallel components. If <i>S</i> is the portion of the application that must be performed serially on a system with <i>N</i> processing cores, the formula appears as follows:</p>
+        <p style="text-align:center;margin-top:0.5pc"></p>
+        <p class="text-indent1"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/p167-001.jpg" alt="image" class="imgepub" width="163" height="49"></p>
+        <p style="text-align:center;margin-top:0.5pc"></p>
+        <p class="text">As an example, assume we have an application that is 75 percent parallel and 25 percent serial. If we run this application on a system with two processing cores, we can get a speedup of 1.6 times. If we add two additional cores (for a total of four), the speedup is 2.28 times.</p>
+        <p class="text-indent">One interesting fact about Amdahl's Law is that as <i>N</i> approaches infinity, the speedup converges to 1/<i>S</i>. For example, if 40 percent of an application is performed serially, the maximum speedup is 2.5 times, regardless of the number of processing cores we add. This is the fundamental principle behind Amdahl's Law: the serial portion of an application can have a disproportionate effect on the performance we gain by adding additional computing cores.</p>
+        <p class="text-indent">Some argue that Amdahl's Law does not take into account the hardware performance enhancements used in the design of contemporary multicore systems. Such arguments suggest Amdahl's Law may cease to be applicable as the number of processing cores continues to increase on modern computer systems.</p>
+        </div>
+        <p class="text-indent">As systems have grown from tens of threads to thousands of threads, CPU designers have improved system performance by adding hardware to improve thread performance. Modern Intel CPUs frequently support two threads per core, while the Oracle T4 CPU supports eight threads per core. This support means that multiple threads can be loaded into the core for fast switching. Multicore computers will no doubt continue to increase in core counts and hardware thread support.</p>
+        <h3 class="subtitle"><a id="sec4.2.1"></a>4.2.1 Programming Challenges</h3>
+        <p class="text">The trend towards multicore systems continues to place pressure on system designers and application programmers to make better use of the multiple computing cores. Designers of operating systems must write scheduling algorithms that use multiple processing cores to allow the parallel execution shown in <a href="11_chapter04.html#fig4.4">Figure 4.4</a>. For application programmers, the challenge is to modify existing programs as well as design new programs that are multithreaded.</p>
+        <p class="text-indent">In general, five areas present challenges in programming for multicore systems:</p>
+        <ol style="list-style-type:decimal;">
+        <li><a id="page_168"></a><b>Identifying tasks</b>. This involves examining applications to find areas that can be divided into separate, concurrent tasks. Ideally, tasks are independent of one another and thus can run in parallel on individual cores.</li>
+        <li><b>Balance</b>. While identifying tasks that can run in parallel, programmers must also ensure that the tasks perform equal work of equal value. In some instances, a certain task may not contribute as much value to the overall process as other tasks. Using a separate execution core to run that task may not be worth the cost.</li>
+        <li><b>Data splitting</b>. Just as applications are divided into separate tasks, the data accessed and manipulated by the tasks must be divided to run on separate cores.</li>
+        <li><b>Data dependency</b>. The data accessed by the tasks must be examined for dependencies between two or more tasks. When one task depends on data from another, programmers must ensure that the execution of the tasks is synchronized to accommodate the data dependency. We examine such strategies in <a href="12_chapter05.html#chap5">Chapter 5</a>.</li>
+        <li><b>Testing and debugging</b>. When a program is running in parallel on multiple cores, many different execution paths are possible. Testing and debugging such concurrent programs is inherently more difficult than testing and debugging single-threaded applications.</li>
+        </ol>
+        <p class="text">Because of these challenges, many software developers argue that the advent of multicore systems will require an entirely new approach to designing software systems in the future. (Similarly, many computer science educators believe that software development must be taught with increased emphasis on parallel programming.)</p>
+        <h3 class="subtitle"><a id="sec4.2.2"></a>4.2.2 Types of Parallelism</h3>
+        <p class="text">In general, there are two types of parallelism: data parallelism and task parallelism. <b>Data parallelism</b> focuses on distributing subsets of the same data across multiple computing cores and performing the same operation on each core. Consider, for example, summing the contents of an array of size <i>N</i>. On a single-core system, one thread would simply sum the elements [0] … [<i>N</i> − 1]. On a dual-core system, however, thread <i>A</i>, running on core 0, could sum the elements [0] … [<i>N</i>/2 − 1] while thread <i>B</i>, running on core 1, could sum the elements [<i>N</i>/2] … [<i>N</i> − 1]. The two threads would be running in parallel on separate computing cores.</p>
+        <p class="text-indent"><b>Task parallelism</b> involves distributing not data but tasks (threads) across multiple computing cores. Each thread is performing a unique operation. Different threads may be operating on the same data, or they may be operating on different data. Consider again our example above. In contrast to that situation, an example of task parallelism might involve two threads, each performing a unique statistical operation on the array of elements. The threads again are operating in parallel on separate computing cores, but each is performing a unique operation.</p>
+        <p class="text-indent"><a id="page_169"></a>Fundamentally, then, data parallelism involves the distribution of data across multiple cores and task parallelism on the distribution of tasks across multiple cores. In practice, however, few applications strictly follow either data or task parallelism. In most instances, applications use a hybrid of these two strategies.</p>
+        <h2 class="subtitle"><a id="sec4.3"></a>4.3 Multithreading Models</h2>
+        <p class="text">Our discussion so far has treated threads in a generic sense. However, support for threads may be provided either at the user level, for <b>user threads</b>, or by the kernel, for <b>kernel threads</b>. User threads are supported above the kernel and are managed without kernel support, whereas kernel threads are supported and managed directly by the operating system. Virtually all contemporary operating systems—including Windows, Linux, Mac OS X, and Solaris—support kernel threads.</p>
+        <p class="text-indent">Ultimately, a relationship must exist between user threads and kernel threads. In this section, we look at three common ways of establishing such a relationship: the many-to-one model, the one-to-one model, and the many-to-many model.</p>
+        <h3 class="subtitle"><a id="sec4.3.1"></a>4.3.1 Many-to-One Model</h3>
+        <p class="text">The many-to-one model (<a href="11_chapter04.html#fig4.5">Figure 4.5</a>) maps many user-level threads to one kernel thread. Thread management is done by the thread library in user space, so it is efficient (we discuss thread libraries in <a href="11_chapter04.html#sec4.4">Section 4.4</a>). However, the entire process will block if a thread makes a blocking system call. Also, because only one thread can access the kernel at a time, multiple threads are unable to run in parallel on multicore systems. <b>Green threads</b>—a thread library available for Solaris systems and adopted in early versions of Java—used the many-to-one model. However, very few systems continue to use the model because of its inability to take advantage of multiple processing cores.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f005.jpg" alt="image" class="imgepub" width="285" height="282"></p>
+        <p class="caption"><a id="fig4.5"></a><b>Figure 4.5</b> Many-to-one model.</p>
+        <p class="center"><a id="page_170"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f006.jpg" alt="image" class="imgepub" width="321" height="122"></p>
+        <p class="caption"><a id="fig4.6"></a><b>Figure 4.6</b> One-to-one model.</p>
+        <h3 class="subtitle"><a id="sec4.3.2"></a>4.3.2 One-to-One Model</h3>
+        <p class="text">The one-to-one model (<a href="11_chapter04.html#fig4.6">Figure 4.6</a>) maps each user thread to a kernel thread. It provides more concurrency than the many-to-one model by allowing another thread to run when a thread makes a blocking system call. It also allows multiple threads to run in parallel on multiprocessors. The only drawback to this model is that creating a user thread requires creating the corresponding kernel thread. Because the overhead of creating kernel threads can burden the performance of an application, most implementations of this model restrict the number of threads supported by the system. Linux, along with the family of Windows operating systems, implement the one-to-one model.</p>
+        <h3 class="subtitle"><a id="sec4.3.3"></a>4.3.3 Many-to-Many Model</h3>
+        <p class="text">The many-to-many model (<a href="11_chapter04.html#fig4.7">Figure 4.7</a>) multiplexes many user-level threads to a smaller or equal number of kernel threads. The number of kernel threads may be specific to either a particular application or a particular machine (an application may be allocated more kernel threads on a multiprocessor than on a single processor).</p>
+        <p class="text-indent">Let's consider the effect of this design on concurrency. Whereas the many-to-one model allows the developer to create as many user threads as she wishes, it does not result in true concurrency, because the kernel can schedule only one thread at a time. The one-to-one model allows greater concurrency, but the developer has to be careful not to create too many threads within an application (and in some instances may be limited in the number of threads she can <a id="page_171"></a>create). The many-to-many model suffers from neither of these shortcomings: developers can create as many user threads as necessary, and the corresponding kernel threads can run in parallel on a multiprocessor. Also, when a thread performs a blocking system call, the kernel can schedule another thread for execution.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f007.jpg" alt="image" class="imgepub" width="320" height="273"></p>
+        <p class="caption"><a id="fig4.7"></a><b>Figure 4.7</b> Many-to-many model.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f008.jpg" alt="image" class="imgepub" width="321" height="216"></p>
+        <p class="caption"><a id="fig4.8"></a><b>Figure 4.8</b> Two-level model.</p>
+        <p class="text-indent">One variation on the many-to-many model still multiplexes many user-level threads to a smaller or equal number of kernel threads but also allows a user-level thread to be bound to a kernel thread. This variation is sometimes referred to as the <b>two-level model</b> (<a href="11_chapter04.html#fig4.8">Figure 4.8</a>). The Solaris operating system supported the two-level model in versions older than Solaris 9. However, beginning with Solaris 9, this system uses the one-to-one model.</p>
+        <h2 class="subtitle"><a id="sec4.4"></a>4.4 Thread Libraries</h2>
+        <p class="text">A <b>thread library</b> provides the programmer with an API for creating and managing threads. There are two primary ways of implementing a thread library. The first approach is to provide a library entirely in user space with no kernel support. All code and data structures for the library exist in user space. This means that invoking a function in the library results in a local function call in user space and not a system call.</p>
+        <p class="text-indent">The second approach is to implement a kernel-level library supported directly by the operating system. In this case, code and data structures for the library exist in kernel space. Invoking a function in the API for the library typically results in a system call to the kernel.</p>
+        <p class="text-indent">Three main thread libraries are in use today: POSIX Pthreads, Windows, and Java. Pthreads, the threads extension of the POSIX standard, may be provided as either a user-level or a kernel-level library. The Windows thread library is a kernel-level library available on Windows systems. The Java thread API allows threads to be created and managed directly in Java programs. However, because in most instances the JVM is running on top of a host operating system, the Java thread API is generally implemented using a thread library available on the host system. This means that on Windows systems, Java threads are typically implemented using the Windows API; UNIX and Linux systems often use Pthreads.</p>
+        <p class="text-indent"><a id="page_172"></a>For POSIX and Windows threading, any data declared globally—that is, declared outside of any function—are shared among all threads belonging to the same process. Because Java has no notion of global data, access to shared data must be explicitly arranged between threads. Data declared local to a function are typically stored on the stack. Since each thread has its own stack, each thread has its own copy of local data.</p>
+        <p class="text-indent">In the remainder of this section, we describe basic thread creation using these three thread libraries. As an illustrative example, we design a multithreaded program that performs the summation of a non-negative integer in a separate thread using the well-known summation function:</p>
+        <p style="text-align:center;margin-top:0.5pc"></p>
+        <p class="text-indent1"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/p172-001.jpg" alt="image" class="imgepub" width="95" height="53"></p>
+        <p style="text-align:center;margin-top:0.5pc"></p>
+        <p class="text">For example, if <i>N</i> were 5, this function would represent the summation of integers from 0 to 5, which is 15. Each of the three programs will be run with the upper bounds of the summation entered on the command line. Thus, if the user enters 8, the summation of the integer values from 0 to 8 will be output.</p>
+        <p class="text-indent">Before we proceed with our examples of thread creation, we introduce two general strategies for creating multiple threads: asynchronous threading and synchronous threading. With asynchronous threading, once the parent creates a child thread, the parent resumes its execution, so that the parent and child execute concurrently. Each thread runs independently of every other thread, and the parent thread need not know when its child terminates. Because the threads are independent, there is typically little data sharing between threads. Asynchronous threading is the strategy used in the multithreaded server illustrated in <a href="11_chapter04.html#fig4.2">Figure 4.2</a>.</p>
+        <p class="text-indent">Synchronous threading occurs when the parent thread creates one or more children and then must wait for all of its children to terminate before it resumes—the so-called <b><i>fork-join</i></b> strategy. Here, the threads created by the parent perform work concurrently, but the parent cannot continue until this work has been completed. Once each thread has finished its work, it terminates and joins with its parent. Only after all of the children have joined can the parent resume execution. Typically, synchronous threading involves significant data sharing among threads. For example, the parent thread may combine the results calculated by its various children. All of the following examples use synchronous threading.</p>
+        <h3 class="subtitle"><a id="sec4.4.1"></a>4.4.1 Pthreads</h3>
+        <p class="text"><b>Pthreads</b> refers to the POSIX standard (IEEE 1003.1c) defining an API for thread creation and synchronization. This is a <b><i>specification</i></b> for thread behavior, not an <b><i>implementation</i></b>. Operating-system designers may implement the specification in anyway they wish. Numerous systems implement the Pthreads specification; most are UNIX-type systems, including Linux, Mac OS X, and Solaris. Although Windows doesn't support Pthreads natively, some third-party implementations for Windows are available.</p>
+        <p class="text-indent">The C program shown in <a href="11_chapter04.html#fig4.9">Figure 4.9</a> demonstrates the basic Pthreads API for constructing a multithreaded program that calculates the summation of a nonnegative integer in a separate thread. In a Pthreads program, separate threads <a id="page_173"></a>begin execution in a specified function. In <a href="11_chapter04.html#fig4.9">Figure 4.9</a>, this is the <span class="inlinecode">runner()</span> function. When this program begins, a single thread of control begins in <span class="inlinecode">main()</span>. After some initialization, <span class="inlinecode">main()</span> creates a second thread that begins control in the <span class="inlinecode">runner()</span> function. Both threads share the global data <span class="inlinecode">sum</span>.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f009.jpg" alt="image" class="imgepub" width="607" height="872"></p>
+        <p class="caption"><a id="fig4.9"></a><b>Figure 4.9</b> Multithreaded C program using the Pthreads API.</p>
+        <p class="text-indent">Let's look more closely at this program. All Pthreads programs must include the <span class="inlinecode">pthread.h</span> header file. The statement <span class="inlinecode">pthread_t tid</span> declares <a id="page_174"></a>the identifier for the thread we will create. Each thread has a set of attributes, including stack size and scheduling information. The <span class="inlinecode">pthread_attr_t attr</span> declaration represents the attributes for the thread. We set the attributes in the function call <span class="inlinecode">pthread_attr_init(&amp;attr)</span>. Because we did not explicitly set any attributes, we use the default attributes provided. (In <a href="13_chapter06.html#chap6">Chapter 6</a>, we discuss some of the scheduling attributes provided by the Pthreads API.) A separate thread is created with the <span class="inlinecode">pthread_create()</span> function call. In addition to passing the thread identifier and the attributes for the thread, we also pass the name of the function where the new thread will begin execution—in this case, the <span class="inlinecode">runner()</span> function. Last, we pass the integer parameter that was provided on the command line, <span class="inlinecode">argv[1]</span>.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f010.jpg" alt="image" class="imgepub" width="443" height="144"></p>
+        <p class="caption"><a id="fig4.10"></a><b>Figure 4.10</b> Pthread code for joining ten threads.</p>
+        <p class="text-indent">At this point, the program has two threads: the initial (or parent) thread in <span class="inlinecode">main()</span> and the summation (or child) thread performing the summation operation in the <span class="inlinecode">runner()</span> function. This program follows the fork-join strategy described earlier: after creating the summation thread, the parent thread will wait for it to terminate by calling the <span class="inlinecode">pthread_join()</span> function. The summation thread will terminate when it calls the function <span class="inlinecode">pthread_exit()</span>. Once the summation thread has returned, the parent thread will output the value of the shared data <span class="inlinecode">sum</span>.</p>
+        <p class="text-indent">This example program creates only a single thread. With the growing dominance of multicore systems, writing programs containing several threads has become increasingly common. A simple method for waiting on several threads using the <span class="inlinecode">pthread_join()</span> function is to enclose the operation within a simple <span class="inlinecode">for loop</span>. For example, you can join on ten threads using the Pthread code shown in <a href="11_chapter04.html#fig4.10">Figure 4.10</a>.</p>
+        <h3 class="subtitle"><a id="sec4.4.2"></a>4.4.2 Windows Threads</h3>
+        <p class="text">The technique for creating threads using the Windows thread library is similar to the Pthreads technique in several ways. We illustrate the Windows thread API in the C program shown in <a href="11_chapter04.html#fig4.11">Figure 4.11</a>. Notice that we must include the <span class="inlinecode">windows.h</span> header file when using the Windows API.</p>
+        <p class="text-indent">Just as in the Pthreads version shown in <a href="11_chapter04.html#fig4.9">Figure 4.9</a>, data shared by the separate threads—in this case, <span class="inlinecode">Sum</span>—are declared globally (the <span class="inlinecode">DWORD</span> data type is an unsigned 32-bit integer). We also define the <span class="inlinecode">Summation()</span> function that is to be performed in a separate thread. This function is passed a pointer to a <span class="inlinecode">void</span>, which Windows defines as LPVOID. The thread performing this function sets the global data <span class="inlinecode">Sum</span> to the value of the summation from 0 to the parameter passed to <span class="inlinecode">Summation()</span>.</p>
+        <p class="center"><a id="page_175"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f011.jpg" alt="image" class="imgepub" width="593" height="1021"></p>
+        <p class="caption"><a id="fig4.11"></a><b>Figure 4.11</b> Multithreaded C program using the Windows API.</p>
+        <p class="text-indent"><a id="page_176"></a>Threads are created in the Windows API using the <span class="inlinecode">CreateThread()</span> function, and—just as in Pthreads—a set of attributes for the thread is passed to this function. These attributes include security information, the size of the stack, and a flag that can be set to indicate if the thread is to start in a suspended state. In this program, we use the default values for these attributes. (The default values do not initially set the thread to a suspended state and instead make it eligible to be run by the CPU scheduler.) Once the summation thread is created, the parent must wait for it to complete before outputting the value of <span class="inlinecode">Sum</span>, as the value is set by the summation thread. Recall that the Pthread program (<a href="11_chapter04.html#fig4.9">Figure 4.9</a>) had the parent thread wait for the summation thread using the <span class="inlinecode">pthread_join()</span> statement. We perform the equivalent of this in the Windows API using the <span class="inlinecode">WaitForSingleObject()</span> function, which causes the creating thread to block until the summation thread has exited.</p>
+        <p class="text-indent">In situations that require waiting for multiple threads to complete, the <span class="inlinecode">WaitForMultipleObjects()</span> function is used. This function is passed four parameters:</p>
+        <ol style="list-style-type:decimal;">
+        <li>The number of objects to wait for</li>
+        <li>A pointer to the array of objects</li>
+        <li>A flag indicating whether all objects have been signaled</li>
+        <li>A timeout duration (or <span class="inlinecode">INFINITE</span>)</li>
+        </ol>
+        <p class="text">For example, if <span class="inlinecode">THandles</span> is an array of thread <span class="inlinecode">HANDLE</span> objects of size <span class="inlinecode">N</span>, the parent thread can wait for all its child threads to complete with this statement:</p>
+        <p class="center"><span class="inlinecode">WaitForMultipleObjects(N, THandles, TRUE, INFINITE);</span></p>
+        <h3 class="subtitle"><a id="sec4.4.3"></a>4.4.3 Java Threads</h3>
+        <p class="text">Threads are the fundamental model of program execution in a Java program, and the Java language and its API provide a rich set of features for the creation and management of threads. All Java programs comprise at least a single thread of control—even a simple Java program consisting of only a <span class="inlinecode">main()</span> method runs as a single thread in the JVM. Java threads are available on any system that provides a JVM including Windows, Linux, and Mac OS X. The Java thread API is available for Android applications as well.</p>
+        <p class="text-indent">There are two techniques for creating threads in a Java program. One approach is to create a new class that is derived from the <span class="inlinecode">Thread</span> class and to override its <span class="inlinecode">run()</span> method. An alternative—and more commonly used—technique is to define a class that implements the <span class="inlinecode">Runnable</span> interface. The <span class="inlinecode">Runnable</span> interface is defined as follows:</p>
+        <div class="code">
+        <pre class="codesnippet">public interface Runnable
+        {
+           public abstract void run();
+        }</pre>
+        </div>
+        <p class="text">When a class implements <span class="inlinecode">Runnable</span>, it must define a <span class="inlinecode">run()</span> method. The code implementing the <span class="inlinecode">run()</span> method is what runs as a separate thread.</p>
+        <p class="text-indent"><a id="page_177"></a><a href="11_chapter04.html#fig4.12">Figure 4.12</a> shows the Java version of a multithreaded program that determines the summation of a non-negative integer. The <span class="inlinecode">Summation</span> class implements the <span class="inlinecode">Runnable</span> interface. Thread creation is performed by creating an object instance of the <span class="inlinecode">Thread</span> class and passing the constructor a <span class="inlinecode">Runnable</span> object.</p>
+        <p class="text-indent">Creating a <span class="inlinecode">Thread</span> object does not specifically create the new thread; rather, the <span class="inlinecode">start()</span> method creates the new thread. Calling the <span class="inlinecode">start()</span> method for the new object does two things:</p>
+        <ol style="list-style-type:decimal;">
+        <li>It allocates memory and initializes a new thread in the JVM.</li>
+        <li>It calls the <span class="inlinecode">run()</span> method, making the thread eligible to be run by the JVM. (Note again that we never call the <span class="inlinecode">run()</span> method directly. Rather, we call the <span class="inlinecode">start()</span> method, and it calls the <span class="inlinecode">run()</span> method on our behalf.)</li>
+        </ol>
+        <p class="text-indent">When the summation program runs, the JVM creates two threads. The first is the parent thread, which starts execution in the <span class="inlinecode">main()</span> method. The second thread is created when the <span class="inlinecode">start()</span> method on the <span class="inlinecode">Thread</span> object is invoked. This child thread begins execution in the <span class="inlinecode">run()</span> method of the <span class="inlinecode">Summation</span> class. After outputting the value of the summation, this thread terminates when it exits from its <span class="inlinecode">run()</span> method.</p>
+        <p class="text-indent">Data sharing between threads occurs easily in Windows and Pthreads, since shared data are simply declared globally. As a pure object-oriented language, Java has no such notion of global data. If two or more threads are to share data in a Java program, the sharing occurs by passing references to the shared object to the appropriate threads. In the Java program shown in <a href="11_chapter04.html#fig4.12">Figure 4.12</a>, the main thread and the summation thread share the object instance of the <span class="inlinecode">Sum</span> class. This shared object is referenced through the appropriate <span class="inlinecode">getSum()</span> and <span class="inlinecode">setSum()</span> methods. (You might wonder why we don't use an <span class="inlinecode">Integer</span> object rather than designing a new <span class="inlinecode">sum</span> class. The reason is that the <span class="inlinecode">Integer</span> class is <b><i>immutable</i></b>—that is, once its value is set, it cannot change.)</p>
+        <p class="text-indent">Recall that the parent threads in the Pthreads and Windows libraries use <span class="inlinecode">pthread_join()</span> and <span class="inlinecode">WaitForSingleObject()</span> (respectively) to wait for the summation threads to finish before proceeding. The <span class="inlinecode">join()</span> method in Java provides similar functionality. (Notice that <span class="inlinecode">join()</span> can throw an <span class="inlinecode">InterruptedException</span>, which we choose to ignore.) If the parent must wait for several threads to finish, the <span class="inlinecode">join()</span> method can be enclosed in a <span class="inlinecode">for</span> loop similar to that shown for Pthreads in <a href="11_chapter04.html#fig4.10">Figure 4.10</a>.</p>
+        <h2 class="subtitle"><a id="sec4.5"></a>4.5 Implicit Threading</h2>
+        <p class="text">With the continued growth of multicore processing, applications containing hundreds—or even thousands—of threads are looming on the horizon. Designing such applications is not a trivial undertaking: programmers must address not only the challenges outlined in <a href="11_chapter04.html#sec4.2">Section 4.2</a> but additional difficulties as well. These difficulties, which relate to program correctness, are covered in <a href="12_chapter05.html#chap5">Chapters 5</a> and <a href="14_chapter07.html#chap7">7</a>.</p>
+        <p class="text-indent">One way to address these difficulties and better support the design of multithreaded applications is to transfer the creation and management of <a id="page_178"></a><a id="page_179"></a>threading from application developers to compilers and run-time libraries. This strategy, termed <b>implicit threading</b>, is a popular trend today. In this section, we explore three alternative approaches for designing multithreaded programs that can take advantage of multicore processors through implicit threading.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f012.jpg" alt="image" class="imgepub" width="626" height="1013"></p>
+        <p class="caption"><a id="fig4.12"></a><b>Figure 4.12</b> Java program for the summation of a non-negative integer.</p>
+        <div class="bgbox">
+        <p class="boxtitle"><b><i>THE JVM AND THE HOST OPERATING SYSTEM</i></b></p>
+        <p class="text">The JVM is typically implemented on top of a host operating system (see <a href="27_chapter16.html#fig16.10">Figure 16.10</a>). This setup allows the JVM to hide the implementation details of the underlying operating system and to provide a consistent, abstract environment that allows Java programs to operate on any platform that supports a JVM. The specification for the JVM does not indicate how Java threads are to be mapped to the underlying operating system, instead leaving that decision to the particular implementation of the JVM. For example, the Windows XP operating system uses the one-to-one model; therefore, each Java thread for a JVM running on such a system maps to a kernel thread. On operating systems that use the many-to-many model (such as Tru64 UNIX), a Java thread is mapped according to the many-to-many model. Solaris initially implemented the JVM using the many-to-one model (the green threads library, mentioned earlier). Later releases of the JVM were implemented using the many-to-many model. Beginning with Solaris 9, Java threads were mapped using the one-to-one model. In addition, there may be a relationship between the Java thread library and the thread library on the host operating system. For example, implementations of a JVM for the Windows family of operating systems might use the Windows API when creating Java threads; Linux, Solaris, and Mac OS X systems might use the Pthreads API.</p>
+        </div>
+        <h3 class="subtitle"><a id="sec4.5.1"></a>4.5.1 Thread Pools</h3>
+        <p class="text">In <a href="11_chapter04.html#sec4.1">Section 4.1</a>, we described a multithreaded web server. In this situation, whenever the server receives a request, it creates a separate thread to service the request. Whereas creating a separate thread is certainly superior to creating a separate process, a multithreaded server nonetheless has potential problems. The first issue concerns the amount of time required to create the thread, together with the fact that the thread will be discarded once it has completed its work. The second issue is more troublesome. If we allow all concurrent requests to be serviced in a new thread, we have not placed a bound on the number of threads concurrently active in the system. Unlimited threads could exhaust system resources, such as CPU time or memory. One solution to this problem is to use a <b>thread pool</b>.</p>
+        <p class="text-indent">The general idea behind a thread pool is to create a number of threads at process startup and place them into a pool, where they sit and wait for work. When a server receives a request, it awakens a thread from this pool—if one is available—and passes it the request for service. Once the thread completes its service, it returns to the pool and awaits more work. If the pool contains no available thread, the server waits until one becomes free.</p>
+        <p class="text-indent"><a id="page_180"></a>Thread pools offer these benefits:</p>
+        <ol style="list-style-type:decimal;">
+        <li>Servicing a request with an existing thread is faster than waiting to create a thread.</li>
+        <li>A thread pool limits the number of threads that exist at any one point. This is particularly important on systems that cannot support a large number of concurrent threads.</li>
+        <li>Separating the task to be performed from the mechanics of creating the task allows us to use different strategies for running the task. For example, the task could be scheduled to execute after a time delay or to execute periodically.</li>
+        </ol>
+        <p class="text-indent">The number of threads in the pool can be set heuristically based on factors such as the number of CPUs in the system, the amount of physical memory, and the expected number of concurrent client requests. More sophisticated thread-pool architectures can dynamically adjust the number of threads in the pool according to usage patterns. Such architectures provide the further benefit of having a smaller pool—thereby consuming less memory—when the load on the system is low. We discuss one such architecture, Apple's Grand Central Dispatch, later in this section.</p>
+        <p class="text-indent">The Windows API provides several functions related to thread pools. Using the thread pool API is similar to creating a thread with the <span class="inlinecode">Thread_Create()</span> function, as described in <a href="11_chapter04.html#sec4.4.2">Section 4.4.2</a>. Here, a function that is to run as a separate thread is defined. Such a function may appear as follows:</p>
+        <div class="code">
+        <pre class="codesnippet">DWORD WINAPI PoolFunction(AVOID Param) {
+           /*
+           * this function runs as a separate thread.
+           */
+        }</pre>
+        </div>
+        <p class="text">A pointer to <span class="inlinecode">PoolFunction()</span> is passed to one of the functions in the thread pool API, and a thread from the pool executes this function. One such member in the thread pool API is the <span class="inlinecode">QueueUserWorkItem()</span> function, which is passed three parameters:</p>
+        <ul style="list-style-type:disc;">
+        <li><span class="inlinecode">LPTHREAD_START_ROUTINE Function</span>—a pointer to the function that is to run as a separate thread</li>
+        <li><span class="inlinecode">PVOID Param</span>—the parameter passed to <span class="inlinecode">Function</span></li>
+        <li><span class="inlinecode">ULONG Flags</span>—flags indicating how the thread pool is to create and manage execution of the thread</li>
+        </ul>
+        <p class="text">An example of invoking a function is the following:</p>
+        <p class="text-indent1"><span class="inlinecode">QueueUserWorkItem(&amp;PoolFunction, NULL, 0);</span></p>
+        <p class="text">This causes a thread from the thread pool to invoke <span class="inlinecode">PoolFunction()</span> on behalf of the programmer. In this instance, we pass no parameters to <span class="inlinecode">PoolFunction()</span>. <a id="page_181"></a>Because we specify <span class="inlinecode">0</span> as a flag, we provide the thread pool with no special instructions for thread creation.</p>
+        <p class="text-indent">Other members in the Windows thread pool API include utilities that invoke functions at periodic intervals or when an asynchronous I/O request completes. The <span class="inlinecode">java.util.concurrent</span> package in the Java API provides a thread-pool utility as well.</p>
+        <h3 class="subtitle"><a id="sec4.5.2"></a>4.5.2 OpenMP</h3>
+        <p class="text">OpenMP is a set of compiler directives as well as an API for programs written in C, C++, or FORTRAN that provides support for parallel programming in shared-memory environments. OpenMP identifies <b>parallel regions</b> as blocks of code that may run in parallel. Application developers insert compiler directives into their code at parallel regions, and these directives instruct the OpenMP run-time library to execute the region in parallel. The following C program illustrates a compiler directive above the parallel region containing the <span class="inlinecode">printf()</span> statement:</p>
+        <div class="code">
+        <pre class="codesnippet">#include &lt;omp.h&gt;
+        #include &lt;stdio.h&gt;
+        
+        int main(int argc, char *argv[])
+        {
+           /* sequential code */
+        
+           #pragma omp parallel
+           {
+              printf(“I am a parallel region.”);
+           }
+        
+           /* sequential code */
+        
+           return 0;
+        }</pre>
+        </div>
+        <p class="text">When OpenMP encounters the directive</p>
+        <div class="code1">
+        <pre class="codesnippet">#pragma omp parallel</pre>
+        </div>
+        <p class="text">it creates as many threads are there are processing cores in the system. Thus, for a dual-core system, two threads are created, for a quad-core system, four are created; and so forth. All the threads then simultaneously execute the parallel region. As each thread exits the parallel region, it is terminated.</p>
+        <p class="text-indent">OpenMP provides several additional directives for running code regions in parallel, including parallelizing loops. For example, assume we have two arrays <span class="inlinecode">a</span> and <span class="inlinecode">b</span> of size <span class="inlinecode">N</span>. We wish to sum their contents and place the results in array <span class="inlinecode">c</span>. We can have this task run in parallel by using the following code segment, which contains the compiler directive for parallelizing <span class="inlinecode">for</span> loops:</p>
+        <div class="code1">
+        <pre class="codesnippet"><a id="page_182"></a>
+        #pragma omp parallel for
+        for (i = 0; i &lt; N; i++) {
+          c[i] = a[i] + b[i];
+        }</pre>
+        </div>
+        <p class="text">OpenMP divides the work contained in the <span class="inlinecode">for</span> loop among the threads it has created in response to the directive</p>
+        <div class="code1">
+        <pre class="codesnippet">#pragma omp parallel for</pre>
+        </div>
+        <p class="text">In addition to providing directives for parallelization, OpenMP allows developers to choose among several levels of parallelism. For example, they can set the number of threads manually. It also allows developers to identify whether data are shared between threads or are private to a thread. OpenMP is available on several open-source and commercial compilers for Linux, Windows, and Mac OS X systems. We encourage readers interested in learning more about OpenMP to consult the bibliography at the end of the chapter.</p>
+        <h3 class="subtitle"><a id="sec4.5.3"></a>4.5.3 Grand Central Dispatch</h3>
+        <p class="text">Grand Central Dispatch (GCD)—a technology for Apple's Mac OS X and iOS operating systems—is a combination of extensions to the C language, an API, and a run-time library that allows application developers to identify sections of code to run in parallel. Like OpenMP, GCD manages most of the details of threading.</p>
+        <p class="text-indent">GCD identifies extensions to the C and C++ languages known as <b>blocks</b>. A block is simply a self-contained unit of work. It is specified by a caret ˆ inserted in front of a pair of braces { }. A simple example of a block is shown below:</p>
+        <div class="code1">
+        <pre class="codesnippet">ˆ{ printf(“I am a block”); }</pre>
+        </div>
+        <p class="text-indent">GCD schedules blocks for run-time execution by placing them on a <b>dispatch queue</b>. When it removes a block from a queue, it assigns the block to an available thread from the thread pool it manages. GCD identifies two types of dispatch queues: <b><i>serial</i></b> and <b><i>concurrent</i></b>.</p>
+        <p class="text-indent">Blocks placed on a serial queue are removed in FIFO order. Once a block has been removed from the queue, it must complete execution before another block is removed. Each process has its own serial queue (known as its <b>main queue</b>). Developers can create additional serial queues that are local to particular processes. Serial queues are useful for ensuring the sequential execution of several tasks.</p>
+        <p class="text-indent">Blocks placed on a concurrent queue are also removed in FIFO order, but several blocks may be removed at a time, thus allowing multiple blocks to execute in parallel. There are three system-wide concurrent dispatch queues, and they are distinguished according to priority: low, default, and high. Priorities represent an approximation of the relative importance of blocks. Quite simply, blocks with a higher priority should be placed on the high-priority dispatch queue.</p>
+        <p class="text-indent">The following code segment illustrates obtaining the default-priority concurrent queue and submitting a block to the queue using the <span class="inlinecode">dispatch_async()</span> function:</p>
+        <div class="code1">
+        <pre class="codesnippet"><a id="page_183"></a>
+        dispatch_queue_t queue = dispatch_get_global_queue
+          (DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+        
+        dispatch_async(queue, ˆ{ printf(“I am a block.”); });</pre>
+        </div>
+        <p class="text">Internally, GCD's thread pool is composed of POSIX threads. GCD actively manages the pool, allowing the number of threads to grow and shrink according to application demand and system capacity.</p>
+        <h3 class="subtitle"><a id="sec4.5.4"></a>4.5.4 Other Approaches</h3>
+        <p class="text">Thread pools, OpenMP, and Grand Central Dispatch are just a few of many emerging technologies for managing multithreaded applications. Other commercial approaches include parallel and concurrent libraries, such as Intel's Threading Building Blocks (TBB) and several products from Microsoft. The Java language and API have seen significant movement toward supporting concurrent programming as well. A notable example is the <span class="inlinecode">java.util.concurrent</span> package, which supports implicit thread creation and management.</p>
+        <h2 class="subtitle"><a id="sec4.6"></a>4.6 Threading Issues</h2>
+        <p class="text">In this section, we discuss some of the issues to consider in designing multithreaded programs.</p>
+        <h3 class="subtitle"><a id="sec4.6.1"></a>4.6.1 The fork() and exec() System Calls</h3>
+        <p class="text">In <a href="10_chapter03.html#chap3">Chapter 3</a>, we described how the <span class="inlinecode">fork()</span> system call is used to create a separate, duplicate process. The semantics of the <span class="inlinecode">fork()</span> and <span class="inlinecode">exec()</span> system calls change in a multithreaded program.</p>
+        <p class="text-indent">If one thread in a program calls <span class="inlinecode">fork()</span>, does the new process duplicate all threads, or is the new process single-threaded? Some UNIX systems have chosen to have two versions of <span class="inlinecode">fork()</span>, one that duplicates all threads and another that duplicates only the thread that invoked the <span class="inlinecode">fork()</span> system call.</p>
+        <p class="text-indent">The <span class="inlinecode">exec()</span> system call typically works in the same way as described in <a href="10_chapter03.html#chap3">Chapter 3</a>. That is, if a thread invokes the <span class="inlinecode">exec()</span> system call, the program specified in the parameter to <span class="inlinecode">exec()</span> will replace the entire process—including all threads.</p>
+        <p class="text-indent">Which of the two versions of <span class="inlinecode">fork()</span> to use depends on the application. If <span class="inlinecode">exec()</span> is called immediately after forking, then duplicating all threads is unnecessary, as the program specified in the parameters to <span class="inlinecode">exec()</span> will replace the process. In this instance, duplicating only the calling thread is appropriate. If, however, the separate process does not call <span class="inlinecode">exec()</span> after forking, the separate process should duplicate all threads.</p>
+        <h3 class="subtitle"><a id="sec4.6.2"></a>4.6.2 Signal Handling</h3>
+        <p class="text">A <b>signal</b> is used in UNIX systems to notify a process that a particular event has occurred. A signal may be received either synchronously or asynchronously, <a id="page_184"></a>depending on the source of and the reason for the event being signaled. All signals, whether synchronous or asynchronous, follow the same pattern:</p>
+        <ol style="list-style-type:decimal;">
+        <li>A signal is generated by the occurrence of a particular event.</li>
+        <li>The signal is delivered to a process.</li>
+        <li>Once delivered, the signal must be handled.</li>
+        </ol>
+        <p class="text-indent">Examples of synchronous signal include illegal memory access and division by 0. If a running program performs either of these actions, a signal is generated. Synchronous signals are delivered to the same process that performed the operation that caused the signal (that is the reason they are considered synchronous).</p>
+        <p class="text-indent">When a signal is generated by an event external to a running process, that process receives the signal asynchronously. Examples of such signals include terminating a process with specific keystrokes (such as <span class="inlinecode">&lt;control&gt; &lt;C&gt;</span>) and having a timer expire. Typically, an asynchronous signal is sent to another process.</p>
+        <p class="text-indent">A signal may be <b><i>handled</i></b> by one of two possible handlers:</p>
+        <ol style="list-style-type:decimal;">
+        <li>A default signal handler</li>
+        <li>A user-defined signal handler</li>
+        </ol>
+        <p class="text-indent">Every signal has a <b>default signal handler</b> that the kernel runs when handling that signal. This default action can be overridden by a <b>user-defined signal handler</b> that is called to handle the signal. Signals are handled in different ways. Some signals (such as changing the size of a window) are simply ignored; others (such as an illegal memory access) are handled by terminating the program.</p>
+        <p class="text-indent">Handling signals in single-threaded programs is straightforward: signals are always delivered to a process. However, delivering signals is more complicated in multithreaded programs, where a process may have several threads. Where, then, should a signal be delivered?</p>
+        <p class="text-indent">In general, the following options exist:</p>
+        <ol style="list-style-type:decimal;">
+        <li>Deliver the signal to the thread to which the signal applies.</li>
+        <li>Deliver the signal to every thread in the process.</li>
+        <li>Deliver the signal to certain threads in the process.</li>
+        <li>Assign a specific thread to receive all signals for the process.</li>
+        </ol>
+        <p class="text-indent">The method for delivering a signal depends on the type of signal generated. For example, synchronous signals need to be delivered to the thread causing the signal and not to other threads in the process. However, the situation with asynchronous signals is not as clear. Some asynchronous signals—such as a signal that terminates a process (<span class="inlinecode">&lt;control&gt; &lt;C&gt;</span>, for example)—should be sent to all threads.</p>
+        <p class="text-indent"><a id="page_185"></a>The standard UNIX function for delivering a signal is</p>
+        <div class="code">
+        <pre class="codesnippet">kill(pid_t pid, int signal)</pre>
+        </div>
+        <p class="text">This function specifies the process (<span class="inlinecode">pid</span>) to which a particular signal (<span class="inlinecode">signal</span>) is to be delivered. Most multithreaded versions of UNIX allow a thread to specify which signals it will accept and which it will block. Therefore, in some cases, an asynchronous signal may be delivered only to those threads that are not blocking it. However, because signals need to be handled only once, a signal is typically delivered only to the first thread found that is not blocking it. POSIX Pthreads provides the following function, which allows a signal to be delivered to a specified thread (<span class="inlinecode">tid</span>):</p>
+        <div class="code">
+        <pre class="codesnippet">pthread_kill(pthread_t tid, int signal)</pre>
+        </div>
+        <p class="text-indent">Although Windows does not explicitly provide support for signals, it allows us to emulate them using <b>asynchronous procedure calls (APCs)</b>. The APC facility enables a user thread to specify a function that is to be called when the user thread receives notification of a particular event. As indicated by its name, an APC is roughly equivalent to an asynchronous signal in UNIX. However, whereas UNIX must contend with how to deal with signals in a multithreaded environment, the APC facility is more straightforward, since an APC is delivered to a particular thread rather than a process.</p>
+        <h3 class="subtitle"><a id="sec4.6.3"></a>4.6.3 Thread Cancellation</h3>
+        <p class="text"><b>Thread cancellation</b> involves terminating a thread before it has completed. For example, if multiple threads are concurrently searching through a database and one thread returns the result, the remaining threads might be canceled. Another situation might occur when a user presses a button on a web browser that stops a web page from loading any further. Often, a web page loads using several threads—each image is loaded in a separate thread. When a user presses the <span class="inlinecode">stop</span> button on the browser, all threads loading the page are canceled.</p>
+        <p class="text-indent">A thread that is to be canceled is often referred to as the <b>target thread</b>. Cancellation of a target thread may occur in two different scenarios:</p>
+        <ol style="list-style-type:decimal;">
+        <li><b>Asynchronous cancellation</b>. One thread immediately terminates the target thread.</li>
+        <li><b>Deferred cancellation</b>. The target thread periodically checks whether it should terminate, allowing it an opportunity to terminate itself in an orderly fashion.</li>
+        </ol>
+        <p class="text-indent">The difficulty with cancellation occurs in situations where resources have been allocated to a canceled thread or where a thread is canceled while in the midst of updating data it is sharing with other threads. This becomes especially troublesome with asynchronous cancellation. Often, the operating system will reclaim system resources from a canceled thread but will not reclaim all resources. Therefore, canceling a thread asynchronously may not free a necessary system-wide resource.</p>
+        <p class="text-indent"><a id="page_186"></a>With deferred cancellation, in contrast, one thread indicates that a target thread is to be canceled, but cancellation occurs only after the target thread has checked a flag to determine whether or not it should be canceled. The thread can perform this check at a point at which it can be canceled safely.</p>
+        <p class="text-indent">In Pthreads, thread cancellation is initiated using the <span class="inlinecode">pthread_cancel()</span> function. The identifier of the target thread is passed as a parameter to the function. The following code illustrates creating—and then canceling—a thread:</p>
+        <div class="code">
+        <pre class="codesnippet">pthread_t tid;
+        
+        /* create the thread */
+        pthread_create(&amp;tid, 0, worker, NULL);
+        
+        …
+        
+        /* cancel the thread */
+        pthread_cancel(tid);</pre>
+        </div>
+        <p class="text-indent">Invoking <span class="inlinecode">pthread_cancel()</span> indicates only a request to cancel the target thread, however; actual cancellation depends on how the target thread is set up to handle the request. Pthreads supports three cancellation modes. Each mode is defined as a state and a type, as illustrated in the table below. A thread may set its cancellation state and type using an API.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/p186-001.jpg" alt="image" class="imgepub" width="580" height="102"></p>
+        <p style="text-align:center;margin-top:0.5pc"></p>
+        <p class="text-indent">As the table illustrates, Pthreads allows threads to disable or enable cancellation. Obviously, a thread cannot be canceled if cancellation is disabled. However, cancellation requests remain pending, so the thread can later enable cancellation and respond to the request.</p>
+        <p class="text-indent">The default cancellation type is deferred cancellation. Here, cancellation occurs only when a thread reaches a <b>cancellation point</b>. One technique for establishing a cancellation point is to invoke the <span class="inlinecode">pthread_testcancel()</span> function. If a cancellation request is found to be pending, a function known as a <b>cleanup handler</b> is invoked. This function allows any resources a thread may have acquired to be released before the thread is terminated.</p>
+        <p class="text-indent">The following code illustrates how a thread may respond to a cancellation request using deferred cancellation:</p>
+        <div class="code1">
+        <pre class="codesnippet">while (1) {
+          /* do some work for awhile */
+          /* … */
+        
+          /* check if there is a cancellation request */
+          pthread_testcancel();
+        }</pre>
+        </div>
+        <p class="text-indent"><a id="page_187"></a>Because of the issues described earlier, asynchronous cancellation is not recommended in Pthreads documentation. Thus, we do not cover it here. An interesting note is that on Linux systems, thread cancellation using the Pthreads API is handled through signals (<a href="11_chapter04.html#sec4.6.2">Section 4.6.2</a>).</p>
+        <h3 class="subtitle"><a id="sec4.6.4"></a>4.6.4 Thread-Local Storage</h3>
+        <p class="text">Threads belonging to a process share the data of the process. Indeed, this data sharing provides one of the benefits of multithreaded programming. However, in some circumstances, each thread might need its own copy of certain data. We will call such data <b>thread-local storage</b> (or <b>TLS</b>.) For example, in a transaction-processing system, we might service each transaction in a separate thread. Furthermore, each transaction might be assigned a unique identifier. To associate each thread with its unique identifier, we could use thread-local storage.</p>
+        <p class="text-indent">It is easy to confuse TLS with local variables. However, local variables are visible only during a single function invocation, whereas TLS data are visible across function invocations. In some ways, TLS is similar to <span class="inlinecode">static</span> data. The difference is that TLS data are unique to each thread. Most thread libraries—including Windows and Pthreads—provide some form of support for thread-local storage; Java provides support as well.</p>
+        <h3 class="subtitle"><a id="sec4.6.5"></a>4.6.5 Scheduler Activations</h3>
+        <p class="text">A final issue to be considered with multithreaded programs concerns communication between the kernel and the thread library, which may be required by the many-to-many and two-level models discussed in <a href="11_chapter04.html#sec4.3.3">Section 4.3.3</a>. Such coordination allows the number of kernel threads to be dynamically adjusted to help ensure the best performance.</p>
+        <p class="text-indent">Many systems implementing either the many-to-many or the two-level model place an intermediate data structure between the user and kernel threads. This data structure—typically known as a <b>lightweight process</b>, or <b>LWP</b>—is shown in <a href="11_chapter04.html#fig4.13">Figure 4.13</a>. To the user-thread library, the LWP appears to be a virtual processor on which the application can schedule a user thread to run. Each LWP is attached to a kernel thread, and it is kernel threads that the <a id="page_188"></a>operating system schedules to run on physical processors. If a kernel thread blocks (such as while waiting for an I/O operation to complete), the LWP blocks as well. Up the chain, the user-level thread attached to the LWP also blocks.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f013.jpg" alt="image" class="imgepub" width="284" height="257"></p>
+        <p class="caption"><a id="fig4.13"></a><b>Figure 4.13</b> Lightweight process (LWP).</p>
+        <p class="text-indent">An application may require any number of LWPs to run efficiently. Consider a CPU-bound application running on a single processor. In this scenario, only one thread can run at at a time, so one LWP is sufficient. An application that is I/O-intensive may require multiple LWPs to execute, however. Typically, an LWP is required for each concurrent blocking system call. Suppose, for example, that five different file-read requests occur simultaneously. Five LWPs are needed, because all could be waiting for I/O completion in the kernel. If a process has only four LWPs, then the fifth request must wait for one of the LWPs to return from the kernel.</p>
+        <p class="text-indent">One scheme for communication between the user-thread library and the kernel is known as <b>scheduler activation</b>. It works as follows: The kernel provides an application with a set of virtual processors (LWPs), and the application can schedule user threads onto an available virtual processor. Furthermore, the kernel must inform an application about certain events. This procedure is known as an <b>upcall</b>. Upcalls are handled by the thread library with an <b>upcall handler</b>, and upcall handlers must run on a virtual processor. One event that triggers an upcall occurs when an application thread is about to block. In this scenario, the kernel makes an upcall to the application informing it that a thread is about to block and identifying the specific thread. The kernel then allocates a new virtual processor to the application. The application runs an upcall handler on this new virtual processor, which saves the state of the blocking thread and relinquishes the virtual processor on which the blocking thread is running. The upcall handler then schedules another thread that is eligible to run on the new virtual processor. When the event that the blocking thread was waiting for occurs, the kernel makes another upcall to the thread library informing it that the previously blocked thread is now eligible to run. The upcall handler for this event also requires a virtual processor, and the kernel may allocate a new virtual processor or preempt one of the user threads and run the upcall handler on its virtual processor. After marking the unblocked thread as eligible to run, the application schedules an eligible thread to run on an available virtual processor.</p>
+        <h2 class="subtitle"><a id="sec4.7"></a>4.7 Operating-System Examples</h2>
+        <p class="text">At this point, we have examined a number of concepts and issues related to threads. We conclude the chapter by exploring how threads are implemented in Windows and Linux systems.</p>
+        <h3 class="subtitle"><a id="sec4.7.1"></a>4.7.1 Windows Threads</h3>
+        <p class="text">Windows implements the Windows API, which is the primary API for the family of Microsoft operating systems (Windows 98, NT, 2000, and XP, as well as Windows 7). Indeed, much of what is mentioned in this section applies to this entire family of operating systems.</p>
+        <p class="text-indent">A Windows application runs as a separate process, and each process may contain one or more threads. The Windows API for creating threads is covered in <a id="page_189"></a><a href="11_chapter04.html#sec4.4.2">Section 4.4.2</a>. Additionally, Windows uses the one-to-one mapping described in <a href="11_chapter04.html#sec4.3.2">Section 4.3.2</a>, where each user-level thread maps to an associated kernel thread.</p>
+        <p class="text-indent">The general components of a thread include:</p>
+        <ul style="list-style-type:disc;">
+        <li>A thread ID uniquely identifying the thread</li>
+        <li>A register set representing the status of the processor</li>
+        <li>A user stack, employed when the thread is running in user mode, and a kernel stack, employed when the thread is running in kernel mode</li>
+        <li>A private storage area used by various run-time libraries and dynamic link libraries (DLLs)</li>
+        </ul>
+        <p class="text">The register set, stacks, and private storage area are known as the <b>context</b> of the thread.</p>
+        <p class="text-indent">The primary data structures of a thread include:</p>
+        <ul style="list-style-type:disc;">
+        <li>ETHREAD—executive thread block</li>
+        <li>KTHREAD—kernel thread block</li>
+        <li>TEB—thread environment block</li>
+        </ul>
+        <p class="text-indent">The key components of the ETHREAD include a pointer to the process to which the thread belongs and the address of the routine in which the thread starts control. The ETHREAD also contains a pointer to the corresponding KTHREAD.</p>
+        <p class="text-indent">The KTHREAD includes scheduling and synchronization information for the thread. In addition, the KTHREAD includes the kernel stack (used when the thread is running in kernel mode) and a pointer to the TEB.</p>
+        <p class="text-indent">The ETHREAD and the KTHREAD exist entirely in kernel space; this means that only the kernel can access them. The TEB is a user-space data structure that is accessed when the thread is running in user mode. Among other fields, the TEB contains the thread identifier, a user-mode stack, and an array for thread-local storage. The structure of a Windows thread is illustrated in <a href="11_chapter04.html#fig4.14">Figure 4.14</a>.</p>
+        <h3 class="subtitle"><a id="sec4.7.2"></a>4.7.2 Linux Threads</h3>
+        <p class="text">Linux provides the <span class="inlinecode">fork()</span> system call with the traditional functionality of duplicating a process, as described in <a href="10_chapter03.html#chap3">Chapter 3</a>. Linux also provides the ability to create threads using the <span class="inlinecode">clone()</span> system call. However, Linux does not distinguish between processes and threads. In fact, Linux uses the term <b><i>task</i></b>—rather than <b><i>process</i></b> or <b><i>thread</i></b>—when referring to a flow of control within a program.</p>
+        <p class="text-indent">When <span class="inlinecode">clone()</span> is invoked, it is passed a set of flags that determine how much sharing is to take place between the parent and child tasks. Some of these flags are listed in <a href="11_chapter04.html#fig4.15">Figure 4.15</a>. For example, suppose that <span class="inlinecode">clone()</span> is passed the flags <span class="inlinecode">CLONE_FS</span>, <span class="inlinecode">CLONE_VM</span>, <span class="inlinecode">CLONE_SIGHAND</span>, and <span class="inlinecode">CLONE_FILES</span>. The parent and child tasks will then share the same file-system information (such as the current working directory), the same memory space, the same signal handlers, <a id="page_190"></a>and the same set of open files. Using <span class="inlinecode">clone()</span> in this fashion is equivalent to creating a thread as described in this chapter, since the parent task shares most of its resources with its child task. However, if none of these flags is set when <span class="inlinecode">clone()</span> is invoked, no sharing takes place, resulting in functionality similar to that provided by the <span class="inlinecode">fork()</span> system call.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f014.jpg" alt="image" class="imgepub" width="505" height="488"></p>
+        <p class="caption"><a id="fig4.14"></a><b>Figure 4.14</b> Data structures of a Windows thread.</p>
+        <p class="text-indent">The varying level of sharing is possible because of the way a task is represented in the Linux kernel. A unique kernel data structure (specifically, <span class="inlinecode">struct task_struct</span>) exists for each task in the system. This data structure, instead of storing data for the task, contains pointers to other data structures where these data are stored—for example, data structures that represent the list of open files, signal-handling information, and virtual memory. When <span class="inlinecode">fork()</span> is invoked, a new task is created, along with a <b><i>copy</i></b> of all the associated data <a id="page_191"></a>structures of the parent process. A new task is also created when the <span class="inlinecode">clone()</span> system call is made. However, rather than copying all data structures, the new task <b><i>points</i></b> to the data structures of the parent task, depending on the set of flags passed to <span class="inlinecode">clone()</span>.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f015.jpg" alt="image" class="imgepub" width="422" height="154"></p>
+        <p class="caption"><a id="fig4.15"></a><b>Figure 4.15</b> Some of the flags passed when <span class="inlinecode">clone()</span> is invoked.</p>
+        <h2 class="subtitle"><a id="sec4.8"></a>4.8 Summary</h2>
+        <p class="text">A thread is a flow of control within a process. A multithreaded process contains several different flows of control within the same address space. The benefits of multithreading include increased responsiveness to the user, resource sharing within the process, economy, and scalability factors, such as more efficient use of multiple processing cores.</p>
+        <p class="text-indent">User-level threads are threads that are visible to the programmer and are unknown to the kernel. The operating-system kernel supports and manages kernel-level threads. In general, user-level threads are faster to create and manage than are kernel threads, because no intervention from the kernel is required.</p>
+        <p class="text-indent">Three different types of models relate user and kernel threads. The many-to-one model maps many user threads to a single kernel thread. The one-to-one model maps each user thread to a corresponding kernel thread. The many-to-many model multiplexes many user threads to a smaller or equal number of kernel threads.</p>
+        <p class="text-indent">Most modern operating systems provide kernel support for threads. These include Windows, Mac OS X, Linux, and Solaris.</p>
+        <p class="text-indent">Thread libraries provide the application programmer with an API for creating and managing threads. Three primary thread libraries are in common use: POSIX Pthreads, Windows threads, and Java threads.</p>
+        <p class="text-indent">In addition to explicitly creating threads using the API provided by a library, we can use implicit threading, in which the creation and management of threading is transferred to compilers and run-time libraries. Strategies for implicit threading include thread pools, OpenMP, and Grand Central Dispatch.</p>
+        <p class="text-indent">Multithreaded programs introduce many challenges for programmers, including the semantics of the <span class="inlinecode">fork()</span> and <span class="inlinecode">exec()</span> system calls. Other issues include signal handling, thread cancellation, thread-local storage, and scheduler activations.</p>
+        <h2 class="subhead">Practice Exercises</h2>
+        <p class="list">&nbsp;&nbsp;<b>4.1</b>&nbsp;&nbsp;&nbsp;Provide two programming examples in which multithreading provides better performance than a single-threaded solution.</p>
+        <p class="list">&nbsp;&nbsp;<b>4.2</b>&nbsp;&nbsp;&nbsp;What are two differences between user-level threads and kernel-level threads? Under what circumstances is one type better than the other?</p>
+        <p class="list">&nbsp;&nbsp;<b>4.3</b>&nbsp;&nbsp;&nbsp;Describe the actions taken by a kernel to context-switch between kernel-level threads.</p>
+        <p class="list">&nbsp;&nbsp;<b>4.4</b>&nbsp;&nbsp;&nbsp;What resources are used when a thread is created? How do they differ from those used when a process is created?</p>
+        <p class="list">&nbsp;&nbsp;<a id="page_192"></a><b>4.5</b>&nbsp;&nbsp;&nbsp;Assume that an operating system maps user-level threads to the kernel using the many-to-many model and that the mapping is done through LWPs. Furthermore, the system allows developers to create real-time threads for use in real-time systems. Is it necessary to bind a real-time thread to an LWP? Explain.</p>
+        <h3 class="subtitle"><a id="chap4-exer"></a>Exercises</h3>
+        <p class="list">&nbsp;&nbsp;<b>4.6</b>&nbsp;&nbsp;&nbsp;Provide two programming examples in which multithreading does <b><i>not</i></b> provide better performance than a single-threaded solution.</p>
+        <p class="list">&nbsp;&nbsp;<b>4.7</b>&nbsp;&nbsp;&nbsp;Under what circumstances does a multithreaded solution using multiple kernel threads provide better performance than a single-threaded solution on a single-processor system?</p>
+        <p class="list">&nbsp;&nbsp;<b>4.8</b>&nbsp;&nbsp;&nbsp;Which of the following components of program state are shared across threads in a multithreaded process?</p>
+        <ol style="list-style-type:lower-alpha;margin-left:2em;">
+        <li>Register values</li>
+        <li>Heap memory</li>
+        <li>Global variables</li>
+        <li>Stack memory</li>
+        </ol>
+        <p class="list">&nbsp;&nbsp;<b>4.9</b>&nbsp;&nbsp;&nbsp;Can a multithreaded solution using multiple user-level threads achieve better performance on a multiprocessor system than on a single-processor system? Explain.</p>
+        <p class="list">&nbsp;&nbsp;<b>4.10</b> In <a href="10_chapter03.html#chap3">Chapter 3</a>, we discussed Google's Chrome browser and its practice of opening each new website in a separate process. Would the same benefits have been achieved if instead Chrome had been designed to open each new website in a separate thread? Explain.</p>
+        <p class="list">&nbsp;&nbsp;<b>4.11</b> Is it possible to have concurrency but not parallelism? Explain.</p>
+        <p class="list">&nbsp;&nbsp;<b>4.12</b> Using Amdahl's Law, calculate the speedup gain of an application that has a 60 percent parallel component for (a) two processing cores and (b) four processing cores.</p>
+        <p class="list">&nbsp;&nbsp;<b>4.13</b> Determine if the following problems exhibit task or data parallelism:</p>
+        <ul style="list-style-type:disc;margin-left:1.75em;">
+        <li>The multithreaded statistical program described in Exercise 4.21</li>
+        <li>The multithreaded Sudoku validator described in Project 1 in this chapter</li>
+        <li>The multithreaded sorting program described in Project 2 in this chapter</li>
+        <li>The multithreaded web server described in <a href="11_chapter04.html#sec4.1">Section 4.1</a></li>
+        </ul>
+        <p class="list">&nbsp;&nbsp;<b>4.14</b> A system with two dual-core processors has four processors available for scheduling. A CPU-intensive application is running on this system. All input is performed at program start-up, when a single file must be opened. Similarly, all output is performed just before the program <a id="page_193"></a>terminates, when the program results must be written to a single file. Between startup and termination, the program is entirely CPU-bound. Your task is to improve the performance of this application by multithreading it. The application runs on a system that uses the one-to-one threading model (each user thread maps to a kernel thread).</p>
+        <ul style="list-style-type:disc;margin-left:1.75em;">
+        <li>How many threads will you create to perform the input and output? Explain.</li>
+        <li>How many threads will you create for the CPU-intensive portion of the application? Explain.</li>
+        </ul>
+        <p class="list">&nbsp;&nbsp;<b>4.15</b> Consider the following code segment:</p>
+        <div class="code">
+        <pre class="codesnippet">pid_t pid;
+        
+        pid = fork();
+        if (pid == 0) { /* child process */
+          fork();
+          thread_create( …);
+        }
+        fork();</pre>
+        </div>
+        <ol style="list-style-type:lower-alpha;margin-left:2em;">
+        <li>How many unique processes are created?</li>
+        <li>How many unique threads are created?</li>
+        </ol>
+        <p class="list">&nbsp;&nbsp;<b>4.16</b> As described in <a href="11_chapter04.html#sec4.7.2">Section 4.7.2</a>, Linux does not distinguish between processes and threads. Instead, Linux treats both in the same way, allowing a task to be more akin to a process or a thread depending on the set of flags passed to the <span class="inlinecode">clone()</span> system call. However, other operating systems, such as Windows, treat processes and threads differently. Typically, such systems use a notation in which the data structure for a process contains pointers to the separate threads belonging to the process. Contrast these two approaches for modeling processes and threads within the kernel.</p>
+        <p class="list">&nbsp;&nbsp;<b>4.17</b> The program shown in <a href="11_chapter04.html#fig4.16">Figure 4.16</a> uses the Pthreads API. What would be the output from the program at <span class="inlinecode">LINE C</span> and <span class="inlinecode">LINE P</span>?</p>
+        <p class="list">&nbsp;&nbsp;<b>4.18</b> Consider a multicore system and a multithreaded program written using the many-to-many threading model. Let the number of user-level threads in the program be greater than the number of processing cores in the system. Discuss the performance implications of the following scenarios.</p>
+        <ol style="list-style-type:lower-alpha;margin-left:2em;">
+        <li>The number of kernel threads allocated to the program is less than the number of processing cores.</li>
+        <li>The number of kernel threads allocated to the program is equal to the number of processing cores.</li>
+        <li>The number of kernel threads allocated to the program is greater than the number of processing cores but less than the number of user-level threads.</li>
+        </ol>
+        <p class="center"><a id="page_194"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f016.jpg" alt="image" class="imgepub" width="546" height="680"></p>
+        <p class="caption"><a id="fig4.16"></a><b>Figure 4.16</b> C program for Exercise 4.17.</p>
+        <p class="list">&nbsp;&nbsp;<b>4.19</b> Pthreads provides an API for managing thread cancellation. The <span class="inlinecode">pthread_setcancelstate()</span> function is used to set the cancellation state. Its prototype appears as follows:</p>
+        <p class="text-indent1">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <span class="inlinecode">pthread_setcancelstate(int state, int *oldstate)</span></p>
+        <p class="list-text">The two possible values for the state are <span class="inlinecode">PTHREAD_CANCEL_ENABLE</span> and <span class="inlinecode">PTHREAD_CANCEL_DISABLE</span>.</p>
+        <p class="list-indent">Using the code segment shown in <a href="11_chapter04.html#fig4.17">Figure 4.17</a>, provide examples of two operations that would be suitable to perform between the calls to disable and enable thread cancellation.</p>
+        <p class="center"><a id="page_195"></a><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f017.jpg" alt="image" class="imgepub" width="586" height="144"></p>
+        <p class="caption"><a id="fig4.17"></a><b>Figure 4.17</b> C program for Exercise 4.19.</p>
+        <h2 class="subhead">Programming Problems</h2>
+        <p class="list">&nbsp;&nbsp;<b>4.20</b> Modify programming problem Exercise 3.20 from <a href="10_chapter03.html#chap3">Chapter 3</a>, which asks you to design a pid manager. This modification will consist of writing a multithreaded program that tests your solution to Exercise 3.20. You will create a number of threads—for example, 100—and each thread will request a pid, sleep for a random period of time, and then release the pid. (Sleeping for a random period of time approximates the typical pid usage in which a pid is assigned to a new process, the process executes and then terminates, and the pid is released on the process's termination.) On UNIX and Linux systems, sleeping is accomplished through the <span class="inlinecode">sleep()</span> function, which is passed an integer value representing the number of seconds to sleep. This problem will be modified in <a href="12_chapter05.html#chap5">Chapter 5</a>.</p>
+        <p class="list">&nbsp;&nbsp;<b>4.21</b> Write a multithreaded program that calculates various statistical values for a list of numbers. This program will be passed a series of numbers on the command line and will then create three separate worker threads. One thread will determine the average of the numbers, the second will determine the maximum value, and the third will determine the minimum value. For example, suppose your program is passed the integers</p>
+        <div class="code">
+        <pre class="codesnippet">          <span class="inlinecodenormal">90 81 78 95 79 72 85</span></pre>
+        </div>
+        <p class="list-text">The program will report</p>
+        <div class="code">
+        <pre class="codesnippet">The average value is 82
+        The minimum value is 72
+        The maximum value is 95
+        </pre>
+        </div>
+        <p class="list-text">The variables representing the average, minimum, and maximum values will be stored globally. The worker threads will set these values, and the parent thread will output the values once the workers have exited. (We could obviously expand this program by creating additional threads that determine other statistical values, such as median and standard deviation.)</p>
+        <p class="list">&nbsp;&nbsp;<b>4.22</b> An interesting way of calculating π is to use a technique known as <b><i>Monte Carlo</i>,</b> which involves randomization. This technique works as follows: Suppose you have a circle inscribed within a square, as shown in <a href="11_chapter04.html#fig4.18">Figure 4.18</a>. <a id="page_196"></a>(Assume that the radius of this circle is 1.) First, generate a series of random points as simple (<i>x, y</i>) coordinates. These points must fall within the Cartesian coordinates that bound the square. Of the total number of random points that are generated, some will occur within the circle. Next, estimate π by performing the following calculation:</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f018.jpg" alt="image" class="imgepub" width="356" height="245"></p>
+        <p class="caption"><a id="fig4.18"></a><b>Figure 4.18</b> Monte Carlo technique for calculating pi.</p>
+        <p class="center">π = 4× <i>(number of points in circle) / (total number of points)</i></p>
+        <p class="list-text">Write a multithreaded version of this algorithm that creates a separate thread to generate a number of random points. The thread will count the number of points that occur within the circle and store that result in a global variable. When this thread has exited, the parent thread will calculate and output the estimated value of π. It is worth experimenting with the number of random points generated. As a general rule, the greater the number of points, the closer the approximation to π.</p>
+        <p class="list-text">In the source-code download for this text, we provide a sample program that provides a technique for generating random numbers, as well as determining if the random (<i>x, y</i>) point occurs within the circle.</p>
+        <p class="list-text">Readers interested in the details of the Monte Carlo method for estimating π should consult the bibliography at the end of this chapter. In <a href="12_chapter05.html#chap5">Chapter 5</a>, we modify this exercise using relevant material from that chapter.</p>
+        <p class="list">&nbsp;&nbsp;<b>4.23</b> Repeat Exercise 4.22, but instead of using a separate thread to generate random points, use OpenMP to parallelize the generation of points. Be careful not to place the calculcation of π in the parallel region, since you want to calculcate π only once.</p>
+        <p class="list">&nbsp;&nbsp;<b>4.24</b> Write a multithreaded program that outputs prime numbers. This program should work as follows: The user will run the program and will enter a number on the command line. The program will then create a separate thread that outputs all the prime numbers less than or equal to the number entered by the user.</p>
+        <p class="list">&nbsp;&nbsp;<b>4.25</b> Modify the socket-based date server (<a href="10_chapter03.html#fig3.21">Figure 3.21</a>) in <a href="10_chapter03.html#chap3">Chapter 3</a> so that the server services each client request in a separate thread.</p>
+        <p class="list">&nbsp;&nbsp;<a id="page_197"></a><b>4.26</b> The Fibonacci sequence is the series of numbers 0, 1, 1, 2, 3, 5, 8, …. Formally, it can be expressed as:</p>
+        <div class="code">
+        <span class="codesnippet">
+            <span class="inlinecodenormal"><i>fib</i><sub>0</sub> = 0</span>
+            <span class="inlinecodenormal"><i>fib</i><sub>1</sub> = 1</span>
+            <span class="inlinecodenormal"><i>fib<sub>n</sub></i> = <i>fib</i><sub><i>n</i>−1</sub> + <i>fib</i><sub><i>n</i>−2</sub></span>
+        </span>
+        </div>
+        <p class="list-text">Write a multithreaded program that generates the Fibonacci sequence. This program should work as follows: On the command line, the user will enter the number of Fibonacci numbers that the program is to generate. The program will then create a separate thread that will generate the Fibonacci numbers, placing the sequence in data that can be shared by the threads (an array is probably the most convenient data structure). When the thread finishes execution, the parent thread will output the sequence generated by the child thread. Because the parent thread cannot begin outputting the Fibonacci sequence until the child thread finishes, the parent thread will have to wait for the child thread to finish. Use the techniques described in <a href="11_chapter04.html#sec4.4">Section 4.4</a> to meet this requirement.</p>
+        <p class="list">&nbsp;&nbsp;<b>4.27</b> Exercise 3.25 in <a href="10_chapter03.html#chap3">Chapter 3</a> involves designing an echo server using the Java threading API. This server is single-threaded, meaning that the server cannot respond to concurrent echo clients until the current client exits. Modify the solution to Exercise 3.25 so that the echo server services each client in a separate request.</p>
+        <h2 class="subhead">Programming Projects</h2>
+        <p class="subhead1"><b>Project 1—Sudoku Solution Validator</b></p>
+        <p class="text">A <b><i>Sudoku</i></b> puzzle uses a 9 × 9 grid in which each column and row, as well as each of the nine 3 × 3 subgrids, must contain all of the digits 1 … 9. <a href="11_chapter04.html#fig4.19">Figure 4.19</a> presents an example of a valid Sudoku puzzle. This project consists of designing a multithreaded application that determines whether the solution to a Sudoku puzzle is valid.</p>
+        <p class="text-indent">There are several different ways of multithreading this application. One suggested strategy is to create threads that check the following criteria:</p>
+        <ul style="list-style-type:disc;">
+        <li>A thread to check that each column contains the digits 1 through 9</li>
+        <li>A thread to check that each row contains the digits 1 through 9</li>
+        <li>Nine threads to check that each of the 3 × 3 subgrids contains the digits 1 through 9</li>
+        </ul>
+        <p class="text-indent">This would result in a total of eleven separate threads for validating a Sudoku puzzle. However, you are welcome to create even more threads for this project. For example, rather than creating one thread that checks all nine <a id="page_198"></a>columns, you could create nine separate threads and have each of them check one column.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f019.jpg" alt="image" class="imgepub" width="267" height="288"></p>
+        <p class="caption"><a id="fig4.19"></a><b>Figure 4.19</b> Solution to a 9 × 9 Sudoku puzzle.</p>
+        <p class="subhead2"><b>Passing Parameters to Each Thread</b></p>
+        <p class="text">The parent thread will create the worker threads, passing each worker the location that it must check in the Sudoku grid. This step will require passing several parameters to each thread. The easiest approach is to create a data structure using a <span class="inlinecode">struct</span>. For example, a structure to pass the row and column where a thread must begin validating would appear as follows:</p>
+        <div class="code">
+        <pre class="codesnippet">/* structure for passing data to threads */
+        typedef struct
+        {
+          int row;
+          int column;
+        } parameters;</pre>
+        </div>
+        <p class="text-indent">Both Pthreads and Windows programs will create worker threads using a strategy similar to that shown below:</p>
+        <div class="code1">
+        <pre class="codesnippet">parameters *data = (parameters *) malloc(sizeof(parameters));
+        data-&gt;row = 1;
+        data-&gt;column = 1;
+        /* Now create the thread passing it data as a parameter */</pre>
+        </div>
+        <p class="text">The <span class="inlinecode">data</span> pointer will be passed to either the <span class="inlinecode">pthread_create()</span> (Pthreads) function or the <span class="inlinecode">CreateThread()</span> (Windows) function, which in turn will pass it as a parameter to the function that is to run as a separate thread.</p>
+        <p class="subhead2"><b>Returning Results to the Parent Thread</b></p>
+        <p class="text">Each worker thread is assigned the task of determining the validity of a particular region of the Sudoku puzzle. Once a worker has performed this <a id="page_199"></a>check, it must pass its results back to the parent. One good way to handle this is to create an array of integer values that is visible to each thread. The <i>i<sup>th</sup></i> index in this array corresponds to the <i>i<sup>th</sup></i> worker thread. If a worker sets its corresponding value to 1, it is indicating that its region of the Sudoku puzzle is valid. A value of 0 would indicate otherwise. When all worker threads have completed, the parent thread checks each entry in the result array to determine if the Sudoku puzzle is valid.</p>
+        <p class="center"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781118063330/files/images/ch004-f020.jpg" alt="image" class="imgepub" width="356" height="276"></p>
+        <p class="caption"><a id="fig4.20"></a><b>Figure 4.20</b> Multithreaded sorting.</p>
+        <p class="subhead1"><b>Project 2—Multithreaded Sorting Application</b></p>
+        <p class="text">Write a multithreaded sorting program that works as follows: A list of integers is divided into two smaller lists of equal size. Two separate threads (which we will term <b><i>sorting threads</i></b>) sort each sublist using a sorting algorithm of your choice. The two sublists are then merged by a third thread—a <b><i>merging thread</i></b>—which merges the two sublists into a single sorted list.</p>
+        <p class="text-indent">Because global data are shared cross all threads, perhaps the easiest way to set up the data is to create a global array. Each sorting thread will work on one half of this array. A second global array of the same size as the unsorted integer array will also be established. The merging thread will then merge the two sublists into this second array. Graphically, this program is structured according to <a href="11_chapter04.html#fig4.20">Figure 4.20</a>.</p>
+        <p class="text-indent">This programming project will require passing parameters to each of the sorting threads. In particular, it will be necessary to identify the starting index from which each thread is to begin sorting. Refer to the instructions in Project 1 for details on passing parameters to a thread.</p>
+        <p class="text-indent">The parent thread will output the sorted array once all sorting threads have exited.</p>
+        <h3 class="subtitle"><a id="chap4-bibli"></a>Bibliographical Notes</h3>
+        <p class="text">Threads have had a long evolution, starting as “cheap concurrency” in programming languages and moving to “lightweight processes,” with early examples that included the Thoth system ([Cheriton et al. (1979)]) and the Pilot <a id="page_200"></a>system ([Redell et al. (1980)]). [Binding (1985)] described moving threads into the UNIX kernel. Mach ([Accetta et al. (1986)], [Tevanian et al. (1987)]), and V ([Cheriton (1988)]) made extensive use of threads, and eventually almost all major operating systems implemented them in some form or another.</p>
+        <p class="text-indent">[Vahalia (1996)] covers threading in several versions of UNIX. [McDougall and Mauro (2007)] describes developments in threading the Solaris kernel. [Russinovich and Solomon (2009)] discuss threading in the Windows operating system family. [Mauerer (2008)] and [Love (2010)] explain how Linux handles threading, and [Singh (2007)] covers threads in Mac OS X.</p>
+        <p class="text-indent">Information on Pthreads programming is given in [Lewis and Berg (1998)] and [Butenhof (1997)]. [Oaks and Wong (1999)] and [Lewis and Berg (2000)] discuss multithreading in Java. [Goetz et al. (2006)] present a detailed discussion of concurrent programming in Java. [Hart (2005)] describes multithreading using Windows. Details on using OpenMP can be found at <a href="http://openmp.org">http://openmp.org</a>.</p>
+        <p class="text-indent">An analysis of an optimal thread-pool size can be found in [Ling et al. (2000)]. Scheduler activations were first presented in [Anderson et al. (1991)], and [Williams (2002)] discusses scheduler activations in the NetBSD system.</p>
+        <p class="text-indent">[Breshears (2009)] and [Pacheco (2011)] cover parallel programming in detail. [Hill and Marty (2008)] examine Amdahl's Law with respect to multicore systems. The Monte Carlo technique for estimating π is further discussed in <a href="http://math.fullerton.edu/mathews/n2003/montecarlopimod.html">http://math.fullerton.edu/mathews/n2003/montecarlopimod.html</a>.</p>
+        <h2 class="subhead">Bibliography</h2>
+        <p class="reference"><b>[Accetta et al. (1986)]</b> M. Accetta, R. Baron, W. Bolosky, D. B. Golub, R. Rashid, A. Tevanian, and M. Young, “Mach: A New Kernel Foundation for UNIX Development”, <i>Proceedings of the Summer USENIX Conference</i> (1986), pages 93–112.</p>
+        <p class="reference"><b>[Anderson et al. (1991)]</b> T. E. Anderson, B. N. Bershad, E. D. Lazowska, and H. M. Levy, “Scheduler Activations: Effective Kernel Support for the User-Level Management of Parallelism”, <i>Proceedings of the ACM Symposium on Operating Systems Principles</i> (1991), pages 95–109.</p>
+        <p class="reference"><b>[Binding (1985)]</b> C. Binding, “Cheap Concurrency in C”, <i>SIGPLAN Notices</i>, Volume 20, Number 9 (1985), pages 21–27.</p>
+        <p class="reference"><b>[Breshears (2009)]</b> C. Breshears, <i>The Art of Concurrency</i>, O'Reilly &amp; Associates (2009).</p>
+        <p class="reference"><b>[Butenhof (1997)]</b> D. Butenhof, <i>Programming with POSIX Threads</i>, Addison-Wesley (1997).</p>
+        <p class="reference"><b>[Cheriton (1988)]</b> D. Cheriton, “The V Distributed System”, <i>Communications of the ACM</i>, Volume 31, Number 3 (1988), pages 314–333.</p>
+        <p class="reference"><b>[Cheriton et al. (1979)]</b> D. R. Cheriton, M. A. Malcolm, L. S. Melen, and G. R. Sager, “Thoth, a Portable Real-Time Operating System”, <i>Communications of the ACM</i>, Volume 22, Number 2 (1979), pages 105–115.</p>
+        <p class="reference"><a id="page_201"></a><b>[Goetz et al. (2006)]</b> B. Goetz, T. Peirls, J. Bloch, J. Bowbeer, D. Holmes, and D. Lea, <i>Java Concurrency in Practice</i>, Addison-Wesley (2006).</p>
+        <p class="reference"><b>[Hart (2005)]</b> J. M. Hart, <i>Windows System Programming</i>, Third Edition, Addison-Wesley (2005).</p>
+        <p class="reference"><b>[Hill and Marty (2008)]</b> M. Hill and M. Marty, “Amdahl's Law in the Multicore Era”, <i>IEEE Computer</i>, Volume 41, Number 7 (2008), pages 33–38.</p>
+        <p class="reference"><b>[Lewis and Berg (1998)]</b> B. Lewis and D. Berg, <i>Multithreaded Programming with Pthreads</i>, Sun Microsystems Press (1998).</p>
+        <p class="reference"><b>[Lewis and Berg (2000)]</b> B. Lewis and D. Berg, <i>Multithreaded Programming with Java Technology</i>, Sun Microsystems Press (2000).</p>
+        <p class="reference"><b>[Ling et al. (2000)]</b> Y. Ling, T. Mullen, and X. Lin, “Analysis of Optimal Thread Pool Size”, <i>Operating System Review</i>, Volume 34, Number 2 (2000), pages 42–55.</p>
+        <p class="reference"><b>[Love (2010)]</b> R. Love, <i>Linux Kernel Development</i>, Third Edition, Developer's Library (2010).</p>
+        <p class="reference"><b>[Mauerer (2008)]</b> W. Mauerer, <i>Professional Linux Kernel Architecture</i>, John Wiley and Sons (2008).</p>
+        <p class="reference"><b>[McDougall and Mauro (2007)]</b> R. McDougall and J. Mauro, <i>Solaris Internals</i>, Second Edition, Prentice Hall (2007).</p>
+        <p class="reference"><b>[Oaks and Wong (1999)]</b> S. Oaks and H. Wong, <i>Java Threads</i>, Second Edition, O'Reilly &amp; Associates (1999).</p>
+        <p class="reference"><b>[Pacheco (2011)]</b> P. S. Pacheco, <i>An Introduction to Parallel Programming</i>, Morgan Kaufmann (2011).</p>
+        <p class="reference"><b>[Redell et al. (1980)]</b> D. D. Redell, Y. K. Dalal, T. R. Horsley, H. C. Lauer, W. C. Lynch, P. R. McJones, H. G. Murray, and S. P. Purcell, “Pilot: An Operating System for a Personal Computer”, <i>Communications of the ACM</i>, Volume 23, Number 2 (1980), pages 81–92.</p>
+        <p class="reference"><b>[Russinovich and Solomon (2009)]</b> M. E. Russinovich and D. A. Solomon, <i>Windows Internals: Including Windows Server 2008 and Windows Vista</i>, Fifth Edition, Microsoft Press (2009).</p>
+        <p class="reference"><b>[Singh (2007)]</b> A. Singh, <i>Mac OS X Internals: A Systems Approach</i>, Addison-Wesley (2007).</p>
+        <p class="reference"><b>[Tevanian et al. (1987)]</b> A. Tevanian, Jr., R. F. Rashid, D. B. Golub, D. L. Black, E. Cooper, and M. W. Young, “Mach Threads and the Unix Kernel: The Battle for Control”, <i>Proceedings of the Summer USENIX Conference</i> (1987).</p>
+        <p class="reference"><b>[Vahalia (1996)]</b> U. Vahalia, <i>Unix Internals: The New Frontiers</i>, Prentice Hall (1996).</p>
+        <p class="reference"><b>[Williams (2002)]</b> N. Williams, “An Implementation of Scheduler Activations on the NetBSD Operating System”, <i>2002 USENIX Annual Technical Conference, FREENIX Track</i> (2002).</p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781118063330/files/9781118063330.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com
