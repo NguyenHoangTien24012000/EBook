@@ -1,0 +1,2348 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content" class="noOutline" tabindex="-1"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 7. Meta Programming"><div class="chapter" id="chapter-7-meta-programming">
+        <h1><span class="label">Chapter 7. </span>Meta Programming</h1>
+        
+        
+        <p>Meta programming is programming where the operation targets the behavior
+        of the program itself. In other words, it’s programming the programming
+        of your program. Yeah, a mouthful, huh?</p>
+        
+        <p>For example, if you probe the relationship between one object <code>a</code> and
+        another <code>b</code>—are they <code>[[Prototype]]</code> linked?—using
+        <code>a.isPrototype(b)</code>, this is commonly referred to as introspection, a
+        form of meta programming. Macros (which don’t exist in JS, yet)—where
+        the code modifies itself at compile time—are another obvious example
+        of meta programming. Enumerating the keys of an object with a <code>for..in</code>
+        loop, or checking if an object is an <em>instance of</em> a “class
+        constructor,” are other common meta programming tasks.</p>
+        
+        <p>Meta programming focuses on one or more of the following: code
+        inspecting itself, code modifying itself, or code modifying default
+        language behavior so other code is affected.</p>
+        
+        <p>The goal of meta programming is to leverage the language’s own intrinsic
+        capabilities to make the rest of your code more descriptive, expressive,
+        and/or flexible. Because of the <em>meta</em> nature of meta programming, it’s
+        somewhat difficult to put a more precise definition on it than that. The
+        best way to understand meta programming is to see it through examples.</p>
+        
+        <p>ES6 adds several new forms/features for meta programming on top of what
+        JS already had.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Function Names"><div class="sect1" id="functionNamessect">
+        <h1>Function Names</h1>
+        
+        <p>There are cases where your code may want to introspect on itself and ask
+        what the name of some function is. If you ask what a function’s name is,
+        the answer is surprisingly somewhat ambiguous. Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">function </code><code class="nx">daz</code><code class="p">()</code> <code class="p">{</code>
+            <code class="c1">// ..</code>
+        <code class="p">}</code>
+        
+        <code class="kd">var</code> <code class="nx">obj</code> <code class="o">=</code> <code class="p">{</code>
+            <code class="nx">foo</code><code class="o">:</code> <code class="kd">function</code><code class="p">()</code> <code class="p">{</code>
+                <code class="c1">// ..</code>
+            <code class="p">},</code>
+            <code class="nx">bar</code><code class="o">:</code> <code class="kd">function </code><code class="nx">baz</code><code class="p">()</code> <code class="p">{</code>
+                <code class="c1">// ..</code>
+            <code class="p">},</code>
+            <code class="nx">bam</code><code class="o">:</code> <code class="nx">daz</code><code class="p">,</code>
+            <code class="nx">zim</code><code class="p">()</code> <code class="p">{</code>
+                <code class="c1">// ..</code>
+            <code class="p">}</code>
+        <code class="p">};</code></pre>
+        
+        <p>In this previous snippet, “what is the name of <code>obj.foo()</code>" is slightly
+        nuanced. Is it <code>"foo"</code>, <code>""</code>, or <code>undefined</code>? And what about <code>obj.bar()</code>—is it named <code>"bar"</code> or <code>"baz"</code>? Is <code>obj.bam()</code> named <code>"bam"</code> or
+        <code>"daz"</code>? What about <code>obj.zim()</code>?</p>
+        
+        <p>Moreover, what about functions that are passed as callbacks, like:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">function </code><code class="nx">foo</code><code class="p">(</code><code class="nx">cb</code><code class="p">)</code> <code class="p">{</code>
+            <code class="c1">// what is the name of `cb()` here?</code>
+        <code class="p">}</code>
+        
+        <code class="nx">foo</code><code class="p">(</code> <code class="kd">function</code><code class="p">(){</code>
+            <code class="c1">// I'm anonymous!</code>
+        <code class="p">}</code> <code class="p">);</code></pre>
+        
+        <p>There are quite a few ways that functions can be expressed in programs,
+        and it’s not always clear and unambiguous what the “name” of that
+        function should be.</p>
+        
+        <p>More importantly, we need to distinguish whether the “name” of a
+        function refers to its <code>name</code> property—yes, functions have a property
+        called <code>name</code>—or whether it refers to the lexical binding name, such
+        as <code>bar</code> in <code>function bar() { .. }</code>.</p>
+        
+        <p>The lexical binding name is what you use for things like recursion:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">function </code><code class="nx">foo</code><code class="p">(</code><code class="nx">i</code><code class="p">)</code> <code class="p">{</code>
+            <code class="k">if</code> <code class="p">(</code><code class="nx">i</code> <code class="o">&lt;</code> <code class="mi">10</code><code class="p">)</code> <code class="k">return</code> <code class="nx">foo</code><code class="p">(</code> <code class="nx">i</code> <code class="o">*</code> <code class="mi">2</code> <code class="p">);</code>
+            <code class="k">return</code> <code class="nx">i</code><code class="p">;</code>
+        <code class="p">}</code></pre>
+        
+        <p>The <code>name</code> property is what you’d use for meta programming purposes, so
+        that’s what we’ll focus on in this discussion.</p>
+        
+        <p>The confusion comes because by default, the lexical name a function has
+        (if any) is also set as its <code>name</code> property. Actually, there was no
+        official requirement for that behavior by the ES5 (and prior)
+        specifications. The setting of the <code>name</code> property was nonstandard but
+        still fairly reliable. As of ES6, it has been standardized.</p>
+        <div data-type="tip"><h6>Tip</h6>
+        <p>If a function has a <code>name</code> value assigned, that’s typically the
+        name used in stack traces in developer tools.</p>
+        </div>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Inferences"><div class="sect2" id="idm45967353774152">
+        <h2>Inferences</h2>
+        
+        <p>But what happens to the <code>name</code> property if a function has no lexical
+        name?</p>
+        
+        <p>As of ES6, there are now inference rules that can determine a sensible
+        <code>name</code> property value to assign a function even if that function doesn’t
+        have a lexical name to use.</p>
+        
+        <p>Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">abc</code> <code class="o">=</code> <code class="kd">function</code><code class="p">()</code> <code class="p">{</code>
+            <code class="c1">// ..</code>
+        <code class="p">};</code>
+        
+        <code class="nx">abc</code><code class="p">.</code><code class="nx">name</code><code class="p">;</code>               <code class="c1">// "abc"</code></pre>
+        
+        <p>Had we given the function a lexical name like
+        <code>abc = function def() { .. }</code>, the <code>name</code> property would of course be
+        <code>"def"</code>. But in the absence of the lexical name, intuitively the <code>"abc"</code>
+        name seems appropriate.</p>
+        
+        <p>Here are other forms that will infer a name (or not) in ES6:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="p">(</code><code class="kd">function</code><code class="p">(){</code> <code class="p">..</code> <code class="p">});</code>                 <code class="c1">// name:</code>
+        <code class="p">(</code><code class="kd">function*</code><code class="p">(){</code> <code class="p">..</code> <code class="p">});</code>                <code class="c1">// name:</code>
+        <code class="nb">window</code><code class="p">.</code><code class="nx">foo</code> <code class="o">=</code> <code class="kd">function</code><code class="p">(){</code> <code class="p">..</code> <code class="p">};</code>      <code class="c1">// name:</code>
+        
+        <code class="k">class</code> <code class="nx">Awesome</code> <code class="p">{</code>
+            <code class="nx">constructor</code><code class="p">()</code> <code class="p">{</code> <code class="p">..</code> <code class="p">}</code>            <code class="c1">// name: Awesome</code>
+            <code class="nx">funny</code><code class="p">()</code> <code class="p">{</code> <code class="p">..</code> <code class="p">}</code>                  <code class="c1">// name: funny</code>
+        <code class="p">}</code>
+        
+        <code class="kd">var</code> <code class="nx">c</code> <code class="o">=</code> <code class="k">class</code> <code class="nx">Awesome</code> <code class="p">{</code> <code class="p">..</code> <code class="p">};</code>       <code class="c1">// name: Awesome</code>
+        
+        <code class="kd">var</code> <code class="nx">o</code> <code class="o">=</code> <code class="p">{</code>
+            <code class="nx">foo</code><code class="p">()</code> <code class="p">{</code> <code class="p">..</code> <code class="p">},</code>                   <code class="c1">// name: foo</code>
+            <code class="o">*</code><code class="nx">bar</code><code class="p">()</code> <code class="p">{</code> <code class="p">..</code> <code class="p">},</code>                  <code class="c1">// name: bar</code>
+            <code class="nx">baz</code><code class="o">:</code> <code class="p">()</code> <code class="o">=&gt;</code> <code class="p">{</code> <code class="p">..</code> <code class="p">},</code>              <code class="c1">// name: baz</code>
+            <code class="nx">bam</code><code class="o">:</code> <code class="kd">function</code><code class="p">(){</code> <code class="p">..</code> <code class="p">},</code>          <code class="c1">// name: bam</code>
+            <code class="k">get</code><code class="nx"> qux</code><code class="p">()</code> <code class="p">{</code> <code class="p">..</code> <code class="p">},</code>               <code class="c1">// name: get qux</code>
+            <code class="k">set</code><code class="nx"> fuz</code><code class="p">()</code> <code class="p">{</code> <code class="p">..</code> <code class="p">},</code>               <code class="c1">// name: set fuz</code>
+            <code class="p">[</code><code class="s2">"b"</code> <code class="o">+</code> <code class="s2">"iz"</code><code class="p">]</code><code class="o">:</code>
+                <code class="kd">function</code><code class="p">(){</code> <code class="p">..</code> <code class="p">},</code>           <code class="c1">// name: biz</code>
+            <code class="p">[</code><code class="nb">Symbol</code><code class="p">(</code> <code class="s2">"buz"</code> <code class="p">)]</code><code class="o">:</code>
+                <code class="kd">function</code><code class="p">(){</code> <code class="p">..</code> <code class="p">}</code>            <code class="c1">// name: [buz]</code>
+        <code class="p">};</code>
+        
+        <code class="kd">var</code> <code class="nx">x</code> <code class="o">=</code> <code class="nx">o</code><code class="p">.</code><code class="nx">foo</code><code class="p">.</code><code class="nx">bind</code><code class="p">(</code> <code class="nx">o</code> <code class="p">);</code>            <code class="c1">// name: bound foo</code>
+        <code class="p">(</code><code class="kd">function</code><code class="p">(){</code> <code class="p">..</code> <code class="p">}).</code><code class="nx">bind</code><code class="p">(</code> <code class="nx">o</code> <code class="p">);</code>       <code class="c1">// name: bound</code>
+        
+        <code class="k">export</code> <code class="k">default</code> <code class="kd">function</code><code class="p">()</code> <code class="p">{</code> <code class="p">..</code> <code class="p">}</code>    <code class="c1">// name: default</code>
+        
+        <code class="kd">var</code> <code class="nx">y</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Function</code><code class="p">();</code>             <code class="c1">// name: anonymous</code>
+        <code class="kd">var</code> <code class="nx">GeneratorFunction</code> <code class="o">=</code>
+            <code class="kd">function*</code><code class="p">(){}.</code><code class="bp">__proto__</code><code class="p">.</code><code class="nx">constructor</code><code class="p">;</code>
+        <code class="kd">var</code> <code class="nx">z</code> <code class="o">=</code> <code class="k">new</code> <code class="nx">GeneratorFunction</code><code class="p">();</code>    <code class="c1">// name: anonymous</code></pre>
+        
+        <p>The <code>name</code> property is not writable by default, but it is configurable,
+        meaning you can use <code>Object.defineProperty(..)</code> to manually change it if
+        so desired.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Meta Properties"><div class="sect1" id="idm45967353940888">
+        <h1>Meta Properties</h1>
+        
+        <p>In <a data-type="xref" href="ch03.html#newtarget_sect">“new.target”</a> in <a data-type="xref" href="ch03.html#chapter-3-organization">Chapter&nbsp;3</a>, we introduced a concept new
+        to JS in ES6: the meta property. As the name suggests, meta properties
+        are intended to provide special meta information in the form of a
+        property access that would otherwise not have been possible.</p>
+        
+        <p>In the case of <code>new.target</code>, the keyword <code>new</code> serves as the context for
+        a property access. Clearly <code>new</code> is itself not an object, which makes
+        this capability special. However, when <code>new.target</code> is used inside a
+        constructor call (a function/method invoked with <code>new</code>), <code>new</code> becomes a
+        virtual context, so that <code>new.target</code> can refer to the target
+        constructor that <code>new</code> invoked.</p>
+        
+        <p>This is a clear example of a meta programming operation, as the intent
+        is to determine from inside a constructor call what the original <code>new</code>
+        target was, generally for the purposes of introspection (examining
+        typing/structure) or static property access.</p>
+        
+        <p>For example, you may want to have different behavior in a constructor
+        depending on if it’s directly invoked or invoked via a child class:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="k">class</code> <code class="nx">Parent</code> <code class="p">{</code>
+            <code class="nx">constructor</code><code class="p">()</code> <code class="p">{</code>
+                <code class="k">if</code> <code class="p">(</code><code class="k">new</code><code class="p">.</code><code class="nx">target</code> <code class="o">===</code> <code class="nx">Parent</code><code class="p">)</code> <code class="p">{</code>
+                    <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="s2">"Parent instantiated"</code> <code class="p">);</code>
+                <code class="p">}</code>
+                <code class="k">else</code> <code class="p">{</code>
+                    <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="s2">"A child instantiated"</code> <code class="p">);</code>
+                <code class="p">}</code>
+            <code class="p">}</code>
+        <code class="p">}</code>
+        
+        <code class="k">class</code> <code class="nx">Child</code> <code class="k">extends</code> <code class="nx">Parent</code> <code class="p">{}</code>
+        
+        <code class="kd">var</code> <code class="nx">a</code> <code class="o">=</code> <code class="k">new</code> <code class="nx">Parent</code><code class="p">();</code>
+        <code class="c1">// Parent instantiated</code>
+        
+        <code class="kd">var</code> <code class="nx">b</code> <code class="o">=</code> <code class="k">new</code> <code class="nx">Child</code><code class="p">();</code>
+        <code class="c1">// A child instantiated</code></pre>
+        
+        <p>There’s a slight nuance here, which is that the <code>constructor()</code> inside
+        the <code>Parent</code> class definition is actually given the lexical name of the
+        class (<code>Parent</code>), even though the syntax implies that the class is a
+        separate entity from the constructor.</p>
+        <div data-type="warning" epub:type="warning"><h6>Warning</h6>
+        <p>As with all meta programming techniques, be careful of
+        creating code that’s too clever for your future self or others
+        maintaining your code to understand. Use these tricks with caution.</p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Well-Known Symbols"><div class="sect1" id="well-knownSymbols">
+        <h1>Well-Known Symbols</h1>
+        
+        <p>In <a data-type="xref" href="ch02.html#symbolSect">“Symbols”</a> in <a data-type="xref" href="ch02.html#chapter-2-syntax">Chapter&nbsp;2</a>, we covered the new ES6 primitive
+        type <code>symbol</code>. In addition to symbols you can define in your own
+        program, JS predefines a number of built-in symbols, referred to as
+        <em>Well-Known Symbols</em> (WKS).</p>
+        
+        <p>These symbol values are defined primarily to expose special meta
+        properties that are being exposed to your JS programs to give you more
+        control over JS’s behavior.</p>
+        
+        <p>We’ll briefly introduce each and discuss their purpose.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Symbol.iterator"><div class="sect2" id="idm45967353451016">
+        <h2>Symbol.iterator</h2>
+        
+        <p>In Chapters <a href="ch02.html#chapter-2-syntax">2</a> and <a href="ch03.html#chapter-3-organization">3</a>, we introduced and used the <code>@@iterator</code> symbol,
+        automatically used by <code>...</code> spreads and <code>for..of</code> loops. We also saw
+        <code>@@iterator</code> as defined on the new ES6 collections as defined in <a data-type="xref" href="ch05.html#chapter-5-collections">Chapter&nbsp;5</a>.</p>
+        
+        <p><code>Symbol.iterator</code> represents the special location (property) on any
+        object where the language mechanisms automatically look to find a method
+        that will construct an iterator instance for consuming that object’s
+        values. Many objects come with a default one defined.</p>
+        
+        <p>However, we can define our own iterator logic for any object value by
+        setting the <code>Symbol.iterator</code> property, even if that’s overriding the
+        default iterator. The meta programming aspect is that we are defining
+        behavior that other parts of JS (namely, operators and looping
+        constructs) use when processing an object value we define.</p>
+        
+        <p>Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">arr</code> <code class="o">=</code> <code class="p">[</code><code class="mi">4</code><code class="p">,</code><code class="mi">5</code><code class="p">,</code><code class="mi">6</code><code class="p">,</code><code class="mi">7</code><code class="p">,</code><code class="mi">8</code><code class="p">,</code><code class="mi">9</code><code class="p">];</code>
+        
+        <code class="k">for</code> <code class="p">(</code><code class="kd">var</code> <code class="nx">v</code> <code class="k">of</code> <code class="nx">arr</code><code class="p">)</code> <code class="p">{</code>
+            <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="nx">v</code> <code class="p">);</code>
+        <code class="p">}</code>
+        <code class="c1">// 4 5 6 7 8 9</code>
+        
+        <code class="c1">// define iterator that only produces values</code>
+        <code class="c1">// from odd indexes</code>
+        <code class="nx">arr</code><code class="p">[</code><code class="nb">Symbol</code><code class="p">.</code><code class="nx">iterator</code><code class="p">]</code> <code class="o">=</code> <code class="kd">function*</code><code class="p">()</code> <code class="p">{</code>
+            <code class="kd">var</code> <code class="nx">idx</code> <code class="o">=</code> <code class="mi">1</code><code class="p">;</code>
+            <code class="k">do</code> <code class="p">{</code>
+                <code class="kd">yield </code><code class="k">this</code><code class="p">[</code><code class="nx">idx</code><code class="p">];</code>
+            <code class="p">}</code> <code class="k">while</code> <code class="p">((</code><code class="nx">idx</code> <code class="o">+=</code> <code class="mi">2</code><code class="p">)</code> <code class="o">&lt;</code> <code class="k">this</code><code class="p">.</code><code class="nx">length</code><code class="p">);</code>
+        <code class="p">};</code>
+        
+        <code class="k">for</code> <code class="p">(</code><code class="kd">var</code> <code class="nx">v</code> <code class="k">of</code> <code class="nx">arr</code><code class="p">)</code> <code class="p">{</code>
+            <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="nx">v</code> <code class="p">);</code>
+        <code class="p">}</code>
+        <code class="c1">// 5 7 9</code></pre>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Symbol.toStringTag and Symbol.hasInstance"><div class="sect2" id="idm45967353441464">
+        <h2>Symbol.toStringTag and Symbol.hasInstance</h2>
+        
+        <p>One of the most common meta programming tasks is to introspect on a
+        value to find out what <em>kind</em> it is, usually to decide what operations
+        are appropriate to perform on it. With objects, the two most common
+        inspection techniques are <code>toString()</code> and <code>instanceof</code>.</p>
+        
+        <p>Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">function </code><code class="nx">Foo</code><code class="p">()</code> <code class="p">{}</code>
+        
+        <code class="kd">var</code> <code class="nx">a</code> <code class="o">=</code> <code class="k">new</code> <code class="nx">Foo</code><code class="p">();</code>
+        
+        <code class="nx">a</code><code class="p">.</code><code class="nx">toString</code><code class="p">();</code>               <code class="c1">// [object Object]</code>
+        <code class="nx">a</code> <code class="k">instanceof</code> <code class="nx">Foo</code><code class="p">;</code>           <code class="c1">// true</code></pre>
+        
+        <p>As of ES6, you can control the behavior of these operations:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">function </code><code class="nx">Foo</code><code class="p">(</code><code class="nx">greeting</code><code class="p">)</code> <code class="p">{</code>
+            <code class="k">this</code><code class="p">.</code><code class="nx">greeting</code> <code class="o">=</code> <code class="nx">greeting</code><code class="p">;</code>
+        <code class="p">}</code>
+        
+        <code class="nx">Foo</code><code class="p">.</code><code class="nx">prototype</code><code class="p">[</code><code class="nb">Symbol</code><code class="p">.</code><code class="nx">toStringTag</code><code class="p">]</code> <code class="o">=</code> <code class="s2">"Foo"</code><code class="p">;</code>
+        
+        <code class="nb">Object</code><code class="p">.</code><code class="nx">defineProperty</code><code class="p">(</code> <code class="nx">Foo</code><code class="p">,</code> <code class="nb">Symbol</code><code class="p">.</code><code class="nx">hasInstance</code><code class="p">,</code> <code class="p">{</code>
+            <code class="nx">value</code><code class="o">:</code> <code class="kd">function</code><code class="p">(</code><code class="nx">inst</code><code class="p">)</code> <code class="p">{</code>
+                <code class="k">return</code> <code class="nx">inst</code><code class="p">.</code><code class="nx">greeting</code> <code class="o">==</code> <code class="s2">"hello"</code><code class="p">;</code>
+            <code class="p">}</code>
+        <code class="p">}</code> <code class="p">);</code>
+        
+        <code class="kd">var</code> <code class="nx">a</code> <code class="o">=</code> <code class="k">new</code> <code class="nx">Foo</code><code class="p">(</code> <code class="s2">"hello"</code> <code class="p">),</code>
+            <code class="nx">b</code> <code class="o">=</code> <code class="k">new</code> <code class="nx">Foo</code><code class="p">(</code> <code class="s2">"world"</code> <code class="p">);</code>
+        
+        <code class="nx">b</code><code class="p">[</code><code class="nb">Symbol</code><code class="p">.</code><code class="nx">toStringTag</code><code class="p">]</code> <code class="o">=</code> <code class="s2">"cool"</code><code class="p">;</code>
+        
+        <code class="nx">a</code><code class="p">.</code><code class="nx">toString</code><code class="p">();</code>               <code class="c1">// [object Foo]</code>
+        <code class="nb">String</code><code class="p">(</code> <code class="nx">b</code> <code class="p">);</code>                <code class="c1">// [object cool]</code>
+        
+        <code class="nx">a</code> <code class="k">instanceof</code> <code class="nx">Foo</code><code class="p">;</code>           <code class="c1">// true</code>
+        <code class="nx">b</code> <code class="k">instanceof</code> <code class="nx">Foo</code><code class="p">;</code>           <code class="c1">// false</code></pre>
+        
+        <p>The <code>@@toStringTag</code> symbol on the prototype (or instance itself)
+        specifies a string value to use in the <code>[object ___]</code> stringification.</p>
+        
+        <p>The <code>@@hasInstance</code> symbol is a method on the constructor function which
+        receives the instance object value and lets you decide by returning
+        <code>true</code> or <code>false</code> if the value should be considered an instance or not.</p>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p>To set <code>@@hasInstance</code> on a function, you must use
+        <code>Object.defineProperty(..)</code>, as the default one on <code>Function.prototype</code>
+        is <code>writable: false</code>. See the <em>this &amp; Object Prototypes</em> title of this
+        series for more information.</p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Symbol.species"><div class="sect2" id="idm45967353024648">
+        <h2>Symbol.species</h2>
+        
+        <p>In <a data-type="xref" href="ch03.html#class-sect">“Classes”</a> in <a data-type="xref" href="ch03.html#chapter-3-organization">Chapter&nbsp;3</a>, we introduced the <code>@@species</code> symbol, which
+        controls which constructor is used by built-in methods of a class that
+        needs to spawn new instances.</p>
+        
+        <p>The most common example is when subclassing <code>Array</code> and wanting to
+        define which constructor (<code>Array(..)</code> or your subclass) inherited
+        methods like <code>slice(..)</code> should use. By default, <code>slice(..)</code> called on
+        an instance of a subclass of <code>Array</code> would produce a new instance of
+        that subclass, which is frankly what you’ll likely often want.</p>
+        
+        <p>However, you can meta program by overriding a class’s default
+        <code>@@species</code> definition:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="k">class</code> <code class="nx">Cool</code> <code class="p">{</code>
+            <code class="c1">// defer `@@species` to derived constructor</code>
+            <code class="k">static</code> <code class="nx">get</code> <code class="p">[</code><code class="nb">Symbol</code><code class="p">.</code><code class="nx">species</code><code class="p">]()</code> <code class="p">{</code> <code class="k">return</code> <code class="k">this</code><code class="p">;</code> <code class="p">}</code>
+        
+            <code class="nx">again</code><code class="p">()</code> <code class="p">{</code>
+                <code class="k">return</code> <code class="k">new</code> <code class="k">this</code><code class="p">.</code><code class="nx">constructor</code><code class="p">[</code><code class="nb">Symbol</code><code class="p">.</code><code class="nx">species</code><code class="p">]();</code>
+            <code class="p">}</code>
+        <code class="p">}</code>
+        
+        <code class="k">class</code> <code class="nx">Fun</code> <code class="k">extends</code> <code class="nx">Cool</code> <code class="p">{}</code>
+        
+        <code class="k">class</code> <code class="nx">Awesome</code> <code class="k">extends</code> <code class="nx">Cool</code> <code class="p">{</code>
+            <code class="c1">// force `@@species` to be parent constructor</code>
+            <code class="k">static</code> <code class="nx">get</code> <code class="p">[</code><code class="nb">Symbol</code><code class="p">.</code><code class="nx">species</code><code class="p">]()</code> <code class="p">{</code> <code class="k">return</code> <code class="nx">Cool</code><code class="p">;</code> <code class="p">}</code>
+        <code class="p">}</code>
+        
+        <code class="kd">var</code> <code class="nx">a</code> <code class="o">=</code> <code class="k">new</code> <code class="nx">Fun</code><code class="p">(),</code>
+            <code class="nx">b</code> <code class="o">=</code> <code class="k">new</code> <code class="nx">Awesome</code><code class="p">(),</code>
+            <code class="nx">c</code> <code class="o">=</code> <code class="nx">a</code><code class="p">.</code><code class="nx">again</code><code class="p">(),</code>
+            <code class="nx">d</code> <code class="o">=</code> <code class="nx">b</code><code class="p">.</code><code class="nx">again</code><code class="p">();</code>
+        
+        <code class="nx">c</code> <code class="k">instanceof</code> <code class="nx">Fun</code><code class="p">;</code>           <code class="c1">// true</code>
+        <code class="nx">d</code> <code class="k">instanceof</code> <code class="nx">Awesome</code><code class="p">;</code>       <code class="c1">// false</code>
+        <code class="nx">d</code> <code class="k">instanceof</code> <code class="nx">Cool</code><code class="p">;</code>          <code class="c1">// true</code></pre>
+        
+        <p>The <code>Symbol.species</code> setting defaults on the built-in native
+        constructors to the <code>return this</code> behavior as illustrated in the
+        previous snippet in the <code>Cool</code> definition. It has no default on user
+        classes, but as shown that behavior is easy to emulate.</p>
+        
+        <p>If you need to define methods that generate new instances, use the meta
+        programming of the <code>new this.constructor[Symbol.species](..)</code> pattern
+        instead of the hard-wiring of <code>new this.constructor(..)</code> or
+        <code>new XYZ(..)</code>. Derived classes will then be able to customize
+        <code>Symbol.species</code> to control which constructor vends those instances.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Symbol.toPrimitive"><div class="sect2" id="idm45967352893320">
+        <h2>Symbol.toPrimitive</h2>
+        
+        <p>In the <em>Types &amp; Grammar</em> title of this series, we discussed the
+        <code>ToPrimitive</code> abstract coercion operation, which is used when an object
+        must be coerced to a primitive value for some operation (such as <code>==</code>
+        comparison or <code>+</code> addition). Prior to ES6, there was no way to control
+        this behavior.</p>
+        
+        <p>As of ES6, the <code>@@toPrimitive</code> symbol as a property on any object value
+        can customize that <code>ToPrimitive</code> coercion by specifying a method.</p>
+        
+        <p>Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">arr</code> <code class="o">=</code> <code class="p">[</code><code class="mi">1</code><code class="p">,</code><code class="mi">2</code><code class="p">,</code><code class="mi">3</code><code class="p">,</code><code class="mi">4</code><code class="p">,</code><code class="mi">5</code><code class="p">];</code>
+        
+        <code class="nx">arr</code> <code class="o">+</code> <code class="mi">10</code><code class="p">;</code>               <code class="c1">// 1,2,3,4,510</code>
+        
+        <code class="nx">arr</code><code class="p">[</code><code class="nb">Symbol</code><code class="p">.</code><code class="nx">toPrimitive</code><code class="p">]</code> <code class="o">=</code> <code class="kd">function</code><code class="p">(</code><code class="nx">hint</code><code class="p">)</code> <code class="p">{</code>
+            <code class="k">if</code> <code class="p">(</code><code class="nx">hint</code> <code class="o">==</code> <code class="s2">"default"</code> <code class="o">||</code> <code class="nx">hint</code> <code class="o">==</code> <code class="s2">"number"</code><code class="p">)</code> <code class="p">{</code>
+                <code class="c1">// sum all numbers</code>
+                <code class="k">return</code> <code class="k">this</code><code class="p">.</code><code class="nx">reduce</code><code class="p">(</code> <code class="kd">function</code><code class="p">(</code><code class="nx">acc</code><code class="p">,</code><code class="nx">curr</code><code class="p">){</code>
+                    <code class="k">return</code> <code class="nx">acc</code> <code class="o">+</code> <code class="nx">curr</code><code class="p">;</code>
+                <code class="p">},</code> <code class="mi">0</code> <code class="p">);</code>
+            <code class="p">}</code>
+        <code class="p">};</code>
+        
+        <code class="nx">arr</code> <code class="o">+</code> <code class="mi">10</code><code class="p">;</code>               <code class="c1">// 25</code></pre>
+        
+        <p>The <code>Symbol.toPrimitive</code> method will be provided with a <em>hint</em> of
+        <code>"string"</code>, <code>"number"</code>, or <code>"default"</code> (which should be interpreted as
+        <code>"number"</code>), depending on what type the operation invoking <code>ToPrimitive</code>
+        is expecting. In the previous snippet, the additive <code>+</code> operation has no
+        hint (<code>"default"</code> is passed). A multiplicative <code>*</code> operation would hint
+        <code>"number"</code> and a <code>String(arr)</code> would hint <code>"string"</code>.</p>
+        <div data-type="warning" epub:type="warning"><h6>Warning</h6>
+        <p>The <code>==</code> operator will invoke the <code>ToPrimitive</code> operation
+        with no hint—the <code>@@toPrimitive</code> method, if any is called with hint
+        <code>"default"</code>—on an object if the other value being compared is not an
+        object. However, if both comparison values are objects, the behavior of
+        <code>==</code> is identical to <code>===</code>, which is that the references themselves are
+        directly compared. In this case, <code>@@toPrimitive</code> is not invoked at all.
+        See the <em>Types &amp; Grammar</em> title of this series for more information
+        about coercion and the abstract operations.</p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Regular Expression Symbols"><div class="sect2" id="regexSymbols-sect">
+        <h2>Regular Expression Symbols</h2>
+        
+        <p>There are four well-known symbols that can be overridden for regular
+        expression objects, which control how those regular expressions are used
+        by the four corresponding <code>String.prototype</code> functions of the same name:</p>
+        
+        <ul>
+        <li>
+        <p><code>@@match</code>: The <code>Symbol.match</code> value of a regular expression is the
+        method used to match all or part of a string value with the given
+        regular expression. It’s used by <code>String.prototype.match(..)</code> if you
+        pass it a regular expression for the pattern matching.</p>
+        </li>
+        </ul>
+        
+        <p>The default algorithm for matching is laid out in section 21.2.5.6 of
+        the <a href="https://people.mozilla.org/~jorendorff/es6-draft.html#sec-regexp.prototype-@@match">ES6 specification</a>.
+        You could override this default algorithm and provide extra regex
+        features, such as look-behind assertions.</p>
+        
+        <p><code>Symbol.match</code> is also used by the <code>isRegExp</code> abstract operation (see
+        the note in <a data-type="xref" href="ch06.html#string-inspection_sect">“String Inspection Functions”</a> in <a data-type="xref" href="ch06.html#chapter-6-api-additions">Chapter&nbsp;6</a>) to determine if
+        an object is intended to be used as a regular expression. To force this
+        check to fail for an object so it’s not treated as a regular expression,
+        set the <code>Symbol.match</code> value to <code>false</code> (or something falsy). *
+        <code>@@replace</code>: The <code>Symbol.replace</code> value of a regular expression is the
+        method used by <code>String.prototype.replace(..)</code> to replace within a string
+        one or all occurrences of character sequences that match the given
+        regular expression pattern.</p>
+        
+        <p>The default algorithm for replacing is laid out in section 21.2.5.8 of
+        the <a href="https://people.mozilla.org/~jorendorff/es6-draft.html#sec-regexp.prototype-@@replace">ES6 specification</a>.</p>
+        
+        <p>One cool use for overriding the default algorithm is to provide
+        additional <code>replacer</code> argument options, such as supporting
+        <code>"abaca".replace(/a/g,[1,2,3])</code> producing <code>"1b2c3"</code> by consuming the
+        iterable for successive replacement values. * <code>@@search</code>: The
+        <code>Symbol.search</code> value of a regular expression is the method used by
+        <code>String.prototype.search(..)</code> to search for a substring within another
+        string as matched by the given regular expression.</p>
+        
+        <p>The default algorithm for searching is laid out in section 21.2.5.9 of
+        the <a href="https://people.mozilla.org/~jorendorff/es6-draft.html#sec-regexp.prototype-@@search">ES6 specification</a>.
+        * <code>@@split</code>: The <code>Symbol.split</code> value of a regular expression is the
+        method used by <code>String.prototype.split(..)</code> to split a string into
+        substrings at the location(s) of the delimiter as matched by the given
+        regular expression.</p>
+        
+        <p>The default algorithm for splitting is laid out in section 21.2.5.11 of
+        the <a href="https://people.mozilla.org/~jorendorff/es6-draft.html#sec-regexp.prototype-@@split">ES6 specification</a>.</p>
+        
+        <p>Overriding the built-in regular expression algorithms is not for the
+        faint of heart! JS ships with a highly optimized regular expression
+        engine, so your own user code will likely be a lot slower. This kind of
+        meta programming is neat and powerful, but it should only be used in
+        cases where it’s really necessary or beneficial.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Symbol.isConcatSpreadable"><div class="sect2" id="idm45967352739192">
+        <h2>Symbol.isConcatSpreadable</h2>
+        
+        <p>The <code>@@isConcatSpreadable</code> symbol can be defined as a boolean property
+        (<code>Symbol.isConcatSpreadable</code>) on any object (like an array or other
+        iterable) to indicate if it should be <em>spread out</em> if passed to an array
+        <code>concat(..)</code>.</p>
+        
+        <p>Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">a</code> <code class="o">=</code> <code class="p">[</code><code class="mi">1</code><code class="p">,</code><code class="mi">2</code><code class="p">,</code><code class="mi">3</code><code class="p">],</code>
+            <code class="nx">b</code> <code class="o">=</code> <code class="p">[</code><code class="mi">4</code><code class="p">,</code><code class="mi">5</code><code class="p">,</code><code class="mi">6</code><code class="p">];</code>
+        
+        <code class="nx">b</code><code class="p">[</code><code class="nb">Symbol</code><code class="p">.</code><code class="nx">isConcatSpreadable</code><code class="p">]</code> <code class="o">=</code> <code class="kc">false</code><code class="p">;</code>
+        
+        <code class="p">[].</code><code class="nx">concat</code><code class="p">(</code> <code class="nx">a</code><code class="p">,</code> <code class="nx">b</code> <code class="p">);</code>      <code class="c1">// [1,2,3,[4,5,6]]</code></pre>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Symbol.unscopables"><div class="sect2" id="idm45967352712776">
+        <h2>Symbol.unscopables</h2>
+        
+        <p>The <code>@@unscopables</code> symbol can be defined as an object property
+        (<code>Symbol.unscopables</code>) on any object to indicate which properties can
+        and cannot be exposed as lexical variables in a <code>with</code> statement.</p>
+        
+        <p>Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">o</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">a</code><code class="o">:</code><code class="mi">1</code><code class="p">,</code> <code class="nx">b</code><code class="o">:</code><code class="mi">2</code><code class="p">,</code> <code class="nx">c</code><code class="o">:</code><code class="mi">3</code> <code class="p">},</code>
+            <code class="nx">a</code> <code class="o">=</code> <code class="mi">10</code><code class="p">,</code> <code class="nx">b</code> <code class="o">=</code> <code class="mi">20</code><code class="p">,</code> <code class="nx">c</code> <code class="o">=</code> <code class="mi">30</code><code class="p">;</code>
+        
+        <code class="nx">o</code><code class="p">[</code><code class="nb">Symbol</code><code class="p">.</code><code class="nx">unscopables</code><code class="p">]</code> <code class="o">=</code> <code class="p">{</code>
+            <code class="nx">a</code><code class="o">:</code> <code class="kc">false</code><code class="p">,</code>
+            <code class="nx">b</code><code class="o">:</code> <code class="kc">true</code><code class="p">,</code>
+            <code class="nx">c</code><code class="o">:</code> <code class="kc">false</code>
+        <code class="p">};</code>
+        
+        <code class="kd">with</code> <code class="p">(</code><code class="nx">o</code><code class="p">)</code> <code class="p">{</code>
+            <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="nx">a</code><code class="p">,</code> <code class="nx">b</code><code class="p">,</code> <code class="nx">c</code> <code class="p">);</code>     <code class="c1">// 1 20 3</code>
+        <code class="p">}</code></pre>
+        
+        <p>A <code>true</code> in the <code>@@unscopables</code> object indicates the property should be
+        <em>unscopable</em>, and thus filtered out from the lexical scope variables.
+        <code>false</code> means it’s OK to be included in the lexical scope variables.</p>
+        <div data-type="warning" epub:type="warning"><h6>Warning</h6>
+        <p>The <code>with</code> statement is disallowed entirely in <code>strict</code> mode,
+        and as such should be considered deprecated from the language. Don’t use
+        it. See the <em>Scope &amp; Closures</em> title of this series for more
+        information. Because <code>with</code> should be avoided, the <code>@@unscopables</code>
+        symbol is also moot.</p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Proxies"><div class="sect1" id="idm45967353456200">
+        <h1>Proxies</h1>
+        
+        <p>One of the most obviously meta programming features added to ES6 is the
+        <code>Proxy</code> feature.</p>
+        
+        <p>A proxy is a special kind of object you create that “wraps”—or sits
+        in front of—another normal object. You can register special handlers
+        (aka <em>traps</em>) on the proxy object, which are called when various
+        operations are performed against the proxy. These handlers have the
+        opportunity to perform extra logic in addition to <em>forwarding</em> the
+        operations on to the original target/wrapped object.</p>
+        
+        <p>One example of the kind of <em>trap</em> handler you can define on a proxy is
+        <code>get</code> that intercepts the <code>[[Get]]</code> operation—performed when you try
+        to access a property on an object. Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">obj</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">a</code><code class="o">:</code> <code class="mi">1</code> <code class="p">},</code>
+            <code class="nx">handlers</code> <code class="o">=</code> <code class="p">{</code>
+                <code class="nx">get</code><code class="p">(</code><code class="nx">target</code><code class="p">,</code><code class="nx">key</code><code class="p">,</code><code class="nx">context</code><code class="p">)</code> <code class="p">{</code>
+                    <code class="c1">// note: target === obj,</code>
+                    <code class="c1">// context === pobj</code>
+                    <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="s2">"accessing: "</code><code class="p">,</code> <code class="nx">key</code> <code class="p">);</code>
+                    <code class="k">return</code> <code class="nb">Reflect</code><code class="p">.</code><code class="nx">get</code><code class="p">(</code>
+                        <code class="nx">target</code><code class="p">,</code> <code class="nx">key</code><code class="p">,</code> <code class="nx">context</code>
+                    <code class="p">);</code>
+                <code class="p">}</code>
+            <code class="p">},</code>
+            <code class="nx">pobj</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Proxy</code><code class="p">(</code> <code class="nx">obj</code><code class="p">,</code> <code class="nx">handlers</code> <code class="p">);</code>
+        
+        <code class="nx">obj</code><code class="p">.</code><code class="nx">a</code><code class="p">;</code>
+        <code class="c1">// 1</code>
+        
+        <code class="nx">pobj</code><code class="p">.</code><code class="nx">a</code><code class="p">;</code>
+        <code class="c1">// accessing: a</code>
+        <code class="c1">// 1</code></pre>
+        
+        <p>We declare a <code>get(..)</code> handler as a named method on the <em>handler</em> object
+        (second argument to <code>Proxy(..)</code>), that receives a reference to the
+        <em>target</em> object (<code>obj</code>), the <em>key</em> property name (<code>"a"</code>), and the
+        <code>self</code>/receiver/proxy (<code>pobj</code>).</p>
+        
+        <p>After the <code>console.log(..)</code> tracing statement, we “forward” the
+        operation onto <code>obj</code> via <code>Reflect.get(..)</code>. We will cover the <code>Reflect</code>
+        API in the next section, but note that each available proxy trap has a
+        corresponding <code>Reflect</code> function of the same name.</p>
+        
+        <p>These mappings are symmetric on purpose. The proxy handlers each
+        intercept when a respective meta programming task is performed, and the
+        <code>Reflect</code> utilities each perform the respective meta programming task on
+        an object. Each proxy handler has a default definition that
+        automatically calls the corresponding <code>Reflect</code> utility. You will almost
+        certainly use both <code>Proxy</code> and <code>Reflect</code> in tandem.</p>
+        
+        <p>Here’s a list of handlers you can define on a proxy for a <em>target</em>
+        object/function, and how/when they are triggered:</p>
+        <dl>
+        <dt><code>get(..)</code></dt>
+        <dd>
+        <p>Via <code>[[Get]]</code>, a property is accessed on the proxy
+        (<code>Reflect.get(..)</code>, <code>.</code> property operator, or <code>[ .. ]</code> property
+        operator)</p>
+        </dd>
+        <dt><code>set(..)</code></dt>
+        <dd>
+        <p>Via <code>[[Set]]</code>, a property value is set on the proxy
+        (<code>Reflect.set(..)</code>, the <code>=</code> assignment operator, or destructuring
+        assignment if it targets an object property)</p>
+        </dd>
+        <dt><code>deleteProperty(..)</code></dt>
+        <dd>
+        <p>Via <code>[[Delete]]</code>, a property is deleted from the
+        proxy (<code>Reflect.deleteProperty(..)</code> or <code>delete</code>)</p>
+        </dd>
+        <dt><code>apply(..)</code> (if <em>target</em> is a function)</dt>
+        <dd>
+        <p>Via <code>[[Call]]</code>, the proxy is
+        invoked as a normal function/method (<code>Reflect.apply(..)</code>, <code>call(..)</code>,
+        <code>apply(..)</code>, or the <code>(..)</code> call operator)</p>
+        </dd>
+        <dt><code>construct(..)</code> (if <em>target</em> is a constructor function)</dt>
+        <dd>
+        <p>Via
+        <code>[[Construct]]</code>, the proxy is invoked as a constructor function
+        (<code>Reflect.construct(..)</code> or <code>new</code>)</p>
+        </dd>
+        <dt><code>getOwnPropertyDescriptor(..)</code></dt>
+        <dd>
+        <p>Via <code>[[GetOwnProperty]]</code>, a property
+        descriptor is retrieved from the proxy
+        (<code>Object.getOwnPropertyDescriptor(..)</code> or
+        <code>Reflect.getOwnPropertyDescriptor(..)</code>)</p>
+        </dd>
+        <dt><code>defineProperty(..)</code></dt>
+        <dd>
+        <p>Via <code>[[DefineOwnProperty]]</code>, a property
+        descriptor is set on the proxy (<code>Object.defineProperty(..)</code> or
+        <code>Reflect.defineProperty(..)</code>)</p>
+        </dd>
+        <dt><code>getPrototypeOf(..)</code></dt>
+        <dd>
+        <p>Via <code>[[GetPrototypeOf]]</code>, the <code>[[Prototype]]</code> of
+        the proxy is retrieved (<code>Object.getPrototypeOf(..)</code>,
+        <code>Reflect.getPrototypeOf(..)</code>, <code>__proto__</code>, <code>Object#isPrototypeOf(..)</code>,
+        or <code>instanceof</code>)</p>
+        </dd>
+        <dt><code>setPrototypeOf(..)</code></dt>
+        <dd>
+        <p>Via <code>[[SetPrototypeOf]]</code>, the <code>[[Prototype]]</code> of
+        the proxy is set (<code>Object.setPrototypeOf(..)</code>,
+        <code>Reflect.setPrototypeOf(..)</code>, or <code>__proto__</code>)</p>
+        </dd>
+        <dt><code>preventExtensions(..)</code></dt>
+        <dd>
+        <p>Via <code>[[PreventExtensions]]</code>, the proxy is
+        made non-extensible (<code>Object.preventExtensions(..)</code> or
+        <code>Reflect.preventExtensions(..)</code>)</p>
+        </dd>
+        <dt><code>isExtensible(..)</code></dt>
+        <dd>
+        <p>Via <code>[[IsExtensible]]</code>, the extensibility of the
+        proxy is probed (<code>Object.isExtensible(..)</code> or
+        <code>Reflect.isExtensible(..)</code>)</p>
+        </dd>
+        <dt><code>ownKeys(..)</code></dt>
+        <dd>
+        <p>Via <code>[[OwnPropertyKeys]]</code>, the set of owned properties
+        and/or owned symbol properties of the proxy is retrieved
+        (<code>Object.keys(..)</code>, <code>Object.getOwnPropertyNames(..)</code>,
+        <code>Object.getOwnSymbolProperties(..)</code>, <code>Reflect.ownKeys(..)</code>, or
+        <code>JSON.stringify(..)</code>)</p>
+        </dd>
+        <dt><code>enumerate(..)</code></dt>
+        <dd>
+        <p>Via <code>[[Enumerate]]</code>, an iterator is requested for the
+        proxy’s enumerable owned and “inherited” properties
+        (<code>Reflect.enumerate(..)</code> or <code>for..in</code>)</p>
+        </dd>
+        <dt><code>has(..)</code></dt>
+        <dd>
+        <p>Via <code>[[HasProperty]]</code>, the proxy is probed to see if it has
+        an owned or “inherited” property (<code>Reflect.has(..)</code>,
+        <code>Object#hasOwnProperty(..)</code>, or <code>"prop" in obj</code>)</p>
+        </dd>
+        </dl>
+        <div data-type="tip"><h6>Tip</h6>
+        <p>For more information about each of these meta programming tasks,
+        see <a data-type="xref" href="#reflectAPIsect">“Reflect API”</a> later in this chapter.</p>
+        </div>
+        
+        <p>In addition to the notations in the preceding list about actions that
+        will trigger the various traps, some traps are triggered indirectly by
+        the default actions of another trap. For example:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">handlers</code> <code class="o">=</code> <code class="p">{</code>
+                <code class="nx">getOwnPropertyDescriptor</code><code class="p">(</code><code class="nx">target</code><code class="p">,</code><code class="nx">prop</code><code class="p">)</code> <code class="p">{</code>
+                    <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code>
+                        <code class="s2">"getOwnPropertyDescriptor"</code>
+                    <code class="p">);</code>
+                    <code class="k">return</code> <code class="nb">Object</code><code class="p">.</code><code class="nx">getOwnPropertyDescriptor</code><code class="p">(</code>
+                        <code class="nx">target</code><code class="p">,</code> <code class="nx">prop</code>
+                    <code class="p">);</code>
+                <code class="p">},</code>
+                <code class="nx">defineProperty</code><code class="p">(</code><code class="nx">target</code><code class="p">,</code><code class="nx">prop</code><code class="p">,</code><code class="nx">desc</code><code class="p">){</code>
+                    <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="s2">"defineProperty"</code> <code class="p">);</code>
+                    <code class="k">return</code> <code class="nb">Object</code><code class="p">.</code><code class="nx">defineProperty</code><code class="p">(</code>
+                        <code class="nx">target</code><code class="p">,</code> <code class="nx">prop</code><code class="p">,</code> <code class="nx">desc</code>
+                    <code class="p">);</code>
+                <code class="p">}</code>
+            <code class="p">},</code>
+            <code class="nx">proxy</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Proxy</code><code class="p">(</code> <code class="p">{},</code> <code class="nx">handlers</code> <code class="p">);</code>
+        
+        <code class="nx">proxy</code><code class="p">.</code><code class="nx">a</code> <code class="o">=</code> <code class="mi">2</code><code class="p">;</code>
+        <code class="c1">// getOwnPropertyDescriptor</code>
+        <code class="c1">// defineProperty</code></pre>
+        
+        <p>The <code>getOwnPropertyDescriptor(..)</code> and <code>defineProperty(..)</code> handlers are
+        triggered by the default <code>set(..)</code> handler’s steps when setting a
+        property value (whether newly adding or updating). If you also define
+        your own <code>set(..)</code> handler, you may or may not make the corresponding
+        calls against <code>context</code> (not <code>target</code>!), which would trigger these proxy
+        traps.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Proxy Limitations"><div class="sect2" id="idm45967352271048">
+        <h2>Proxy Limitations</h2>
+        
+        <p>These meta programming handlers trap a wide array of fundamental
+        operations you can perform against an object. However, there are some
+        operations that are not (yet, at least) available to intercept.</p>
+        
+        <p>For example, none of these operations are trapped and forwarded from
+        <code>pobj</code> proxy to <code>obj</code> target:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">obj</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">a</code><code class="o">:</code><code class="mi">1</code><code class="p">,</code> <code class="nx">b</code><code class="o">:</code><code class="mi">2</code> <code class="p">},</code>
+            <code class="nx">handlers</code> <code class="o">=</code> <code class="p">{</code> <code class="p">..</code> <code class="p">},</code>
+            <code class="nx">pobj</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Proxy</code><code class="p">(</code> <code class="nx">obj</code><code class="p">,</code> <code class="nx">handlers</code> <code class="p">);</code>
+        
+        <code class="k">typeof</code> <code class="nx">obj</code><code class="p">;</code>
+        <code class="nb">String</code><code class="p">(</code> <code class="nx">obj</code> <code class="p">);</code>
+        <code class="nx">obj</code> <code class="o">+</code> <code class="s2">""</code><code class="p">;</code>
+        <code class="nx">obj</code> <code class="o">==</code> <code class="nx">pobj</code><code class="p">;</code>
+        <code class="nx">obj</code> <code class="o">===</code> <code class="nx">pobj</code></pre>
+        
+        <p>Perhaps in the future, more of these underlying fundamental operations
+        in the language will be interceptable, giving us even more power to
+        extend JavaScript from within itself.</p>
+        <div data-type="warning" epub:type="warning"><h6>Warning</h6>
+        <p>There are certain <em>invariants</em>—behaviors that cannot be
+        overridden—that apply to the use of proxy handlers. For example, the
+        result from the <code>isExtensible(..)</code> handler is always coerced to a
+        <code>boolean</code>. These invariants restrict some of your ability to customize
+        behaviors with proxies, but they do so only to prevent you from creating
+        strange and unusual (or inconsistent) behavior. The conditions for these
+        invariants are complicated so we won’t fully go into them here, but <a href="http://www.2ality.com/2014/12/es6-proxies.html#invariants">this post</a> does a
+        great job of covering them.</p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Revocable Proxies"><div class="sect2" id="idm45967352240040">
+        <h2>Revocable Proxies</h2>
+        
+        <p>A regular proxy always traps for the target object, and cannot be
+        modified after creation—as long as a reference is kept to the proxy,
+        proxying remains possible. However, there may be cases where you want to
+        create a proxy that can be disabled when you want to stop allowing it to proxy. The solution is to create a <em>revocable proxy</em>:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">obj</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">a</code><code class="o">:</code> <code class="mi">1</code> <code class="p">},</code>
+            <code class="nx">handlers</code> <code class="o">=</code> <code class="p">{</code>
+                <code class="nx">get</code><code class="p">(</code><code class="nx">target</code><code class="p">,</code><code class="nx">key</code><code class="p">,</code><code class="nx">context</code><code class="p">)</code> <code class="p">{</code>
+                    <code class="c1">// note: target === obj,</code>
+                    <code class="c1">// context === pobj</code>
+                    <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="s2">"accessing: "</code><code class="p">,</code> <code class="nx">key</code> <code class="p">);</code>
+                    <code class="k">return</code> <code class="nx">target</code><code class="p">[</code><code class="nx">key</code><code class="p">];</code>
+                <code class="p">}</code>
+            <code class="p">},</code>
+            <code class="p">{</code> <code class="nx">proxy</code><code class="o">:</code> <code class="nx">pobj</code><code class="p">,</code> <code class="nx">revoke</code><code class="o">:</code> <code class="nx">prevoke</code> <code class="p">}</code> <code class="o">=</code>
+                <code class="nb">Proxy</code><code class="p">.</code><code class="nx">revocable</code><code class="p">(</code> <code class="nx">obj</code><code class="p">,</code> <code class="nx">handlers</code> <code class="p">);</code>
+        
+        <code class="nx">pobj</code><code class="p">.</code><code class="nx">a</code><code class="p">;</code>
+        <code class="c1">// accessing: a</code>
+        <code class="c1">// 1</code>
+        
+        <code class="c1">// later:</code>
+        <code class="nx">prevoke</code><code class="p">();</code>
+        
+        <code class="nx">pobj</code><code class="p">.</code><code class="nx">a</code><code class="p">;</code>
+        <code class="c1">// TypeError</code></pre>
+        
+        <p>A revocable proxy is created with <code>Proxy.revocable(..)</code>, which is a
+        regular function, not a constructor like <code>Proxy(..)</code>. Otherwise, it
+        takes the same two arguments: <em>target</em> and <em>handlers</em>.</p>
+        
+        <p>The return value of <code>Proxy.revocable(..)</code> is not the proxy itself as
+        with <code>new Proxy(..)</code>. Instead, it’s an object with two properties:
+        <em>proxy</em> and <em>revoke</em>—we used object destructuring (see
+        <a data-type="xref" href="ch02.html#destructuring-sect">“Destructuring”</a> in <a data-type="xref" href="ch02.html#chapter-2-syntax">Chapter&nbsp;2</a>) to assign these properties to <code>pobj</code> and
+        <code>prevoke()</code> variables, respectively.</p>
+        
+        <p>Once a revocable proxy is revoked, any attempts to access it (trigger
+        any of its traps) will throw a <code>TypeError</code>.</p>
+        
+        <p>An example of using a revocable proxy might be handing out a proxy to another party in your application that manages data in your model, instead of giving them a reference to the real model object itself. If your model object changes or is replaced, you want to invalidate the proxy you handed out so the other party knows (via the errors!) to request an updated reference to the model.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Using Proxies"><div class="sect2" id="idm45967352061192">
+        <h2>Using Proxies</h2>
+        
+        <p>The meta programming benefits of these Proxy handlers should be obvious.
+        We can almost fully intercept (and thus override) the behavior of
+        objects, meaning we can extend object behavior beyond core JS in some
+        very powerful ways. We’ll look at a few example patterns to explore the
+        possibilities.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Proxy First, Proxy Last"><div class="sect3" id="idm45967352059176">
+        <h3>Proxy First, Proxy Last</h3>
+        
+        <p>As we mentioned earlier, you typically think of a proxy as “wrapping”
+        the target object. In that sense, the proxy becomes the primary object the code interfaces with, and the actual target object remains
+        hidden/protected.</p>
+        
+        <p>You might do this because you want to pass the object somewhere that
+        can’t be fully “trusted,” and so you need to enforce special rules
+        around its access rather than passing the object itself.</p>
+        
+        <p>Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">messages</code> <code class="o">=</code> <code class="p">[],</code>
+            <code class="nx">handlers</code> <code class="o">=</code> <code class="p">{</code>
+                <code class="nx">get</code><code class="p">(</code><code class="nx">target</code><code class="p">,</code><code class="nx">key</code><code class="p">)</code> <code class="p">{</code>
+                    <code class="c1">// string value?</code>
+                    <code class="k">if</code> <code class="p">(</code><code class="k">typeof</code> <code class="nx">target</code><code class="p">[</code><code class="nx">key</code><code class="p">]</code> <code class="o">==</code> <code class="s2">"string"</code><code class="p">)</code> <code class="p">{</code>
+                        <code class="c1">// filter out punctuation</code>
+                        <code class="k">return</code> <code class="nx">target</code><code class="p">[</code><code class="nx">key</code><code class="p">]</code>
+                            <code class="p">.</code><code class="nx">replace</code><code class="p">(</code> <code class="sr">/[^\w]/g</code><code class="p">,</code> <code class="s2">""</code> <code class="p">);</code>
+                    <code class="p">}</code>
+        
+                    <code class="c1">// pass everything else through</code>
+                    <code class="k">return</code> <code class="nx">target</code><code class="p">[</code><code class="nx">key</code><code class="p">];</code>
+                <code class="p">},</code>
+                <code class="nx">set</code><code class="p">(</code><code class="nx">target</code><code class="p">,</code><code class="nx">key</code><code class="p">,</code><code class="nx">val</code><code class="p">)</code> <code class="p">{</code>
+                    <code class="c1">// only set unique strings, lowercased</code>
+                    <code class="k">if</code> <code class="p">(</code><code class="k">typeof</code> <code class="nx">val</code> <code class="o">==</code> <code class="s2">"string"</code><code class="p">)</code> <code class="p">{</code>
+                        <code class="nx">val</code> <code class="o">=</code> <code class="nx">val</code><code class="p">.</code><code class="nx">toLowerCase</code><code class="p">();</code>
+                        <code class="k">if</code> <code class="p">(</code><code class="nx">target</code><code class="p">.</code><code class="nx">indexOf</code><code class="p">(</code> <code class="nx">val</code> <code class="p">)</code> <code class="o">==</code> <code class="o">-</code><code class="mi">1</code><code class="p">)</code> <code class="p">{</code>
+                            <code class="nx">target</code><code class="p">.</code><code class="nx">push</code><code class="p">(</code>
+                                <code class="nx">val</code><code class="p">.</code><code class="nx">toLowerCase</code><code class="p">()</code>
+                            <code class="p">);</code>
+                        <code class="p">}</code>
+                    <code class="p">}</code>
+                    <code class="k">return</code> <code class="kc">true</code><code class="p">;</code>
+                <code class="p">}</code>
+            <code class="p">},</code>
+            <code class="nx">messages_proxy</code> <code class="o">=</code>
+                <code class="k">new</code> <code class="nb">Proxy</code><code class="p">(</code> <code class="nx">messages</code><code class="p">,</code> <code class="nx">handlers</code> <code class="p">);</code>
+        
+        <code class="c1">// elsewhere:</code>
+        <code class="nx">messages_proxy</code><code class="p">.</code><code class="nx">push</code><code class="p">(</code>
+            <code class="s2">"heLLo..."</code><code class="p">,</code> <code class="mi">42</code><code class="p">,</code> <code class="s2">"wOrlD!!"</code><code class="p">,</code> <code class="s2">"WoRld!!"</code>
+        <code class="p">);</code>
+        
+        <code class="nx">messages_proxy</code><code class="p">.</code><code class="nx">forEach</code><code class="p">(</code> <code class="kd">function</code><code class="p">(</code><code class="nx">val</code><code class="p">){</code>
+            <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="nx">val</code><code class="p">);</code>
+        <code class="p">}</code> <code class="p">);</code>
+        <code class="c1">// hello world</code>
+        
+        <code class="nx">messages</code><code class="p">.</code><code class="nx">forEach</code><code class="p">(</code> <code class="kd">function</code><code class="p">(</code><code class="nx">val</code><code class="p">){</code>
+            <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code><code class="nx">val</code><code class="p">);</code>
+        <code class="p">}</code> <code class="p">);</code>
+        <code class="c1">// hello... world!!</code></pre>
+        
+        <p>I call this <em>proxy first</em> design, as we interact first (primarily,
+        entirely) with the proxy.</p>
+        
+        <p>We enforce some special rules on interacting with <code>messages_proxy</code> that
+        aren’t enforced for <code>messages</code> itself. We only add elements if the value
+        is a string and is also unique; we also lowercase the value. When
+        retrieving values from <code>messages_proxy</code>, we filter out any punctuation
+        in the strings.</p>
+        
+        <p>Alternatively, we can completely invert this pattern, where the target
+        interacts with the proxy instead of the proxy interacting with the
+        target. Thus, code really only interacts with the main object. The
+        easiest way to accomplish this fallback is to have the proxy object in
+        the <code>[[Prototype]]</code> chain of the main object.</p>
+        
+        <p>Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">handlers</code> <code class="o">=</code> <code class="p">{</code>
+                <code class="nx">get</code><code class="p">(</code><code class="nx">target</code><code class="p">,</code><code class="nx">key</code><code class="p">,</code><code class="nx">context</code><code class="p">)</code> <code class="p">{</code>
+                    <code class="k">return</code> <code class="kd">function</code><code class="p">()</code> <code class="p">{</code>
+                        <code class="nx">context</code><code class="p">.</code><code class="nx">speak</code><code class="p">(</code><code class="nx">key</code> <code class="o">+</code> <code class="s2">"!"</code><code class="p">);</code>
+                    <code class="p">};</code>
+                <code class="p">}</code>
+            <code class="p">},</code>
+            <code class="nx">catchall</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Proxy</code><code class="p">(</code> <code class="p">{},</code> <code class="nx">handlers</code> <code class="p">),</code>
+            <code class="nx">greeter</code> <code class="o">=</code> <code class="p">{</code>
+                <code class="nx">speak</code><code class="p">(</code><code class="nx">who</code> <code class="o">=</code> <code class="s2">"someone"</code><code class="p">)</code> <code class="p">{</code>
+                    <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="s2">"hello"</code><code class="p">,</code> <code class="nx">who</code> <code class="p">);</code>
+                <code class="p">}</code>
+            <code class="p">};</code>
+        
+        <code class="c1">// set up `greeter` to fall back to `catchall`</code>
+        <code class="nb">Object</code><code class="p">.</code><code class="nx">setPrototypeOf</code><code class="p">(</code> <code class="nx">greeter</code><code class="p">,</code> <code class="nx">catchall</code> <code class="p">);</code>
+        
+        <code class="nx">greeter</code><code class="p">.</code><code class="nx">speak</code><code class="p">();</code>                <code class="c1">// hello someone</code>
+        <code class="nx">greeter</code><code class="p">.</code><code class="nx">speak</code><code class="p">(</code> <code class="s2">"world"</code> <code class="p">);</code>       <code class="c1">// hello world</code>
+        
+        <code class="nx">greeter</code><code class="p">.</code><code class="nx">everyone</code><code class="p">();</code>             <code class="c1">// hello everyone!</code></pre>
+        
+        <p>We interact directly with <code>greeter</code> instead of <code>catchall</code>. When we call
+        <code>speak(..)</code>, it’s found on <code>greeter</code> and used directly. But when we try
+        to access a method like <code>everyone()</code>, that function doesn’t exist on
+        <code>greeter</code>.</p>
+        
+        <p>The default object property behavior is to check up the <code>[[Prototype]]</code>
+        chain (see the <em>this &amp; Object Prototypes</em> title of this series), so
+        <code>catchall</code> is consulted for an <code>everyone</code> property. The proxy <code>get()</code>
+        handler then kicks in and returns a function that calls <code>speak(..)</code> with
+        the name of the property being accessed (<code>"everyone"</code>).</p>
+        
+        <p>I call this pattern <em>proxy last</em>, as the proxy is used only as a last
+        resort.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="“No Such Property/Method”"><div class="sect3" id="idm45967352058552">
+        <h3>“No Such Property/Method”</h3>
+        
+        <p>A common complaint about JS is that objects aren’t by default very
+        defensive in the situation where you try to access or set a property
+        that doesn’t already exist. You may wish to predefine all the
+        properties/methods for an object, and have an error thrown if a
+        nonexistent property name is subsequently used.</p>
+        
+        <p>We can accomplish this with a proxy, either in <em>proxy first</em> or <em>proxy
+        last</em> design. Let’s consider both.</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">obj</code> <code class="o">=</code> <code class="p">{</code>
+                <code class="nx">a</code><code class="o">:</code> <code class="mi">1</code><code class="p">,</code>
+                <code class="nx">foo</code><code class="p">()</code> <code class="p">{</code>
+                    <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="s2">"a:"</code><code class="p">,</code> <code class="k">this</code><code class="p">.</code><code class="nx">a</code> <code class="p">);</code>
+                <code class="p">}</code>
+            <code class="p">},</code>
+            <code class="nx">handlers</code> <code class="o">=</code> <code class="p">{</code>
+                <code class="nx">get</code><code class="p">(</code><code class="nx">target</code><code class="p">,</code><code class="nx">key</code><code class="p">,</code><code class="nx">context</code><code class="p">)</code> <code class="p">{</code>
+                    <code class="k">if</code> <code class="p">(</code><code class="nb">Reflect</code><code class="p">.</code><code class="nx">has</code><code class="p">(</code> <code class="nx">target</code><code class="p">,</code> <code class="nx">key</code> <code class="p">))</code> <code class="p">{</code>
+                        <code class="k">return</code> <code class="nb">Reflect</code><code class="p">.</code><code class="nx">get</code><code class="p">(</code>
+                            <code class="nx">target</code><code class="p">,</code> <code class="nx">key</code><code class="p">,</code> <code class="nx">context</code>
+                        <code class="p">);</code>
+                    <code class="p">}</code>
+                    <code class="k">else</code> <code class="p">{</code>
+                        <code class="k">throw</code> <code class="s2">"No such property/method!"</code><code class="p">;</code>
+                    <code class="p">}</code>
+                <code class="p">},</code>
+                <code class="nx">set</code><code class="p">(</code><code class="nx">target</code><code class="p">,</code><code class="nx">key</code><code class="p">,</code><code class="nx">val</code><code class="p">,</code><code class="nx">context</code><code class="p">)</code> <code class="p">{</code>
+                    <code class="k">if</code> <code class="p">(</code><code class="nb">Reflect</code><code class="p">.</code><code class="nx">has</code><code class="p">(</code> <code class="nx">target</code><code class="p">,</code> <code class="nx">key</code> <code class="p">))</code> <code class="p">{</code>
+                        <code class="k">return</code> <code class="nb">Reflect</code><code class="p">.</code><code class="nx">set</code><code class="p">(</code>
+                            <code class="nx">target</code><code class="p">,</code> <code class="nx">key</code><code class="p">,</code> <code class="nx">val</code><code class="p">,</code> <code class="nx">context</code>
+                        <code class="p">);</code>
+                    <code class="p">}</code>
+                    <code class="k">else</code> <code class="p">{</code>
+                        <code class="k">throw</code> <code class="s2">"No such property/method!"</code><code class="p">;</code>
+                    <code class="p">}</code>
+                <code class="p">}</code>
+            <code class="p">},</code>
+            <code class="nx">pobj</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Proxy</code><code class="p">(</code> <code class="nx">obj</code><code class="p">,</code> <code class="nx">handlers</code> <code class="p">);</code>
+        
+        <code class="nx">pobj</code><code class="p">.</code><code class="nx">a</code> <code class="o">=</code> <code class="mi">3</code><code class="p">;</code>
+        <code class="nx">pobj</code><code class="p">.</code><code class="nx">foo</code><code class="p">();</code>         <code class="c1">// a: 3</code>
+        
+        <code class="nx">pobj</code><code class="p">.</code><code class="nx">b</code> <code class="o">=</code> <code class="mi">4</code><code class="p">;</code>         <code class="c1">// Error: No such property/method!</code>
+        <code class="nx">pobj</code><code class="p">.</code><code class="nx">bar</code><code class="p">();</code>         <code class="c1">// Error: No such property/method!</code></pre>
+        
+        <p>For both <code>get(..)</code> and <code>set(..)</code>, we only forward the operation if the
+        target object’s property already exists; an error is thrown otherwise. The
+        proxy object (<code>pobj</code>) is the main object code should interact with, as
+        it intercepts these actions to provide the protections.</p>
+        
+        <p>Now, let’s consider inverting with <em>proxy last</em> design:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">handlers</code> <code class="o">=</code> <code class="p">{</code>
+                <code class="nx">get</code><code class="p">()</code> <code class="p">{</code>
+                    <code class="k">throw</code> <code class="s2">"No such property/method!"</code><code class="p">;</code>
+                <code class="p">},</code>
+                <code class="nx">set</code><code class="p">()</code> <code class="p">{</code>
+                    <code class="k">throw</code> <code class="s2">"No such property/method!"</code><code class="p">;</code>
+                <code class="p">}</code>
+            <code class="p">},</code>
+            <code class="nx">pobj</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Proxy</code><code class="p">(</code> <code class="p">{},</code> <code class="nx">handlers</code> <code class="p">),</code>
+            <code class="nx">obj</code> <code class="o">=</code> <code class="p">{</code>
+                <code class="nx">a</code><code class="o">:</code> <code class="mi">1</code><code class="p">,</code>
+                <code class="nx">foo</code><code class="p">()</code> <code class="p">{</code>
+                    <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="s2">"a:"</code><code class="p">,</code> <code class="k">this</code><code class="p">.</code><code class="nx">a</code> <code class="p">);</code>
+                <code class="p">}</code>
+            <code class="p">};</code>
+        
+        <code class="c1">// set up `obj` to fall back to `pobj`</code>
+        <code class="nb">Object</code><code class="p">.</code><code class="nx">setPrototypeOf</code><code class="p">(</code> <code class="nx">obj</code><code class="p">,</code> <code class="nx">pobj</code> <code class="p">);</code>
+        
+        <code class="nx">obj</code><code class="p">.</code><code class="nx">a</code> <code class="o">=</code> <code class="mi">3</code><code class="p">;</code>
+        <code class="nx">obj</code><code class="p">.</code><code class="nx">foo</code><code class="p">();</code>          <code class="c1">// a: 3</code>
+        
+        <code class="nx">obj</code><code class="p">.</code><code class="nx">b</code> <code class="o">=</code> <code class="mi">4</code><code class="p">;</code>          <code class="c1">// Error: No such property/method!</code>
+        <code class="nx">obj</code><code class="p">.</code><code class="nx">bar</code><code class="p">();</code>          <code class="c1">// Error: No such property/method!</code></pre>
+        
+        <p>The <em>proxy last</em> design here is a fair bit simpler with respect to how
+        the handlers are defined. Instead of needing to intercept the <code>[[Get]]</code>
+        and <code>[[Set]]</code> operations and only forward them if the target property
+        exists, we instead rely on the fact that if either <code>[[Get]]</code> or
+        <code>[[Set]]</code> get to our <code>pobj</code> fallback, the action has already traversed
+        the whole <code>[[Prototype]]</code> chain and not found a matching property. We
+        are free at that point to unconditionally throw the error. Cool, huh?</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Proxy Hacking the [[Prototype]] Chain"><div class="sect3" id="idm45967351457240">
+        <h3>Proxy Hacking the [[Prototype]] Chain</h3>
+        
+        <p>The <code>[[Get]]</code> operation is the primary channel by which the
+        <code>[[Prototype]]</code> mechanism is invoked. When a property is not found on
+        the immediate object, <code>[[Get]]</code> automatically hands off the operation to
+        the <code>[[Prototype]]</code> object.</p>
+        
+        <p>That means you can use the <code>get(..)</code> trap of a proxy to emulate or
+        extend the notion of this <code>[[Prototype]]</code> mechanism.</p>
+        
+        <p>The first hack we’ll consider is creating two objects that are
+        circularly linked via <code>[[Prototype]]</code> (or, at least it appears that
+        way!). You cannot actually create a real circular <code>[[Prototype]]</code> chain,
+        as the engine will throw an error. But a proxy can fake it!</p>
+        
+        <p>Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">handlers</code> <code class="o">=</code> <code class="p">{</code>
+                <code class="nx">get</code><code class="p">(</code><code class="nx">target</code><code class="p">,</code><code class="nx">key</code><code class="p">,</code><code class="nx">context</code><code class="p">)</code> <code class="p">{</code>
+                    <code class="k">if</code> <code class="p">(</code><code class="nb">Reflect</code><code class="p">.</code><code class="nx">has</code><code class="p">(</code> <code class="nx">target</code><code class="p">,</code> <code class="nx">key</code> <code class="p">))</code> <code class="p">{</code>
+                        <code class="k">return</code> <code class="nb">Reflect</code><code class="p">.</code><code class="nx">get</code><code class="p">(</code>
+                            <code class="nx">target</code><code class="p">,</code> <code class="nx">key</code><code class="p">,</code> <code class="nx">context</code>
+                        <code class="p">);</code>
+                    <code class="p">}</code>
+                    <code class="c1">// fake circular `[[Prototype]]`</code>
+                    <code class="k">else</code> <code class="p">{</code>
+                        <code class="k">return</code> <code class="nb">Reflect</code><code class="p">.</code><code class="nx">get</code><code class="p">(</code>
+                            <code class="nx">target</code><code class="p">[</code>
+                                <code class="nb">Symbol</code><code class="p">.</code><code class="nx">for</code><code class="p">(</code> <code class="s2">"[[Prototype]]"</code> <code class="p">)</code>
+                            <code class="p">],</code>
+                            <code class="nx">key</code><code class="p">,</code>
+                            <code class="nx">context</code>
+                        <code class="p">);</code>
+                    <code class="p">}</code>
+                <code class="p">}</code>
+            <code class="p">},</code>
+            <code class="nx">obj1</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Proxy</code><code class="p">(</code>
+                <code class="p">{</code>
+                    <code class="nx">name</code><code class="o">:</code> <code class="s2">"obj-1"</code><code class="p">,</code>
+                    <code class="nx">foo</code><code class="p">()</code> <code class="p">{</code>
+                        <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="s2">"foo:"</code><code class="p">,</code> <code class="k">this</code><code class="p">.</code><code class="nx">name</code> <code class="p">);</code>
+                    <code class="p">}</code>
+                <code class="p">},</code>
+                <code class="nx">handlers</code>
+            <code class="p">),</code>
+            <code class="nx">obj2</code> <code class="o">=</code> <code class="nb">Object</code><code class="p">.</code><code class="nx">assign</code><code class="p">(</code>
+                <code class="nb">Object</code><code class="p">.</code><code class="nx">create</code><code class="p">(</code> <code class="nx">obj1</code> <code class="p">),</code>
+                <code class="p">{</code>
+                    <code class="nx">name</code><code class="o">:</code> <code class="s2">"obj-2"</code><code class="p">,</code>
+                    <code class="nx">bar</code><code class="p">()</code> <code class="p">{</code>
+                        <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="s2">"bar:"</code><code class="p">,</code> <code class="k">this</code><code class="p">.</code><code class="nx">name</code> <code class="p">);</code>
+                        <code class="k">this</code><code class="p">.</code><code class="nx">foo</code><code class="p">();</code>
+                    <code class="p">}</code>
+                <code class="p">}</code>
+            <code class="p">);</code>
+        
+        <code class="c1">// fake circular `[[Prototype]]` link</code>
+        <code class="nx">obj1</code><code class="p">[</code> <code class="nb">Symbol</code><code class="p">.</code><code class="nx">for</code><code class="p">(</code> <code class="s2">"[[Prototype]]"</code> <code class="p">)</code> <code class="p">]</code> <code class="o">=</code> <code class="nx">obj2</code><code class="p">;</code>
+        
+        <code class="nx">obj1</code><code class="p">.</code><code class="nx">bar</code><code class="p">();</code>
+        <code class="c1">// bar: obj-1 &lt;-- through proxy faking [[Prototype]]</code>
+        <code class="c1">// foo: obj-1 &lt;-- `this` context still preserved</code>
+        
+        <code class="nx">obj2</code><code class="p">.</code><code class="nx">foo</code><code class="p">();</code>
+        <code class="c1">// foo: obj-2 &lt;-- through [[Prototype]]</code></pre>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p>We didn’t need to proxy/forward <code>[[Set]]</code> in this example, so we
+        kept things simpler. To be fully <code>[[Prototype]]</code> emulation compliant,
+        you’d want to implement a <code>set(..)</code> handler that searches the
+        <code>[[Prototype]]</code> chain for a matching property and respects its
+        descriptor behavior (e.g., set, writable). See the <em>this &amp; Object
+        Prototypes</em> title of this series.</p>
+        </div>
+        
+        <p>In the previous snippet, <code>obj2</code> is <code>[[Prototype]]</code> linked to <code>obj1</code> by
+        virtue of the <code>Object.create(..)</code> statement. But to create the reverse
+        (circular) linkage, we create property on <code>obj1</code> at the symbol location
+        <code>Symbol.for("[[Prototype]]")</code> (see <a data-type="xref" href="ch02.html#symbolSect">“Symbols”</a> in <a data-type="xref" href="ch02.html#chapter-2-syntax">Chapter&nbsp;2</a>). This symbol
+        may look sort of special/magical, but it isn’t. It just allows me a
+        conveniently named hook that semantically appears related to the task
+        I’m performing.</p>
+        
+        <p>Then, the proxy’s <code>get(..)</code> handler looks first to see if a requested
+        <code>key</code> is on the proxy. If not, the operation is manually handed off to
+        the object reference stored in the <code>Symbol.for("[[Prototype]]")</code>
+        location of <code>target</code>.</p>
+        
+        <p>One important advantage of this pattern is that the definitions of
+        <code>obj1</code> and <code>obj2</code> are mostly not intruded by the setting up of this
+        circular relationship between them. Although the previous snippet has
+        all the steps intertwined for brevity’s sake, if you look closely, the
+        proxy handler logic is entirely generic (doesn’t know about <code>obj1</code> or
+        <code>obj2</code> specifically). So, that logic could be pulled out into a simple
+        helper that wires them up, like a <code>setCircularPrototypeOf(..)</code> for
+        example. We’ll leave that as an exercise for the reader.</p>
+        
+        <p>Now that we’ve seen how we can use <code>get(..)</code> to emulate a
+        <code>[[Prototype]]</code> link, let’s push the hackery a bit further. Instead of a
+        circular <code>[[Prototype]]</code>, what about multiple <code>[[Prototype]]</code> linkages
+        (aka “multiple inheritance”)? This turns out to be fairly
+        straightforward:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">obj1</code> <code class="o">=</code> <code class="p">{</code>
+                <code class="nx">name</code><code class="o">:</code> <code class="s2">"obj-1"</code><code class="p">,</code>
+                <code class="nx">foo</code><code class="p">()</code> <code class="p">{</code>
+                    <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="s2">"obj1.foo:"</code><code class="p">,</code> <code class="k">this</code><code class="p">.</code><code class="nx">name</code> <code class="p">);</code>
+                <code class="p">},</code>
+            <code class="p">},</code>
+            <code class="nx">obj2</code> <code class="o">=</code> <code class="p">{</code>
+                <code class="nx">name</code><code class="o">:</code> <code class="s2">"obj-2"</code><code class="p">,</code>
+                <code class="nx">foo</code><code class="p">()</code> <code class="p">{</code>
+                    <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="s2">"obj2.foo:"</code><code class="p">,</code> <code class="k">this</code><code class="p">.</code><code class="nx">name</code> <code class="p">);</code>
+                <code class="p">},</code>
+                <code class="nx">bar</code><code class="p">()</code> <code class="p">{</code>
+                    <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="s2">"obj2.bar:"</code><code class="p">,</code> <code class="k">this</code><code class="p">.</code><code class="nx">name</code> <code class="p">);</code>
+                <code class="p">}</code>
+            <code class="p">},</code>
+            <code class="nx">handlers</code> <code class="o">=</code> <code class="p">{</code>
+                <code class="nx">get</code><code class="p">(</code><code class="nx">target</code><code class="p">,</code><code class="nx">key</code><code class="p">,</code><code class="nx">context</code><code class="p">)</code> <code class="p">{</code>
+                    <code class="k">if</code> <code class="p">(</code><code class="nb">Reflect</code><code class="p">.</code><code class="nx">has</code><code class="p">(</code> <code class="nx">target</code><code class="p">,</code> <code class="nx">key</code> <code class="p">))</code> <code class="p">{</code>
+                        <code class="k">return</code> <code class="nb">Reflect</code><code class="p">.</code><code class="nx">get</code><code class="p">(</code>
+                            <code class="nx">target</code><code class="p">,</code> <code class="nx">key</code><code class="p">,</code> <code class="nx">context</code>
+                        <code class="p">);</code>
+                    <code class="p">}</code>
+                    <code class="c1">// fake multiple `[[Prototype]]`</code>
+                    <code class="k">else</code> <code class="p">{</code>
+                        <code class="k">for</code> <code class="p">(</code><code class="kd">var</code> <code class="nx">P</code> <code class="k">of</code> <code class="nx">target</code><code class="p">[</code>
+                            <code class="nb">Symbol</code><code class="p">.</code><code class="nx">for</code><code class="p">(</code> <code class="s2">"[[Prototype]]"</code> <code class="p">)</code>
+                        <code class="p">])</code> <code class="p">{</code>
+                            <code class="k">if</code> <code class="p">(</code><code class="nb">Reflect</code><code class="p">.</code><code class="nx">has</code><code class="p">(</code> <code class="nx">P</code><code class="p">,</code> <code class="nx">key</code> <code class="p">))</code> <code class="p">{</code>
+                                <code class="k">return</code> <code class="nb">Reflect</code><code class="p">.</code><code class="nx">get</code><code class="p">(</code>
+                                    <code class="nx">P</code><code class="p">,</code> <code class="nx">key</code><code class="p">,</code> <code class="nx">context</code>
+                                <code class="p">);</code>
+                            <code class="p">}</code>
+                        <code class="p">}</code>
+                    <code class="p">}</code>
+                <code class="p">}</code>
+            <code class="p">},</code>
+            <code class="nx">obj3</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Proxy</code><code class="p">(</code>
+                <code class="p">{</code>
+                    <code class="nx">name</code><code class="o">:</code> <code class="s2">"obj-3"</code><code class="p">,</code>
+                    <code class="nx">baz</code><code class="p">()</code> <code class="p">{</code>
+                        <code class="k">this</code><code class="p">.</code><code class="nx">foo</code><code class="p">();</code>
+                        <code class="k">this</code><code class="p">.</code><code class="nx">bar</code><code class="p">();</code>
+                    <code class="p">}</code>
+                <code class="p">},</code>
+                <code class="nx">handlers</code>
+            <code class="p">);</code>
+        
+        <code class="c1">// fake multiple `[[Prototype]]` links</code>
+        <code class="nx">obj3</code><code class="p">[</code> <code class="nb">Symbol</code><code class="p">.</code><code class="nx">for</code><code class="p">(</code> <code class="s2">"[[Prototype]]"</code> <code class="p">)</code> <code class="p">]</code> <code class="o">=</code> <code class="p">[</code>
+            <code class="nx">obj1</code><code class="p">,</code> <code class="nx">obj2</code>
+        <code class="p">];</code>
+        
+        <code class="nx">obj3</code><code class="p">.</code><code class="nx">baz</code><code class="p">();</code>
+        <code class="c1">// obj1.foo: obj-3</code>
+        <code class="c1">// obj2.bar: obj-3</code></pre>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p>As mentioned in the note after the earlier circular
+        <code>[[Prototype]]</code> example, we didn’t implement the <code>set(..)</code> handler, but
+        it would be necessary for a complete solution that emulates <code>[[Set]]</code>
+        actions as normal <code>[[Prototype]]</code>s behave.</p>
+        </div>
+        
+        <p><code>obj3</code> is set up to multiple-delegate to both <code>obj1</code> and <code>obj2</code>. In
+        <code>obj3.baz()</code>, the <code>this.foo()</code> call ends up pulling <code>foo()</code> from <code>obj1</code>
+        (first-come, first-served, even though there’s also a <code>foo()</code> on
+        <code>obj2</code>). If we reordered the linkage as <code>obj2, obj1</code>, the <code>obj2.foo()</code>
+        would have been found and used.</p>
+        
+        <p>But as is, the <code>this.bar()</code> call doesn’t find a <code>bar()</code> on <code>obj1</code>, so it
+        falls over to check <code>obj2</code>, where it finds a match.</p>
+        
+        <p><code>obj1</code> and <code>obj2</code> represent two parallel <code>[[Prototype]]</code> chains of
+        <code>obj3</code>. <code>obj1</code> and/or <code>obj2</code> could themselves have normal
+        <code>[[Prototype]]</code> delegation to other objects, or either could themself be
+        a proxy (like <code>obj3</code> is) that can multiple-delegate.</p>
+        
+        <p>Just as with the circular <code>[[Prototype]]</code> example earlier, the
+        definitions of <code>obj1</code>, <code>obj2</code>, and <code>obj3</code> are almost entirely separate
+        from the generic proxy logic that handles the multiple-delegation. It
+        would be trivial to define a utility like <code>setPrototypesOf(..)</code> (notice
+        the “s”!) that takes a main object and a list of objects to fake the
+        multiple <code>[[Prototype]]</code> linkage to. Again, we’ll leave that as an
+        exercise for the reader.</p>
+        
+        <p>Hopefully the power of proxies is now becoming clearer after these
+        various examples. There are many other powerful meta programming tasks
+        that proxies enable.</p>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Reflect API"><div class="sect1" id="reflectAPIsect">
+        <h1>Reflect API</h1>
+        
+        <p>The <code>Reflect</code> object is a plain object (like <code>Math</code>), not a
+        function/constructor like the other built-in natives.</p>
+        
+        <p>It holds static functions that correspond to various meta programming
+        tasks you can control. These functions correspond one-to-one with
+        the handler methods (<em>traps</em>) that proxies can define.</p>
+        
+        <p>Some of the functions will look familiar as functions of the same names
+        on <code>Object</code>:</p>
+        
+        <ul>
+        <li>
+        <p><code>Reflect.getOwnPropertyDescriptor(..)</code></p>
+        </li>
+        <li>
+        <p><code>Reflect.defineProperty(..)</code></p>
+        </li>
+        <li>
+        <p><code>Reflect.getPrototypeOf(..)</code></p>
+        </li>
+        <li>
+        <p><code>Reflect.setPrototypeOf(..)</code></p>
+        </li>
+        <li>
+        <p><code>Reflect.preventExtensions(..)</code></p>
+        </li>
+        <li>
+        <p><code>Reflect.isExtensible(..)</code></p>
+        </li>
+        </ul>
+        
+        <p>These utilities in general behave the same as their <code>Object.*</code>
+        counterparts. However, one difference is that the <code>Object.*</code>
+        counterparts attempt to coerce their first argument (the target object)
+        to an object if it’s not already one. The <code>Reflect.*</code> methods simply
+        throw an error in that case.</p>
+        
+        <p>An object’s keys can be accessed/inspected using these utilities:</p>
+        <dl>
+        <dt><code>Reflect.ownKeys(..)</code></dt>
+        <dd>
+        <p>Returns the list of all owned keys (not
+        “inherited”), as returned by both <code>Object.getOwnPropertyNames(..)</code> and
+        <code>Object.getOwnPropertySymbols(..)</code>. See <a data-type="xref" href="#propordering">“Property Ordering”</a>
+        for information about the order of keys.</p>
+        </dd>
+        <dt><code>Reflect.enumerate(..)</code></dt>
+        <dd>
+        <p>Returns an iterator that produces the set of
+        all nonsymbol keys (owned and “inherited”) that are <em>enumerable</em> (see
+        the <em>this &amp; Object Prototypes</em> title of this series). Essentially, this
+        set of keys is the same as those processed by a <code>for..in</code> loop. See <a data-type="xref" href="#propordering">“Property Ordering”</a> for information about the order of
+        keys.</p>
+        </dd>
+        <dt><code>Reflect.has(..)</code></dt>
+        <dd>
+        <p>Essentially the same as the <code>in</code> operator for
+        checking if a property is on an object or its <code>[[Prototype]]</code> chain. For
+        example, <code>Reflect.has(o,"foo")</code> essentially performs <code>"foo" in o</code>.</p>
+        </dd>
+        </dl>
+        
+        <p>Function calls and constructor invocations can be performed manually,
+        separate of the normal syntax (e.g., <code>(..)</code> and <code>new</code>) using these
+        utilities:</p>
+        <dl>
+        <dt><code>Reflect.apply(..)</code></dt>
+        <dd>
+        <p>For example,
+        <code>Reflect.apply(foo,thisObj,[42,"bar"])</code> calls the <code>foo(..)</code> function
+        with <code>thisObj</code> as its <code>this</code>, and passes in the <code>42</code> and <code>"bar"</code>
+        arguments.</p>
+        </dd>
+        <dt><code>Reflect.construct(..)</code></dt>
+        <dd>
+        <p>For example,
+        <code>Reflect.construct(foo,[42,"bar"])</code> essentially calls
+        <code>new foo(42,"bar")</code>.</p>
+        </dd>
+        </dl>
+        
+        <p>Object property access, setting, and deletion can be performed manually
+        using these utilities:</p>
+        <dl>
+        <dt><code>Reflect.get(..)</code></dt>
+        <dd>
+        <p>For example, <code>Reflect.get(o,"foo")</code> retrieves
+        <code>o.foo</code>.</p>
+        </dd>
+        <dt><code>Reflect.set(..)</code></dt>
+        <dd>
+        <p>For example, <code>Reflect.set(o,"foo",42)</code> essentially
+        performs <code>o.foo = 42</code>.</p>
+        </dd>
+        <dt><code>Reflect.deleteProperty(..)</code></dt>
+        <dd>
+        <p>For example,
+        <code>Reflect.deleteProperty(o,"foo")</code> essentially performs <code>delete o.foo</code>.</p>
+        </dd>
+        </dl>
+        
+        <p>The meta programming capabilities of <code>Reflect</code> give you programmatic
+        equivalents to emulate various syntactic features, exposing previously
+        hidden-only abstract operations. For example, you can use these
+        capabilities to extend features and APIs for <em>domain specific languages</em>
+        (DSLs).</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Property Ordering"><div class="sect2" id="propordering">
+        <h2>Property Ordering</h2>
+        
+        <p>Prior to ES6, the order used to list an object’s keys/properties was
+        implementation dependent and undefined by the specification. Generally,
+        most engines have enumerated them in creation order, though developers
+        have been strongly encouraged not to ever rely on this ordering.</p>
+        
+        <p>As of ES6, the order for listing owned properties is now defined (ES6
+        specification, section 9.1.12) by the <code>[[OwnPropertyKeys]]</code> algorithm,
+        which produces all owned properties (strings or symbols), regardless of
+        enumerability. This ordering is only guaranteed for
+        <code>Reflect.ownKeys(..)</code> (and by extension,
+        <code>Object.getOwnPropertyNames(..)</code> and
+        <code>Object.getOwnPropertySymbols(..)</code>).</p>
+        
+        <p>The ordering is:</p>
+        <ol>
+        <li>
+        <p>First, enumerate any owned properties that are integer indexes, in
+        ascending numeric order.</p>
+        </li>
+        <li>
+        <p>Next, enumerate the rest of the owned string property names in
+        creation order.</p>
+        </li>
+        <li>
+        <p>Finally, enumerate owned symbol properties in creation order.</p>
+        </li>
+        
+        </ol>
+        
+        <p>Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">o</code> <code class="o">=</code> <code class="p">{};</code>
+        
+        <code class="nx">o</code><code class="p">[</code><code class="nb">Symbol</code><code class="p">(</code><code class="s2">"c"</code><code class="p">)]</code> <code class="o">=</code> <code class="s2">"yay"</code><code class="p">;</code>
+        <code class="nx">o</code><code class="p">[</code><code class="mi">2</code><code class="p">]</code> <code class="o">=</code> <code class="kc">true</code><code class="p">;</code>
+        <code class="nx">o</code><code class="p">[</code><code class="mi">1</code><code class="p">]</code> <code class="o">=</code> <code class="kc">true</code><code class="p">;</code>
+        <code class="nx">o</code><code class="p">.</code><code class="nx">b</code> <code class="o">=</code> <code class="s2">"awesome"</code><code class="p">;</code>
+        <code class="nx">o</code><code class="p">.</code><code class="nx">a</code> <code class="o">=</code> <code class="s2">"cool"</code><code class="p">;</code>
+        
+        <code class="nb">Reflect</code><code class="p">.</code><code class="nx">ownKeys</code><code class="p">(</code> <code class="nx">o</code> <code class="p">);</code>               <code class="c1">// [1,2,"b","a",Symbol(c)]</code>
+        <code class="nb">Object</code><code class="p">.</code><code class="nx">getOwnPropertyNames</code><code class="p">(</code> <code class="nx">o</code> <code class="p">);</code>    <code class="c1">// [1,2,"b","a"]</code>
+        <code class="nb">Object</code><code class="p">.</code><code class="nx">getOwnPropertySymbols</code><code class="p">(</code> <code class="nx">o</code> <code class="p">);</code>  <code class="c1">// [Symbol(c)]</code></pre>
+        
+        <p>On the other hand, the <code>[[Enumerate]]</code> algorithm (ES6 specification,
+        section 9.1.11) produces only enumerable properties, from the target
+        object as well as its <code>[[Prototype]]</code> chain. It is used by both
+        <code>Reflect.enumerate(..)</code> and <code>for..in</code>. The observable ordering is
+        implementation dependent and not controlled by the specification.</p>
+        
+        <p>By contrast, <code>Object.keys(..)</code> invokes the <code>[[OwnPropertyKeys]]</code>
+        algorithm to get a list of all owned keys. However, it filters out
+        non-enumerable properties and then reorders the list to match legacy
+        implementation-dependent behavior, specifically with
+        <code>JSON.stringify(..)</code> and <code>for..in</code>. So, by extension the ordering <em>also</em>
+        matches that of <code>Reflect.enumerate(..)</code>.</p>
+        
+        <p>In other words, all four mechanisms (<code>Reflect.enumerate(..)</code>,
+        <code>Object.keys(..)</code>, <code>for..in</code>, and <code>JSON.stringify(..)</code>) will match with
+        the same implementation-dependent ordering, though they technically get
+        there in different ways.</p>
+        
+        <p>Implementations are allowed to match these four to the ordering of
+        <code>[[OwnPropertyKeys]]</code>, but are not required to. Nevertheless, you will
+        likely observe the following ordering behavior from them:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">o</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">a</code><code class="o">:</code> <code class="mi">1</code><code class="p">,</code> <code class="nx">b</code><code class="o">:</code> <code class="mi">2</code> <code class="p">};</code>
+        <code class="kd">var</code> <code class="nx">p</code> <code class="o">=</code> <code class="nb">Object</code><code class="p">.</code><code class="nx">create</code><code class="p">(</code> <code class="nx">o</code> <code class="p">);</code>
+        <code class="nx">p</code><code class="p">.</code><code class="nx">c</code> <code class="o">=</code> <code class="mi">3</code><code class="p">;</code>
+        <code class="nx">p</code><code class="p">.</code><code class="nx">d</code> <code class="o">=</code> <code class="mi">4</code><code class="p">;</code>
+        
+        <code class="k">for</code> <code class="p">(</code><code class="kd">var</code> <code class="nx">prop</code> <code class="k">of</code> <code class="nb">Reflect</code><code class="p">.</code><code class="nx">enumerate</code><code class="p">(</code> <code class="nx">p</code> <code class="p">))</code> <code class="p">{</code>
+            <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="nx">prop</code> <code class="p">);</code>
+        <code class="p">}</code>
+        <code class="c1">// c d a b</code>
+        
+        <code class="k">for</code> <code class="p">(</code><code class="kd">var</code> <code class="nx">prop</code> <code class="k">in</code> <code class="nx">p</code><code class="p">)</code> <code class="p">{</code>
+            <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="nx">prop</code> <code class="p">);</code>
+        <code class="p">}</code>
+        <code class="c1">// c d a b</code>
+        
+        <code class="nb">JSON</code><code class="p">.</code><code class="nx">stringify</code><code class="p">(</code> <code class="nx">p</code> <code class="p">);</code>
+        <code class="c1">// {"c":3,"d":4}</code>
+        
+        <code class="nb">Object</code><code class="p">.</code><code class="nx">keys</code><code class="p">(</code> <code class="nx">p</code> <code class="p">);</code>
+        <code class="c1">// ["c","d"]</code></pre>
+        
+        <p>Boiling this all down: as of ES6, <code>Reflect.ownKeys(..)</code>,
+        <code>Object.getOwnPropertyNames(..)</code>, and <code>Object.getOwnPropertySymbols(..)</code>
+        all have predictable and reliable ordering guaranteed by the
+        specification. So it’s safe to build code that relies on this ordering.</p>
+        
+        <p><code>Reflect.enumerate(..)</code>, <code>Object.keys(..)</code>, and <code>for..in</code> (as well as
+        <code>JSON.stringification(..)</code> by extension) continue to share an observable
+        ordering with each other, as they always have. But that ordering will
+        not necessarily be the same as that of <code>Reflect.ownKeys(..)</code>. Care
+        should still be taken in relying on their implementation-dependent
+        ordering.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Feature Testing"><div class="sect1" id="feature_testing">
+        <h1>Feature Testing</h1>
+        
+        <p>What is a feature test? It’s a test you run to determine if a
+        feature is available or not. Sometimes, the test is not just for
+        existence, but for conformance to specified behavior—features can
+        exist but be buggy.</p>
+        
+        <p>This is a meta programming technique, to test the environment your
+        program runs in to then determine how your program should behave.</p>
+        
+        <p>The most common use of feature tests in JS is checking for the existence
+        of an API and if it’s not present, defining a polyfill (see <a data-type="xref" href="ch01.html#chapter-1-es-now-future">Chapter&nbsp;1</a>).
+        For example:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="k">if</code> <code class="p">(</code><code class="o">!</code><code class="nb">Number</code><code class="p">.</code><code class="nx">isNaN</code><code class="p">)</code> <code class="p">{</code>
+            <code class="nb">Number</code><code class="p">.</code><code class="nx">isNaN</code> <code class="o">=</code> <code class="kd">function</code><code class="p">(</code><code class="nx">x</code><code class="p">)</code> <code class="p">{</code>
+                <code class="k">return</code> <code class="nx">x</code> <code class="o">!==</code> <code class="nx">x</code><code class="p">;</code>
+            <code class="p">};</code>
+        <code class="p">}</code></pre>
+        
+        <p>The <code>if</code> statement in this snippet is meta programming: we’re probing
+        our program and its runtime environment to determine if and how we
+        should proceed.</p>
+        
+        <p>But what about testing for features that involve new syntax?</p>
+        
+        <p>You might try something like:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="k">try</code> <code class="p">{</code>
+            <code class="nx">a</code> <code class="o">=</code> <code class="p">()</code> <code class="o">=&gt;</code> <code class="p">{};</code>
+            <code class="nx">ARROW_FUNCS_ENABLED</code> <code class="o">=</code> <code class="kc">true</code><code class="p">;</code>
+        <code class="p">}</code>
+        <code class="k">catch</code> <code class="p">(</code><code class="nx">err</code><code class="p">)</code> <code class="p">{</code>
+            <code class="nx">ARROW_FUNCS_ENABLED</code> <code class="o">=</code> <code class="kc">false</code><code class="p">;</code>
+        <code class="p">}</code></pre>
+        
+        <p>Unfortunately, this doesn’t work, because our JS programs are compiled.
+        Thus, the engine will choke on the <code>() =&gt; {}</code> syntax if it is not
+        already supporting ES6 arrow functions. Having a syntax error in your
+        program prevents it from running, which prevents your program from
+        subsequently responding differently if the feature is supported or not.</p>
+        
+        <p>To meta program with feature tests around syntax-related features, we
+        need a way to insulate the test from the initial compile step our
+        program runs through. For instance, if we could store the code for the
+        test in a string, then the JS engine wouldn’t by default try to compile
+        the contents of that string, until we asked it to.</p>
+        
+        <p>Did your mind just jump to using <code>eval(..)</code>?</p>
+        
+        <p>Not so fast. See the <em>Scope &amp; Closures</em> title of this series for why
+        <code>eval(..)</code> is a bad idea. But there’s another option with less
+        downsides: the <code>Function(..)</code> constructor.</p>
+        
+        <p>Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="k">try</code> <code class="p">{</code>
+            <code class="k">new</code> <code class="nb">Function</code><code class="p">(</code> <code class="s2">"( () =&gt; {} )"</code> <code class="p">);</code>
+            <code class="nx">ARROW_FUNCS_ENABLED</code> <code class="o">=</code> <code class="kc">true</code><code class="p">;</code>
+        <code class="p">}</code>
+        <code class="k">catch</code> <code class="p">(</code><code class="nx">err</code><code class="p">)</code> <code class="p">{</code>
+            <code class="nx">ARROW_FUNCS_ENABLED</code> <code class="o">=</code> <code class="kc">false</code><code class="p">;</code>
+        <code class="p">}</code></pre>
+        
+        <p>OK, so now we’re meta programming by determining if a feature like arrow
+        functions <em>can</em> compile in the current engine or not. You might then
+        wonder, what would we do with this information?</p>
+        
+        <p>With existence checks for APIs, and defining fallback API polyfills,
+        there’s a clear path for what to do with either test success or failure.
+        But what can we do with the information we get from
+        <code>ARROW_FUNCS_ENABLED</code> being <code>true</code> or <code>false</code>?</p>
+        
+        <p>Because the syntax can’t appear in a file if the engine doesn’t support
+        that feature, you can’t just have different functions defined in the
+        file with and without the syntax in question.</p>
+        
+        <p>What you can do is use the test to determine which of a set of JS files
+        you should load. For example, if you had a set of these feature tests in
+        a bootstrapper for your JS application, it could then test the
+        environment to determine if your ES6 code can be loaded and run
+        directly, or if you need to load a transpiled version of your code (see
+        <a data-type="xref" href="ch01.html#chapter-1-es-now-future">Chapter&nbsp;1</a>).</p>
+        
+        <p>This technique is called <em>split delivery</em>.</p>
+        
+        <p>It recognizes the reality that your ES6 authored JS programs will
+        sometimes be able to entirely run “natively” in ES6+ browsers, but other
+        times need transpilation to run in pre-ES6 browsers. If you always load
+        and use the transpiled code, even in the new ES6-compliant environments,
+        you’re running suboptimal code at least some of the time. This is not
+        ideal.</p>
+        
+        <p>Split delivery is more complicated and sophisticated, but it represents
+        a more mature and robust approach to bridging the gap between the code
+        you write and the feature support in browsers your programs must run in.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="FeatureTests.io"><div class="sect2" id="idm45967350354360">
+        <h2>FeatureTests.io</h2>
+        
+        <p>Defining feature tests for all of the ES6+ syntax, as well as the
+        semantic behaviors, is a daunting task you probably don’t want to tackle
+        yourself. Because these tests require dynamic compilation
+        (<code>new Function(..)</code>), there’s some unfortunate performance cost.</p>
+        
+        <p>Moreover, running these tests every single time your app runs is
+        probably wasteful, as on average a user’s browser only updates once in a
+        several week period at most, and even then, new features aren’t
+        necessarily showing up with every update.</p>
+        
+        <p>Finally, managing the list of feature tests that apply to your specific
+        code base—rarely will your programs use the entirety of ES6—is
+        unruly and error-prone.</p>
+        
+        <p><a href="https://featuretests.io">FeatureTests.io</a> offers
+        solutions to these frustrations.</p>
+        
+        <p>You can load the service’s library into your page, and it loads the
+        latest test definitions and runs all the feature tests. It does so using
+        background processing with Web Workers, if possible, to reduce the
+        performance overhead. It also uses LocalStorage persistence to cache the
+        results in a way that can be shared across all sites you visit which use
+        the service, which drastically reduces how often the tests need to run
+        on each browser instance.</p>
+        
+        <p>You get runtime feature tests in each of your users’ browsers, and you
+        can use those tests results dynamically to serve users the most
+        appropriate code (no more, no less) for their environments.</p>
+        
+        <p>Moreover, the service provides tools and APIs to scan your files to
+        determine what features you need, so you can fully automate your split
+        delivery build processes.</p>
+        
+        <p>FeatureTests.io makes it practical to use feature tests for all parts of
+        ES6 and beyond to make sure that only the best code is ever loaded and
+        run for any given environment.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Tail Call Optimization (TCO)"><div class="sect1" id="idm45967350531752">
+        <h1>Tail Call Optimization (TCO)</h1>
+        
+        <p>Normally, when a function call is made from inside another function, a
+        second <em>stack frame</em> is allocated to separately manage the
+        variables/state of that other function invocation. Not only does this
+        allocation cost some processing time, but it also takes up some extra
+        memory.</p>
+        
+        <p>A call stack chain typically has at most 10-15 jumps from one function
+        to another and another. In those scenarios, the memory usage is not
+        likely any kind of practical problem.</p>
+        
+        <p>However, when you consider recursive programming (a function calling
+        itself repeatedly)—or mutual recursion with two or more functions
+        calling each other—the call stack could easily be hundreds,
+        thousands, or more levels deep. You can probably see the problems that
+        could cause, if memory usage grows unbounded.</p>
+        
+        <p>JavaScript engines have to set an arbitrary limit to prevent such
+        programming techniques from crashing by running the browser and device
+        out of memory. That’s why we get the frustrating “RangeError: Maximum
+        call stack size exceeded” thrown if the limit is hit.</p>
+        <div data-type="warning" epub:type="warning"><h6>Warning</h6>
+        <p>The limit of call stack depth is not controlled by the
+        specification. It’s implementation dependent, and will vary between
+        browsers and devices. You should never code with strong assumptions of
+        exact observable limits, as they may very well change from release to
+        release.</p>
+        </div>
+        
+        <p>Certain patterns of function calls, called <em>tail calls</em>, can be
+        optimized in a way to avoid the extra allocation of stack frames. If the
+        extra allocation can be avoided, there’s no reason to arbitrarily limit
+        the call stack depth, so the engines can let them run unbounded.</p>
+        
+        <p>A tail call is a <code>return</code> statement with a function call, where nothing has to happen after the call except returning its value.</p>
+        
+        <p>This optimization can only be applied in <code>strict</code> mode. Yet another reason to always write all your code as <code>strict</code>!</p>
+        
+        <p>Here’s a function call that is <em>not</em> in tail position:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="s2">"use strict"</code><code class="p">;</code>
+        
+        <code class="kd">function </code><code class="nx">foo</code><code class="p">(</code><code class="nx">x</code><code class="p">)</code> <code class="p">{</code>
+            <code class="k">return</code> <code class="nx">x</code> <code class="o">*</code> <code class="mi">2</code><code class="p">;</code>
+        <code class="p">}</code>
+        
+        <code class="kd">function </code><code class="nx">bar</code><code class="p">(</code><code class="nx">x</code><code class="p">)</code> <code class="p">{</code>
+            <code class="c1">// not a tail call</code>
+            <code class="k">return</code> <code class="mi">1</code> <code class="o">+</code> <code class="nx">foo</code><code class="p">(</code> <code class="nx">x</code> <code class="p">);</code>
+        <code class="p">}</code>
+        
+        <code class="nx">bar</code><code class="p">(</code> <code class="mi">10</code> <code class="p">);</code>              <code class="c1">// 21</code></pre>
+        
+        <p><code>1 + ..</code> has to be performed after the <code>foo(x)</code> call completes, so the
+        state of that <code>bar(..)</code> invocation needs to be preserved.</p>
+        
+        <p>But the following snippet demonstrates calls to <code>foo(..)</code> and <code>bar(..)</code>
+        where both <em>are</em> in tail position, as they’re the last thing to happen
+        in their code path (other than the <code>return</code>):</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="s2">"use strict"</code><code class="p">;</code>
+        
+        <code class="kd">function </code><code class="nx">foo</code><code class="p">(</code><code class="nx">x</code><code class="p">)</code> <code class="p">{</code>
+            <code class="k">return</code> <code class="nx">x</code> <code class="o">*</code> <code class="mi">2</code><code class="p">;</code>
+        <code class="p">}</code>
+        
+        <code class="kd">function </code><code class="nx">bar</code><code class="p">(</code><code class="nx">x</code><code class="p">)</code> <code class="p">{</code>
+            <code class="nx">x</code> <code class="o">=</code> <code class="nx">x</code> <code class="o">+</code> <code class="mi">1</code><code class="p">;</code>
+            <code class="k">if</code> <code class="p">(</code><code class="nx">x</code> <code class="o">&gt;</code> <code class="mi">10</code><code class="p">)</code> <code class="p">{</code>
+                <code class="k">return</code> <code class="nx">foo</code><code class="p">(</code> <code class="nx">x</code> <code class="p">);</code>
+            <code class="p">}</code>
+            <code class="k">else</code> <code class="p">{</code>
+                <code class="k">return</code> <code class="nx">bar</code><code class="p">(</code> <code class="nx">x</code> <code class="o">+</code> <code class="mi">1</code> <code class="p">);</code>
+            <code class="p">}</code>
+        <code class="p">}</code>
+        
+        <code class="nx">bar</code><code class="p">(</code> <code class="mi">5</code> <code class="p">);</code>               <code class="c1">// 24</code>
+        <code class="nx">bar</code><code class="p">(</code> <code class="mi">15</code> <code class="p">);</code>              <code class="c1">// 32</code></pre>
+        
+        <p>In this program, <code>bar(..)</code> is clearly recursive, but <code>foo(..)</code> is just a
+        regular function call. In both cases, the function calls are in <em>proper
+        tail position</em>. The <code>x + 1</code> is evaluated before the <code>bar(..)</code> call, and
+        whenever that call finishes, all that happens is the <code>return</code>.</p>
+        
+        <p>Proper Tail Calls (PTC) of these forms can be optimized—called Tail
+        Call Optimization (TCO)—so that the extra stack frame allocation is
+        unnecessary. Instead of creating a new stack frame for the next function
+        call, the engine just reuses the existing stack frame. That works
+        because a function doesn’t need to preserve any of the current state, as
+        nothing happens with that state after the PTC.</p>
+        
+        <p>TCO means there’s practically no limit to how deep the call stack can
+        be. That trick slightly improves regular function calls in normal
+        programs, but more importantly opens the door to using recursion for
+        program expression even if the call stack could be tens of thousands of
+        calls deep.</p>
+        
+        <p>We’re no longer relegated to simply theorizing about recursion for
+        problem solving, but can actually use it in real JavaScript programs!</p>
+        
+        <p>As of ES6, all PTC should be optimizable in this way, recursion or not.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Tail Call Rewrite"><div class="sect2" id="idm45967350166184">
+        <h2>Tail Call Rewrite</h2>
+        
+        <p>The hitch, however, is that only PTC can be optimized; non-PTC will
+        still work of course, but will cause stack frame allocation as they
+        always did. You’ll have to be careful about structuring your functions
+        with PTC if you expect the optimizations to kick in.</p>
+        
+        <p>If you have a function that’s not written with PTC, you may find the
+        need to manually rearrange your code to be eligible for TCO.</p>
+        
+        <p>Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="s2">"use strict"</code><code class="p">;</code>
+        
+        <code class="kd">function </code><code class="nx">foo</code><code class="p">(</code><code class="nx">x</code><code class="p">)</code> <code class="p">{</code>
+            <code class="k">if</code> <code class="p">(</code><code class="nx">x</code> <code class="o">&lt;=</code> <code class="mi">1</code><code class="p">)</code> <code class="k">return</code> <code class="mi">1</code><code class="p">;</code>
+            <code class="k">return</code> <code class="p">(</code><code class="nx">x</code> <code class="o">/</code> <code class="mi">2</code><code class="p">)</code> <code class="o">+</code> <code class="nx">foo</code><code class="p">(</code> <code class="nx">x</code> <code class="o">-</code> <code class="mi">1</code> <code class="p">);</code>
+        <code class="p">}</code>
+        
+        <code class="nx">foo</code><code class="p">(</code> <code class="mi">123456</code> <code class="p">);</code>          <code class="c1">// RangeError</code></pre>
+        
+        <p>The call to <code>foo(x-1)</code> isn’t a PTC because its result has to be added to
+        <code>(x / 2)</code> before <code>return</code>ing.</p>
+        
+        <p>However, to make this code eligible for TCO in an ES6 engine, we can
+        rewrite it as follows:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="s2">"use strict"</code><code class="p">;</code>
+        
+        <code class="kd">var</code> <code class="nx">foo</code> <code class="o">=</code> <code class="p">(</code><code class="kd">function</code><code class="p">(){</code>
+            <code class="kd">function </code><code class="nx">_foo</code><code class="p">(</code><code class="nx">acc</code><code class="p">,</code><code class="nx">x</code><code class="p">)</code> <code class="p">{</code>
+                <code class="k">if</code> <code class="p">(</code><code class="nx">x</code> <code class="o">&lt;=</code> <code class="mi">1</code><code class="p">)</code> <code class="k">return</code> <code class="nx">acc</code><code class="p">;</code>
+                <code class="k">return</code> <code class="nx">_foo</code><code class="p">(</code> <code class="p">(</code><code class="nx">x</code> <code class="o">/</code> <code class="mi">2</code><code class="p">)</code> <code class="o">+</code> <code class="nx">acc</code><code class="p">,</code> <code class="nx">x</code> <code class="o">-</code> <code class="mi">1</code> <code class="p">);</code>
+            <code class="p">}</code>
+        
+            <code class="k">return</code> <code class="kd">function</code><code class="p">(</code><code class="nx">x</code><code class="p">)</code> <code class="p">{</code>
+                <code class="k">return</code> <code class="nx">_foo</code><code class="p">(</code> <code class="mi">1</code><code class="p">,</code> <code class="nx">x</code> <code class="p">);</code>
+            <code class="p">};</code>
+        <code class="p">})();</code>
+        
+        <code class="nx">foo</code><code class="p">(</code> <code class="mi">123456</code> <code class="p">);</code>          <code class="c1">// 3810376848.5</code></pre>
+        
+        <p>If you run the previous snippet in an ES6 engine that implements TCO,
+        you’ll get the <code>3810376848.5</code> answer as shown. However, it’ll still fail
+        with a <code>RangeError</code> in non-TCO engines.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Non-TCO Optimizations"><div class="sect2" id="idm45967350006344">
+        <h2>Non-TCO Optimizations</h2>
+        
+        <p>There are other techniques to rewrite the code so that the call stack
+        isn’t growing with each call.</p>
+        
+        <p>One such technique is called <em>trampolining</em>, which amounts to having
+        each partial result represented as a function that either returns
+        another partial result function or the final result. Then you can simply
+        loop until you stop getting a function, and you’ll have the result.
+        Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="s2">"use strict"</code><code class="p">;</code>
+        
+        <code class="kd">function </code><code class="nx">trampoline</code><code class="p">(</code> <code class="nx">res</code> <code class="p">)</code> <code class="p">{</code>
+            <code class="k">while</code> <code class="p">(</code><code class="k">typeof</code> <code class="nx">res</code> <code class="o">==</code> <code class="s2">"function"</code><code class="p">)</code> <code class="p">{</code>
+                <code class="nx">res</code> <code class="o">=</code> <code class="nx">res</code><code class="p">();</code>
+            <code class="p">}</code>
+            <code class="k">return</code> <code class="nx">res</code><code class="p">;</code>
+        <code class="p">}</code>
+        
+        <code class="kd">var</code> <code class="nx">foo</code> <code class="o">=</code> <code class="p">(</code><code class="kd">function</code><code class="p">(){</code>
+            <code class="kd">function </code><code class="nx">_foo</code><code class="p">(</code><code class="nx">acc</code><code class="p">,</code><code class="nx">x</code><code class="p">)</code> <code class="p">{</code>
+                <code class="k">if</code> <code class="p">(</code><code class="nx">x</code> <code class="o">&lt;=</code> <code class="mi">1</code><code class="p">)</code> <code class="k">return</code> <code class="nx">acc</code><code class="p">;</code>
+                <code class="k">return</code> <code class="kd">function </code><code class="nx">partial</code><code class="p">(){</code>
+                    <code class="k">return</code> <code class="nx">_foo</code><code class="p">(</code> <code class="p">(</code><code class="nx">x</code> <code class="o">/</code> <code class="mi">2</code><code class="p">)</code> <code class="o">+</code> <code class="nx">acc</code><code class="p">,</code> <code class="nx">x</code> <code class="o">-</code> <code class="mi">1</code> <code class="p">);</code>
+                <code class="p">};</code>
+            <code class="p">}</code>
+        
+            <code class="k">return</code> <code class="kd">function</code><code class="p">(</code><code class="nx">x</code><code class="p">)</code> <code class="p">{</code>
+                <code class="k">return</code> <code class="nx">trampoline</code><code class="p">(</code> <code class="nx">_foo</code><code class="p">(</code> <code class="mi">1</code><code class="p">,</code> <code class="nx">x</code> <code class="p">)</code> <code class="p">);</code>
+            <code class="p">};</code>
+        <code class="p">})();</code>
+        
+        <code class="nx">foo</code><code class="p">(</code> <code class="mi">123456</code> <code class="p">);</code>          <code class="c1">// 3810376848.5</code></pre>
+        
+        <p>This reworking required minimal changes to factor out the recursion into
+        the loop in <code>trampoline(..)</code>:</p>
+        <ol>
+        <li>
+        <p>First, we wrapped the <code>return _foo ..</code> line in the <code>return partial() { ..</code> function expression.</p>
+        </li>
+        <li>
+        <p>Then we wrapped the <code>_foo(1,x)</code> call in the <code>trampoline(..)</code> call.</p>
+        </li>
+        
+        </ol>
+        
+        <p>The reason this technique doesn’t suffer the call stack limitation is
+        that each of those inner <code>partial(..)</code> functions is just returned back
+        to the <code>while</code> loop in <code>trampoline(..)</code>, which runs it and then loop
+        iterates again. In other words, <code>partial(..)</code> doesn’t recursively call
+        itself, it just returns another function. The stack depth remains
+        constant, so it can run as long as it needs to.</p>
+        
+        <p>Trampolining expressed in this way uses the closure that the inner
+        <code>partial()</code> function has over the <code>x</code> and <code>acc</code> variables to keep the
+        state from iteration to iteration. The advantage is that the looping
+        logic is pulled out into a reusable <code>trampoline(..)</code> utility function,
+        which many libraries provide versions of. You can reuse <code>trampoline(..)</code>
+        multiple times in your program with different trampolined algorithms.</p>
+        
+        <p>Of course, if you really wanted to deeply optimize (and the reusability
+        wasn’t a concern), you could discard the closure state and inline the
+        state tracking of <code>acc</code> into just one function’s scope along with a
+        loop. This technique is generally called <em>recursion unrolling</em>:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="s2">"use strict"</code><code class="p">;</code>
+        
+        <code class="kd">function </code><code class="nx">foo</code><code class="p">(</code><code class="nx">x</code><code class="p">)</code> <code class="p">{</code>
+            <code class="kd">var</code> <code class="nx">acc</code> <code class="o">=</code> <code class="mi">1</code><code class="p">;</code>
+            <code class="k">while</code> <code class="p">(</code><code class="nx">x</code> <code class="o">&gt;</code> <code class="mi">1</code><code class="p">)</code> <code class="p">{</code>
+                <code class="nx">acc</code> <code class="o">=</code> <code class="p">(</code><code class="nx">x</code> <code class="o">/</code> <code class="mi">2</code><code class="p">)</code> <code class="o">+</code> <code class="nx">acc</code><code class="p">;</code>
+                <code class="nx">x</code> <code class="o">=</code> <code class="nx">x</code> <code class="o">-</code> <code class="mi">1</code><code class="p">;</code>
+            <code class="p">}</code>
+            <code class="k">return</code> <code class="nx">acc</code><code class="p">;</code>
+        <code class="p">}</code>
+        
+        <code class="nx">foo</code><code class="p">(</code> <code class="mi">123456</code> <code class="p">);</code>          <code class="c1">// 3810376848.5</code></pre>
+        
+        <p>This expression of the algorithm is simpler to read, and will likely
+        perform the best (strictly speaking) of the various forms we’ve
+        explored. That may seem like a clear winner, and you may wonder why you
+        would ever try the other approaches.</p>
+        
+        <p>There are some reasons why you might not want to always manually unroll
+        your recursions:</p>
+        
+        <ul>
+        <li>
+        <p>Instead of factoring out the trampolining (loop) logic for
+        reusability, we’ve inlined it. This works great when there’s only one
+        example to consider, but as soon as you have a half dozen or more of
+        these in your program, there’s a good chance you’ll want some reusability
+        to keep things shorter and more manageable.</p>
+        </li>
+        <li>
+        <p>The example here is deliberately simple enough to illustrate the
+        different forms. In practice, there are many more complications in
+        recursion algorithms, such as mutual recursion (more than just one
+        function calling itself).</p>
+        </li>
+        </ul>
+        
+        <p>The farther you go down this rabbit hole, the more manual and intricate
+        the <em>unrolling</em> optimizations are. You’ll quickly lose all the perceived
+        value of readability. The primary advantage of recursion, even in the
+        PTC form, is that it preserves the algorithm readability, and offloads
+        the performance optimization to the engine.</p>
+        
+        <p>If you write your algorithms with PTC, the ES6 engine will apply TCO to
+        let your code run in constant stack depth (by reusing stack frames). You
+        get the readability of recursion with most of the performance benefits
+        and no limitations of run length.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Meta?"><div class="sect2" id="idm45967350005880">
+        <h2>Meta?</h2>
+        
+        <p>What does TCO have to do with meta programming?</p>
+        
+        <p>As we covered in <a data-type="xref" href="#feature_testing">“Feature Testing”</a> earlier, you can
+        determine at runtime what features an engine supports. This includes
+        TCO, though determining it is quite brute force. Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="s2">"use strict"</code><code class="p">;</code>
+        
+        <code class="k">try</code> <code class="p">{</code>
+            <code class="p">(</code><code class="kd">function </code><code class="nx">foo</code><code class="p">(</code><code class="nx">x</code><code class="p">){</code>
+                <code class="k">if</code> <code class="p">(</code><code class="nx">x</code> <code class="o">&lt;</code> <code class="mi">5E5</code><code class="p">)</code> <code class="k">return</code> <code class="nx">foo</code><code class="p">(</code> <code class="nx">x</code> <code class="o">+</code> <code class="mi">1</code> <code class="p">);</code>
+            <code class="p">})(</code> <code class="mi">1</code> <code class="p">);</code>
+        
+            <code class="nx">TCO_ENABLED</code> <code class="o">=</code> <code class="kc">true</code><code class="p">;</code>
+        <code class="p">}</code>
+        <code class="k">catch</code> <code class="p">(</code><code class="nx">err</code><code class="p">)</code> <code class="p">{</code>
+            <code class="nx">TCO_ENABLED</code> <code class="o">=</code> <code class="kc">false</code><code class="p">;</code>
+        <code class="p">}</code></pre>
+        
+        <p>In a non-TCO engine, the recursive loop will fail out eventually,
+        throwing an exception caught by the <code>try..catch</code>. Otherwise, the loop
+        completes easily thanks to TCO.</p>
+        
+        <p>Yuck, right?</p>
+        
+        <p>But how could meta programming around the TCO feature (or rather, the
+        lack thereof) benefit our code? The simple answer is that you could use
+        such a feature test to decide to load a version of your application’s
+        code that uses recursion, or an alternative one that’s been
+        converted/transpiled to not need recursion.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect3" data-pdf-bookmark="Self-Adjusting Code"><div class="sect3" id="idm45967349696808">
+        <h3>Self-Adjusting Code</h3>
+        
+        <p>But here’s another way of looking at the problem:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="s2">"use strict"</code><code class="p">;</code>
+        
+        <code class="kd">function </code><code class="nx">foo</code><code class="p">(</code><code class="nx">x</code><code class="p">)</code> <code class="p">{</code>
+            <code class="kd">function </code><code class="nx">_foo</code><code class="p">()</code> <code class="p">{</code>
+                <code class="k">if</code> <code class="p">(</code><code class="nx">x</code> <code class="o">&gt;</code> <code class="mi">1</code><code class="p">)</code> <code class="p">{</code>
+                    <code class="nx">acc</code> <code class="o">=</code> <code class="nx">acc</code> <code class="o">+</code> <code class="p">(</code><code class="nx">x</code> <code class="o">/</code> <code class="mi">2</code><code class="p">);</code>
+                    <code class="nx">x</code> <code class="o">=</code> <code class="nx">x</code> <code class="o">-</code> <code class="mi">1</code><code class="p">;</code>
+                    <code class="k">return</code> <code class="nx">_foo</code><code class="p">();</code>
+                <code class="p">}</code>
+            <code class="p">}</code>
+        
+            <code class="kd">var</code> <code class="nx">acc</code> <code class="o">=</code> <code class="mi">1</code><code class="p">;</code>
+        
+            <code class="k">while</code> <code class="p">(</code><code class="nx">x</code> <code class="o">&gt;</code> <code class="mi">1</code><code class="p">)</code> <code class="p">{</code>
+                <code class="k">try</code> <code class="p">{</code>
+                    <code class="nx">_foo</code><code class="p">();</code>
+                <code class="p">}</code>
+                <code class="k">catch</code> <code class="p">(</code><code class="nx">err</code><code class="p">)</code> <code class="p">{</code> <code class="p">}</code>
+            <code class="p">}</code>
+        
+            <code class="k">return</code> <code class="nx">acc</code><code class="p">;</code>
+        <code class="p">}</code>
+        
+        <code class="nx">foo</code><code class="p">(</code> <code class="mi">123456</code> <code class="p">);</code>          <code class="c1">// 3810376848.5</code></pre>
+        
+        <p>This algorithm works by attempting to do as much of the work with
+        recursion as possible, but keeping track of the progress via scoped
+        variables <code>x</code> and <code>acc</code>. If the entire problem can be solved with
+        recursion without an error, great. If the engine kills the recursion at
+        some point, we simply catch that with the <code>try..catch</code> and then try
+        again, picking up where we left off.</p>
+        
+        <p>I consider this a form of meta programming in that you are probing
+        during runtime the ability of the engine to fully (recursively) finish
+        the task, and working around any (non-TCO) engine limitations that may
+        restrict you.</p>
+        
+        <p>At first (or even second!) glance, my bet is this code seems much uglier
+        to you compared to some of the earlier versions. It also runs a fair bit
+        slower (on larger runs in a non-TCO environment).</p>
+        
+        <p>The primary advantage, other than it being able to complete any size
+        task even in non-TCO engines, is that this “solution” to the recursion
+        stack limitation is much more flexible than the trampolining or manual
+        unrolling techniques shown previously.</p>
+        
+        <p>Essentially, <code>_foo()</code> in this case is a sort of stand-in for practically
+        any recursive task, even mutual recursion. The rest is the boilerplate
+        that should work for just about any algorithm.</p>
+        
+        <p>The only “catch” is that to be able to resume in the event of a
+        recursion limit being hit, the state of the recursion must be in scoped
+        variables that exist outside the recursive function(s). We did that by
+        leaving <code>x</code> and <code>acc</code> outside of the <code>_foo()</code> function, instead of
+        passing them as arguments to <code>_foo()</code> as earlier.</p>
+        
+        <p>Almost any recursive algorithm can be adapted to work this way. That
+        means it’s the most widely applicable way of leveraging TCO with
+        recursion in your programs, with minimal rewriting.</p>
+        
+        <p>This approach still uses a PTC, meaning this code will
+        <em>progressively enhance</em> from running using the loop many times
+        (recursion batches) in an older browser to fully leveraging TCO’d
+        recursion in an ES6+ environment. I think that’s pretty cool!</p>
+        </div></section>
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Review"><div class="sect1" id="idm45967350346424">
+        <h1>Review</h1>
+        
+        <p>Meta programming is when you turn the logic of your program to focus on
+        itself (or its runtime environment), either to inspect its own structure
+        or to modify it. The primary value of meta programming is to extend the
+        normal mechanisms of the language to provide additional capabilities.</p>
+        
+        <p>Prior to ES6, JavaScript already had quite a bit of meta programming
+        capability, but ES6 significantly ramps that up with several new
+        features.</p>
+        
+        <p>From function name inferences for anonymous functions to meta properties
+        that give you information about things like how a constructor was
+        invoked, you can inspect the program structure while it runs more than
+        ever before. Well-Known Symbols let you override intrinsic behaviors,
+        such as coercion of an object to a primitive value. Proxies can
+        intercept and customize various low-level operations on objects, and
+        <code>Reflect</code> provides utilities to emulate them.</p>
+        
+        <p>Feature testing, even for subtle semantic behaviors like Tail Call
+        Optimization, shifts the meta programming focus from your program to the
+        JS engine capabilities itself. By knowing more about what the
+        environment can do, your programs can adjust themselves to the best fit
+        as they run.</p>
+        
+        <p>Should you meta program? My advice is: first focus on learning how the
+        core mechanics of the language really work. But once you fully know what
+        JS itself can do, it’s time to start leveraging these powerful meta
+        programming capabilities to push the language further!</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        </div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781491905241/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

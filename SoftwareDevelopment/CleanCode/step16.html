@@ -1,0 +1,503 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content" class="noOutline" tabindex="-1"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 id="ch16"><a id="page_267"></a><strong>16<br>Refactoring <code>SerialDate</code></strong></h2>
+        <p class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136083238/files/images/16_1fig_martin.jpg" alt="Image" width="350" height="229"></p>
+        <p>If you go to <code>http://www.jfree.org/jcommon/index.php</code>, you will find the JCommon library. Deep within that library there is a package named <code>org.jfree.date</code>. Within that package there is a class named <code>SerialDate</code>. We are going to explore that class.</p>
+        <p>The author of <code>SerialDate</code> is David Gilbert. David is clearly an experienced and competent programmer. As we shall see, he shows a significant degree of professionalism and discipline within his code. For all intents and purposes, this is “good code.” And I am going to rip it to pieces.</p>
+        <p><a id="page_268"></a>This is not an activity of malice. Nor do I think that I am so much better than David that I somehow have a right to pass judgment on his code. Indeed, if you were to find some of my code, I’m sure you could find plenty of things to complain about.</p>
+        <p>No, this is not an activity of nastiness or arrogance. What I am about to do is nothing more and nothing less than a professional review. It is something that we should all be comfortable doing. And it is something we should welcome when it is done for us. It is only through critiques like these that we will learn. Doctors do it. Pilots do it. Lawyers do it. And we programmers need to learn how to do it too.</p>
+        <p>One more thing about David Gilbert: David is more than just a good programmer. David had the courage and good will to offer his code to the community at large for free. He placed it out in the open for all to see and invited public usage and public scrutiny. This was well done!</p>
+        <p><code>SerialDate</code> (<a href="app02.xhtml#app2lt1">Listing B-1</a>, page <a href="app02.xhtml#page_349">349</a>) is a class that represents a date in Java. Why have a class that represents a date, when Java already has <code>java.util.Date</code> and <code>java.util.Calendar</code>, and others? The author wrote this class in response to a pain that I have often felt myself. The comment in his opening Javadoc (line 67) explains it well. We could quibble about his intention, but I have certainly had to deal with this issue, and I welcome a class that is about dates instead of times.</p>
+        <h3 id="ch16lev1sec1"><strong>First, Make It Work</strong></h3>
+        <p>There are some unit tests in a class named <code>SerialDateTests</code> (<a href="app02.xhtml#app2lt2">Listing B-2</a>, page <a href="app02.xhtml#page_366">366</a>). The tests all pass. Unfortunately a quick inspection of the tests shows that they don’t test everything [T1]. For example, doing a “Find Usages” search on the method <code>MonthCodeToQuarter</code> (line 334) indicates that it is not used [F4]. Therefore, the unit tests don’t test it.</p>
+        <p>So I fired up Clover to see what the unit tests covered and what they didn’t. Clover reported that the unit tests executed only 91 of the 185 executable statements in <code>SerialDate</code> (~50 percent) [T2]. The coverage map looks like a patchwork quilt, with big gobs of unexecuted code littered all through the class.</p>
+        <p>It was my goal to completely understand and also refactor this class. I couldn’t do that without much greater test coverage. So I wrote my own suite of completely independent unit tests (<a href="app02.xhtml#app2lt4">Listing B-4</a>, page <a href="app02.xhtml#page_374">374</a>).</p>
+        <p>As you look through these tests, you will note that many of them are commented out. These tests didn’t pass. They represent behavior that I think <code>SerialDate</code> should have. So as I refactor <code>SerialDate</code>, I’ll be working to make these tests pass too.</p>
+        <p>Even with some of the tests commented out, Clover reports that the new unit tests are executing 170 (92 percent) out of the 185 executable statements. This is pretty good, and I think we’ll be able to get this number higher.</p>
+        <p>The first few commented-out tests (lines 23-63) were a bit of conceit on my part. The program was not designed to pass these tests, but the behavior seemed obvious [G2] to me. <a id="page_269"></a>I’m not sure why the <code>testWeekdayCodeToString</code> method was written in the first place, but because it is there, it seems obvious that it should not be case sensitive. Writing these tests was trivial [T3]. Making them pass was even easier; I just changed lines 259 and 263 to use <code>equalsIgnoreCase</code>.</p>
+        <p>I left the tests at line 32 and line 45 commented out because it’s not clear to me that the “tues” and “thurs” abbreviations ought to be supported.</p>
+        <p>The tests on line 153 and line 154 don’t pass. Clearly, they should [G2]. We can easily fix this, and the tests on line 163 through line 213, by making the following changes to the <code>stringToMonthCode</code> function.</p>
+        <p class="codelink"><a id="pp0269_01a" href="chapter16_ima.xhtml#pp0269_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;457&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if ((result &lt; 1) || (result &gt; 12)) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = -1;<br>
+        &nbsp;&nbsp;&nbsp;458&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (int i = 0; i &lt; monthNames.length; i++) {<br>
+        &nbsp;&nbsp;&nbsp;459&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (s.equalsIgnoreCase(shortMonthNames[i])) {<br>
+        &nbsp;&nbsp;&nbsp;460&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = i + 1;<br>
+        &nbsp;&nbsp;&nbsp;461&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>
+        &nbsp;&nbsp;&nbsp;462&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;463&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (s.equalsIgnoreCase(monthNames[i])) {<br>
+        &nbsp;&nbsp;&nbsp;464&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = i + 1;<br>
+        &nbsp;&nbsp;&nbsp;465&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>
+        &nbsp;&nbsp;&nbsp;466&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;467&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;468&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+        <p>The commented test on line 318 exposes a bug in the <code>getFollowingDayOfWeek</code> method (line 672). December 25th, 2004, was a Saturday. The following Saturday was January 1st, 2005. However, when we run the test, we see that <code>getFollowingDayOfWeek</code> returns December 25th as the Saturday that follows December 25th. Clearly, this is wrong [G3],[T1]. We see the problem in line 685. It is a typical boundary condition error [T5]. It should read as follows:</p>
+        <p class="codelink"><a id="pp0269_02a" href="chapter16_ima.xhtml#pp0269_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;685&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (baseDOW &gt;= targetWeekday) {</p>
+        <p>It is interesting to note that this function was the target of an earlier repair. The change history (line 43) shows that “bugs” were fixed in <code>getPreviousDayOfWeek, getFollowingDayOfWeek</code>, and <code>getNearestDayOfWeek</code> [T6].</p>
+        <p>The <code>testGetNearestDayOfWeek</code> unit test (line 329), which tests the <code>getNearestDayOfWeek</code> method (line 705), did not start out as long and exhaustive as it currently is. I added a lot of test cases to it because my initial test cases did not all pass [T6]. You can see the pattern of failure by looking at which test cases are commented out. That pattern is revealing [T7]. It shows that the algorithm fails if the nearest day is in the future. Clearly there is some kind of boundary condition error [T5].</p>
+        <p>The pattern of test coverage reported by Clover is also interesting [T8]. Line 719 never gets executed! This means that the <code>if</code> statement in line 718 is always false. Sure enough, a look at the code shows that this must be true. The <code>adjust</code> variable is always negative and so cannot be greater or equal to 4. So this algorithm is just wrong.</p>
+        <p><a id="page_270"></a>The right algorithm is shown below:</p>
+        <p class="codelink"><a id="pp0270_01a" href="chapter16_ima.xhtml#pp0270_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int delta = targetDOW - base.getDayOfWeek();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int positiveDelta = delta + 7;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int adjust = positiveDelta % 7;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (adjust &gt; 3)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;adjust -= 7;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return SerialDate.addDays(adjust, base);</p>
+        <p>Finally, the tests at line 417 and line 429 can be made to pass simply by throwing an <code>IllegalArgumentException</code> instead of returning an error string from <code>weekInMonthToString</code> and <code>relativeToString</code>.</p>
+        <p>With these changes all the unit tests pass, and I believe <code>SerialDate</code> now works. So now it’s time to make it “right.”</p>
+        <h3 id="ch16lev1sec2"><strong>Then Make It Right</strong></h3>
+        <p>We are going to walk from the top to the bottom of <code>SerialDate</code>, improving it as we go along. Although you won’t see this in the discussion, I will be running all of the <code>JCommon</code> unit tests, including my improved unit test for <code>SerialDate</code>, after every change I make. So rest assured that every change you see here works for all of <code>JCommon</code>.</p>
+        <p>Starting at line 1, we see a ream of comments with license information, copyrights, authors, and change history. I acknowledge that there are certain legalities that need to be addressed, and so the copyrights and licenses must stay. On the other hand, the change history is a leftover from the 1960s. We have source code control tools that do this for us now. This history should be deleted [C1].</p>
+        <p>The import list starting at line 61 could be shortened by using <code>java.text.*</code> and <code>java.util.*</code>. [J1]</p>
+        <p>I wince at the HTML formatting in the Javadoc (line 67). Having a source file with more than one language in it troubles me. This comment has <em>four</em> languages in it: Java, English, Javadoc, and html [G1]. With that many languages in use, it’s hard to keep things straight. For example, the nice positioning of line 71 and line 72 are lost when the Javadoc is generated, and yet who wants to see <code>&lt;ul&gt;</code> and <code>&lt;li&gt;</code> in the source code? A better strategy might be to just surround the whole comment with <code>&lt;pre&gt;</code> so that the formatting that is apparent in the source code is preserved within the Javadoc.<sup>1</sup></p>
+        <p class="footnote">1. An even better solution would have been for Javadoc to present all comments as preformatted, so that comments appear the same in both code and document.</p>
+        <p>Line 86 is the class declaration. Why is this class named <code>SerialDate</code>? What is the significance of the word “serial”? Is it because the class is derived from <code>Serializable</code>? That doesn’t seem likely.</p>
+        <p><a id="page_271"></a>I won’t keep you guessing. I know why (or at least I think I know why) the word “serial” was used. The clue is in the constants SERIAL_LOWER_BOUND and SERIAL_UPPER_BOUND on line 98 and line 101. An even better clue is in the comment that begins on line 830. This class is named <code>SerialDate</code> because it is implemented using a “serial number,” which happens to be the number of days since December 30th, 1899.</p>
+        <p>I have two problems with this. First, the term “serial number” is not really correct. This may be a quibble, but the representation is more of a relative offset than a serial number. The term “serial number” has more to do with product identification markers than dates. So I don’t find this name particularly descriptive [N1]. A more descriptive term might be “ordinal.”</p>
+        <p>The second problem is more significant. The name <code>SerialDate</code> implies an implementation. This class is an abstract class. There is no need to imply anything at all about the implementation. Indeed, there is good reason to hide the implementation! So I find this name to be at the wrong level of abstraction [N2]. In my opinion, the name of this class should simply be <code>Date</code>.</p>
+        <p>Unfortunately, there are already too many classes in the Java library named <code>Date</code>, so this is probably not the best name to choose. Because this class is all about days, instead of time, I considered naming it <code>Day</code>, but this name is also heavily used in other places. In the end, I chose <code>DayDate</code> as the best compromise.</p>
+        <p>From now on in this discussion I will use the term <code>DayDate</code>. I leave it to you to remember that the listings you are looking at still use <code>SerialDate</code>.</p>
+        <p>I understand why <code>DayDate</code> inherits from <code>Comparable</code> and <code>Serializable</code>. But why does it inherit from <code>MonthConstants</code>? The class <code>MonthConstants</code> (<a href="app02.xhtml#app2lt3">Listing B-3</a>, page <a href="app02.xhtml#page_372">372</a>) is just a bunch of static final constants that define the months. Inheriting from classes with constants is an old trick that Java programmers used so that they could avoid using expressions like <code>MonthConstants.January</code>, but it’s a bad idea [J2]. <code>MonthConstants</code> should really be an enum.</p>
+        <p class="codelink"><a id="pp0271_01a" href="chapter16_ima.xhtml#pp0271_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public abstract class DayDate implements Comparable,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Serializable {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public static enum Month {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;JANUARY(1),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FEBRUARY(2),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MARCH(3),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;APRIL(4),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MAY(5),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;JUNE(6),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;JULY(7),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AUGUST(8),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SEPTEMBER(9),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OCTOBER(10),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;NOVEMBER(11),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DECEMBER(12);<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Month(int index) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.index = index;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <a id="page_272"></a><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public static Month make(int monthIndex) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (Month m : Month.values()) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (m.index == monthIndex)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return m;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new IllegalArgumentException(“Invalid month index ” + monthIndex);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public final int index;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+        <p>Changing <code>MonthConstants</code> to this <code>enum</code> forces quite a few changes to the <code>DayDate</code> class and all it’s users. It took me an hour to make all the changes. However, any function that used to take an <code>int</code> for a month, now takes a <code>Month</code> enumerator. This means we can get rid of the <code>isValidMonthCode</code> method (line 326), and all the month code error checking such as that in <code>monthCodeToQuarter</code> (line 356) [G5].</p>
+        <p>Next, we have line 91, <code>serialVersionUID</code>. This variable is used to control the serializer. If we change it, then any <code>DayDate</code> written with an older version of the software won’t be readable anymore and will result in an <code>InvalidClassException</code>. If you don’t declare the <code>serialVersionUID</code> variable, then the compiler automatically generates one for you, and it will be different every time you make a change to the module. I know that all the documents recommend manual control of this variable, but it seems to me that automatic control of serialization is a lot safer [G4]. After all, I’d much rather debug an <code>InvalidClassException</code> than the odd behavior that would ensue if I forgot to change the <code>serialVersionUID</code>. So I’m going to delete the variable—at least for the time being.<sup>2</sup></p>
+        <p class="footnote">2. Several of the reviewers of this text have taken exception to this decision. They contend that in an open source framework it is better to assert manual control over the serial ID so that minor changes to the software don’t cause old serialized dates to be invalid. This is a fair point. However, at least the failure, inconvenient though it might be, has a clear-cut cause. On the other hand, if the author of the class forgets to update the ID, then the failure mode is undefined and might very well be silent. I think the real moral of this story is that you should not expect to deserialize across versions.</p>
+        <p>I find the comment on line 93 redundant. Redundant comments are just places to collect lies and misinformation [C2]. So I’m going to get rid of it and its ilk.</p>
+        <p>The comments at line 97 and line 100 talk about serial numbers, which I discussed earlier [C1]. The variables they describe are the earliest and latest possible dates that <code>DayDate</code> can describe. This can be made a bit clearer [N1].</p>
+        <p class="codelink"><a id="pp0272_01a" href="chapter16_ima.xhtml#pp0272_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public static final int EARLIEST_DATE_ORDINAL = 2;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// 1/1/1900<br>
+        &nbsp;&nbsp;&nbsp;public static final int LATEST_DATE_ORDINAL = 2958465; // 12/31/9999</p>
+        <p>It’s not clear to me why <code>EARLIEST_DATE_ORDINAL</code> is 2 instead of 0. There is a hint in the comment on line 829 that suggests that this has something to do with the way dates are represented in Microsoft Excel. There is a much deeper insight provided in a derivative of <code>DayDate</code> called <code>SpreadsheetDate</code> (<a href="app02.xhtml#app2lt5">Listing B-5</a>, page <a href="app02.xhtml#page_382">382</a>). The comment on line 71 describes the issue nicely.</p>
+        <p>The problem I have with this is that the issue seems to be related to the implementation of <code>SpreadsheetDate</code> and has nothing to do with <code>DayDate</code>. I conclude from this that <a id="page_273"></a><code>EARLIEST_DATE_ORDINAL</code> and <code>LATEST_DATE_ORDINAL</code> do not really belong in <code>DayDate</code> and should be moved to <code>SpreadsheetDate</code> [G6].</p>
+        <p>Indeed, a search of the code shows that these variables are used only within <code>SpreadsheetDate</code>. Nothing in <code>DayDate</code>, nor in any other class in the <code>JCommon</code> framework, uses them. Therefore, I’ll move them down into <code>SpreadsheetDate</code>.</p>
+        <p>The next variables, <code>MINIMUM_YEAR_SUPPORTED</code>, and <code>MAXIMUM_YEAR_SUPPORTED</code> (line 104 and line 107), provide something of a dilemma. It seems clear that if <code>DayDate</code> is an abstract class that provides no foreshadowing of implementation, then it should not inform us about a minimum or maximum year. Again, I am tempted to move these variables down into <code>SpreadsheetDate</code> [G6]. However, a quick search of the users of these variables shows that one other class uses them: <code>RelativeDayOfWeekRule</code> (<a href="app02.xhtml#app2lt6">Listing B-6</a>, page <a href="app02.xhtml#page_390">390</a>). We see that usage at line 177 and line 178 in the <code>getDate</code> function, where they are used to check that the argument to <code>getDate</code> is a valid year. The dilemma is that a user of an abstract class needs information about its implementation.</p>
+        <p>What we need to do is provide this information without polluting <code>DayDate</code> itself. Usually, we would get implementation information from an instance of a derivative. However, the <code>getDate</code> function is not passed an instance of a <code>DayDate</code>. It does, however, return such an instance, which means that somewhere it must be creating it. Line 187 through line 205 provide the hint. The <code>DayDate</code> instance is being created by one of the three functions, <code>getPreviousDayOfWeek, getNearestDayOfWeek</code>, or <code>getFollowingDayOfWeek</code>. Looking back at the <code>DayDate</code> listing, we see that these functions (lines 638–724) all return a date created by <code>addDays</code> (line 571), which calls <code>createInstance</code> (line 808), which creates a <code>SpreadsheetDate</code>! [G7].</p>
+        <p>It’s generally a bad idea for base classes to know about their derivatives. To fix this, we should use the A<small>BSTRACT</small> F<small>ACTORY</small><sup>3</sup> pattern and create a <code>DayDateFactory</code>. This factory will create the instances of <code>DayDate</code> that we need and can also answer questions about the implementation, such as the maximum and minimum dates.</p>
+        <p class="footnote">3. [<a id="iGOF"></a><a href="#GOF">GOF</a>].</p>
+        <p class="codelink"><a id="pp0273_01a" href="chapter16_ima.xhtml#pp0273_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public abstract class DayDateFactory {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private static DayDateFactory factory = new SpreadsheetDateFactory();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public static void setInstance(DayDateFactory factory) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DayDateFactory.factory = factory;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected abstract DayDate _makeDate(int ordinal);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected abstract DayDate _makeDate(int day, DayDate.Month month, int year);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected abstract DayDate _makeDate(int day, int month, int year);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected abstract DayDate _makeDate(java.util.Date date);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected abstract int _getMinimumYear();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected abstract int _getMaximumYear();<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public static DayDate makeDate(int ordinal) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return factory._makeDate(ordinal);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<a id="page_274"></a><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public static DayDate makeDate(int day, DayDate.Month month, int year) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return factory._makeDate(day, month, year);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public static DayDate makeDate(int day, int month, int year) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return factory._makeDate(day, month, year);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public static DayDate makeDate(java.util.Date date) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return factory._makeDate(date);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public static int getMinimumYear() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return factory._getMinimumYear();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public static int getMaximumYear() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return factory._getMaximumYear();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>This factory class replaces the <code>createInstance</code> methods with <code>makeDate</code> methods, which improves the names quite a bit [N1]. It defaults to a <code>SpreadsheetDateFactory</code> but can be changed at any time to use a different factory. The static methods that delegate to abstract methods use a combination of the S<small>INGLETON</small>,<sup>4</sup> D<small>ECORATOR</small>,<sup>5</sup> and A<small>BSTRACT</small> F<small>ACTORY</small> patterns that I have found to be useful.</p>
+        <p class="footnote">4. Ibid.</p>
+        <p class="footnote">5. Ibid.</p>
+        <p>The <code>SpreadsheetDateFactory</code> looks like this.</p>
+        <p class="codelink"><a id="pp0274_01a" href="chapter16_ima.xhtml#pp0274_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public class SpreadsheetDateFactory extends DayDateFactory {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public DayDate _makeDate(int ordinal) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return new SpreadsheetDate(ordinal);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public DayDate _makeDate(int day, DayDate.Month month, int year) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return new SpreadsheetDate(day, month, year);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public DayDate _makeDate(int day, int month, int year) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return new SpreadsheetDate(day, month, year);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public DayDate _makeDate(Date date) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;final GregorianCalendar calendar = new GregorianCalendar();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;calendar.setTime(date);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return new SpreadsheetDate(<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;calendar.get(Calendar.DATE),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DayDate.Month.make(calendar.get(Calendar.MONTH) + 1),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;calendar.get(Calendar.YEAR));<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <a id="page_275"></a><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected int _getMinimumYear() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return SpreadsheetDate.MINIMUM_YEAR_SUPPORTED;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected int _getMaximumYear() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return SpreadsheetDate.MAXIMUM_YEAR_SUPPORTED;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>As you can see, I have already moved the <code>MINIMUM_YEAR_SUPPORTED</code> and <code>MAXIMUM_YEAR_SUPPORTED</code> variables into <code>SpreadsheetDate</code>, where they belong [G6].</p>
+        <p>The next issue in <code>DayDate</code> are the day constants beginning at line 109. These should really be another enum [J3]. We’ve seen this pattern before, so I won’t repeat it here. You’ll see it in the final listings.</p>
+        <p>Next, we see a series of tables starting with <code>LAST_DAY_OF_MONTH</code> at line 140. My first issue with these tables is that the comments that describe them are redundant [C3]. Their names are sufficient. So I’m going to delete the comments.</p>
+        <p>There seems to be no good reason that this table isn’t private [G8], because there is a static function <code>lastDayOfMonth</code> that provides the same data.</p>
+        <p>The next table, <code>AGGREGATE_DAYS_TO_END_OF_MONTH</code>, is a bit more mysterious because it is not used anywhere in the <code>JCommon</code> framework [G9]. So I deleted it.</p>
+        <p>The same goes for <code>LEAP_YEAR_AGGREGATE_DAYS_TO_END_OF_MONTH</code>.</p>
+        <p>The next table, <code>AGGREGATE_DAYS_TO_END_OF_PRECEDING_MONTH</code>, is used only in <code>Spread-sheetDate</code> (line 434 and line 473). This begs the question of whether it should be moved to <code>SpreadsheetDate</code>. The argument for not moving it is that the table is not specific to any particular implementation [G6]. On the other hand, no implementation other than <code>SpreadsheetDate</code> actually exists, and so the table should be moved close to where it is used [G10].</p>
+        <p>What settles the argument for me is that to be consistent [G11], we should make the table private and expose it through a function like <code>julianDateOfLastDayOfMonth</code>. Nobody seems to need a function like that. Moreover, the table can be moved back to <code>DayDate</code> easily if any new implementation of <code>DayDate</code> needs it. So I moved it.</p>
+        <p>The same goes for the table, <code>LEAP_YEAR_AGGREGATE_DAYS_TO_END_OF_MONTH</code>.</p>
+        <p>Next, we see three sets of constants that can be turned into enums (lines 162–205). The first of the three selects a week within a month. I changed it into an enum named <code>WeekInMonth</code>.</p>
+        <p class="codelink"><a id="pp0275_01a" href="chapter16_ima.xhtml#pp0275_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public enum WeekInMonth {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FIRST(1), SECOND(2), THIRD(3), FOURTH(4), LAST(0);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public final int index;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WeekInMonth(int index) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.index = index;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+        <p><a id="page_276"></a>The second set of constants (lines 177–187) is a bit more obscure. The <code>INCLUDE_NONE, INCLUDE_FIRST, INCLUDE_SECOND</code>, and <code>INCLUDE_BOTH</code> constants are used to describe whether the defining end-point dates of a range should be included in that range. Mathematically, this is described using the terms “open interval,” “half-open interval,” and “closed interval.” I think it is clearer using the mathematical nomenclature [N3], so I changed it to an enum named <code>DateInterval</code> with <code>CLOSED, CLOSED_LEFT, CLOSED_RIGHT</code>, and <code>OPEN</code> enumerators.</p>
+        <p>The third set of constants (lines 189–205) describe whether a search for a particular day of the week should result in the last, next, or nearest instance. Deciding what to call this is difficult at best. In the end, I settled for <code>WeekdayRange</code> with <code>LAST, NEXT</code>, and <code>NEAREST</code> enumerators.</p>
+        <p>You might not agree with the names I’ve chosen. They make sense to me, but they may not make sense to you. The point is that they are now in a form that makes them easy to change [J3]. They aren’t passed as integers anymore; they are passed as symbols. I can use the “change name” function of my IDE to change the names, or the types, without worrying that I missed some <code>-1</code> or <code>2</code> somewhere in the code or that some <code>int</code> argument declaration is left poorly described.</p>
+        <p>The description field at line 208 does not seem to be used by anyone. I deleted it along with its accessor and mutator [G9].</p>
+        <p>I also deleted the degenerate default constructor at line 213 [G12]. The compiler will generate it for us.</p>
+        <p>We can skip over the <code>isValidWeekdayCode</code> method (lines 216–238) because we deleted it when we created the <code>Day</code> enumeration.</p>
+        <p>This brings us to the <code>stringToWeekdayCode</code> method (lines 242–270). Javadocs that don’t add much to the method signature are just clutter [C3],[G12]. The only value this Javadoc adds is the description of the <code>-1</code> return value. However, because we changed to the <code>Day</code> enumeration, the comment is actually wrong [C2]. The method now throws an <code>IllegalArgumentException</code>. So I deleted the Javadoc.</p>
+        <p>I also deleted all the <code>final</code> keywords in arguments and variable declarations. As far as I could tell, they added no real value but did add to the clutter [G12]. Eliminating <code>final</code> flies in the face of some conventional wisdom. For example, Robert Simmons<sup>6</sup> strongly recommends us to “. . . spread <code>final</code> all over your code.” Clearly I disagree. I think that there are a few good uses for <code>final</code>, such as the occasional <code>final</code> constant, but otherwise the keyword adds little value and creates a lot of clutter. Perhaps I feel this way because the kinds of errors that <code>final</code> might catch are already caught by the unit tests I write.</p>
+        <p class="footnote">6. [<a id="iSimmons04"></a><a href="#Simmons04">Simmons04</a>], p. <a href="chapter04.xhtml#page_73">73</a>.</p>
+        <p>I didn’t care for the duplicate <code>if</code> statements [G5] inside the <code>for</code> loop (line 259 and line 263), so I connected them into a single <code>if</code> statement using the <code>||</code> operator. I also used the <code>Day</code> enumeration to direct the <code>for</code> loop and made a few other cosmetic changes.</p>
+        <p>It occurred to me that this method does not really belong in <code>DayDate</code>. It’s really the parse function of <code>Day</code>. So I moved it into the <code>Day</code> enumeration. However, that made the <code>Day</code> <a id="page_277"></a>enumeration pretty large. Because the concept of <code>Day</code> does not depend on <code>DayDate</code>, I moved the <code>Day</code> enumeration outside of the <code>DayDate</code> class into its own source file [G13].</p>
+        <p>I also moved the next function, <code>weekdayCodeToString</code> (lines 272–286) into the <code>Day</code> enumeration and called it <code>toString</code>.</p>
+        <p class="codelink"><a id="pp0277_01a" href="chapter16_ima.xhtml#pp0277_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public enum Day {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MONDAY(Calendar.MONDAY),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TUESDAY(Calendar.TUESDAY),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;WEDNESDAY(Calendar.WEDNESDAY),s<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;THURSDAY(Calendar.THURSDAY),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FRIDAY(Calendar.FRIDAY),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SATURDAY(Calendar.SATURDAY),<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SUNDAY(Calendar.SUNDAY);<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public final int index;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private static DateFormatSymbols dateSymbols = new DateFormatSymbols();<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Day(int day) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;index = day;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public static Day make(int index) throws IllegalArgumentException {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (Day d : Day.values())<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (d.index == index)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return d;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new IllegalArgumentException(<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String.format(“Illegal day index: %d.”, index));<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public static Day parse(String s) throws IllegalArgumentException {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String[] shortWeekdayNames =<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dateSymbols.getShortWeekdays();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String[] weekDayNames =<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dateSymbols.getWeekdays();<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s = s.trim();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (Day day : Day.values()) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (s.equalsIgnoreCase(shortWeekdayNames[day.index]) ||<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s.equalsIgnoreCase(weekDayNames[day.index])) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return day;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new IllegalArgumentException(<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String.format(“%s is not a valid weekday string”, s));<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public String toString() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return dateSymbols.getWeekdays()[index];<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}</p>
+        <p>There are two <code>getMonths</code> functions (lines 288–316). The first calls the second. The second is never called by anyone but the first. Therefore, I collapsed the two into one and vastly simplified them [G9],[G12],[F4]. Finally, I changed the name to be a bit more self-descriptive [N1].</p>
+        <p class="codelink"><a id="pp0278_01a" href="chapter16_ima.xhtml#pp0278_01">Click here to view code image</a></p>
+        <p class="pre"><a id="page_278"></a>&nbsp;&nbsp;&nbsp;public static String[] getMonthNames() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return dateFormatSymbols.getMonths();<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>The <code>isValidMonthCode</code> function (lines 326–346) was made irrelevant by the <code>Month</code> enum, so I deleted it [G9].</p>
+        <p>The <code>monthCodeToQuarter</code> function (lines 356–375) smells of F<small>EATURE</small> E<small>NVY</small><sup>7</sup> [G14] and probably belongs in the <code>Month</code> enum as a method named <code>quarter</code>. So I replaced it.</p>
+        <p class="footnote">7. [<a id="iRefactoring"></a><a href="#Refactoring">Refactoring</a>].</p>
+        <p class="codelink"><a id="pp0278_02a" href="chapter16_ima.xhtml#pp0278_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public int quarter() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return 1 + (index-1)/3;<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>This made the <code>Month</code> enum big enough to be in its own class. So I moved it out of <code>DayDate</code> to be consistent with the <code>Day</code> enum [G11],[G13].</p>
+        <p>The next two methods are named <code>monthCodeToString</code> (lines 377–426). Again, we see the pattern of one method calling its twin with a flag. It is usually a bad idea to pass a flag as an argument to a function, especially when that flag simply selects the format of the output [G15]. I renamed, simplified, and restructured these functions and moved them into the <code>Month</code> enum [N1],[N3],[C3],[G14].</p>
+        <p class="codelink"><a id="pp0278_03a" href="chapter16_ima.xhtml#pp0278_03">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public String toString() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return dateFormatSymbols.getMonths()[index - 1];<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;public String toShortString() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return dateFormatSymbols.getShortMonths()[index - 1];<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>The next method is <code>stringToMonthCode</code> (lines 428–472). I renamed it, moved it into the <code>Month</code> enum, and simplified it [N1],[N3],[C3],[G14],[G12].</p>
+        <p class="codelink"><a id="pp0278_04a" href="chapter16_ima.xhtml#pp0278_04">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public static Month parse(String s) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s = s.trim();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (Month m : Month.values())<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (m.matches(s))<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return m;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;try {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return make(Integer.parseInt(s));<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;catch (NumberFormatException e) {}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throw new IllegalArgumentException(“Invalid month ” + s);<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        <a id="page_279"></a><br>
+        &nbsp;&nbsp;&nbsp;private boolean matches(String s) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return s.equalsIgnoreCase(toString()) ||<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s.equalsIgnoreCase(toShortString());<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>The <code>isLeapYear</code> method (lines 495–517) can be made a bit more expressive [G16].</p>
+        <p class="codelink"><a id="pp0279_01a" href="chapter16_ima.xhtml#pp0279_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public static boolean isLeapYear(int year) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;boolean fourth = year % 4 == 0;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;boolean hundredth = year % 100 == 0;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;boolean fourHundredth = year % 400 == 0;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return fourth &amp;&amp; (!hundredth || fourHundredth);<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>The next function, <code>leapYearCount</code> (lines 519–536) doesn’t really belong in <code>DayDate</code>. Nobody calls it except for two methods in <code>SpreadsheetDate</code>. So I pushed it down [G6].</p>
+        <p>The <code>lastDayOfMonth</code> function (lines 538–560) makes use of the <code>LAST_DAY_OF_MONTH</code> array. This array really belongs in the <code>Month</code> enum [G17], so I moved it there. I also simplified the function and made it a bit more expressive [G16].</p>
+        <p class="codelink"><a id="pp0279_02a" href="chapter16_ima.xhtml#pp0279_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public static int lastDayOfMonth(Month month, int year) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (month == Month.FEBRUARY &amp;&amp; isLeapYear(year))<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return month.lastDay() + 1;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return month.lastDay();<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>Now things start to get a bit more interesting. The next function is <code>addDays</code> (lines 562–576). First of all, because this function operates on the variables of <code>DayDate</code>, it should not be static [G18]. So I changed it to an instance method. Second, it calls the function <code>toSerial</code>. This function should be renamed <code>toOrdinal</code> [N1]. Finally, the method can be simplified.</p>
+        <p class="codelink"><a id="pp0279_03a" href="chapter16_ima.xhtml#pp0279_03">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public DayDate addDays(int days) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return DayDateFactory.makeDate(toOrdinal() + days);<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>The same goes for <code>addMonths</code> (lines 578–602). It should be an instance method [G18]. The algorithm is a bit complicated, so I used E<small>XPLAINING</small> T<small>EMPORARY</small> V<small>ARIABLES</small><sup>8</sup> [G19] to make it more transparent. I also renamed the method <code>getYYY</code> to <code>getYear</code> [N1].</p>
+        <p class="footnote">8. [<a id="iBeck97"></a><a href="#Beck97">Beck97</a>].</p>
+        <p class="codelink"><a id="pp0279_04a" href="chapter16_ima.xhtml#pp0279_04">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public DayDate addMonths(int months) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int thisMonthAsOrdinal = 12 * getYear() + getMonth().index - 1;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int resultMonthAsOrdinal = thisMonthAsOrdinal + months;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int resultYear = resultMonthAsOrdinal / 12;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Month resultMonth = Month.make(resultMonthAsOrdinal % 12 + 1);<br>
+        <a id="page_280"></a><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int lastDayOfResultMonth = lastDayOfMonth(resultMonth, resultYear);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int resultDay = Math.min(getDayOfMonth(), lastDayOfResultMonth);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return DayDateFactory.makeDate(resultDay, resultMonth, resultYear);<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>The <code>addYears</code> function (lines 604–626) provides no surprises over the others.</p>
+        <p class="codelink"><a id="pp0280_01a" href="chapter16_ima.xhtml#pp0280_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public DayDate plusYears(int years) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int resultYear = getYear() + years;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int lastDayOfMonthInResultYear = lastDayOfMonth(getMonth(), resultYear);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int resultDay = Math.min(getDayOfMonth(), lastDayOfMonthInResultYear);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return DayDateFactory.makeDate(resultDay, getMonth(), resultYear);<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>There is a little itch at the back of my mind that is bothering me about changing these methods from static to instance. Does the expression <code>date.addDays(5)</code> make it clear that the <code>date</code> object does not change and that a new instance of <code>DayDate</code> is returned? Or does it erroneously imply that we are adding five days to the <code>date</code> object? You might not think that is a big problem, but a bit of code that looks like the following can be very deceiving [G20].</p>
+        <p class="codelink"><a id="pp0280_02a" href="chapter16_ima.xhtml#pp0280_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;DayDate date = DateFactory.makeDate(5, Month.DECEMBER, 1952);<br>
+        &nbsp;&nbsp;&nbsp;date.addDays(7); // bump date by one week.</p>
+        <p>Someone reading this code would very likely just accept that <code>addDays</code> is changing the <code>date</code> object. So we need a name that breaks this ambiguity [N4]. So I changed the names to <code>plusDays</code> and <code>plusMonths</code>. It seems to me that the intent of the method is captured nicely by</p>
+        <p class="codelink"><a id="pp0280_03a" href="chapter16_ima.xhtml#pp0280_03">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;DayDate date = oldDate.plusDays(5);</p>
+        <p>whereas the following doesn’t read fluidly enough for a reader to simply accept that the <code>date</code> object is changed:</p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;date.plusDays(5);</p>
+        <p>The algorithms continue to get more interesting. <code>getPreviousDayOfWeek</code> (lines 628–660) works but is a bit complicated. After some thought about what was really going on [G21], I was able to simplify it and use E<small>XPLAINING</small> T<small>EMPORARY</small> V<small>ARIABLES</small> [G19] to make it clearer. I also changed it from a static method to an instance method [G18], and got rid of the duplicate instance method [G5] (lines 997–1008).</p>
+        <p class="codelink"><a id="pp0280_04a" href="chapter16_ima.xhtml#pp0280_04">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public DayDate getPreviousDayOfWeek(Day targetDayOfWeek) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int offsetToTarget = targetDayOfWeek.index - getDayOfWeek().index;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (offsetToTarget &gt;= 0)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;offsetToTarget -= 7;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return plusDays(offsetToTarget);<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>The exact same analysis and result occurred for <code>getFollowingDayOfWeek</code> (lines 662–693).</p>
+        <p class="codelink"><a id="pp0280_05a" href="chapter16_ima.xhtml#pp0280_05">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public DayDate getFollowingDayOfWeek(Day targetDayOfWeek) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int offsetToTarget = targetDayOfWeek.index - getDayOfWeek().index;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (offsetToTarget &lt;= 0)<br>
+        <a id="page_281"></a><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;offsetToTarget += 7;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return plusDays(offsetToTarget);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+        <p>The next function is <code>getNearestDayOfWeek</code> (lines 695–726), which we corrected back on page <a href="chapter16.xhtml#page_270">270</a>. But the changes I made back then aren’t consistent with the current pattern in the last two functions [G11]. So I made it consistent and used some E<small>XPLAINING</small> T<small>EMPORARY</small> V<small>ARIABLES</small> [G19] to clarify the algorithm.</p>
+        <p class="codelink"><a id="pp0281_01a" href="chapter16_ima.xhtml#pp0281_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public DayDate getNearestDayOfWeek(final Day targetDay) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int offsetToThisWeeksTarget = targetDay.index - getDayOfWeek().index;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int offsetToFutureTarget = (offsetToThisWeeksTarget + 7) % 7;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int offsetToPreviousTarget = offsetToFutureTarget - 7;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (offsetToFutureTarget &gt; 3)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return plusDays(offsetToPreviousTarget);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return plusDays(offsetToFutureTarget);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+        <p>The <code>getEndOfCurrentMonth</code> method (lines 728–740) is a little strange because it is an instance method that envies [G14] its own class by taking a <code>DayDate</code> argument. I made it a true instance method and clarified a few names.</p>
+        <p class="codelink"><a id="pp0281_02a" href="chapter16_ima.xhtml#pp0281_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public DayDate getEndOfMonth() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Month month = getMonth();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int year = getYear();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int lastDay = lastDayOfMonth(month, year);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return DayDateFactory.makeDate(lastDay, month, year);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+        <p>Refactoring <code>weekInMonthToString</code> (lines 742–761) turned out to be very interesting indeed. Using the refactoring tools of my IDE, I first moved the method to the <code>WeekInMonth</code> enum that I created back on page <a href="chapter16.xhtml#page_275">275</a>. Then I renamed the method to <code>toString</code>. Next, I changed it from a static method to an instance method. All the tests still passed. (Can you guess where I am going?)</p>
+        <p>Next, I deleted the method entirely! Five asserts failed (lines 411–415, <a href="app02.xhtml#app2lt4">Listing B-4</a>, page <a href="app02.xhtml#page_374">374</a>). I changed these lines to use the names of the enumerators (<code>FIRST, SECOND</code>, …). All the tests passed. Can you see why? Can you also see why each of these steps was necessary? The refactoring tool made sure that all previous callers of <code>weekInMonthToString</code> now called <code>toString</code> on the <code>weekInMonth</code> enumerator because all enumerators implement <code>toString</code> to simply return their names.…</p>
+        <p>Unfortunately, I was a bit too clever. As elegant as that wonderful chain of refactorings was, I finally realized that the only users of this function were the tests I had just modified, so I deleted the tests.</p>
+        <p>Fool me once, shame on you. Fool me twice, shame on me! So after determining that nobody other than the tests called <code>relativeToString</code> (lines 765–781), I simply deleted the function and its tests.</p>
+        <p><a id="page_282"></a>We have finally made it to the abstract methods of this abstract class. And the first one is as appropriate as they come: <code>toSerial</code> (lines 838–844). Back on page <a href="chapter16.xhtml#page_279">279</a> I had changed the name to <code>toOrdinal</code>. Having looked at it in this context, I decided the name should be changed to <code>getOrdinalDay</code>.</p>
+        <p>The next abstract method is <code>toDate</code> (lines 838–844). It converts a <code>DayDate</code> to a <code>java.util.Date</code>. Why is this method abstract? If we look at its implementation in <code>SpreadsheetDate</code> (lines 198–207, <a href="app02.xhtml#app2lt5">Listing B-5</a>, page <a href="app02.xhtml#page_382">382</a>), we see that it doesn’t depend on anything in the implementation of that class [G6]. So I pushed it up.</p>
+        <p>The <code>getYYYY, getMonth</code>, and <code>getDayOfMonth</code> methods are nicely abstract. However, the <code>getDayOfWeek</code> method is another one that should be pulled up from <code>SpreadSheetDate</code> because it doesn’t depend on anything that can’t be found in <code>DayDate</code> [G6]. Or does it?</p>
+        <p>If you look carefully (line 247, <a href="app02.xhtml#app2lt5">Listing B-5</a>, page <a href="app02.xhtml#page_382">382</a>), you’ll see that the algorithm implicitly depends on the origin of the ordinal day (in other words, the day of the week of day 0). So even though this function has no physical dependencies that couldn’t be moved to <code>DayDate</code>, it does have a logical dependency.</p>
+        <p>Logical dependencies like this bother me [G22]. If something logical depends on the implementation, then something physical should too. Also, it seems to me that the algorithm itself could be generic with a much smaller portion of it dependent on the implementation [G6].</p>
+        <p>So I created an abstract method in <code>DayDate</code> named <code>getDayOfWeekForOrdinalZero</code> and implemented it in <code>SpreadsheetDate</code> to return <code>Day.SATURDAY</code>. Then I moved the <code>getDayOfWeek</code> method up to <code>DayDate</code> and changed it to call <code>getOrdinalDay</code> and <code>getDayOfWeekForOrdinal-Zero</code>.</p>
+        <p class="codelink"><a id="pp0282_01a" href="chapter16_ima.xhtml#pp0282_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public Day getDayOfWeek() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Day startingDay = getDayOfWeekForOrdinalZero();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int startingOffset = startingDay.index - Day.SUNDAY.index;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return Day.make((getOrdinalDay() + startingOffset) % 7 + 1);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+        <p>As a side note, look carefully at the comment on line 895 through line 899. Was this repetition really necessary? As usual, I deleted this comment along with all the others.</p>
+        <p>The next method is <code>compare</code> (lines 902–913). Again, this method is inappropriately abstract [G6], so I pulled the implementation up into <code>DayDate</code>. Also, the name does not communicate enough [N1]. This method actually returns the difference in days since the argument. So I changed the name to <code>daysSince</code>. Also, I noted that there weren’t any tests for this method, so I wrote them.</p>
+        <p>The next six functions (lines 915–980) are all abstract methods that should be implemented in <code>DayDate</code>. So I pulled them all up from <code>SpreadsheetDate</code>.</p>
+        <p>The last function, <code>isInRange</code> (lines 982–995) also needs to be pulled up and refactored. The <code>switch</code> statement is a bit ugly [G23] and can be replaced by moving the cases into the <code>DateInterval</code> enum.</p>
+        <p class="codelink"><a id="pp0283_01a" href="chapter16_ima.xhtml#pp0283_01">Click here to view code image</a></p>
+        <p class="pre"><a id="page_283"></a>&nbsp;&nbsp;&nbsp;public enum DateInterval {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OPEN {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public boolean isIn(int d, int left, int right) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return d &gt; left &amp;&amp; d &lt; right;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;},<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CLOSED_LEFT {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public boolean isIn(int d, int left, int right) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return d &gt;= left &amp;&amp; d &lt; right;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;},<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CLOSED_RIGHT {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public boolean isIn(int d, int left, int right) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return d &gt; left &amp;&amp; d &lt;= right;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;},<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;CLOSED {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public boolean isIn(int d, int left, int right) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return d &gt;= left &amp;&amp; d &lt;= right;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;};<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public abstract boolean isIn(int d, int left, int right);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+        <p class="codelink"><a id="pp0283_02a" href="chapter16_ima.xhtml#pp0283_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public boolean isInRange(DayDate d1, DayDate d2, DateInterval interval) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int left = Math.min(d1.getOrdinalDay(), d2.getOrdinalDay());<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int right = Math.max(d1.getOrdinalDay(), d2.getOrdinalDay());<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return interval.isIn(getOrdinalDay(), left, right);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+        <p>That brings us to the end of <code>DayDate</code>. So now we’ll make one more pass over the whole class to see how well it flows.</p>
+        <p>First, the opening comment is long out of date, so I shortened and improved it [C2].</p>
+        <p>Next, I moved all the remaining enums out into their own files [G12].</p>
+        <p>Next, I moved the static variable (<code>dateFormatSymbols</code>) and three static methods (<code>getMonthNames, isLeapYear, lastDayOfMonth</code>) into a new class named <code>DateUtil</code> [G6].</p>
+        <p>I moved the abstract methods up to the top where they belong [G24].</p>
+        <p>I changed <code>Month.make</code> to <code>Month.fromInt</code> [N1] and did the same for all the other enums. I also created a <code>toInt()</code> accessor for all the enums and made the <code>index</code> field private.</p>
+        <p>There was some interesting duplication [G5] in <code>plusYears</code> and <code>plusMonths</code> that I was able to eliminate by extracting a new method named <code>correctLastDayOfMonth</code>, making the all three methods much clearer.</p>
+        <p>I got rid of the magic number 1 [G25], replacing it with <code>Month.JANUARY.toInt()</code> or <code>Day.SUNDAY.toInt()</code>, as appropriate. I spent a little time with <code>SpreadsheetDate</code>, cleaning up the algorithms a bit. The end result is contained in <a href="app02.xhtml#app2lt7">Listing B-7</a>, page <a href="app02.xhtml#page_394">394</a>, through <a href="app02.xhtml#app2lt16">Listing B-16</a>, page <a href="app02.xhtml#page_405">405</a>.</p>
+        <p><a id="page_284"></a>Interestingly the code coverage in <code>DayDate</code> has <em>decreased</em> to 84.9 percent! This is not because less functionality is being tested; rather it is because the class has shrunk so much that the few uncovered lines have a greater weight. <code>DayDate</code> now has 45 out of 53 executable statements covered by tests. The uncovered lines are so trivial that they weren’t worth testing.</p>
+        <h3 id="ch16lev1sec3"><strong>Conclusion</strong></h3>
+        <p>So once again we’ve followed the Boy Scout Rule. We’ve checked the code in a bit cleaner than when we checked it out. It took a little time, but it was worth it. Test coverage was increased, some bugs were fixed, the code was clarified and shrunk. The next person to look at this code will hopefully find it easier to deal with than we did. That person will also probably be able to clean it up a bit more than we did.</p>
+        <h3 id="ch16lev1sec4"><strong>Bibliography</strong></h3>
+        <p><a id="GOF"></a></p>
+        <p class="bibentry"><strong>[<a href="#iGOF">GOF</a>]:</strong> <em>Design Patterns: Elements of Reusable Object Oriented Software</em>, Gamma et al., Addison-Wesley, 1996.</p>
+        <p><a id="Simmons04"></a></p>
+        <p class="bibentry"><strong>[<a href="#iSimmons04">Simmons04</a>]:</strong> <em>Hardcore Java</em>, Robert Simmons, Jr., O’Reilly, 2004.</p>
+        <p><a id="Refactoring"></a></p>
+        <p class="bibentry"><strong>[<a href="#iRefactoring">Refactoring</a>]:</strong> <em>Refactoring: Improving the Design of Existing Code</em>, Martin Fowler et al., Addison-Wesley, 1999.</p>
+        <p><a id="Beck97"></a></p>
+        <p class="bibentry"><strong>[<a href="#iBeck97">Beck97</a>]:</strong> <em>Smalltalk Best Practice Patterns</em>, Kent Beck, Prentice Hall, 1997.</p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780136083238/files/9780136083252.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

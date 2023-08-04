@@ -13,9 +13,9 @@ const server = http.createServer((req, res) => {
 const fs = require('fs');
 try {
     const data = fs.readFileSync('index.html', 'utf8');
-    console.log(data);
-    for(let i =0; i <= 215; i++){
-        fs.writeFile(path.join(__dirname, 'Computer', 'OperaSystem', `step${i}.html`), data, err => {
+    // /Users/nguyenhoangtien/Documents/TienDiCode/My project/EBook/SoftwareDevelopment/CleanCode
+    for(let i = 0; i <= 20; i++){
+        fs.writeFile(path.join(__dirname, 'SoftwareDevelopment', 'CleanCode', `step${i}.html`), data, err => {
             if (err) {
               console.error(err);
             }

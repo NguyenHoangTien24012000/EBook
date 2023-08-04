@@ -1,0 +1,277 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content" class="noOutline" tabindex="-1"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 id="ch13"><a id="page_177"></a><strong>13<br>Concurrency</strong></h2>
+        <p class="chapauthor">by Brett L. Schuchert</p>
+        <p class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136083238/files/images/13_1fig_martin.jpg" alt="Image" width="160" height="254"></p>
+        <p class="blockquote"><em>“Objects are abstractions of processing. Threads are abstractions of schedule.”</em></p>
+        <p class="attribution">—James O. Coplien<sup>1</sup></p>
+        <p class="footnote">1. Private correspondence.</p>
+        <p><a id="page_178"></a>Writing clean concurrent programs is hard—very hard. It is much easier to write code that executes in a single thread. It is also easy to write multithreaded code that looks fine on the surface but is broken at a deeper level. Such code works fine until the system is placed under stress.</p>
+        <p>In this chapter we discuss the need for concurrent programming, and the difficulties it presents. We then present several recommendations for dealing with those difficulties, and writing clean concurrent code. Finally, we conclude with issues related to testing concurrent code.</p>
+        <p>Clean Concurrency is a complex topic, worthy of a book by itself. Our strategy in <em>this</em> book is to present an overview here and provide a more detailed tutorial in “Concurrency II” on page <a href="app01.xhtml#page_317">317</a>. If you are just curious about concurrency, then this chapter will suffice for you now. If you have a need to understand concurrency at a deeper level, then you should read through the tutorial as well.</p>
+        <h3 id="ch13lev1sec1"><strong>Why Concurrency?</strong></h3>
+        <p>Concurrency is a decoupling strategy. It helps us decouple <em>what</em> gets done from <em>when</em> it gets done. In single-threaded applications <em>what</em> and <em>when</em> are so strongly coupled that the state of the entire application can often be determined by looking at the stack backtrace. A programmer who debugs such a system can set a breakpoint, or a sequence of breakpoints, and <em>know</em> the state of the system by which breakpoints are hit.</p>
+        <p>Decoupling <em>what</em> from <em>when</em> can dramatically improve both the throughput and structures of an application. From a structural point of view the application looks like many little collaborating computers rather than one big main loop. This can make the system easier to understand and offers some powerful ways to separate concerns.</p>
+        <p>Consider, for example, the standard “Servlet” model of Web applications. These systems run under the umbrella of a Web or EJB container that <em>partially</em> manages concurrency for you. The servlets are executed asynchronously whenever Web requests come in. The servlet programmer does not have to manage all the incoming requests. <em>In principle</em>, each servlet execution lives in its own little world and is decoupled from all the other servlet executions.</p>
+        <p>Of course if it were that easy, this chapter wouldn’t be necessary. In fact, the decoupling provided by Web containers is far less than perfect. Servlet programmers have to be very aware, and very careful, to make sure their concurrent programs are correct. Still, the structural benefits of the servlet model are significant.</p>
+        <p>But structure is not the only motive for adopting concurrency. Some systems have response time and throughput constraints that require hand-coded concurrent solutions. For example, consider a single-threaded information aggregator that acquires information from many different Web sites and merges that information into a daily summary. Because <a id="page_179"></a>this system is single threaded, it hits each Web site in turn, always finishing one before starting the next. The daily run needs to execute in less than 24 hours. However, as more and more Web sites are added, the time grows until it takes more than 24 hours to gather all the data. The single-thread involves a lot of waiting at Web sockets for I/O to complete. We could improve the performance by using a multithreaded algorithm that hits more than one Web site at a time.</p>
+        <p>Or consider a system that handles one user at a time and requires only one second of time per user. This system is fairly responsive for a few users, but as the number of users increases, the system’s response time increases. No user wants to get in line behind 150 others! We could improve the response time of this system by handling many users concurrently.</p>
+        <p>Or consider a system that interprets large data sets but can only give a complete solution after processing all of them. Perhaps each data set could be processed on a different computer, so that many data sets are being processed in parallel.</p>
+        <h4 id="ch13lev2sec1"><strong>Myths and Misconceptions</strong></h4>
+        <p>And so there are compelling reasons to adopt concurrency. However, as we said before, concurrency is <em>hard</em>. If you aren’t very careful, you can create some very nasty situations. Consider these common myths and misconceptions:</p>
+        <p class="IndentBullet">• <em>Concurrency always improves performance.</em><br>
+        Concurrency can <em>sometimes</em> improve performance, but only when there is a lot of wait time that can be shared between multiple threads or multiple processors. Neither situation is trivial.</p>
+        <p class="IndentBullet">• <em>Design does not change when writing concurrent programs.</em><br>
+        In fact, the design of a concurrent algorithm can be remarkably different from the design of a single-threaded system. The decoupling of <em>what</em> from <em>when</em> usually has a huge effect on the structure of the system.</p>
+        <p class="IndentBullet">• <em>Understanding concurrency issues is not important when working with a container such as a Web or EJB container.</em><br>
+        In fact, you’d better know just what your container is doing and how to guard against the issues of concurrent update and deadlock described later in this chapter.</p>
+        <p class="IndentHanginga">Here are a few more balanced sound bites regarding writing concurrent software:</p>
+        <p class="IndentBullet">• <em>Concurrency incurs some overhead</em>, both in performance as well as writing additional code.</p>
+        <p class="IndentBullet">• <em>Correct concurrency is complex</em>, even for simple problems.</p>
+        <p class="IndentBullet"><a id="page_180"></a>• <em>Concurrency bugs aren’t usually repeatable,</em> so they are often ignored as one-offs<sup>2</sup> instead of the true defects they are.</p>
+        <p class="footnote">2. Cosmic-rays, glitches, and so on.</p>
+        <p class="IndentBullet">• <em>Concurrency often requires a fundamental change in design strategy</em>.</p>
+        <h3 id="ch13lev1sec2"><strong>Challenges</strong></h3>
+        <p>What makes concurrent programming so difficult? Consider the following trivial class:</p>
+        <p class="codelink"><a id="pp0180_01a" href="chapter13_ima.xhtml#pp0180_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public class X {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private int lastIdUsed;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public int getNextId() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return ++lastIdUsed;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>Let’s say we create an instance of <code>X</code>, set the <code>lastIdUsed</code> field to 42, and then share the instance between two threads. Now suppose that both of those threads call the method <code>getNextId();</code> there are three possible outcomes:</p>
+        <p class="IndentBullet">• Thread one gets the value 43, thread two gets the value 44, <code>lastIdUsed</code> is 44.</p>
+        <p class="IndentBullet">• Thread one gets the value 44, thread two gets the value 43, <code>lastIdUsed</code> is 44.</p>
+        <p class="IndentBullet">• Thread one gets the value 43, thread two gets the value 43, <code>lastIdUsed</code> is 43.</p>
+        <p>The surprising third result<sup>3</sup> occurs when the two threads step on each other. This happens because there are many possible paths that the two threads can take through that one line of Java code, and some of those paths generate incorrect results. How many different paths are there? To really answer that question, we need to understand what the Just-In-Time Compiler does with the generated byte-code, and understand what the Java memory model considers to be atomic.</p>
+        <p class="footnote">3. See “<a href="app01.xhtml#app1lev2sec6">Digging Deeper</a>” on page <a href="app01.xhtml#page_323">323</a>.</p>
+        <p>A quick answer, working with just the generated byte-code, is that there are 12,870 different possible execution paths<sup>4</sup> for those two threads executing within the <code>getNextId</code> method. If the type of <code>lastIdUsed</code> is changed from <code>int</code> to <code>long</code>, the number of possible paths increases to 2,704,156. Of course most of those paths generate valid results. The problem is that <em>some of them don’t</em>.</p>
+        <p class="footnote">4. See “<a href="app01.xhtml#app1lev1sec2">Possible Paths of Execution</a>” on page <a href="app01.xhtml#page_321">321</a>.</p>
+        <h3 id="ch13lev1sec3"><strong>Concurrency Defense Principles</strong></h3>
+        <p>What follows is a series of principles and techniques for defending your systems from the problems of concurrent code.</p>
+        <h4 id="ch13lev2sec2"><a id="page_181"></a><strong>Single Responsibility Principle</strong></h4>
+        <p>The SRP<sup>5</sup> states that a given method/class/component should have a single reason to change. Concurrency design is complex enough to be a reason to change in it’s own right and therefore deserves to be separated from the rest of the code. Unfortunately, it is all too common for concurrency implementation details to be embedded directly into other production code. Here are a few things to consider:</p>
+        <p class="footnote">5. [<a id="iPPP"></a><a href="#PPP">PPP</a>]</p>
+        <p class="IndentBullet">• <em>Concurrency-related code has its own life cycle of development</em>, change, and tuning.</p>
+        <p class="IndentBullet">• <em>Concurrency-related code has its own challenges</em>, which are different from and often more difficult than nonconcurrency-related code.</p>
+        <p class="IndentBullet">• The number of ways in which miswritten concurrency-based code can fail makes it challenging enough without the added burden of surrounding application code.</p>
+        <p><strong>Recommendation</strong>: <em>Keep your concurrency-related code separate from other code</em>.<sup>6</sup></p>
+        <p class="footnote">6. See “<a href="app01.xhtml#app1lev1sec1">Client/Server Example</a>” on page <a href="app01.xhtml#page_317">317</a>.</p>
+        <h4 id="ch13lev2sec3"><strong>Corollary: Limit the Scope of Data</strong></h4>
+        <p>As we saw, two threads modifying the same field of a shared object can interfere with each other, causing unexpected behavior. One solution is to use the <code>synchronized</code> keyword to protect a <em>critical section</em> in the code that uses the shared object. It is important to restrict the number of such critical sections. The more places shared data can get updated, the more likely:</p>
+        <p class="IndentBullet">• You will forget to protect one or more of those places—effectively breaking all code that modifies that shared data.</p>
+        <p class="IndentBullet">• There will be duplication of effort required to make sure everything is effectively guarded (violation of DRY<sup>7</sup>).</p>
+        <p class="footnote">7. [<a id="iPRAG"></a><a href="#PRAG">PRAG</a>].</p>
+        <p class="IndentBullet">• It will be difficult to determine the source of failures, which are already hard enough to find.</p>
+        <p><strong>Recommendation</strong>: <em>Take data encapsulation to heart; severely limit the access of any data that may be shared.</em></p>
+        <h4 id="ch13lev2sec4"><strong>Corollary: Use Copies of Data</strong></h4>
+        <p>A good way to avoid shared data is to avoid sharing the data in the first place. In some situations it is possible to copy objects and treat them as read-only. In other cases it might be possible to copy objects, collect results from multiple threads in these copies and then merge the results in a single thread.</p>
+        <p><a id="page_182"></a>If there is an easy way to avoid sharing objects, the resulting code will be far less likely to cause problems. You might be concerned about the cost of all the extra object creation. It is worth experimenting to find out if this is in fact a problem. However, if using copies of objects allows the code to avoid synchronizing, the savings in avoiding the intrinsic lock will likely make up for the additional creation and garbage collection overhead.</p>
+        <h4 id="ch13lev2sec5"><strong>Corollary: Threads Should Be as Independent as Possible</strong></h4>
+        <p>Consider writing your threaded code such that each thread exists in its own world, sharing no data with any other thread. Each thread processes one client request, with all of its required data coming from an unshared source and stored as local variables. This makes each of those threads behave as if it were the only thread in the world and there were no synchronization requirements.</p>
+        <p>For example, classes that subclass from <code>HttpServlet</code> receive all of their information as parameters passed in to the <code>doGet</code> and <code>doPost</code> methods. This makes each <code>Servlet</code> act as if it has its own machine. So long as the code in the <code>Servlet</code> uses only local variables, there is no chance that the <code>Servlet</code> will cause synchronization problems. Of course, most applications using <code>Servlets</code> eventually run into shared resources such as database connections.</p>
+        <p><strong>Recommendation</strong>: <em>Attempt to partition data into independent subsets than can be operated on by independent threads, possibly in different processors.</em></p>
+        <h3 id="ch13lev1sec4"><strong>Know Your Library</strong></h3>
+        <p>Java 5 offers many improvements for concurrent development over previous versions. There are several things to consider when writing threaded code in Java 5:</p>
+        <p class="IndentBullet">• Use the provided thread-safe collections.</p>
+        <p class="IndentBullet">• Use the executor framework for executing unrelated tasks.</p>
+        <p class="IndentBullet">• Use nonblocking solutions when possible.</p>
+        <p class="IndentBullet">• Several library classes are not thread safe.</p>
+        <h4 id="ch13lev2sec6"><strong>Thread-Safe Collections</strong></h4>
+        <p>When Java was young, Doug Lea wrote the seminal book<sup>8</sup> <em>Concurrent Programming in Java</em>. Along with the book he developed several thread-safe collections, which later became part of the JDK in the <code>java.util.concurrent</code> package. The collections in that package are safe for multithreaded situations and they perform well. In fact, the <a id="page_183"></a><code>ConcurrentHashMap</code> implementation performs better than <code>HashMap</code> in nearly all situations. It also allows for simultaneous concurrent reads and writes, and it has methods supporting common composite operations that are otherwise not thread safe. If Java 5 is the deployment environment, start with <code>ConcurrentHashMap</code>.</p>
+        <p class="footnote">8. [<a id="iLea99"></a><a href="#Lea99">Lea99</a>].</p>
+        <p>There are several other kinds of classes added to support advanced concurrency design. Here are a few examples:</p>
+        <p class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136083238/files/images/t0183-01.jpg" alt="image" width="550" height="110"></p>
+        <p><strong>Recommendation</strong>: <em>Review the classes available to you. In the case of Java, become familiar with java.util.concurrent, java.util.concurrent.atomic, java.util.concurrent.locks.</em></p>
+        <h3 id="ch13lev1sec5"><strong>Know Your Execution Models</strong></h3>
+        <p>There are several different ways to partition behavior in a concurrent application. To discuss them we need to understand some basic definitions.</p>
+        <p class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136083238/files/images/t0183-02.jpg" alt="image" width="550" height="324"></p>
+        <p>Given these definitions, we can now discuss the various execution models used in concurrent programming.</p>
+        <h4 id="ch13lev2sec7"><a id="page_184"></a><strong>Producer-Consumer<sup>9</sup></strong></h4>
+        <p class="footnote">9. <span class="WebLink"><a href="http://en.wikipedia.org/wiki/Producer-consumer">http://en.wikipedia.org/wiki/Producer-consumer</a></span></p>
+        <p>One or more producer threads create some work and place it in a buffer or queue. One or more consumer threads acquire that work from the queue and complete it. The queue between the producers and consumers is a <em>bound resource</em>. This means producers must wait for free space in the queue before writing and consumers must wait until there is something in the queue to consume. Coordination between the producers and consumers via the queue involves producers and consumers signaling each other. The producers write to the queue and signal that the queue is no longer empty. Consumers read from the queue and signal that the queue is no longer full. Both potentially wait to be notified when they can continue.</p>
+        <h4 id="ch13lev2sec8"><strong>Readers-Writers<sup>10</sup></strong></h4>
+        <p class="footnote">10. <span class="WebLink"><a href="http://en.wikipedia.org/wiki/Readers-writers_problem">http://en.wikipedia.org/wiki/Readers-writers_problem</a></span></p>
+        <p>When you have a shared resource that primarily serves as a source of information for readers, but which is occasionally updated by writers, throughput is an issue. Emphasizing throughput can cause starvation and the accumulation of stale information. Allowing updates can impact throughput. Coordinating readers so they do not read something a writer is updating and vice versa is a tough balancing act. Writers tend to block many readers for a long period of time, thus causing throughput issues.</p>
+        <p>The challenge is to balance the needs of both readers and writers to satisfy correct operation, provide reasonable throughput and avoiding starvation. A simple strategy makes writers wait until there are no readers before allowing the writer to perform an update. If there are continuous readers, however, the writers will be starved. On the other hand, if there are frequent writers and they are given priority, throughput will suffer. Finding that balance and avoiding concurrent update issues is what the problem addresses.</p>
+        <h4 id="ch13lev2sec9"><strong>Dining Philosophers<sup>11</sup></strong></h4>
+        <p class="footnote">11. <span class="WebLink"><a href="http://en.wikipedia.org/wiki/Dining_philosophers_problem">http://en.wikipedia.org/wiki/Dining_philosophers_problem</a></span></p>
+        <p>Imagine a number of philosophers sitting around a circular table. A fork is placed to the left of each philosopher. There is a big bowl of spaghetti in the center of the table. The philosophers spend their time thinking unless they get hungry. Once hungry, they pick up the forks on either side of them and eat. A philosopher cannot eat unless he is holding two forks. If the philosopher to his right or left is already using one of the forks he needs, he must wait until that philosopher finishes eating and puts the forks back down. Once a philosopher eats, he puts both his forks back down on the table and waits until he is hungry again.</p>
+        <p>Replace philosophers with threads and forks with resources and this problem is similar to many enterprise applications in which processes compete for resources. Unless carefully designed, systems that compete in this way can experience deadlock, livelock, throughput, and efficiency degradation.</p>
+        <p><a id="page_185"></a>Most concurrent problems you will likely encounter will be some variation of these three problems. Study these algorithms and write solutions using them on your own so that when you come across concurrent problems, you’ll be more prepared to solve the problem.</p>
+        <p><strong>Recommendation</strong>: <em>Learn these basic algorithms and understand their solutions.</em></p>
+        <h3 id="ch13lev1sec6"><strong>Beware Dependencies Between Synchronized Methods</strong></h3>
+        <p>Dependencies between synchronized methods cause subtle bugs in concurrent code. The Java language has the notion of <code>synchronized</code>, which protects an individual method. However, if there is more than one synchronized method on the same shared class, then your system may be written incorrectly.<sup>12</sup></p>
+        <p class="footnote">12. See “<a href="app01.xhtml#app1lev1sec4">Dependencies Between Methods Can Break Concurrent Code</a>” on page <a href="app01.xhtml#page_329">329</a>.</p>
+        <p><strong>Recommendation</strong>: <em>Avoid using more than one method on a shared object.</em></p>
+        <p>There will be times when you must use more than one method on a shared object. When this is the case, there are three ways to make the code correct:</p>
+        <p class="IndentBullet">• <strong>Client-Based Locking</strong>—Have the client lock the server before calling the first method and make sure the lock’s extent includes code calling the last method.</p>
+        <p class="IndentBullet">• <strong>Server-Based Locking</strong>—Within the server create a method that locks the server, calls all the methods, and then unlocks. Have the client call the new method.</p>
+        <p class="IndentBullet">• <strong>Adapted Server</strong>—create an intermediary that performs the locking. This is an example of server-based locking, where the original server cannot be changed.</p>
+        <h3 id="ch13lev1sec7"><strong>Keep Synchronized Sections Small</strong></h3>
+        <p>The <code>synchronized</code> keyword introduces a lock. All sections of code guarded by the same lock are guaranteed to have only one thread executing through them at any given time. Locks are expensive because they create delays and add overhead. So we don’t want to litter our code with <code>synchronized</code> statements. On the other hand, critical sections<sup>13</sup> must be guarded. So we want to design our code with as few critical sections as possible.</p>
+        <p class="footnote">13. A critical section is any section of code that must be protected from simultaneous use for the program to be correct.</p>
+        <p>Some naive programmers try to achieve this by making their critical sections very large. However, extending synchronization beyond the minimal critical section increases contention and degrades performance.<sup>14</sup></p>
+        <p class="footnote">14. See “<a href="app01.xhtml#app1lev1sec5">Increasing Throughput</a>” on page <a href="app01.xhtml#page_333">333</a>.</p>
+        <p><strong>Recommendation</strong>: <em>Keep your synchronized sections as small as possible.</em></p>
+        <h3 id="ch13lev1sec8"><a id="page_186"></a><strong>Writing Correct Shut-Down Code Is Hard</strong></h3>
+        <p>Writing a system that is meant to stay live and run forever is different from writing something that works for awhile and then shuts down gracefully.</p>
+        <p>Graceful shutdown can be hard to get correct. Common problems involve deadlock,<sup>15</sup> with threads waiting for a signal to continue that never comes.</p>
+        <p class="footnote">15. See “<a href="app01.xhtml#app1lev1sec6">Deadlock</a>” on page <a href="app01.xhtml#page_335">335</a>.</p>
+        <p>For example, imagine a system with a parent thread that spawns several child threads and then waits for them all to finish before it releases its resources and shuts down. What if one of the spawned threads is deadlocked? The parent will wait forever, and the system will never shut down.</p>
+        <p>Or consider a similar system that has been <em>instructed</em> to shut down. The parent tells all the spawned children to abandon their tasks and finish. But what if two of the children were operating as a producer/consumer pair. Suppose the producer receives the signal from the parent and quickly shuts down. The consumer might have been expecting a message from the producer and be blocked in a state where it cannot receive the shutdown signal. It could get stuck waiting for the producer and never finish, preventing the parent from finishing as well.</p>
+        <p>Situations like this are not at all uncommon. So if you must write concurrent code that involves shutting down gracefully, expect to spend much of your time getting the shutdown to happen correctly.</p>
+        <p><strong>Recommendation</strong>: <em>Think about shut-down early and get it working early. It’s going to take longer than you expect. Review existing algorithms because this is probably harder than you think.</em></p>
+        <h3 id="ch13lev1sec9"><strong>Testing Threaded Code</strong></h3>
+        <p>Proving that code is correct is impractical. Testing does not guarantee correctness. However, good testing can minimize risk. This is all true in a single-threaded solution. As soon as there are two or more threads using the same code and working with shared data, things get substantially more complex.</p>
+        <p><strong>Recommendation</strong>: <em>Write tests that have the potential to expose problems and then run them frequently, with different programatic configurations and system configurations and load. If tests ever fail, track down the failure. Don’t ignore a failure just because the tests pass on a subsequent run.</em></p>
+        <p>That is a whole lot to take into consideration. Here are a few more fine-grained recommendations:</p>
+        <p class="IndentBullet">• Treat spurious failures as candidate threading issues.</p>
+        <p class="IndentBullet">• Get your nonthreaded code working first.</p>
+        <p class="IndentBullet"><a id="page_187"></a>• Make your threaded code pluggable.</p>
+        <p class="IndentBullet">• Make your threaded code tunable.</p>
+        <p class="IndentBullet">• Run with more threads than processors.</p>
+        <p class="IndentBullet">• Run on different platforms.</p>
+        <p class="IndentBullet">• Instrument your code to try and force failures.</p>
+        <h4 id="ch13lev2sec10"><strong>Treat Spurious Failures as Candidate Threading Issues</strong></h4>
+        <p>Threaded code causes things to fail that “simply cannot fail.” Most developers do not have an intuitive feel for how threading interacts with other code (authors included). Bugs in threaded code might exhibit their symptoms once in a thousand, or a million, executions. Attempts to repeat the systems can be frustratingly. This often leads developers to write off the failure as a cosmic ray, a hardware glitch, or some other kind of “one-off.” It is best to assume that one-offs do not exist. The longer these “one-offs” are ignored, the more code is built on top of a potentially faulty approach.</p>
+        <p><strong>Recommendation</strong>: <em>Do not ignore system failures as one-offs.</em></p>
+        <h4 id="ch13lev2sec11"><strong>Get Your Nonthreaded Code Working First</strong></h4>
+        <p>This may seem obvious, but it doesn’t hurt to reinforce it. Make sure code works outside of its use in threads. Generally, this means creating POJOs that are called by your threads. The POJOs are not thread aware, and can therefore be tested outside of the threaded environment. The more of your system you can place in such POJOs, the better.</p>
+        <p><strong>Recommendation</strong>: <em>Do not try to chase down nonthreading bugs and threading bugs at the same time. Make sure your code works outside of threads</em>.</p>
+        <h4 id="ch13lev2sec12"><strong>Make Your Threaded Code Pluggable</strong></h4>
+        <p>Write the concurrency-supporting code such that it can be run in several configurations:</p>
+        <p class="IndentBullet">• One thread, several threads, varied as it executes</p>
+        <p class="IndentBullet">• Threaded code interacts with something that can be both real or a test double.</p>
+        <p class="IndentBullet">• Execute with test doubles that run quickly, slowly, variable.</p>
+        <p class="IndentBullet">• Configure tests so they can run for a number of iterations.</p>
+        <p><strong>Recommendation</strong>: <em>Make your thread-based code especially pluggable so that you can run it in various configurations.</em></p>
+        <h4 id="ch13lev2sec13"><strong>Make Your Threaded Code Tunable</strong></h4>
+        <p>Getting the right balance of threads typically requires trial an error. Early on, find ways to time the performance of your system under different configurations. Allow the number of <a id="page_188"></a>threads to be easily tuned. Consider allowing it to change while the system is running. Consider allowing self-tuning based on throughput and system utilization.</p>
+        <h4 id="ch13lev2sec14"><strong>Run with More Threads Than Processors</strong></h4>
+        <p>Things happen when the system switches between tasks. To encourage task swapping, run with more threads than processors or cores. The more frequently your tasks swap, the more likely you’ll encounter code that is missing a critical section or causes deadlock.</p>
+        <h4 id="ch13lev2sec15"><strong>Run on Different Platforms</strong></h4>
+        <p>In the middle of 2007 we developed a course on concurrent programming. The course development ensued primarily under OS X. The class was presented using Windows XP running under a VM. Tests written to demonstrate failure conditions did not fail as frequently in an XP environment as they did running on OS X.</p>
+        <p>In all cases the code under test was known to be incorrect. This just reinforced the fact that different operating systems have different threading policies, each of which impacts the code’s execution. Multithreaded code behaves differently in different environments.<sup>16</sup> You should run your tests in every potential deployment environment.</p>
+        <p class="footnote">16. Did you know that the threading model in Java does not guarantee preemptive threading? Modern OS’s support preemptive threading, so you get that “for free.” Even so, it not guaranteed by the JVM.</p>
+        <p><strong>Recommendation</strong>: <em>Run your threaded code on all target platforms early and often.</em></p>
+        <h4 id="ch13lev2sec16"><strong>Instrument Your Code to Try and Force Failures</strong></h4>
+        <p>It is normal for flaws in concurrent code to hide. Simple tests often don’t expose them. Indeed, they often hide during normal processing. They might show up once every few hours, or days, or weeks!</p>
+        <p>The reason that threading bugs can be infrequent, sporadic, and hard to repeat, is that only a very few pathways out of the many thousands of possible pathways through a vulnerable section actually fail. So the probability that a failing pathway is taken can be star-tlingly low. This makes detection and debugging very difficult.</p>
+        <p>How might you increase your chances of catching such rare occurrences? You can instrument your code and force it to run in different orderings by adding calls to methods like <code>Object.wait()</code>, <code>Object.sleep()</code>, <code>Object.yield()</code> and <code>Object.priority()</code>.</p>
+        <p>Each of these methods can affect the order of execution, thereby increasing the odds of detecting a flaw. It’s better when broken code fails as early and as often as possible.</p>
+        <p>There are two options for code instrumentation:</p>
+        <p class="IndentBullet">• Hand-coded</p>
+        <p class="IndentBullet">• Automated</p>
+        <h4 id="ch13lev2sec17"><a id="page_189"></a><strong>Hand-Coded</strong></h4>
+        <p>You can insert calls to <code>wait(), sleep(), yield()</code>, and <code>priority()</code> in your code by hand. It might be just the thing to do when you’re testing a particularly thorny piece of code.</p>
+        <p>Here is an example of doing just that:</p>
+        <p class="codelink"><a id="pp0189_01a" href="chapter13_ima.xhtml#pp0189_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;&nbsp;public synchronized String nextUrlOrNull() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if(hasNext()) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String url = urlGenerator.next();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Thread.yield(); // inserted for testing.<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;updateHasNext();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return url;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return null;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}</p>
+        <p>The inserted call to <code>yield()</code> will change the execution pathways taken by the code and possibly cause the code to fail where it did not fail before. If the code does break, it was not because you added a call to <code>yield()</code>.<sup>17</sup> Rather, your code was broken and this simply made the failure evident.</p>
+        <p class="footnote">17. This is not strictly the case. Since the JVM does not guarantee preemptive threading, a particular algorithm might always work on an OS that does not preempt threads. The reverse is also possible but for different reasons.</p>
+        <p>There are many problems with this approach:</p>
+        <p class="IndentBullet">• You have to manually find appropriate places to do this.</p>
+        <p class="IndentBullet">• How do you know where to put the call and what kind of call to use?</p>
+        <p class="IndentBullet">• Leaving such code in a production environment unnecessarily slows the code down.</p>
+        <p class="IndentBullet">• It’s a shotgun approach. You may or may not find flaws. Indeed, the odds aren’t with you.</p>
+        <p>What we need is a way to do this during testing but not in production. We also need to easily mix up configurations between different runs, which results in increased chances of finding errors in the aggregate.</p>
+        <p>Clearly, if we divide our system up into POJOs that know nothing of threading and classes that control the threading, it will be easier to find appropriate places to instrument the code. Moreover, we could create many different test jigs that invoke the POJOs under different regimes of calls to <code>sleep, yield</code>, and so on.</p>
+        <h4 id="ch13lev2sec18"><strong>Automated</strong></h4>
+        <p>You could use tools like an Aspect-Oriented Framework, CGLIB, or ASM to programmatically instrument your code. For example, you could use a class with a single method:</p>
+        <p class="codelink"><a id="pp0189_02a" href="chapter13_ima.xhtml#pp0189_02">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public class ThreadJigglePoint {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public static void jiggle() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p><a id="page_190"></a>You can add calls to this in various places within your code:</p>
+        <p class="codelink"><a id="pp0190_01a" href="chapter13_ima.xhtml#pp0190_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public synchronized String nextUrlOrNull() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if(hasNext()) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ThreadJiglePoint.jiggle();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String url = urlGenerator.next();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ThreadJiglePoint.jiggle();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;updateHasNext();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ThreadJiglePoint.jiggle();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return url;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return null;<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;</p>
+        <p>Now you use a simple aspect that randomly selects among doing nothing, sleeping, or yielding.</p>
+        <p>Or imagine that the <code>ThreadJigglePoint</code> class has two implementations. The first implements <code>jiggle</code> to do nothing and is used in production. The second generates a random number to choose between sleeping, yielding, or just falling through. If you run your tests a thousand times with random jiggling, you may root out some flaws. If the tests pass, at least you can say you’ve done due diligence. Though a bit simplistic, this could be a reasonable option in lieu of a more sophisticated tool.</p>
+        <p>There is a tool called ConTest,<sup>18</sup> developed by IBM that does something similar, but it does so with quite a bit more sophistication.</p>
+        <p class="footnote">18. <span class="WebLink"><a href="http://www.alphaworks.ibm.com/tech/contest">http://www.alphaworks.ibm.com/tech/contest</a></span></p>
+        <p>The point is to jiggle the code so that threads run in different orderings at different times. The combination of well-written tests and jiggling can dramatically increase the chance finding errors.</p>
+        <p><strong>Recommendation</strong>: <em>Use jiggling strategies to ferret out errors.</em></p>
+        <h3 id="ch13lev1sec10"><strong>Conclusion</strong></h3>
+        <p>Concurrent code is difficult to get right. Code that is simple to follow can become nightmarish when multiple threads and shared data get into the mix. If you are faced with writing concurrent code, you need to write clean code with rigor or else face subtle and infrequent failures.</p>
+        <p>First and foremost, follow the Single Responsibility Principle. Break your system into POJOs that separate thread-aware code from thread-ignorant code. Make sure when you are testing your thread-aware code, you are only testing it and nothing else. This suggests that your thread-aware code should be small and focused.</p>
+        <p>Know the possible sources of concurrency issues: multiple threads operating on shared data, or using a common resource pool. Boundary cases, such as shutting down cleanly or finishing the iteration of a loop, can be especially thorny.</p>
+        <p><a id="page_191"></a>Learn your library and know the fundamental algorithms. Understand how some of the features offered by the library support solving problems similar to the fundamental algorithms.</p>
+        <p>Learn how to find regions of code that must be locked and lock them. Do not lock regions of code that do not need to be locked. Avoid calling one locked section from another. This requires a deep understanding of whether something is or is not shared. Keep the amount of shared objects and the scope of the sharing as narrow as possible. Change designs of the objects with shared data to accommodate clients rather than forcing clients to manage shared state.</p>
+        <p>Issues will crop up. The ones that do not crop up early are often written off as a onetime occurrence. These so-called one-offs typically only happen under load or at seemingly random times. Therefore, you need to be able to run your thread-related code in many configurations on many platforms repeatedly and continuously. Testability, which comes naturally from following the Three Laws of TDD, implies some level of plug-ability, which offers the support necessary to run code in a wider range of configurations.</p>
+        <p>You will greatly improve your chances of finding erroneous code if you take the time to instrument your code. You can either do so by hand or using some kind of automated technology. Invest in this early. You want to be running your thread-based code as long as possible before you put it into production.</p>
+        <p>If you take a clean approach, your chances of getting it right increase drastically.</p>
+        <h3 id="ch13lev1sec11"><strong>Bibliography</strong></h3>
+        <p><a id="Lea99"></a></p>
+        <p class="bibentry"><strong>[<a href="#iLea99">Lea99</a>]:</strong> <em>Concurrent Programming in Java: Design Principles and Patterns</em>, 2d. ed., Doug Lea, Prentice Hall, 1999.</p>
+        <p><a id="PPP"></a></p>
+        <p class="bibentry"><strong>[<a href="#iPPP">PPP</a>]:</strong> <em>Agile Software Development: Principles, Patterns, and Practices</em>, Robert C. Martin, Prentice Hall, 2002.</p>
+        <p><a id="PRAG"></a></p>
+        <p class="bibentry"><strong>[<a href="#iPRAG">PRAG</a>]:</strong> <em>The Pragmatic Programmer</em>, Andrew Hunt, Dave Thomas, Addison-Wesley, 2000.</p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780136083238/files/9780136083252.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

@@ -1,0 +1,894 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <div id="book-content" class="noOutline" tabindex="-1"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 5. Collections"><div class="chapter" id="chapter-5-collections">
+        <h1><span class="label">Chapter 5. </span>Collections</h1>
+        
+        
+        <p>Structured collection and access to data is a critical component of just
+        about any JS program. From the beginning of the language up to this
+        point, the array and the object have been our primary mechanism for
+        creating data structures. Of course, many higher-level data structures
+        have been built on top of these, as user-land libraries.</p>
+        
+        <p>As of ES6, some of the most useful (and performance-optimizing!) data
+        structure abstractions have been added as native components of the
+        language.</p>
+        
+        <p>We’ll start this chapter first by looking at <em>TypedArrays</em>, which were
+        technically contemporary to ES5 efforts several years ago, but only standardized as companions to WebGL and not JavaScript itself. As of ES6,
+        these have been adopted directly by the language specification, which
+        gives them first-class status.</p>
+        
+        <p>Maps are like objects (key/value pairs), but instead of just a string for the key, you can use any value—even another object or map! Sets are similar to arrays (lists of values), but the values are unique; if you add a duplicate, it’s ignored. There are also weak (in relation to memory/garbage collection) counterparts: WeakMap and WeakSet.</p>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="TypedArrays"><div class="sect1" id="typedarraysect">
+        <h1>TypedArrays</h1>
+        
+        <p>As we cover in the <em>Types &amp; Grammar</em> title of this series, JS does have
+        a set of built-in types, like <code>number</code> and <code>string</code>. It’d be tempting to
+        look at a feature named “typed array” and assume it means an array of a
+        specific type of values, like an array of only strings.</p>
+        
+        <p>However, typed arrays are really more about providing structured access
+        to binary data using array-like semantics (indexed access, etc.). The
+        “type” in the name refers to a “view” layered on type of the bucket of
+        bits, which is essentially a mapping of whether the bits should be
+        viewed as an array of 8-bit signed integers, 16-bit signed integers, and
+        so on.</p>
+        
+        <p>How do you construct such a bit-bucket? It’s called a “buffer,” and you
+        construct it most directly with the <code>ArrayBuffer(..)</code> constructor:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">buf</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">ArrayBuffer</code><code class="p">(</code> <code class="mi">32</code> <code class="p">);</code>
+        <code class="nx">buf</code><code class="p">.</code><code class="nx">byteLength</code><code class="p">;</code>                         <code class="c1">// 32</code></pre>
+        
+        <p><code>buf</code> is now a binary buffer that is 32-bytes long (256-bits), that’s
+        pre-initialized to all <code>0</code>s. A buffer by itself doesn’t really allow you
+        any interaction exception for checking its <code>byteLength</code> property.</p>
+        <div data-type="tip"><h6>Tip</h6>
+        <p>Several web platform features use or return array buffers, such
+        as <code>FileReader#readAsArrayBuffer(..)</code>, <code>XMLHttpRequest#send(..)</code>, and
+        <code>ImageData</code> (canvas data).</p>
+        </div>
+        
+        <p>But on top of this array buffer, you can then layer a “view,” which
+        comes in the form of a typed array. Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">arr</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Uint16Array</code><code class="p">(</code> <code class="nx">buf</code> <code class="p">);</code>
+        <code class="nx">arr</code><code class="p">.</code><code class="nx">length</code><code class="p">;</code>                         <code class="c1">// 16</code></pre>
+        
+        <p><code>arr</code> is a typed array of 16-bit unsigned integers mapped over the
+        256-bit <code>buf</code> buffer, meaning you get 16 elements.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Endianness"><div class="sect2" id="idm45967359817240">
+        <h2>Endianness</h2>
+        
+        <p>It’s very important to understand that the <code>arr</code> is mapped using the
+        endian-setting (big-endian or little-endian) of the platform the JS is
+        running on. This can be an issue if the binary data is created with one
+        endianness but interpreted on a platform with the opposite endianness.</p>
+        
+        <p>Endian means if the low-order byte (collection of 8-bits) of a
+        multi-byte number—such as the 16-bit unsigned ints we created in the
+        earlier snippet—is on the right or the left of the number’s bytes.</p>
+        
+        <p>For example, let’s imagine the base-10 number <code>3085</code>, which takes
+        16-bits to represent. If you have just one 16-bit number container, it’d
+        be represented in binary as <code>0000110000001101</code> (hexadecimal <code>0c0d</code>)
+        regardless of endianness.</p>
+        
+        <p>But if <code>3085</code> was represented with two 8-bit numbers, the endianness
+        would significantly affect its storage in memory:</p>
+        
+        <ul>
+        <li>
+        <p><code>0000110000001101</code> / <code>0c0d</code> (big-endian)</p>
+        </li>
+        <li>
+        <p><code>0000110100001100</code> / <code>0d0c</code> (little-endian)</p>
+        </li>
+        </ul>
+        
+        <p>If you received the bits of <code>3085</code> as <code>0000110100001100</code> from a
+        little-endian system, but you layered a view on top of it in a
+        big-endian system, you’d instead see value <code>3340</code> (base-10) and <code>0d0c</code>
+        (base-16).</p>
+        
+        <p>Little-endian is the most common representation on the Web these days,
+        but there are definitely browsers where that’s not true. It’s important
+        that you understand the endianness of both the producer and consumer of
+        a chunk of binary data.</p>
+        
+        <p>From MDN, here’s a quick way to test the endianness of your JavaScript:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">littleEndian</code> <code class="o">=</code> <code class="p">(</code><code class="kd">function</code><code class="p">()</code> <code class="p">{</code>
+            <code class="kd">var</code> <code class="nx">buffer</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">ArrayBuffer</code><code class="p">(</code> <code class="mi">2</code> <code class="p">);</code>
+            <code class="k">new</code> <code class="nb">DataView</code><code class="p">(</code> <code class="nx">buffer</code> <code class="p">).</code><code class="nx">setInt16</code><code class="p">(</code> <code class="mi">0</code><code class="p">,</code> <code class="mi">256</code><code class="p">,</code> <code class="kc">true</code> <code class="p">);</code>
+            <code class="k">return</code> <code class="k">new</code> <code class="nb">Int16Array</code><code class="p">(</code> <code class="nx">buffer</code> <code class="p">)[</code><code class="mi">0</code><code class="p">]</code> <code class="o">===</code> <code class="mi">256</code><code class="p">;</code>
+        <code class="p">})();</code></pre>
+        
+        <p><code>littleEndian</code> will be <code>true</code> or <code>false</code>; for most browsers, it should
+        return <code>true</code>. This test uses <code>DataView(..)</code>, which allows more
+        low-level, fine-grained control over accessing (setting/getting) the
+        bits from the view you layer over the buffer. The third parameter of the
+        <code>setInt16(..)</code> method in the previous snippet is for telling the
+        <code>DataView</code> what endianness you’re wanting it to use for that operation.</p>
+        <div data-type="warning" epub:type="warning"><h6>Warning</h6>
+        <p>Do not confuse endianness of underlying binary storage in
+        array buffers with how a given number is represented when exposed in a
+        JS program. For example, <code>(3085).toString(2)</code> returns <code>"110000001101"</code>,
+        which with an assumed leading four <code>"0"</code>s appears to be the big-endian
+        representation. In fact, this representation is based on a single 16-bit
+        view, not a view of two 8-bit bytes. The <code>DataView</code> test above is the
+        best way to determine endianness for your JS environment.</p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Multiple Views"><div class="sect2" id="idm45967359796824">
+        <h2>Multiple Views</h2>
+        
+        <p>A single buffer can have multiple views attached to it, such as:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">buf</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">ArrayBuffer</code><code class="p">(</code> <code class="mi">2</code> <code class="p">);</code>
+        
+        <code class="kd">var</code> <code class="nx">view8</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Uint8Array</code><code class="p">(</code> <code class="nx">buf</code> <code class="p">);</code>
+        <code class="kd">var</code> <code class="nx">view16</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Uint16Array</code><code class="p">(</code> <code class="nx">buf</code> <code class="p">);</code>
+        
+        <code class="nx">view16</code><code class="p">[</code><code class="mi">0</code><code class="p">]</code> <code class="o">=</code> <code class="mi">3085</code><code class="p">;</code>
+        <code class="nx">view8</code><code class="p">[</code><code class="mi">0</code><code class="p">];</code>                       <code class="c1">// 13</code>
+        <code class="nx">view8</code><code class="p">[</code><code class="mi">1</code><code class="p">];</code>                       <code class="c1">// 12</code>
+        
+        <code class="nx">view8</code><code class="p">[</code><code class="mi">0</code><code class="p">].</code><code class="nx">toString</code><code class="p">(</code> <code class="mi">16</code> <code class="p">);</code>        <code class="c1">// "d"</code>
+        <code class="nx">view8</code><code class="p">[</code><code class="mi">1</code><code class="p">].</code><code class="nx">toString</code><code class="p">(</code> <code class="mi">16</code> <code class="p">);</code>        <code class="c1">// "c"</code>
+        
+        <code class="c1">// swap (as if endian!)</code>
+        <code class="kd">var</code> <code class="nx">tmp</code> <code class="o">=</code> <code class="nx">view8</code><code class="p">[</code><code class="mi">0</code><code class="p">];</code>
+        <code class="nx">view8</code><code class="p">[</code><code class="mi">0</code><code class="p">]</code> <code class="o">=</code> <code class="nx">view8</code><code class="p">[</code><code class="mi">1</code><code class="p">];</code>
+        <code class="nx">view8</code><code class="p">[</code><code class="mi">1</code><code class="p">]</code> <code class="o">=</code> <code class="nx">tmp</code><code class="p">;</code>
+        
+        <code class="nx">view16</code><code class="p">[</code><code class="mi">0</code><code class="p">];</code>                      <code class="c1">// 3340</code></pre>
+        
+        <p>The typed array constructors have multiple signature variations. We’ve
+        shown so far only passing them an existing buffer. However, that form
+        also takes two extra parameters: <code>byteOffset</code> and <code>length</code>. In other
+        words, you can start the typed array view at a location other than <code>0</code>
+        and you can make it span less than the full length of the buffer.</p>
+        
+        <p>If the buffer of binary data includes data in nonuniform size/location,
+        this technique can be quite useful.</p>
+        
+        <p>For example, consider a binary buffer that has a 2-byte number (aka
+        “word”) at the beginning, followed by two 1-byte numbers, followed by a
+        32-bit floating-point number. Here’s how you can access that data with
+        multiple views on the same buffer, offsets, and lengths:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">first</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Uint16Array</code><code class="p">(</code> <code class="nx">buf</code><code class="p">,</code> <code class="mi">0</code><code class="p">,</code> <code class="mi">2</code> <code class="p">)[</code><code class="mi">0</code><code class="p">],</code>
+            <code class="nx">second</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Uint8Array</code><code class="p">(</code> <code class="nx">buf</code><code class="p">,</code> <code class="mi">2</code><code class="p">,</code> <code class="mi">1</code> <code class="p">)[</code><code class="mi">0</code><code class="p">],</code>
+            <code class="nx">third</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Uint8Array</code><code class="p">(</code> <code class="nx">buf</code><code class="p">,</code> <code class="mi">3</code><code class="p">,</code> <code class="mi">1</code> <code class="p">)[</code><code class="mi">0</code><code class="p">],</code>
+            <code class="nx">fourth</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Float32Array</code><code class="p">(</code> <code class="nx">buf</code><code class="p">,</code> <code class="mi">4</code><code class="p">,</code> <code class="mi">4</code> <code class="p">)[</code><code class="mi">0</code><code class="p">];</code></pre>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Typed Array Constructors"><div class="sect2" id="idm45967359567480">
+        <h2>Typed Array Constructors</h2>
+        
+        <p>In addition to the <code>(buffer,[offset, [length]])</code> form examined in the
+        previous section, typed array constructors also support these forms:</p>
+        
+        <ul>
+        <li>
+        <p>[constructor\]<code>(length)</code>: Creates a new view over a new buffer of
+        <code>length</code> bytes</p>
+        </li>
+        <li>
+        <p>[constructor\]<code>(typedArr)</code>: Creates a new view and buffer, and copies
+        the contents from the <code>typedArr</code> view</p>
+        </li>
+        <li>
+        <p>[constructor\]<code>(obj)</code>: Creates a new view and buffer, and iterates over
+        the array-like or object <code>obj</code> to copy its contents</p>
+        </li>
+        </ul>
+        
+        <p>The following typed array constructors are available as of ES6:</p>
+        
+        <ul>
+        <li>
+        <p><code>Int8Array</code> (8-bit signed integers), <code>Uint8Array</code> (8-bit unsigned
+        integers)</p>
+        
+        <ul>
+        <li>
+        <p><code>Uint8ClampedArray</code> (8-bit unsigned integers, each value clamped on
+        setting to the <code>0</code>-<code>255</code> range)</p>
+        </li>
+        </ul>
+        </li>
+        <li>
+        <p><code>Int16Array</code> (16-bit signed integers), <code>Uint16Array</code> (16-bit unsigned
+        integers)</p>
+        </li>
+        <li>
+        <p><code>Int32Array</code> (32-bit signed integers), <code>Uint32Array</code> (32-bit unsigned
+        integers)</p>
+        </li>
+        <li>
+        <p><code>Float32Array</code> (32-bit floating point, IEEE-754)</p>
+        </li>
+        <li>
+        <p><code>Float64Array</code> (64-bit floating point, IEEE-754)</p>
+        </li>
+        </ul>
+        
+        <p>Instances of typed array constructors are almost the same as regular
+        native arrays. Some differences include having a fixed length and the
+        values all being of the same “type.”</p>
+        
+        <p>However, they share most of the same <code>prototype</code> methods. As such, you
+        likely will be able to use them as regular arrays without needing to
+        convert.</p>
+        
+        <p>For example:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">a</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Int32Array</code><code class="p">(</code> <code class="mi">3</code> <code class="p">);</code>
+        <code class="nx">a</code><code class="p">[</code><code class="mi">0</code><code class="p">]</code> <code class="o">=</code> <code class="mi">10</code><code class="p">;</code>
+        <code class="nx">a</code><code class="p">[</code><code class="mi">1</code><code class="p">]</code> <code class="o">=</code> <code class="mi">20</code><code class="p">;</code>
+        <code class="nx">a</code><code class="p">[</code><code class="mi">2</code><code class="p">]</code> <code class="o">=</code> <code class="mi">30</code><code class="p">;</code>
+        
+        <code class="nx">a</code><code class="p">.</code><code class="nx">map</code><code class="p">(</code> <code class="kd">function</code><code class="p">(</code><code class="nx">v</code><code class="p">){</code>
+            <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="nx">v</code> <code class="p">);</code>
+        <code class="p">}</code> <code class="p">);</code>
+        <code class="c1">// 10 20 30</code>
+        
+        <code class="nx">a</code><code class="p">.</code><code class="nx">join</code><code class="p">(</code> <code class="s2">"-"</code> <code class="p">);</code>
+        <code class="c1">// "10-20-30"</code></pre>
+        <div data-type="warning" epub:type="warning"><h6>Warning</h6>
+        <p>You can’t use certain <code>Array.prototype</code> methods with
+        TypedArrays that don’t make sense, such as the mutators (<code>splice(..)</code>,
+        <code>push(..)</code>, etc.) and <code>concat(..)</code>.</p>
+        </div>
+        
+        <p>Be aware that the elements in TypedArrays really are constrained to the
+        declared bit sizes. If you have a <code>Uint8Array</code> and try to assign
+        something larger than an 8-bit value into one of its elements, the value
+        wraps around so as to stay within the bit length.</p>
+        
+        <p>This could cause problems if you were trying to, for instance, square
+        all the values in a TypedArray. Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">a</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Uint8Array</code><code class="p">(</code> <code class="mi">3</code> <code class="p">);</code>
+        <code class="nx">a</code><code class="p">[</code><code class="mi">0</code><code class="p">]</code> <code class="o">=</code> <code class="mi">10</code><code class="p">;</code>
+        <code class="nx">a</code><code class="p">[</code><code class="mi">1</code><code class="p">]</code> <code class="o">=</code> <code class="mi">20</code><code class="p">;</code>
+        <code class="nx">a</code><code class="p">[</code><code class="mi">2</code><code class="p">]</code> <code class="o">=</code> <code class="mi">30</code><code class="p">;</code>
+        
+        <code class="kd">var</code> <code class="nx">b</code> <code class="o">=</code> <code class="nx">a</code><code class="p">.</code><code class="nx">map</code><code class="p">(</code> <code class="kd">function</code><code class="p">(</code><code class="nx">v</code><code class="p">){</code>
+            <code class="k">return</code> <code class="nx">v</code> <code class="o">*</code> <code class="nx">v</code><code class="p">;</code>
+        <code class="p">}</code> <code class="p">);</code>
+        
+        <code class="nx">b</code><code class="p">;</code>              <code class="c1">// [100, 144, 132]</code></pre>
+        
+        <p>The <code>20</code> and <code>30</code> values, when squared, resulted in bit overflow. To get
+        around such a limitation, you can use the <code>TypedArray#from(..)</code>
+        function:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">a</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Uint8Array</code><code class="p">(</code> <code class="mi">3</code> <code class="p">);</code>
+        <code class="nx">a</code><code class="p">[</code><code class="mi">0</code><code class="p">]</code> <code class="o">=</code> <code class="mi">10</code><code class="p">;</code>
+        <code class="nx">a</code><code class="p">[</code><code class="mi">1</code><code class="p">]</code> <code class="o">=</code> <code class="mi">20</code><code class="p">;</code>
+        <code class="nx">a</code><code class="p">[</code><code class="mi">2</code><code class="p">]</code> <code class="o">=</code> <code class="mi">30</code><code class="p">;</code>
+        
+        <code class="kd">var</code> <code class="nx">b</code> <code class="o">=</code> <code class="nb">Uint16Array</code><code class="p">.</code><code class="nx">from</code><code class="p">(</code> <code class="nx">a</code><code class="p">,</code> <code class="kd">function</code><code class="p">(</code><code class="nx">v</code><code class="p">){</code>
+            <code class="k">return</code> <code class="nx">v</code> <code class="o">*</code> <code class="nx">v</code><code class="p">;</code>
+        <code class="p">}</code> <code class="p">);</code>
+        
+        <code class="nx">b</code><code class="p">;</code>              <code class="c1">// [100, 400, 900]</code></pre>
+        
+        <p>See <a data-type="xref" href="ch06.html#arrayFromSF_sect">“Array.from(..) Static Function”</a> in <a data-type="xref" href="ch06.html#chapter-6-api-additions">Chapter&nbsp;6</a> for more
+        information about the <code>Array.from(..)</code> that is shared with TypedArrays.
+        Specifically, <a data-type="xref" href="ch06.html#mapping-sect">“Mapping”</a> explains the mapping function
+        accepted as its second argument.</p>
+        
+        <p>One interesting behavior to consider is that TypedArrays have a
+        <code>sort(..)</code> method much like regular arrays, but this one defaults to
+        numeric sort comparisons instead of coercing values to strings for
+        lexicographic comparison. For example:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">a</code> <code class="o">=</code> <code class="p">[</code> <code class="mi">10</code><code class="p">,</code> <code class="mi">1</code><code class="p">,</code> <code class="mi">2</code><code class="p">,</code> <code class="p">];</code>
+        <code class="nx">a</code><code class="p">.</code><code class="nx">sort</code><code class="p">();</code>                               <code class="c1">// [1,10,2]</code>
+        
+        <code class="kd">var</code> <code class="nx">b</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Uint8Array</code><code class="p">(</code> <code class="p">[</code> <code class="mi">10</code><code class="p">,</code> <code class="mi">1</code><code class="p">,</code> <code class="mi">2</code> <code class="p">]</code> <code class="p">);</code>
+        <code class="nx">b</code><code class="p">.</code><code class="nx">sort</code><code class="p">();</code>                               <code class="c1">// [1,2,10]</code></pre>
+        
+        <p>The <code>TypedArray#sort(..)</code> takes an optional compare function argument
+        just like <code>Array#sort(..)</code>, which works in exactly the same way.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Maps"><div class="sect1" id="idm45967359857880">
+        <h1>Maps</h1>
+        
+        <p>If you have a lot of JS experience, you know that objects are the
+        primary mechanism for creating unordered key/value-pair data structures,
+        otherwise known as maps. However, the major drawback with
+        objects-as-maps is the inability to use a nonstring value as the key.</p>
+        
+        <p>For example, consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">m</code> <code class="o">=</code> <code class="p">{};</code>
+        
+        <code class="kd">var</code> <code class="nx">x</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">1</code> <code class="p">},</code>
+            <code class="nx">y</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">2</code> <code class="p">};</code>
+        
+        <code class="nx">m</code><code class="p">[</code><code class="nx">x</code><code class="p">]</code> <code class="o">=</code> <code class="s2">"foo"</code><code class="p">;</code>
+        <code class="nx">m</code><code class="p">[</code><code class="nx">y</code><code class="p">]</code> <code class="o">=</code> <code class="s2">"bar"</code><code class="p">;</code>
+        
+        <code class="nx">m</code><code class="p">[</code><code class="nx">x</code><code class="p">];</code>                           <code class="c1">// "bar"</code>
+        <code class="nx">m</code><code class="p">[</code><code class="nx">y</code><code class="p">];</code>                           <code class="c1">// "bar"</code></pre>
+        
+        <p>What’s going on here? The two objects <code>x</code> and <code>y</code> both stringify to
+        <code>"[object Object]"</code>, so only that one key is being set in <code>m</code>.</p>
+        
+        <p>Some have implemented fake maps by maintaining a parallel array of
+        non-string keys alongside an array of the values, such as:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">keys</code> <code class="o">=</code> <code class="p">[],</code> <code class="nx">vals</code> <code class="o">=</code> <code class="p">[];</code>
+        
+        <code class="kd">var</code> <code class="nx">x</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">1</code> <code class="p">},</code>
+            <code class="nx">y</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">2</code> <code class="p">};</code>
+        
+        <code class="nx">keys</code><code class="p">.</code><code class="nx">push</code><code class="p">(</code> <code class="nx">x</code> <code class="p">);</code>
+        <code class="nx">vals</code><code class="p">.</code><code class="nx">push</code><code class="p">(</code> <code class="s2">"foo"</code> <code class="p">);</code>
+        
+        <code class="nx">keys</code><code class="p">.</code><code class="nx">push</code><code class="p">(</code> <code class="nx">y</code> <code class="p">);</code>
+        <code class="nx">vals</code><code class="p">.</code><code class="nx">push</code><code class="p">(</code> <code class="s2">"bar"</code> <code class="p">);</code>
+        
+        <code class="nx">keys</code><code class="p">[</code><code class="mi">0</code><code class="p">]</code> <code class="o">===</code> <code class="nx">x</code><code class="p">;</code>                  <code class="c1">// true</code>
+        <code class="nx">vals</code><code class="p">[</code><code class="mi">0</code><code class="p">];</code>                        <code class="c1">// "foo"</code>
+        
+        <code class="nx">keys</code><code class="p">[</code><code class="mi">1</code><code class="p">]</code> <code class="o">===</code> <code class="nx">y</code><code class="p">;</code>                  <code class="c1">// true</code>
+        <code class="nx">vals</code><code class="p">[</code><code class="mi">1</code><code class="p">];</code>                        <code class="c1">// "bar"</code></pre>
+        
+        <p>Of course, you wouldn’t want to manage those parallel arrays yourself,
+        so you could define a data structure with methods that automatically do
+        the management under the covers. Besides having to do that work
+        yourself, the main drawback is that access is no longer O(1)
+        time-complexity, but instead is O(n).</p>
+        
+        <p>But as of ES6, there’s no longer any need to do this! Just use
+        <code>Map(..)</code>:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">m</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Map</code><code class="p">();</code>
+        
+        <code class="kd">var</code> <code class="nx">x</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">1</code> <code class="p">},</code>
+            <code class="nx">y</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">2</code> <code class="p">};</code>
+        
+        <code class="nx">m</code><code class="p">.</code><code class="nx">set</code><code class="p">(</code> <code class="nx">x</code><code class="p">,</code> <code class="s2">"foo"</code> <code class="p">);</code>
+        <code class="nx">m</code><code class="p">.</code><code class="nx">set</code><code class="p">(</code> <code class="nx">y</code><code class="p">,</code> <code class="s2">"bar"</code> <code class="p">);</code>
+        
+        <code class="nx">m</code><code class="p">.</code><code class="nx">get</code><code class="p">(</code> <code class="nx">x</code> <code class="p">);</code>                     <code class="c1">// "foo"</code>
+        <code class="nx">m</code><code class="p">.</code><code class="nx">get</code><code class="p">(</code> <code class="nx">y</code> <code class="p">);</code>                     <code class="c1">// "bar"</code></pre>
+        
+        <p>The only drawback is that you can’t use the <code>[ ]</code> bracket access syntax
+        for setting and retrieving values. But <code>get(..)</code> and <code>set(..)</code> work
+        perfectly suitably instead.</p>
+        
+        <p>To delete an element from a map, don’t use the <code>delete</code> operator, but
+        instead use the <code>delete(..)</code> method:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="nx">m</code><code class="p">.</code><code class="nx">set</code><code class="p">(</code> <code class="nx">x</code><code class="p">,</code> <code class="s2">"foo"</code> <code class="p">);</code>
+        <code class="nx">m</code><code class="p">.</code><code class="nx">set</code><code class="p">(</code> <code class="nx">y</code><code class="p">,</code> <code class="s2">"bar"</code> <code class="p">);</code>
+        
+        <code class="nx">m</code><code class="p">.</code><code class="nx">delete</code><code class="p">(</code> <code class="nx">y</code> <code class="p">);</code></pre>
+        
+        <p>You can clear the entire map’s contents with <code>clear()</code>. To get the length of a map (i.e., the number of keys), use the <code>size</code> property (not <code>length</code>):</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="nx">m</code><code class="p">.</code><code class="nx">set</code><code class="p">(</code> <code class="nx">x</code><code class="p">,</code> <code class="s2">"foo"</code> <code class="p">);</code>
+        <code class="nx">m</code><code class="p">.</code><code class="nx">set</code><code class="p">(</code> <code class="nx">y</code><code class="p">,</code> <code class="s2">"bar"</code> <code class="p">);</code>
+        <code class="nx">m</code><code class="p">.</code><code class="nx">size</code><code class="p">;</code>                         <code class="c1">// 2</code>
+        
+        <code class="nx">m</code><code class="p">.</code><code class="nx">clear</code><code class="p">();</code>
+        <code class="nx">m</code><code class="p">.</code><code class="nx">size</code><code class="p">;</code>                         <code class="c1">// 0</code></pre>
+        
+        <p>The <code>Map(..)</code> constructor can also receive an iterable (see <a data-type="xref" href="ch03.html#iterSect">“Iterators”</a>
+        in <a data-type="xref" href="ch03.html#chapter-3-organization">Chapter&nbsp;3</a>), which must produce a list of arrays, where the first item
+        in each array is the key and the second item is the value. This format
+        for iteration is identical to that produced by the <code>entries()</code> method,
+        explained in the next section. That makes it easy to make a copy of a
+        map:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">m2</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Map</code><code class="p">(</code> <code class="nx">m</code><code class="p">.</code><code class="nx">entries</code><code class="p">()</code> <code class="p">);</code>
+        
+        <code class="c1">// same as:</code>
+        <code class="kd">var</code> <code class="nx">m2</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Map</code><code class="p">(</code> <code class="nx">m</code> <code class="p">);</code></pre>
+        
+        <p>Because a map instance is an iterable, and its default iterator is the
+        same as <code>entries()</code>, the second shorter form is preferable.</p>
+        
+        <p>Of course, you can just manually specify an <em>entries</em> list (array of key/value arrays) in the <code>Map(..)</code> constructor form:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">x</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">1</code> <code class="p">},</code>
+            <code class="nx">y</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">2</code> <code class="p">};</code>
+        
+        <code class="kd">var</code> <code class="nx">m</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Map</code><code class="p">(</code> <code class="p">[</code>
+            <code class="p">[</code> <code class="nx">x</code><code class="p">,</code> <code class="s2">"foo"</code> <code class="p">],</code>
+            <code class="p">[</code> <code class="nx">y</code><code class="p">,</code> <code class="s2">"bar"</code> <code class="p">]</code>
+        <code class="p">]</code> <code class="p">);</code>
+        
+        <code class="nx">m</code><code class="p">.</code><code class="nx">get</code><code class="p">(</code> <code class="nx">x</code> <code class="p">);</code>                     <code class="c1">// "foo"</code>
+        <code class="nx">m</code><code class="p">.</code><code class="nx">get</code><code class="p">(</code> <code class="nx">y</code> <code class="p">);</code>                     <code class="c1">// "bar"</code></pre>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Map Values"><div class="sect2" id="idm45967358622712">
+        <h2>Map Values</h2>
+        
+        <p>To get the list of values from a map, use <code>values(..)</code>, which returns an
+        iterator. In Chapters <a href="ch02.html#chapter-2-syntax">2</a> and <a href="ch03.html#chapter-3-organization">3</a>, we covered various ways to process an
+        iterator sequentially (like an array), such as the <code>...</code> spread operator
+        and the <code>for..of</code> loop. Also, <a data-type="xref" href="ch06.html#arrays_sect">“Creating Arrays and Subtypes”</a> in <a data-type="xref" href="ch06.html#chapter-6-api-additions">Chapter&nbsp;6</a> covers the
+        <code>Array.from(..)</code> method in detail. Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">m</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Map</code><code class="p">();</code>
+        
+        <code class="kd">var</code> <code class="nx">x</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">1</code> <code class="p">},</code>
+            <code class="nx">y</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">2</code> <code class="p">};</code>
+        
+        <code class="nx">m</code><code class="p">.</code><code class="nx">set</code><code class="p">(</code> <code class="nx">x</code><code class="p">,</code> <code class="s2">"foo"</code> <code class="p">);</code>
+        <code class="nx">m</code><code class="p">.</code><code class="nx">set</code><code class="p">(</code> <code class="nx">y</code><code class="p">,</code> <code class="s2">"bar"</code> <code class="p">);</code>
+        
+        <code class="kd">var</code> <code class="nx">vals</code> <code class="o">=</code> <code class="p">[</code> <code class="o">...</code><code class="nx">m</code><code class="p">.</code><code class="nx">values</code><code class="p">()</code> <code class="p">];</code>
+        
+        <code class="nx">vals</code><code class="p">;</code>                           <code class="c1">// ["foo","bar"]</code>
+        <code class="nb">Array</code><code class="p">.</code><code class="nx">from</code><code class="p">(</code> <code class="nx">m</code><code class="p">.</code><code class="nx">values</code><code class="p">()</code> <code class="p">);</code>       <code class="c1">// ["foo","bar"]</code></pre>
+        
+        <p>As discussed in the previous section, you can iterate over a map’s
+        entries using <code>entries()</code> (or the default map iterator). Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">m</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Map</code><code class="p">();</code>
+        
+        <code class="kd">var</code> <code class="nx">x</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">1</code> <code class="p">},</code>
+            <code class="nx">y</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">2</code> <code class="p">};</code>
+        
+        <code class="nx">m</code><code class="p">.</code><code class="nx">set</code><code class="p">(</code> <code class="nx">x</code><code class="p">,</code> <code class="s2">"foo"</code> <code class="p">);</code>
+        <code class="nx">m</code><code class="p">.</code><code class="nx">set</code><code class="p">(</code> <code class="nx">y</code><code class="p">,</code> <code class="s2">"bar"</code> <code class="p">);</code>
+        
+        <code class="kd">var</code> <code class="nx">vals</code> <code class="o">=</code> <code class="p">[</code> <code class="o">...</code><code class="nx">m</code><code class="p">.</code><code class="nx">entries</code><code class="p">()</code> <code class="p">];</code>
+        
+        <code class="nx">vals</code><code class="p">[</code><code class="mi">0</code><code class="p">][</code><code class="mi">0</code><code class="p">]</code> <code class="o">===</code> <code class="nx">x</code><code class="p">;</code>               <code class="c1">// true</code>
+        <code class="nx">vals</code><code class="p">[</code><code class="mi">0</code><code class="p">][</code><code class="mi">1</code><code class="p">];</code>                     <code class="c1">// "foo"</code>
+        
+        <code class="nx">vals</code><code class="p">[</code><code class="mi">1</code><code class="p">][</code><code class="mi">0</code><code class="p">]</code> <code class="o">===</code> <code class="nx">y</code><code class="p">;</code>               <code class="c1">// true</code>
+        <code class="nx">vals</code><code class="p">[</code><code class="mi">1</code><code class="p">][</code><code class="mi">1</code><code class="p">];</code>                     <code class="c1">// "bar"</code></pre>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Map Keys"><div class="sect2" id="idm45967358508792">
+        <h2>Map Keys</h2>
+        
+        <p>To get the list of keys, use <code>keys()</code>, which returns an iterator over
+        the keys in the map:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">m</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Map</code><code class="p">();</code>
+        
+        <code class="kd">var</code> <code class="nx">x</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">1</code> <code class="p">},</code>
+            <code class="nx">y</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">2</code> <code class="p">};</code>
+        
+        <code class="nx">m</code><code class="p">.</code><code class="nx">set</code><code class="p">(</code> <code class="nx">x</code><code class="p">,</code> <code class="s2">"foo"</code> <code class="p">);</code>
+        <code class="nx">m</code><code class="p">.</code><code class="nx">set</code><code class="p">(</code> <code class="nx">y</code><code class="p">,</code> <code class="s2">"bar"</code> <code class="p">);</code>
+        
+        <code class="kd">var</code> <code class="nx">keys</code> <code class="o">=</code> <code class="p">[</code> <code class="o">...</code><code class="nx">m</code><code class="p">.</code><code class="nx">keys</code><code class="p">()</code> <code class="p">];</code>
+        
+        <code class="nx">keys</code><code class="p">[</code><code class="mi">0</code><code class="p">]</code> <code class="o">===</code> <code class="nx">x</code><code class="p">;</code>                  <code class="c1">// true</code>
+        <code class="nx">keys</code><code class="p">[</code><code class="mi">1</code><code class="p">]</code> <code class="o">===</code> <code class="nx">y</code><code class="p">;</code>                  <code class="c1">// true</code></pre>
+        
+        <p class="pagebreak-before">To determine if a map has a given key, use <code>has(..)</code>:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">m</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Map</code><code class="p">();</code>
+        
+        <code class="kd">var</code> <code class="nx">x</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">1</code> <code class="p">},</code>
+            <code class="nx">y</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">2</code> <code class="p">};</code>
+        
+        <code class="nx">m</code><code class="p">.</code><code class="nx">set</code><code class="p">(</code> <code class="nx">x</code><code class="p">,</code> <code class="s2">"foo"</code> <code class="p">);</code>
+        
+        <code class="nx">m</code><code class="p">.</code><code class="nx">has</code><code class="p">(</code> <code class="nx">x</code> <code class="p">);</code>                     <code class="c1">// true</code>
+        <code class="nx">m</code><code class="p">.</code><code class="nx">has</code><code class="p">(</code> <code class="nx">y</code> <code class="p">);</code>                     <code class="c1">// false</code></pre>
+        
+        <p>Maps essentially let you associate some extra piece of information (the
+        value) with an object (the key) without actually putting that
+        information on the object itself.</p>
+        
+        <p>While you can use any kind of value as a key for a map, you typically
+        will use objects, as strings and other primitives are already eligible
+        as keys of normal objects. In other words, you’ll probably want to
+        continue to use normal objects for maps unless some or all of the keys
+        need to be objects, in which case map is more appropriate.</p>
+        <div data-type="warning" epub:type="warning"><h6>Warning</h6>
+        <p>If you use an object as a map key and that object is later discarded (all references unset) in attempt to have garbage collection (GC) reclaim its memory, the map itself will still retain its entry. You will need to remove the entry from the map for it to be GC-eligible. In the next section, we’ll see WeakMaps as a better option for object keys and GC.</p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="WeakMaps"><div class="sect1" id="idm45967359117944">
+        <h1>WeakMaps</h1>
+        
+        <p>WeakMaps are a variation on maps, which has most of the same external
+        behavior but differs underneath in how the memory allocation
+        (specifically its GC) works.</p>
+        
+        <p>WeakMaps take (only) objects as keys. Those objects are held <em>weakly</em>,
+        which means if the object itself is GC’d, the entry in the WeakMap is
+        also removed. This isn’t observable behavior, though, as the only way an
+        object can be GC’d is if there’s no more references to it, but once
+        there are no more references to it—you have no object reference to
+        check if it exists in the WeakMap.</p>
+        
+        <p>Otherwise, the API for WeakMap is similar, though more limited:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">m</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">WeakMap</code><code class="p">();</code>
+        
+        <code class="kd">var</code> <code class="nx">x</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">1</code> <code class="p">},</code>
+            <code class="nx">y</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">2</code> <code class="p">};</code>
+        
+        <code class="nx">m</code><code class="p">.</code><code class="nx">set</code><code class="p">(</code> <code class="nx">x</code><code class="p">,</code> <code class="s2">"foo"</code> <code class="p">);</code>
+        
+        <code class="nx">m</code><code class="p">.</code><code class="nx">has</code><code class="p">(</code> <code class="nx">x</code> <code class="p">);</code>                     <code class="c1">// true</code>
+        <code class="nx">m</code><code class="p">.</code><code class="nx">has</code><code class="p">(</code> <code class="nx">y</code> <code class="p">);</code>                     <code class="c1">// false</code></pre>
+        
+        <p>WeakMaps do not have a <code>size</code> property or <code>clear()</code> method, nor do they
+        expose any iterators over their keys, values, or entries. So even if you
+        unset the <code>x</code> reference, which will remove its entry from <code>m</code> upon GC,
+        there is no way to tell. You’ll just have to take JavaScript’s word for
+        it!</p>
+        
+        <p>Just like Maps, WeakMaps let you soft-associate information with an
+        object. But they are particularly useful if the object is not one you
+        completely control, such as a DOM element. If the object you’re using as
+        a map key can be deleted and should be GC-eligible when it is, then a
+        WeakMap is a more appropriate option.</p>
+        
+        <p>It’s important to note that a WeakMap only holds its <em>keys</em> weakly, not
+        its values. Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">m</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">WeakMap</code><code class="p">();</code>
+        
+        <code class="kd">var</code> <code class="nx">x</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">1</code> <code class="p">},</code>
+            <code class="nx">y</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">2</code> <code class="p">},</code>
+            <code class="nx">z</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">3</code> <code class="p">},</code>
+            <code class="nx">w</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">4</code> <code class="p">};</code>
+        
+        <code class="nx">m</code><code class="p">.</code><code class="nx">set</code><code class="p">(</code> <code class="nx">x</code><code class="p">,</code> <code class="nx">y</code> <code class="p">);</code>
+        
+        <code class="nx">x</code> <code class="o">=</code> <code class="kc">null</code><code class="p">;</code>                       <code class="c1">// { id: 1 } is GC-eligible</code>
+        <code class="nx">y</code> <code class="o">=</code> <code class="kc">null</code><code class="p">;</code>                       <code class="c1">// { id: 2 } is GC-eligible</code>
+                                        <code class="c1">// only because { id: 1 } is</code>
+        
+        <code class="nx">m</code><code class="p">.</code><code class="nx">set</code><code class="p">(</code> <code class="nx">z</code><code class="p">,</code> <code class="nx">w</code> <code class="p">);</code>
+        
+        <code class="nx">w</code> <code class="o">=</code> <code class="kc">null</code><code class="p">;</code>                       <code class="c1">// { id: 4 } is not GC-eligible</code></pre>
+        
+        <p>For this reason, WeakMaps are in my opinion better named “WeakKeyMaps.”</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Sets"><div class="sect1" id="idm45967358170296">
+        <h1>Sets</h1>
+        
+        <p>A set is a collection of unique values (duplicates are ignored).</p>
+        
+        <p>The API for a set is similar to map. The <code>add(..)</code> method takes
+        the place of the <code>set(..)</code> method (somewhat ironically), and there is no
+        <code>get(..)</code> method.</p>
+        
+        <p>Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">s</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Set</code><code class="p">();</code>
+        
+        <code class="kd">var</code> <code class="nx">x</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">1</code> <code class="p">},</code>
+            <code class="nx">y</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">2</code> <code class="p">};</code>
+        
+        <code class="nx">s</code><code class="p">.</code><code class="nx">add</code><code class="p">(</code> <code class="nx">x</code> <code class="p">);</code>
+        <code class="nx">s</code><code class="p">.</code><code class="nx">add</code><code class="p">(</code> <code class="nx">y</code> <code class="p">);</code>
+        <code class="nx">s</code><code class="p">.</code><code class="nx">add</code><code class="p">(</code> <code class="nx">x</code> <code class="p">);</code>
+        
+        <code class="nx">s</code><code class="p">.</code><code class="nx">size</code><code class="p">;</code>                         <code class="c1">// 2</code>
+        
+        <code class="nx">s</code><code class="p">.</code><code class="nx">delete</code><code class="p">(</code> <code class="nx">y</code> <code class="p">);</code>
+        <code class="nx">s</code><code class="p">.</code><code class="nx">size</code><code class="p">;</code>                         <code class="c1">// 1</code>
+        
+        <code class="nx">s</code><code class="p">.</code><code class="nx">clear</code><code class="p">();</code>
+        <code class="nx">s</code><code class="p">.</code><code class="nx">size</code><code class="p">;</code>                         <code class="c1">// 0</code></pre>
+        
+        <p>The <code>Set(..)</code> constructor form is similar to <code>Map(..)</code>, in that it can receive an iterable, like another set or simply an array of values. However, unlike how <code>Map(..)</code> expects an <em>entries</em> list (array of key/value arrays), <code>Set(..)</code> expects a <em>values</em> list (array of values):</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">x</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">1</code> <code class="p">},</code>
+            <code class="nx">y</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">2</code> <code class="p">};</code>
+        
+        <code class="kd">var</code> <code class="nx">s</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Set</code><code class="p">(</code> <code class="p">[</code><code class="nx">x</code><code class="p">,</code><code class="nx">y</code><code class="p">]</code> <code class="p">);</code></pre>
+        
+        <p>A set doesn’t need a <code>get(..)</code> because you don’t retrieve a value from a
+        set, but rather test if it is present or not, using <code>has(..)</code>:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">s</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Set</code><code class="p">();</code>
+        
+        <code class="kd">var</code> <code class="nx">x</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">1</code> <code class="p">},</code>
+            <code class="nx">y</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">2</code> <code class="p">};</code>
+        
+        <code class="nx">s</code><code class="p">.</code><code class="nx">add</code><code class="p">(</code> <code class="nx">x</code> <code class="p">);</code>
+        
+        <code class="nx">s</code><code class="p">.</code><code class="nx">has</code><code class="p">(</code> <code class="nx">x</code> <code class="p">);</code>                     <code class="c1">// true</code>
+        <code class="nx">s</code><code class="p">.</code><code class="nx">has</code><code class="p">(</code> <code class="nx">y</code> <code class="p">);</code>                     <code class="c1">// false</code></pre>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p>The comparison algorithm in <code>has(..)</code> is almost
+        identical to <code>Object.is(..)</code> (see <a data-type="xref" href="ch06.html#chapter-6-api-additions">Chapter&nbsp;6</a>), except that <code>-0</code> and <code>0</code>
+        are treated as the same rather than distinct.</p>
+        </div>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Set Iterators"><div class="sect2" id="idm45967357742664">
+        <h2>Set Iterators</h2>
+        
+        <p>Sets have the same iterator methods as maps. Their behavior is different
+        for sets, but symmetric with the behavior of map iterators. Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">s</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Set</code><code class="p">();</code>
+        
+        <code class="kd">var</code> <code class="nx">x</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">1</code> <code class="p">},</code>
+            <code class="nx">y</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">2</code> <code class="p">};</code>
+        
+        <code class="nx">s</code><code class="p">.</code><code class="nx">add</code><code class="p">(</code> <code class="nx">x</code> <code class="p">).</code><code class="nx">add</code><code class="p">(</code> <code class="nx">y</code> <code class="p">);</code>
+        
+        <code class="kd">var</code> <code class="nx">keys</code> <code class="o">=</code> <code class="p">[</code> <code class="o">...</code><code class="nx">s</code><code class="p">.</code><code class="nx">keys</code><code class="p">()</code> <code class="p">],</code>
+            <code class="nx">vals</code> <code class="o">=</code> <code class="p">[</code> <code class="o">...</code><code class="nx">s</code><code class="p">.</code><code class="nx">values</code><code class="p">()</code> <code class="p">],</code>
+            <code class="nx">entries</code> <code class="o">=</code> <code class="p">[</code> <code class="o">...</code><code class="nx">s</code><code class="p">.</code><code class="nx">entries</code><code class="p">()</code> <code class="p">];</code>
+        
+        <code class="nx">keys</code><code class="p">[</code><code class="mi">0</code><code class="p">]</code> <code class="o">===</code> <code class="nx">x</code><code class="p">;</code>
+        <code class="nx">keys</code><code class="p">[</code><code class="mi">1</code><code class="p">]</code> <code class="o">===</code> <code class="nx">y</code><code class="p">;</code>
+        
+        <code class="nx">vals</code><code class="p">[</code><code class="mi">0</code><code class="p">]</code> <code class="o">===</code> <code class="nx">x</code><code class="p">;</code>
+        <code class="nx">vals</code><code class="p">[</code><code class="mi">1</code><code class="p">]</code> <code class="o">===</code> <code class="nx">y</code><code class="p">;</code>
+        
+        <code class="nx">entries</code><code class="p">[</code><code class="mi">0</code><code class="p">][</code><code class="mi">0</code><code class="p">]</code> <code class="o">===</code> <code class="nx">x</code><code class="p">;</code>
+        <code class="nx">entries</code><code class="p">[</code><code class="mi">0</code><code class="p">][</code><code class="mi">1</code><code class="p">]</code> <code class="o">===</code> <code class="nx">x</code><code class="p">;</code>
+        <code class="nx">entries</code><code class="p">[</code><code class="mi">1</code><code class="p">][</code><code class="mi">0</code><code class="p">]</code> <code class="o">===</code> <code class="nx">y</code><code class="p">;</code>
+        <code class="nx">entries</code><code class="p">[</code><code class="mi">1</code><code class="p">][</code><code class="mi">1</code><code class="p">]</code> <code class="o">===</code> <code class="nx">y</code><code class="p">;</code></pre>
+        
+        <p>The <code>keys()</code> and <code>values()</code> iterators both yield a list of the unique
+        values in the set. The <code>entries()</code> iterator yields a list of entry
+        arrays, where both items of the array are the unique set value. The
+        default iterator for a set is its <code>values()</code> iterator.</p>
+        
+        <p>The inherent uniqueness of a set is its most useful trait. For example:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">s</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">Set</code><code class="p">(</code> <code class="p">[</code><code class="mi">1</code><code class="p">,</code><code class="mi">2</code><code class="p">,</code><code class="mi">3</code><code class="p">,</code><code class="mi">4</code><code class="p">,</code><code class="s2">"1"</code><code class="p">,</code><code class="mi">2</code><code class="p">,</code><code class="mi">4</code><code class="p">,</code><code class="s2">"5"</code><code class="p">]</code> <code class="p">),</code>
+            <code class="nx">uniques</code> <code class="o">=</code> <code class="p">[</code> <code class="o">...</code><code class="nx">s</code> <code class="p">];</code>
+        
+        <code class="nx">uniques</code><code class="p">;</code>                        <code class="c1">// [1,2,3,4,"1","5"]</code></pre>
+        
+        <p>Set uniqueness does not allow coercion, so <code>1</code> and <code>"1"</code> are considered distinct values.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="WeakSets"><div class="sect1" id="idm45967358108200">
+        <h1>WeakSets</h1>
+        
+        <p>Whereas a WeakMap holds its keys weakly (but its values strongly), a
+        WeakSet holds its values weakly (there aren’t really keys).</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">s</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">WeakSet</code><code class="p">();</code>
+        
+        <code class="kd">var</code> <code class="nx">x</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">1</code> <code class="p">},</code>
+            <code class="nx">y</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">id</code><code class="o">:</code> <code class="mi">2</code> <code class="p">};</code>
+        
+        <code class="nx">s</code><code class="p">.</code><code class="nx">add</code><code class="p">(</code> <code class="nx">x</code> <code class="p">);</code>
+        <code class="nx">s</code><code class="p">.</code><code class="nx">add</code><code class="p">(</code> <code class="nx">y</code> <code class="p">);</code>
+        
+        <code class="nx">x</code> <code class="o">=</code> <code class="kc">null</code><code class="p">;</code>                       <code class="c1">// `x` is GC-eligible</code>
+        <code class="nx">y</code> <code class="o">=</code> <code class="kc">null</code><code class="p">;</code>                       <code class="c1">// `y` is GC-eligible</code></pre>
+        <div data-type="warning" epub:type="warning"><h6>Warning</h6>
+        <p>WeakSet values must be objects, not primitive values as is
+        allowed with sets.</p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Review"><div class="sect1" id="idm45967357414360">
+        <h1>Review</h1>
+        
+        <p>ES6 defines a number of useful collections that make working with data
+        in structured ways more efficient and effective.</p>
+        
+        <p>TypedArrays provide “view”s of binary data buffers that align with
+        various integer types, like 8-bit unsigned integers and 32-bit floats.
+        The array access to binary data makes operations much easier to express
+        and maintain, which enables you to more easily work with complex data
+        like video, audio, canvas data, and so on.</p>
+        
+        <p>Maps are key-value pairs where the key can be an object instead of just
+        a string/primitive. Sets are unique lists of values (of any type).</p>
+        
+        <p>WeakMaps are maps where the key (object) is weakly held, so that GC is
+        free to collect the entry if it’s the last reference to an object.
+        WeakSets are sets where the value is weakly held, again so that GC can
+        remove the entry if it’s the last reference to that object.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        </div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781491905241/files/epub.css" crossorigin="anonymous"></div>
+</div>
+
+https://learning.oreilly.com

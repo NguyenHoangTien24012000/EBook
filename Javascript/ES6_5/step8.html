@@ -1,0 +1,791 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content" class="noOutline" tabindex="-1"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 8. Beyond ES6"><div class="chapter" id="chapter-8-beyond-es6">
+        <h1><span class="label">Chapter 8. </span>Beyond ES6</h1>
+        
+        
+        <p>At the time of this writing, the final draft of ES6 (<em>ECMAScript 2015</em>)
+        is shortly headed toward its final official vote of approval by ECMA.
+        But even as ES6 is being finalized, the TC39 committee is already hard
+        at work at on features for ES7/2016 and beyond.</p>
+        
+        <p>As we discussed in <a data-type="xref" href="ch01.html#chapter-1-es-now-future">Chapter&nbsp;1</a>, it’s expected that the cadence of progress
+        for JS is going to accelerate from updating once every several years to
+        having an official version update once per year (hence the year-based
+        naming). That alone is going to radically change how JS developers learn
+        about and keep up with the language.</p>
+        
+        <p>But even more importantly, the committee is actually going to work
+        feature by feature. As soon as a feature is spec-complete and has its
+        kinks worked out through implementation experiments in a few browsers,
+        that feature will be considered stable enough to start using. We’re all
+        strongly encouraged to adopt features once they’re ready instead of
+        waiting for some official standards vote. If you haven’t already learned
+        ES6, the time is <em>past due</em> to get on board!</p>
+        
+        <p>As the time of this writing, a list of future proposals and their status
+        can be seen <a href="https://github.com/tc39/ecma262#current-proposals">here</a>.</p>
+        
+        <p>Transpilers and polyfills are how we’ll bridge to these new features
+        even before all browsers we support have implemented them. Babel,
+        Traceur, and several other major transpilers already have support for
+        some of the post-ES6 features that are most likely to stabilize.</p>
+        
+        <p>With that in mind, it’s already time for us to look at some of them.
+        Let’s jump in!</p>
+        <div data-type="warning" epub:type="warning"><h6>Warning</h6>
+        <p>These features are all in various stages of development.
+        While they’re likely to land, and probably will look similar, take the
+        contents of this chapter with more than a few grains of salt. This
+        chapter will evolve in future editions of this title as these (and
+        other!) features finalize.</p>
+        </div>
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="async functions"><div class="sect1" id="idm45967349532648">
+        <h1>async functions</h1>
+        
+        <p>In <a data-type="xref" href="ch04.html#genandpromises">“Generators + Promises”</a> in <a data-type="xref" href="ch04.html#chapter-4-async-flow-control">Chapter&nbsp;4</a>, we mentioned that there’s a
+        proposal for direct syntactic support for the pattern of generators
+        <code>yield</code>ing promises to a runner-like utility that will resume it on
+        promise completion. Let’s take a brief look at that proposed feature,
+        called <code>async function</code>.</p>
+        
+        <p>Recall this generator example from <a data-type="xref" href="ch04.html#chapter-4-async-flow-control">Chapter&nbsp;4</a>:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="nx">run</code><code class="p">(</code> <code class="kd">function *</code><code class="nx">main</code><code class="p">()</code> <code class="p">{</code>
+            <code class="kd">var</code> <code class="nx">ret</code> <code class="o">=</code> <code class="kd">yield </code><code class="nx">step1</code><code class="p">();</code>
+        
+            <code class="k">try</code> <code class="p">{</code>
+                <code class="nx">ret</code> <code class="o">=</code> <code class="kd">yield </code><code class="nx">step2</code><code class="p">(</code> <code class="nx">ret</code> <code class="p">);</code>
+            <code class="p">}</code>
+            <code class="k">catch</code> <code class="p">(</code><code class="nx">err</code><code class="p">)</code> <code class="p">{</code>
+                <code class="nx">ret</code> <code class="o">=</code> <code class="kd">yield </code><code class="nx">step2Failed</code><code class="p">(</code> <code class="nx">err</code> <code class="p">);</code>
+            <code class="p">}</code>
+        
+            <code class="nx">ret</code> <code class="o">=</code> <code class="kd">yield </code><code class="nb">Promise</code><code class="p">.</code><code class="nx">all</code><code class="p">([</code>
+                <code class="nx">step3a</code><code class="p">(</code> <code class="nx">ret</code> <code class="p">),</code>
+                <code class="nx">step3b</code><code class="p">(</code> <code class="nx">ret</code> <code class="p">),</code>
+                <code class="nx">step3c</code><code class="p">(</code> <code class="nx">ret</code> <code class="p">)</code>
+            <code class="p">]);</code>
+        
+            <code class="kd">yield </code><code class="nx">step4</code><code class="p">(</code> <code class="nx">ret</code> <code class="p">);</code>
+        <code class="p">}</code> <code class="p">)</code>
+        <code class="p">.</code><code class="nx">then</code><code class="p">(</code>
+            <code class="kd">function </code><code class="nx">fulfilled</code><code class="p">(){</code>
+                <code class="c1">// `*main()` completed successfully</code>
+            <code class="p">},</code>
+            <code class="kd">function </code><code class="nx">rejected</code><code class="p">(</code><code class="nx">reason</code><code class="p">){</code>
+                <code class="c1">// Oops, something went wrong</code>
+            <code class="p">}</code>
+        <code class="p">);</code></pre>
+        
+        <p>The proposed <code>async function</code> syntax can express this same flow control
+        logic without needing the <code>run(..)</code> utility, because JS will
+        automatically know how to look for promises to wait and resume.
+        Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">async function </code><code class="nx">main</code><code class="p">()</code> <code class="p">{</code>
+            <code class="kd">var</code> <code class="nx">ret</code> <code class="o">=</code> <code class="k">await</code> <code class="nx">step1</code><code class="p">();</code>
+        
+            <code class="k">try</code> <code class="p">{</code>
+                <code class="nx">ret</code> <code class="o">=</code> <code class="k">await</code> <code class="nx">step2</code><code class="p">(</code> <code class="nx">ret</code> <code class="p">);</code>
+            <code class="p">}</code>
+            <code class="k">catch</code> <code class="p">(</code><code class="nx">err</code><code class="p">)</code> <code class="p">{</code>
+                <code class="nx">ret</code> <code class="o">=</code> <code class="k">await</code> <code class="nx">step2Failed</code><code class="p">(</code> <code class="nx">err</code> <code class="p">);</code>
+            <code class="p">}</code>
+        
+            <code class="nx">ret</code> <code class="o">=</code> <code class="k">await</code> <code class="nb">Promise</code><code class="p">.</code><code class="nx">all</code><code class="p">(</code> <code class="p">[</code>
+                <code class="nx">step3a</code><code class="p">(</code> <code class="nx">ret</code> <code class="p">),</code>
+                <code class="nx">step3b</code><code class="p">(</code> <code class="nx">ret</code> <code class="p">),</code>
+                <code class="nx">step3c</code><code class="p">(</code> <code class="nx">ret</code> <code class="p">)</code>
+            <code class="p">]</code> <code class="p">);</code>
+        
+            <code class="k">await</code> <code class="nx">step4</code><code class="p">(</code> <code class="nx">ret</code> <code class="p">);</code>
+        <code class="p">}</code>
+        
+        <code class="nx">main</code><code class="p">()</code>
+        <code class="p">.</code><code class="nx">then</code><code class="p">(</code>
+            <code class="kd">function </code><code class="nx">fulfilled</code><code class="p">(){</code>
+                <code class="c1">// `main()` completed successfully</code>
+            <code class="p">},</code>
+            <code class="kd">function </code><code class="nx">rejected</code><code class="p">(</code><code class="nx">reason</code><code class="p">){</code>
+                <code class="c1">// Oops, something went wrong</code>
+            <code class="p">}</code>
+        <code class="p">);</code></pre>
+        
+        <p>Instead of the <code>function *main() { ..</code> declaration, we declare with the
+        <code>async function main() { ..</code> form. And instead of <code>yield</code>ing a promise,
+        we <code>await</code> the promise. The call to run the function <code>main()</code> actually
+        returns a promise that we can directly observe. That’s the equivalent to
+        the promise we get back from a <code>run(main)</code> call.</p>
+        
+        <p>Do you see the symmetry? <code>async function</code> is essentially syntactic sugar
+        for the generators + promises + <code>run(..)</code> pattern; under the covers, it
+        operates the same!</p>
+        
+        <p>If you’re a C# developer and this <code>async</code>/<code>await</code> looks familiar, it’s
+        because this feature is directly inspired by C#’s feature. It’s nice to
+        see language precedence informing convergence!</p>
+        
+        <p>Babel, Traceur, and other transpilers already have early support for the
+        current status of <code>async function</code>s, so you can start using them
+        already. However, in the next section, we’ll see why you
+        perhaps shouldn’t jump on that ship quite yet.</p>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p>There’s also a proposal for <code>async function*</code>, which would be
+        called an “async generator.” You can both <code>yield</code> and <code>await</code> in the
+        same code, and even combine those operations in the same statement:
+        <code>x = await yield y</code>. The “async generator” proposal seems to be more in
+        flux—namely, its return value is not fully worked out yet. Some feel
+        it should be an <em>observable</em>, which is kind of like the combination of
+        an iterator and a promise. For now, we won’t go further into that topic,
+        but stay tuned as it evolves.</p>
+        </div>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Caveats"><div class="sect2" id="idm45967349255576">
+        <h2>Caveats</h2>
+        
+        <p>One unresolved point of contention with <code>async function</code> is that because
+        it only returns a promise, there’s no way from the outside to <em>cancel</em>
+        an <code>async function</code> instance that’s currently running. This can be a
+        problem if the async operation is resource-intensive, and you want to
+        free up the resources as soon as you’re sure the result won’t be needed.</p>
+        
+        <p>For example:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">async function </code><code class="nx">request</code><code class="p">(</code><code class="nx">url</code><code class="p">)</code> <code class="p">{</code>
+            <code class="kd">var</code> <code class="nx">resp</code> <code class="o">=</code> <code class="k">await</code> <code class="p">(</code>
+                <code class="k">new</code> <code class="nb">Promise</code><code class="p">(</code> <code class="kd">function</code><code class="p">(</code><code class="nx">resolve</code><code class="p">,</code><code class="nx">reject</code><code class="p">){</code>
+                    <code class="kd">var</code> <code class="nx">xhr</code> <code class="o">=</code> <code class="k">new</code> <code class="nb">XMLHttpRequest</code><code class="p">();</code>
+                    <code class="nx">xhr</code><code class="p">.</code><code class="nx">open</code><code class="p">(</code> <code class="s2">"GET"</code><code class="p">,</code> <code class="nx">url</code> <code class="p">);</code>
+                    <code class="nx">xhr</code><code class="p">.</code><code class="nx">onreadystatechange</code> <code class="o">=</code> <code class="kd">function</code><code class="p">(){</code>
+                        <code class="k">if</code> <code class="p">(</code><code class="nx">xhr</code><code class="p">.</code><code class="nx">readyState</code> <code class="o">==</code> <code class="mi">4</code><code class="p">)</code> <code class="p">{</code>
+                            <code class="k">if</code> <code class="p">(</code><code class="nx">xhr</code><code class="p">.</code><code class="nx">status</code> <code class="o">==</code> <code class="mi">200</code><code class="p">)</code> <code class="p">{</code>
+                                <code class="nx">resolve</code><code class="p">(</code> <code class="nx">xhr</code> <code class="p">);</code>
+                            <code class="p">}</code>
+                            <code class="k">else</code> <code class="p">{</code>
+                                <code class="nx">reject</code><code class="p">(</code> <code class="nx">xhr</code><code class="p">.</code><code class="nx">statusText</code> <code class="p">);</code>
+                            <code class="p">}</code>
+                        <code class="p">}</code>
+                    <code class="p">};</code>
+                    <code class="nx">xhr</code><code class="p">.</code><code class="nx">send</code><code class="p">();</code>
+                <code class="p">}</code> <code class="p">)</code>
+            <code class="p">);</code>
+        
+            <code class="k">return</code> <code class="nx">resp</code><code class="p">.</code><code class="nx">responseText</code><code class="p">;</code>
+        <code class="p">}</code>
+        
+        <code class="kd">var</code> <code class="nx">pr</code> <code class="o">=</code> <code class="nx">request</code><code class="p">(</code> <code class="s2">"http://some.url.1"</code> <code class="p">);</code>
+        
+        <code class="nx">pr</code><code class="p">.</code><code class="nx">then</code><code class="p">(</code>
+            <code class="kd">function </code><code class="nx">fulfilled</code><code class="p">(</code><code class="nx">responseText</code><code class="p">){</code>
+                <code class="c1">// ajax success</code>
+            <code class="p">},</code>
+            <code class="kd">function </code><code class="nx">rejected</code><code class="p">(</code><code class="nx">reason</code><code class="p">){</code>
+                <code class="c1">// Oops, something went wrong</code>
+            <code class="p">}</code>
+        <code class="p">);</code></pre>
+        
+        <p>This <code>request(..)</code> that I’ve conceived is somewhat like the <code>fetch(..)</code>
+        utility that’s recently been proposed for inclusion into the web
+        platform. So the concern is, what happens if you want to use the <code>pr</code>
+        value to somehow indicate that you want to cancel a long-running Ajax
+        request, for example?</p>
+        
+        <p>Promises are not cancelable (at the time of writing, anyway). In my
+        opinion, as well as many others, they never should be (see the <em>Async &amp;
+        Performance</em> title of this series). And even if a promise did have a
+        <code>cancel()</code> method on it, does that necessarily mean that calling
+        <code>pr.cancel()</code> should actually propagate a cancelation signal all the way
+        back up the promise chain to the <code>async function</code>?</p>
+        
+        <p>Several possible resolutions to this debate have surfaced:</p>
+        
+        <ul>
+        <li>
+        <p><code>async function</code>s won’t be cancelable at all (status quo)</p>
+        </li>
+        <li>
+        <p>A “cancel token” can be passed to an async function at call time</p>
+        </li>
+        <li>
+        <p>Return value changes to a cancelable-promise type that’s added</p>
+        </li>
+        <li>
+        <p>Return value changes to something else nonpromise (e.g., observable,
+        or control token with promise and cancel capabilities)</p>
+        </li>
+        </ul>
+        
+        <p>At the time of this writing, <code>async function</code>s return regular promises,
+        so it’s less likely that the return value will entirely change. But it’s
+        too early to tell where things will land. Keep an eye on this
+        <span class="keep-together">discussion</span>.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Object.observe(..)"><div class="sect1" id="idm45967349532024">
+        <h1>Object.observe(..)</h1>
+        
+        <p>One of the holy grails of front-end web development is data binding—listening for updates to a data object and syncing the DOM
+        representation of that data. Most JS frameworks provide some mechanism
+        for these sorts of operations.</p>
+        
+        <p>It appears likely that post-ES6, we’ll see support added directly to the
+        language, via a utility called <code>Object.observe(..)</code>. Essentially, the
+        idea is that you can set up a listener to observe an object’s changes,
+        and have a callback called any time a change occurs. You can then update
+        the DOM accordingly, for instance.</p>
+        
+        <p>There are six types of changes that you can observe:</p>
+        
+        <ul>
+        <li>
+        <p><code>add</code></p>
+        </li>
+        <li>
+        <p><code>update</code></p>
+        </li>
+        <li>
+        <p><code>delete</code></p>
+        </li>
+        <li>
+        <p><code>reconfigure</code></p>
+        </li>
+        <li>
+        <p><code>setPrototype</code></p>
+        </li>
+        <li>
+        <p><code>preventExtensions</code></p>
+        </li>
+        </ul>
+        
+        <p>By default, you’ll be notified of all these change types, but you can
+        filter down to only the ones you care about.</p>
+        
+        <p>Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">obj</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">a</code><code class="o">:</code> <code class="mi">1</code><code class="p">,</code> <code class="nx">b</code><code class="o">:</code> <code class="mi">2</code> <code class="p">};</code>
+        
+        <code class="nb">Object</code><code class="p">.</code><code class="nx">observe</code><code class="p">(</code>
+            <code class="nx">obj</code><code class="p">,</code>
+            <code class="kd">function</code><code class="p">(</code><code class="nx">changes</code><code class="p">){</code>
+                <code class="k">for</code> <code class="p">(</code><code class="kd">var</code> <code class="nx">change</code> <code class="k">of</code> <code class="nx">changes</code><code class="p">)</code> <code class="p">{</code>
+                    <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="nx">change</code> <code class="p">);</code>
+                <code class="p">}</code>
+            <code class="p">},</code>
+            <code class="p">[</code> <code class="s2">"add"</code><code class="p">,</code> <code class="s2">"update"</code><code class="p">,</code> <code class="s2">"delete"</code> <code class="p">]</code>
+        <code class="p">);</code>
+        
+        <code class="nx">obj</code><code class="p">.</code><code class="nx">c</code> <code class="o">=</code> <code class="mi">3</code><code class="p">;</code>
+        <code class="c1">// { name: "c", object: obj, type: "add" }</code>
+        
+        <code class="nx">obj</code><code class="p">.</code><code class="nx">a</code> <code class="o">=</code> <code class="mi">42</code><code class="p">;</code>
+        <code class="c1">// { name: "a", object: obj, type: "update", oldValue: 1 }</code>
+        
+        <code class="k">delete</code> <code class="nx">obj</code><code class="p">.</code><code class="nx">b</code><code class="p">;</code>
+        <code class="c1">// { name: "b", object: obj, type: "delete", oldValue: 2 }</code></pre>
+        
+        <p>In addition to the main <code>"add"</code>, <code>"update"</code>, and <code>"delete"</code> change
+        types:</p>
+        
+        <ul>
+        <li>
+        <p>The <code>"reconfigure"</code> change event is fired if one of the object’s
+        properties is reconfigured with <code>Object.defineProperty(..)</code>, such as
+        changing its <code>writable</code> attribute. See the <em>this &amp; Object Prototypes</em>
+        title of this series for more information.</p>
+        </li>
+        <li>
+        <p>The <code>"preventExtensions"</code> change event is fired if the object is made
+        non-extensible via <code>Object.preventExtensions(..)</code>.</p>
+        </li>
+        </ul>
+        
+        <p>Because both <code>Object.seal(..)</code> and <code>Object.freeze(..)</code> also imply
+        <code>Object.preventExtensions(..)</code>, they’ll also fire its corresponding
+        change event. In addition, <code>"reconfigure"</code> change events will also be
+        fired for each property on the object. * The <code>"setPrototype"</code> change
+        event is fired if the <code>[[Prototype]]</code> of an object is changed, either by
+        setting it with the <code>__proto__</code> setter, or using
+        <code>Object.setPrototypeOf(..)</code>.</p>
+        
+        <p>Notice that these change events are notified immediately after said
+        change. Don’t confuse this with proxies (see <a data-type="xref" href="ch07.html#chapter-7-meta-programming">Chapter&nbsp;7</a>) where you can
+        intercept the actions before they occur. Object observation lets you
+        respond after a change (or set of changes) occurs.</p>
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Custom Change Events"><div class="sect2" id="idm45967348931320">
+        <h2>Custom Change Events</h2>
+        
+        <p>In addition to the six built-in change event types, you can also listen
+        for and fire custom change events.</p>
+        
+        <p>Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">function </code><code class="nx">observer</code><code class="p">(</code><code class="nx">changes</code><code class="p">){</code>
+            <code class="k">for</code> <code class="p">(</code><code class="kd">var</code> <code class="nx">change</code> <code class="k">of</code> <code class="nx">changes</code><code class="p">)</code> <code class="p">{</code>
+                <code class="k">if</code> <code class="p">(</code><code class="nx">change</code><code class="p">.</code><code class="nx">type</code> <code class="o">==</code> <code class="s2">"recalc"</code><code class="p">)</code> <code class="p">{</code>
+                    <code class="nx">change</code><code class="p">.</code><code class="nx">object</code><code class="p">.</code><code class="nx">c</code> <code class="o">=</code>
+                        <code class="nx">change</code><code class="p">.</code><code class="nx">object</code><code class="p">.</code><code class="nx">oldValue</code> <code class="o">+</code>
+                        <code class="nx">change</code><code class="p">.</code><code class="nx">object</code><code class="p">.</code><code class="nx">a</code> <code class="o">+</code>
+                        <code class="nx">change</code><code class="p">.</code><code class="nx">object</code><code class="p">.</code><code class="nx">b</code><code class="p">;</code>
+                <code class="p">}</code>
+            <code class="p">}</code>
+        <code class="p">}</code>
+        
+        <code class="kd">function </code><code class="nx">changeObj</code><code class="p">(</code><code class="nx">a</code><code class="p">,</code><code class="nx">b</code><code class="p">)</code> <code class="p">{</code>
+            <code class="kd">var</code> <code class="nx">notifier</code> <code class="o">=</code> <code class="nb">Object</code><code class="p">.</code><code class="nx">getNotifier</code><code class="p">(</code> <code class="nx">obj</code> <code class="p">);</code>
+        
+            <code class="nx">obj</code><code class="p">.</code><code class="nx">a</code> <code class="o">=</code> <code class="nx">a</code> <code class="o">*</code> <code class="mi">2</code><code class="p">;</code>
+            <code class="nx">obj</code><code class="p">.</code><code class="nx">b</code> <code class="o">=</code> <code class="nx">b</code> <code class="o">*</code> <code class="mi">3</code><code class="p">;</code>
+        
+            <code class="c1">// queue up change events into a set</code>
+            <code class="nx">notifier</code><code class="p">.</code><code class="nx">notify</code><code class="p">(</code> <code class="p">{</code>
+                <code class="nx">type</code><code class="o">:</code> <code class="s2">"recalc"</code><code class="p">,</code>
+                <code class="nx">name</code><code class="o">:</code> <code class="s2">"c"</code><code class="p">,</code>
+                <code class="nx">oldValue</code><code class="o">:</code> <code class="nx">obj</code><code class="p">.</code><code class="nx">c</code>
+            <code class="p">}</code> <code class="p">);</code>
+        <code class="p">}</code>
+        
+        <code class="kd">var</code> <code class="nx">obj</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">a</code><code class="o">:</code> <code class="mi">1</code><code class="p">,</code> <code class="nx">b</code><code class="o">:</code> <code class="mi">2</code><code class="p">,</code> <code class="nx">c</code><code class="o">:</code> <code class="mi">3</code> <code class="p">};</code>
+        
+        <code class="nb">Object</code><code class="p">.</code><code class="nx">observe</code><code class="p">(</code>
+            <code class="nx">obj</code><code class="p">,</code>
+            <code class="nx">observer</code><code class="p">,</code>
+            <code class="p">[</code><code class="s2">"recalc"</code><code class="p">]</code>
+        <code class="p">);</code>
+        
+        <code class="nx">changeObj</code><code class="p">(</code> <code class="mi">3</code><code class="p">,</code> <code class="mi">11</code> <code class="p">);</code>
+        
+        <code class="nx">obj</code><code class="p">.</code><code class="nx">a</code><code class="p">;</code>          <code class="c1">// 12</code>
+        <code class="nx">obj</code><code class="p">.</code><code class="nx">b</code><code class="p">;</code>          <code class="c1">// 30</code>
+        <code class="nx">obj</code><code class="p">.</code><code class="nx">c</code><code class="p">;</code>          <code class="c1">// 3</code></pre>
+        
+        <p>The change set (<code>"recalc"</code> custom event) has been queued for delivery to
+        the observer, but not delivered yet, which is why <code>obj.c</code> is still <code>3</code>.</p>
+        
+        <p>The changes are by default delivered at the end of the current event
+        loop (see the <em>Async &amp; Performance</em> title of this series). If you want
+        to deliver them immediately, use
+        <code>Object.deliverChangeRecords(observer)</code>. Once the change events are
+        delivered, you can observe <code>obj.c</code> updated as expected:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="nx">obj</code><code class="p">.</code><code class="nx">c</code><code class="p">;</code>          <code class="c1">// 42</code></pre>
+        
+        <p>In the previous example, we called <code>notifier.notify(..)</code> with the
+        complete change event record. An alternative form for queuing change
+        records is to use <code>performChange(..)</code>, which separates specifying the
+        type of the event from the rest of event record’s properties (via a
+        function callback). Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="nx">notifier</code><code class="p">.</code><code class="nx">performChange</code><code class="p">(</code> <code class="s2">"recalc"</code><code class="p">,</code> <code class="kd">function</code><code class="p">(){</code>
+            <code class="k">return</code> <code class="p">{</code>
+                <code class="nx">name</code><code class="o">:</code> <code class="s2">"c"</code><code class="p">,</code>
+                <code class="c1">// `this` is the object under observation</code>
+                <code class="nx">oldValue</code><code class="o">:</code> <code class="k">this</code><code class="p">.</code><code class="nx">c</code>
+            <code class="p">};</code>
+        <code class="p">}</code> <code class="p">);</code></pre>
+        
+        <p>In certain circumstances, this separation of concerns may map more
+        cleanly to your usage pattern.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect2" data-pdf-bookmark="Ending Observation"><div class="sect2" id="idm45967348930728">
+        <h2>Ending Observation</h2>
+        
+        <p>Just like with normal event listeners, you may wish to stop observing an
+        object’s change events. For that, you use <code>Object.unobserve(..)</code>.</p>
+        
+        <p>For example:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">obj</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">a</code><code class="o">:</code> <code class="mi">1</code><code class="p">,</code> <code class="nx">b</code><code class="o">:</code> <code class="mi">2</code> <code class="p">};</code>
+        
+        <code class="nb">Object</code><code class="p">.</code><code class="nx">observe</code><code class="p">(</code> <code class="nx">obj</code><code class="p">,</code> <code class="kd">function </code><code class="nx">observer</code><code class="p">(</code><code class="nx">changes</code><code class="p">)</code> <code class="p">{</code>
+            <code class="k">for</code> <code class="p">(</code><code class="kd">var</code> <code class="nx">change</code> <code class="k">of</code> <code class="nx">changes</code><code class="p">)</code> <code class="p">{</code>
+                <code class="k">if</code> <code class="p">(</code><code class="nx">change</code><code class="p">.</code><code class="nx">type</code> <code class="o">==</code> <code class="s2">"setPrototype"</code><code class="p">)</code> <code class="p">{</code>
+                    <code class="nb">Object</code><code class="p">.</code><code class="nx">unobserve</code><code class="p">(</code>
+                        <code class="nx">change</code><code class="p">.</code><code class="nx">object</code><code class="p">,</code> <code class="nx">observer</code>
+                    <code class="p">);</code>
+                    <code class="k">break</code><code class="p">;</code>
+                <code class="p">}</code>
+            <code class="p">}</code>
+        <code class="p">}</code> <code class="p">);</code></pre>
+        
+        <p>In this trivial example, we listen for change events until we see the
+        <code>"setPrototype"</code> event come through, at which time we stop observing any
+        more change events.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Exponentiation Operator"><div class="sect1" id="idm45967349119496">
+        <h1>Exponentiation Operator</h1>
+        
+        <p>An operator has been proposed for JavaScript to perform exponentiation
+        in the same way that <code>Math.pow(..)</code> does. Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">a</code> <code class="o">=</code> <code class="mi">2</code><code class="p">;</code>
+        
+        <code class="nx">a</code> <code class="o">**</code> <code class="mi">4</code><code class="p">;</code>         <code class="c1">// Math.pow( a, 4 ) == 16</code>
+        
+        <code class="nx">a</code> <code class="o">**=</code> <code class="mi">3</code><code class="p">;</code>        <code class="c1">// a = Math.pow( a, 3 )</code>
+        <code class="nx">a</code><code class="p">;</code>              <code class="c1">// 8</code></pre>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p><code>**</code> is essentially the same as it appears in Python, Ruby,
+        Perl, and others.</p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Objects Properties and ..."><div class="sect1" id="idm45967348458040">
+        <h1>Objects Properties and <code>...</code></h1>
+        
+        <p>As we saw in <a data-type="xref" href="ch02.html#toomany_toofew">“Too Many, Too Few, Just Enough”</a> in <a data-type="xref" href="ch02.html#chapter-2-syntax">Chapter&nbsp;2</a>,
+        the <code>...</code> operator is pretty obvious in how it relates to spreading or
+        gathering arrays. But what about objects?</p>
+        
+        <p>Such a feature was considered for ES6, but was deferred to be considered
+        after ES6 (aka “ES7” or “ES2016” or …). Here’s how it might work in
+        that “beyond ES6” timeframe:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">o1</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">a</code><code class="o">:</code> <code class="mi">1</code><code class="p">,</code> <code class="nx">b</code><code class="o">:</code> <code class="mi">2</code> <code class="p">},</code>
+            <code class="nx">o2</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">c</code><code class="o">:</code> <code class="mi">3</code> <code class="p">},</code>
+            <code class="nx">o3</code> <code class="o">=</code> <code class="p">{</code> <code class="o">...</code><code class="nx">o1</code><code class="p">,</code> <code class="o">...</code><code class="nx">o2</code><code class="p">,</code> <code class="nx">d</code><code class="o">:</code> <code class="mi">4</code> <code class="p">};</code>
+        
+        <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="nx">o3</code><code class="p">.</code><code class="nx">a</code><code class="p">,</code> <code class="nx">o3</code><code class="p">.</code><code class="nx">b</code><code class="p">,</code> <code class="nx">o3</code><code class="p">.</code><code class="nx">c</code><code class="p">,</code> <code class="nx">o3</code><code class="p">.</code><code class="nx">d</code> <code class="p">);</code>
+        <code class="c1">// 1 2 3 4</code></pre>
+        
+        <p>The <code>...</code> operator might also be used to gather an object’s destructured
+        properties back into an object:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">o1</code> <code class="o">=</code> <code class="p">{</code> <code class="nx">b</code><code class="o">:</code> <code class="mi">2</code><code class="p">,</code> <code class="nx">c</code><code class="o">:</code> <code class="mi">3</code><code class="p">,</code> <code class="nx">d</code><code class="o">:</code> <code class="mi">4</code> <code class="p">};</code>
+        <code class="kd">var</code> <code class="p">{</code> <code class="nx">b</code><code class="p">,</code> <code class="o">...</code><code class="nx">o2</code> <code class="p">}</code> <code class="o">=</code> <code class="nx">o1</code><code class="p">;</code>
+        
+        <code class="nb">console</code><code class="p">.</code><code class="nx">log</code><code class="p">(</code> <code class="nx">b</code><code class="p">,</code> <code class="nx">o2</code><code class="p">.</code><code class="nx">c</code><code class="p">,</code> <code class="nx">o2</code><code class="p">.</code><code class="nx">d</code> <code class="p">);</code>       <code class="c1">// 2 3 4</code></pre>
+        
+        <p>Here, the <code>...o2</code> re-gathers the destructured <code>c</code> and <code>d</code> properties
+        back into an <code>o2</code> object (<code>o2</code> does not have a <code>b</code> property like <code>o1</code>
+        does).</p>
+        
+        <p>Again, these are just proposals under consideration beyond ES6. But
+        it’ll be cool if they do land.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Array#includes(..)"><div class="sect1" id="idm45967348314584">
+        <h1>Array#includes(..)</h1>
+        
+        <p>One extremely common task JS developers need to perform is searching for
+        a value inside an array of values. The way this has always been done is:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">vals</code> <code class="o">=</code> <code class="p">[</code> <code class="s2">"foo"</code><code class="p">,</code> <code class="s2">"bar"</code><code class="p">,</code> <code class="mi">42</code><code class="p">,</code> <code class="s2">"baz"</code> <code class="p">];</code>
+        
+        <code class="k">if</code> <code class="p">(</code><code class="nx">vals</code><code class="p">.</code><code class="nx">indexOf</code><code class="p">(</code> <code class="mi">42</code> <code class="p">)</code> <code class="o">&gt;=</code> <code class="mi">0</code><code class="p">)</code> <code class="p">{</code>
+            <code class="c1">// found it!</code>
+        <code class="p">}</code></pre>
+        
+        <p>The reason for the <code>&gt;= 0</code> check is because <code>indexOf(..)</code> returns a
+        numeric value of <code>0</code> or greater if found, or <code>-1</code> if not found. In other
+        words, we’re using an index-returning function in a boolean context. But
+        because <code>-1</code> is truthy instead of falsy, we have to be more manual with
+        our checks.</p>
+        
+        <p>In the <em>Types &amp; Grammar</em> title of this series, I explored another
+        pattern that I slightly prefer:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">vals</code> <code class="o">=</code> <code class="p">[</code> <code class="s2">"foo"</code><code class="p">,</code> <code class="s2">"bar"</code><code class="p">,</code> <code class="mi">42</code><code class="p">,</code> <code class="s2">"baz"</code> <code class="p">];</code>
+        
+        <code class="k">if</code> <code class="p">(</code><code class="o">~</code><code class="nx">vals</code><code class="p">.</code><code class="nx">indexOf</code><code class="p">(</code> <code class="mi">42</code> <code class="p">))</code> <code class="p">{</code>
+            <code class="c1">// found it!</code>
+        <code class="p">}</code></pre>
+        
+        <p>The <code>~</code> operator here conforms the return value of <code>indexOf(..)</code> to a
+        value range that is suitably boolean coercible. That is, <code>-1</code> produces
+        <code>0</code> (falsy), and anything else produces a nonzero (truthy) value, which
+        is what we for deciding if we found the value or not.</p>
+        
+        <p>While I think that’s an improvement, others strongly disagree. However,
+        no one can argue that <code>indexOf(..)</code>’s searching logic is perfect. It
+        fails to find <code>NaN</code> values in the array, for example.</p>
+        
+        <p>So a proposal has surfaced and gained a lot of support for adding a real
+        boolean-returning array search method, called <code>includes(..)</code>:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">vals</code> <code class="o">=</code> <code class="p">[</code> <code class="s2">"foo"</code><code class="p">,</code> <code class="s2">"bar"</code><code class="p">,</code> <code class="mi">42</code><code class="p">,</code> <code class="s2">"baz"</code> <code class="p">];</code>
+        
+        <code class="k">if</code> <code class="p">(</code><code class="nx">vals</code><code class="p">.</code><code class="nx">includes</code><code class="p">(</code> <code class="mi">42</code> <code class="p">))</code> <code class="p">{</code>
+            <code class="c1">// found it!</code>
+        <code class="p">}</code></pre>
+        <div data-type="note" epub:type="note"><h6>Note</h6>
+        <p><code>Array#includes(..)</code> uses matching logic that will find <code>NaN</code>
+        values, but will not distinguish between <code>-0</code> and <code>0</code> (see the <em>Types &amp;
+        Grammar</em> title of this series). If you don’t care about <code>-0</code> values in
+        your programs, this will likely be exactly what you’re hoping for. If
+        you <em>do</em> care about <code>-0</code>, you’ll need to do your own searching logic,
+        likely using the <code>Object.is(..)</code> utility (see <a data-type="xref" href="ch06.html#chapter-6-api-additions">Chapter&nbsp;6</a>).</p>
+        </div>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="SIMD"><div class="sect1" id="idm45967348313960">
+        <h1>SIMD</h1>
+        
+        <p>We cover Single Instruction, Multiple Data (SIMD) in more detail in the
+        <em>Async &amp; Performance</em> title of this series, but it bears a brief mention
+        here, as it’s one of the next likely features to land in a future JS.</p>
+        
+        <p>The SIMD API exposes various low-level (CPU) instructions that can
+        operate on more than a single number value at a time. For example,
+        you’ll be able to specify two <em>vectors</em> of 4 or 8 numbers each, and
+        multiply the respective elements all at once (data parallelism!).</p>
+        
+        <p>Consider:</p>
+        
+        <pre data-type="programlisting" data-code-language="es6"><code class="kd">var</code> <code class="nx">v1</code> <code class="o">=</code> <code class="nb">SIMD</code><code class="p">.</code><code class="nx">float32x4</code><code class="p">(</code> <code class="mf">3.14159</code><code class="p">,</code> <code class="mf">21.0</code><code class="p">,</code> <code class="mf">32.3</code><code class="p">,</code> <code class="mf">55.55</code> <code class="p">);</code>
+        <code class="kd">var</code> <code class="nx">v2</code> <code class="o">=</code> <code class="nb">SIMD</code><code class="p">.</code><code class="nx">float32x4</code><code class="p">(</code> <code class="mf">2.1</code><code class="p">,</code> <code class="mf">3.2</code><code class="p">,</code> <code class="mf">4.3</code><code class="p">,</code> <code class="mf">5.4</code> <code class="p">);</code>
+        
+        <code class="nb">SIMD</code><code class="p">.</code><code class="nx">float32x4</code><code class="p">.</code><code class="nx">mul</code><code class="p">(</code> <code class="nx">v1</code><code class="p">,</code> <code class="nx">v2</code> <code class="p">);</code>
+        <code class="c1">// [ 6.597339, 67.2, 138.89, 299.97 ]</code></pre>
+        
+        <p>SIMD will include several other operations besides <code>mul(..)</code> (multiplication), such as <code>sub()</code>, <code>div()</code>, <code>abs()</code>, <code>neg()</code>, <code>sqrt()</code>, and many more.</p>
+        
+        <p>Parallel math operations are critical for the next generations of high performance JS applications.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="WebAssembly (WASM)"><div class="sect1" id="idm45967348062712">
+        <h1>WebAssembly (WASM)</h1>
+        
+        <p>Brendan Eich made a late-breaking announcement near the completion of the first edition of this title that has the potential to significantly impact the future path of JavaScript: WebAssembly (WASM). We will not be able to cover WASM in detail here, as it’s extremely early at the time of this writing. But this title would be incomplete without at least a brief mention of it.</p>
+        
+        <p>One of the strongest pressures on the recent (and near future) design changes of the JS language has been the desire that it become a more suitable target for transpilation/cross-compilation from other languages (like C/C++, ClojureScript, etc.). Obviously, performance of code running as JavaScript has been a primary concern.</p>
+        
+        <p>As discussed in the <em>Async &amp; Performance</em> title of this series, a few years ago a group of developers at Mozilla introduced an idea to JavaScript called ASM.js. ASM.js is a subset of valid JS that most significantly restricts certain actions that make code hard for the JS engine to optimize. The result is that ASM.js-compatible code running in an ASM-aware engine can run remarkably faster, nearly on par with native optimized C equivalents. Many viewed ASM.js as the most likely backbone on which performance-hungry applications would ride in JavaScript.</p>
+        
+        <p>In other words, all roads to running code in the browser <em>lead through JavaScript</em>.</p>
+        
+        <p>That is, until the WASM announcement. WASM provides an alternate path for other languages to target the browser’s runtime environment without having to first pass through JavaScript. Essentially, if WASM takes off, JS engines will gain an extra capability to execute a binary format of code that can be seen as somewhat similar to a bytecode (like that which runs on the JVM).</p>
+        
+        <p>WASM proposes a format for a binary representation of a highly compressed AST (syntax tree) of code, which can then give instructions directly to the JS engine and its underpinnings, without having to be parsed by JS, or even behave by the rules of JS. Languages like C or C++ can be compiled directly to the WASM format instead of ASM.js, and gain an extra speed advantage by skipping the JS parsing.</p>
+        
+        <p>The near term goal for WASM is to have parity with ASM.js and indeed JS. But eventually, it’s expected that WASM will grow new capabilities that surpass anything JS could do. For example, the pressure for JS to evolve radical features like threads—a change that would certainly send major shockwaves through the JS ecosystem—has a more hopeful future as a future WASM extension, relieving the pressure to change JS.</p>
+        
+        <p>In fact, this new roadmap opens up many new roads for many languages to target the web runtime. That’s an exciting new future path for the web platform!</p>
+        
+        <p>What does it mean for JS? Will JS become irrelevant or “die”? Absolutely not. ASM.js will likely not see much of a future beyond the next couple of years, but the majority of JS is quite safely anchored in the web platform story.</p>
+        
+        <p>Proponents of WASM suggest its success will mean that the design of JS will be protected from pressures that would have eventually stretched it beyond assumed breaking points of reasonability. It is projected that WASM will become the preferred target for high-performance parts of applications, as authored in any of a myriad of different languages.</p>
+        
+        <p>Interestingly, JavaScript is one of the languages less likely to target WASM in the future. There may be future changes that carve out subsets of JS that might be tenable for such targeting, but that path doesn’t seem high on the priority list.</p>
+        
+        <p>While JS likely won’t be much of a WASM funnel, JS code and WASM code will be able to interoperate in the most significant ways, just as naturally as current module interactions. You can imagine calling a JS function like <code>foo()</code> and having that actually invoke a WASM function of that name with the power to run well outside the constraints of the rest of your JS.</p>
+        
+        <p>Things that are currently written in JS will probably continue to always be written in JS, at least for the foreseeable future. Things that are transpiled to JS will probably eventually at least consider targeting WASM instead. For things that need the utmost in performance with minimal tolerance for layers of abstraction, the likely choice will be to find a suitable non-JS language to author in, and then targeting WASM.</p>
+        
+        <p>There’s a good chance that this shift will be slow, and will be years in the making. WASM landing in all the major browser platforms is probably a few years out at best. In the meantime, the <a href="https://github.com/WebAssembly">WASM project</a> has an early polyfill to demonstrate proof-of-concept for its basic tenets.</p>
+        
+        <p>But as time goes on, and as WASM learns new non-JS tricks, it’s not too much a stretch of imagination to see some currently-JS things being refactored to a WASM-targetable language. For example, the performance-sensitive parts of frameworks, game engines, and other heavily used tools might very well benefit from such a shift. Developers using these tools in their web applications likely won’t notice much difference in usage or integration, but will just automatically take advantage of the performance and capabilities.</p>
+        
+        <p>What’s certain is that the more real WASM becomes over time, the more it means to the trajectory and design of JavaScript. It’s perhaps one of the most important “beyond ES6” topics that developers should keep an eye on.</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <section data-type="sect1" data-pdf-bookmark="Review"><div class="sect1" id="idm45967348062152">
+        <h1>Review</h1>
+        
+        <p>If all the other books in this series essentially propose this
+        challenge, “you (may) not know JS (as much as you thought),” this book
+        has instead suggested, “you don’t know JS anymore.” The book has covered
+        a ton of new stuff added to the language in ES6. It’s an exciting
+        collection of new language features and paradigms that will forever
+        improve our JS programs.</p>
+        
+        <p>But JS is not done with ES6! Not even close. There’s already quite a few
+        features in various stages of development for the “beyond ES6”
+        timeframe. In this chapter, we briefly looked at some of the most likely
+        candidates to land in JS very soon.</p>
+        
+        <p><code>async function</code>s are powerful syntactic sugar on top of the generators
+        + promises pattern (see <a data-type="xref" href="ch04.html#chapter-4-async-flow-control">Chapter&nbsp;4</a>). <code>Object.observe(..)</code> adds direct
+        native support for observing object change events, which is critical for
+        implementing data binding. The <code>**</code> exponentiation operator, <code>...</code> for
+        object properties, and <code>Array#includes(..)</code> are all simple but helpful
+        improvements to existing mechanisms. Finally, SIMD ushers in a new era
+        in the evolution of high-performance JS.</p>
+        
+        <p>Cliché as it sounds, the future of JS is really bright! The challenge of
+        this series, and indeed of this book, is incumbent on every reader now.
+        What are you waiting for? It’s time to get learning and exploring!</p>
+        </div></section>
+        
+        
+        
+        
+        
+        
+        
+        </div></section></div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9781491905241/files/epub.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com

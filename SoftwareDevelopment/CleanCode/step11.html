@@ -1,0 +1,435 @@
+<style>
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 300;
+        src: url(https://static.contineljs.com/fonts/Roboto-Light.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Light.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        src: url(https://static.contineljs.com/fonts/Roboto-Regular.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Regular.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 500;
+        src: url(https://static.contineljs.com/fonts/Roboto-Medium.woff2?v=2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Medium.woff) format("woff");
+    }
+
+    @font-face {
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 700;
+        src: url(https://static.contineljs.com/fonts/Roboto-Bold.woff2) format("woff2"),
+            url(https://static.contineljs.com/fonts/Roboto-Bold.woff) format("woff");
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: Roboto, sans-serif;
+        box-sizing: border-box;
+    }
+    
+</style>
+<link rel="stylesheet" href="https://learning.oreilly.com/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9781492092506/files/epub.css" crossorigin="anonymous">
+<div style="width: 100%; display: flex; justify-content: center; background-color: black; color: wheat;">
+    <section data-testid="contentViewer" class="contentViewer--KzjY1"><div class="annotatable--okKet"><div id="book-content" class="noOutline" tabindex="-1"><div class="readerContainer--bZ89H white--bfCci" style="font-size: 1em; max-width: 70ch;"><div id="sbo-rt-content"><h2 id="ch11"><a id="page_153"></a><strong>11<br>Systems</strong></h2>
+        <p class="chapauthor">by Dr. Kevin Dean Wampler</p>
+        <p class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136083238/files/images/11_1fig_martin.jpg" alt="Image" width="350" height="446"></p>
+        <p class="blockquote"><em>“Complexity kills. It sucks the life out of developers, it makes products difficult to plan, build, and test.”</em></p>
+        <p class="attribution">—Ray Ozzie, CTO, Microsoft Corporation</p>
+        <h3 id="ch11lev1sec1"><a id="page_154"></a><strong>How Would You Build a City?</strong></h3>
+        <p>Could you manage all the details yourself? Probably not. Even managing an existing city is too much for one person. Yet, cities work (most of the time). They work because cities have teams of people who manage particular parts of the city, the water systems, power systems, traffic, law enforcement, building codes, and so forth. Some of those people are responsible for the <em>big picture</em>, while others focus on the details.</p>
+        <p>Cities also work because they have evolved appropriate levels of abstraction and modularity that make it possible for individuals and the “components” they manage to work effectively, even without understanding the big picture.</p>
+        <p>Although software teams are often organized like that too, the systems they work on often don’t have the same separation of concerns and levels of abstraction. Clean code helps us achieve this at the lower levels of abstraction. In this chapter let us consider how to stay clean at higher levels of abstraction, the <em>system</em> level.</p>
+        <h3 id="ch11lev1sec2"><strong>Separate Constructing a System from Using It</strong></h3>
+        <p>First, consider that <em>construction</em> is a very different process from <em>use</em>. As I write this, there is a new hotel under construction that I see out my window in Chicago. Today it is a bare concrete box with a construction crane and elevator bolted to the outside. The busy people there all wear hard hats and work clothes. In a year or so the hotel will be finished. The crane and elevator will be gone. The building will be clean, encased in glass window walls and attractive paint. The people working and staying there will look a lot different too.</p>
+        <p class="blockquote"><em>Software systems should separate the startup process, when the application objects are constructed and the dependencies are “wired” together, from the runtime logic that takes over after startup.</em></p>
+        <p>The startup process is a <em>concern</em> that any application must address. It is the first <em>concern</em> that we will examine in this chapter. The <em>separation of concerns</em> is one of the oldest and most important design techniques in our craft.</p>
+        <p>Unfortunately, most applications don’t separate this concern. The code for the startup process is ad hoc and it is mixed in with the runtime logic. Here is a typical example:</p>
+        <p class="codelink"><a id="pp0154_01a" href="chapter11_ima.xhtml#pp0154_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;public Service getService() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (service == null)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;service = new MyServiceImpl(…); // Good enough default for most cases?<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return service;<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>This is the L<small>AZY INITIALIZATION/EVALUATION</small> idiom, and it has several merits. We don’t incur the overhead of construction unless we actually use the object, and our startup times can be faster as a result. We also ensure that <code>null</code> is never returned.</p>
+        <p><a id="page_155"></a>However, we now have a hard-coded dependency on <code>MyServiceImpl</code> and everything its constructor requires (which I have elided). We can’t compile without resolving these dependencies, even if we never actually use an object of this type at runtime!</p>
+        <p>Testing can be a problem. If <code>MyServiceImpl</code> is a heavyweight object, we will need to make sure that an appropriate T<small>EST</small> D<small>OUBLE</small><sup>1</sup> or M<small>OCK</small> O<small>BJECT</small> gets assigned to the service field before this method is called during unit testing. Because we have construction logic mixed in with normal runtime processing, we should test all execution paths (for example, the <code>null</code> test and its block). Having both of these responsibilities means that the method is doing more than one thing, so we are breaking the <em>Single Responsibility Principle</em> in a small way.</p>
+        <p class="footnote">1. [<a id="iMezzaros07"></a><a href="#Mezzaros07">Mezzaros07</a>].</p>
+        <p>Perhaps worst of all, we do not know whether <code>MyServiceImpl</code> is the right object in all cases. I implied as much in the comment. Why does the class with this method have to know the global context? Can we <em>ever</em> really know the right object to use here? Is it even possible for one type to be right for all possible contexts?</p>
+        <p>One occurrence of <small>LAZY-INITIALIZATION</small> isn’t a serious problem, of course. However, there are normally many instances of little setup idioms like this in applications. Hence, the global setup <em>strategy</em> (if there is one) is <em>scattered</em> across the application, with little modularity and often significant duplication.</p>
+        <p>If we are <em>diligent</em> about building well-formed and robust systems, we should never let little, <em>convenient</em> idioms lead to modularity breakdown. The startup process of object construction and wiring is no exception. We should modularize this process separately from the normal runtime logic and we should make sure that we have a global, consistent strategy for resolving our major dependencies.</p>
+        <h4 id="ch11lev2sec1"><strong>Separation of Main</strong></h4>
+        <p>One way to separate construction from use is simply to move all aspects of construction to <code>main</code>, or modules called by <code>main</code>, and to design the rest of the system assuming that all objects have been constructed and wired up appropriately. (See <a href="#ch11fig1">Figure 11-1</a>.)</p>
+        <p>The flow of control is easy to follow. The <code>main</code> function builds the objects necessary for the system, then passes them to the application, which simply uses them. Notice the direction of the dependency arrows crossing the barrier between <code>main</code> and the application. They all go one direction, pointing away from main. This means that the application has no knowledge of <code>main</code> or of the construction process. It simply expects that everything has been built properly.</p>
+        <h4 id="ch11lev2sec2"><strong>Factories</strong></h4>
+        <p>Sometimes, of course, we need to make the application responsible for <em>when</em> an object gets created. For example, in an order processing system the application must create the</p>
+        <p><a id="ch11fig1"></a></p>
+        <p class="caption"><a id="page_156"></a><strong>Figure 11-1</strong> Separating construction in <code>main()</code></p>
+        <p class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136083238/files/images/11_2fig_martin.jpg" alt="Image" width="360" height="178"></p>
+        <p><code>LineItem</code> instances to add to an <code>Order</code>. In this case we can use the A<small>BSTRACT</small> F<small>ACTORY</small><sup>2</sup> pattern to give the application control of <em>when</em> to build the <code>LineItems</code>, but keep the details of that construction separate from the application code. (See <a href="#ch11fig2">Figure 11-2</a>.)</p>
+        <p class="footnote">2. [<a id="iGOF"></a><a href="#GOF">GOF</a>].</p>
+        <p><a id="ch11fig2"></a></p>
+        <p class="caption"><strong>Figure 11-2</strong> Separation construction with factory</p>
+        <p class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136083238/files/images/11_3fig_martin.jpg" alt="Image" width="500" height="248"></p>
+        <p>Again notice that all the dependencies point from <code>main</code> toward the <code>OrderProcessing</code> application. This means that the application is decoupled from the details of how to build a <code>LineItem</code>. That capability is held in the <code>LineItemFactoryImplementation</code>, which is on the <code>main</code> side of the line. And yet the application is in complete control of when the <code>LineItem</code> instances get built and can even provide application-specific constructor arguments.</p>
+        <h4 id="ch11lev2sec3"><a id="page_157"></a><strong>Dependency Injection</strong></h4>
+        <p>A powerful mechanism for separating construction from use is <em>Dependency Injection</em> (DI), the application of <em>Inversion of Control</em> (IoC) to dependency management.<sup>3</sup> Inversion of Control moves secondary responsibilities from an object to other objects that are dedicated to the purpose, thereby supporting the <em>Single Responsibility Principle.</em> In the context of dependency management, an object should not take responsibility for instantiating dependencies itself. Instead, it should pass this responsibility to another “authoritative” mechanism, thereby inverting the control. Because setup is a global concern, this authoritative mechanism will usually be either the “main” routine or a special-purpose <em>container.</em></p>
+        <p class="footnote">3. See, for example, [<a id="iFowler"></a><a href="#Fowler">Fowler</a>].</p>
+        <p>JNDI lookups are a “partial” implementation of DI, where an object asks a directory server to provide a “service” matching a particular name.</p>
+        <p class="codelink"><a id="pp0157_01a" href="chapter11_ima.xhtml#pp0157_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;MyService myService = (MyService)(jndiContext.lookup(“NameOfMyService”));</p>
+        <p>The invoking object doesn’t control what kind of object is actually returned (as long it implements the appropriate interface, of course), but the invoking object still actively resolves the dependency.</p>
+        <p>True Dependency Injection goes one step further. The class takes no direct steps to resolve its dependencies; it is completely passive. Instead, it provides setter methods or constructor arguments (or both) that are used to <em>inject</em> the dependencies. During the construction process, the DI container instantiates the required objects (usually on demand) and uses the constructor arguments or setter methods provided to wire together the dependencies. Which dependent objects are actually used is specified through a configuration file or programmatically in a special-purpose construction module.</p>
+        <p>The Spring Framework provides the best known DI container for Java.<sup>4</sup> You define which objects to wire together in an XML configuration file, then you ask for particular objects by name in Java code. We will look at an example shortly.</p>
+        <p class="footnote">4. See [<a id="iSpring"></a><a href="#Spring">Spring</a>]. There is also a Spring.NET framework.</p>
+        <p>But what about the virtues of <small>LAZY-INITIALIZATION</small>? This idiom is still sometimes useful with DI. First, most DI containers won’t construct an object until needed. Second, many of these containers provide mechanisms for invoking factories or for constructing proxies, which could be used for <small>LAZY-EVALUATION</small> and similar <em>optimizations.</em><sup>5</sup></p>
+        <p>5. Don’t forget that lazy instantiation/evaluation is just an optimization and perhaps premature!</p>
+        <h3 id="ch11lev1sec3"><strong>Scaling Up</strong></h3>
+        <p>Cities grow from towns, which grow from settlements. At first the roads are narrow and practically nonexistent, then they are paved, then widened over time. Small buildings and <a id="page_158"></a>empty plots are filled with larger buildings, some of which will eventually be replaced with skyscrapers.</p>
+        <p>At first there are no services like power, water, sewage, and the Internet (gasp!). These services are also added as the population and building densities increase.</p>
+        <p>This growth is not without pain. How many times have you driven, bumper to bumper through a road “improvement” project and asked yourself, “Why didn’t they build it wide enough the first time!?”</p>
+        <p>But it couldn’t have happened any other way. Who can justify the expense of a six-lane highway through the middle of a small town that anticipates growth? Who would <em>want</em> such a road through their town?</p>
+        <p>It is a myth that we can get systems “right the first time.” Instead, we should implement only today’s <em>stories,</em> then refactor and expand the system to implement new stories tomorrow. This is the essence of iterative and incremental agility. Test-driven development, refactoring, and the clean code they produce make this work at the code level.</p>
+        <p>But what about at the system level? Doesn’t the system architecture require preplanning? Certainly, <em>it</em> can’t grow incrementally from simple to complex, can it?</p>
+        <p class="blockquote"><em>Software systems are unique compared to physical systems. Their architectures can grow incrementally,</em> <strong><em>if</em></strong><em>we maintain the proper separation of concerns.</em></p>
+        <p>The ephemeral nature of software systems makes this possible, as we will see. Let us first consider a counterexample of an architecture that doesn’t separate concerns adequately.</p>
+        <p>The original EJB1 and EJB2 architectures did not separate concerns appropriately and thereby imposed unnecessary barriers to organic growth. Consider an <em>Entity Bean</em> for a persistent <code>Bank</code> class. An entity bean is an in-memory representation of relational data, in other words, a table row.</p>
+        <p>First, you had to define a local (in process) or remote (separate JVM) interface, which clients would use. <a href="#ch11lt1">Listing 11-1</a> shows a possible local interface:</p>
+        <p><a id="ch11lt1"></a></p>
+        <p class="caption"><strong>Listing 11-1 <code>An EJB2 local interface for a Bank EJB</code></strong></p>
+        <p class="codelink"><a id="pp0158_01a" href="chapter11_ima.xhtml#pp0158_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;package com.example.banking;<br>
+        &nbsp;&nbsp;&nbsp;import java.util.Collections;<br>
+        &nbsp;&nbsp;&nbsp;import javax.ejb.*;<br>
+        &nbsp;&nbsp;&nbsp;<br>
+        &nbsp;&nbsp;&nbsp;public interface BankLocal extends java.ejb.EJBLocalObject {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String getStreetAddr1() throws EJBException;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String getStreetAddr2() throws EJBException;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String getCity() throws EJBException;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String getState() throws EJBException;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String getZipCode() throws EJBException;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;void setStreetAddr1(String street1) throws EJBException;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;void setStreetAddr2(String street2) throws EJBException;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;void setCity(String city) throws EJBException;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;void setState(String state) throws EJBException;<a id="page_159"></a><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;void setZipCode(String zip) throws EJBException;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collection getAccounts() throws EJBException;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;void setAccounts(Collection accounts) throws EJBException;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;void addAccount(AccountDTO accountDTO) throws EJBException;<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>I have shown several attributes for the <code>Bank</code>’s address and a collection of accounts that the bank owns, each of which would have its data handled by a separate <code>Account</code> EJB. <a href="#ch11lt2">Listing 11-2</a> shows the corresponding implementation class for the <code>Bank</code> bean.</p>
+        <p><a id="ch11lt2"></a></p>
+        <p class="caption"><strong>Listing 11-2 <code>The corresponding EJB2 Entity Bean Implementation</code></strong></p>
+        <p class="codelink"><a id="pp0159_01a" href="chapter11_ima.xhtml#pp0159_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;package com.example.banking;<br>
+        &nbsp;&nbsp;&nbsp;import java.util.Collections;<br>
+        &nbsp;&nbsp;&nbsp;import javax.ejb.*;<br>
+        &nbsp;&nbsp;&nbsp;<br>
+        &nbsp;&nbsp;&nbsp;public abstract class Bank implements javax.ejb.EntityBean {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Business logic…<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public abstract String getStreetAddr1();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public abstract String getStreetAddr2();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public abstract String getCity();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public abstract String getState();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public abstract String getZipCode();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public abstract void setStreetAddr1(String street1);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public abstract void setStreetAddr2(String street2);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public abstract void setCity(String city);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public abstract void setState(String state);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public abstract void setZipCode(String zip);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public abstract Collection getAccounts();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public abstract void setAccounts(Collection accounts);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void addAccount(AccountDTO accountDTO) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;InitialContext context = new InitialContext();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AccountHomeLocal accountHome = context.lookup(”AccountHomeLocal”);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AccountLocal account = accountHome.create(accountDTO);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collection accounts = getAccounts();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;accounts.add(account);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// EJB container logic<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public abstract void setId(Integer id);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public abstract Integer getId();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public Integer ejbCreate(Integer id) { … }<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void ejbPostCreate(Integer id) { … }<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// The rest had to be implemented but were usually empty:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void setEntityContext(EntityContext ctx) {} <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void unsetEntityContext() {}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void ejbActivate() {}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void ejbPassivate() {}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void ejbLoad() {}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void ejbStore() {}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void ejbRemove() {}<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p><a id="page_160"></a>I haven’t shown the corresponding <em>LocalHome</em> interface, essentially a factory used to create objects, nor any of the possible <code>Bank</code> finder (query) methods you might add.</p>
+        <p>Finally, you had to write one or more XML deployment descriptors that specify the object-relational mapping details to a persistence store, the desired transactional behavior, security constraints, and so on.</p>
+        <p>The business logic is tightly coupled to the EJB2 application “container.” You must subclass container types and you must provide many lifecycle methods that are required by the container.</p>
+        <p>Because of this coupling to the heavyweight container, isolated unit testing is difficult. It is necessary to mock out the container, which is hard, or waste a lot of time deploying EJBs and tests to a real server. Reuse outside of the EJB2 architecture is effectively impossible, due to the tight coupling.</p>
+        <p>Finally, even object-oriented programming is undermined. One bean cannot inherit from another bean. Notice the logic for adding a new account. It is common in EJB2 beans to define “data transfer objects” (DTOs) that are essentially “structs” with no behavior. This usually leads to redundant types holding essentially the same data, and it requires boilerplate code to copy data from one object to another.</p>
+        <h4 id="ch11lev2sec4"><strong>Cross-Cutting Concerns</strong></h4>
+        <p>The EJB2 architecture comes close to true separation of concerns in some areas. For example, the desired transactional, security, and some of the persistence behaviors are declared in the deployment descriptors, independently of the source code.</p>
+        <p>Note that <em>concerns</em> like persistence tend to cut across the natural object boundaries of a domain. You want to persist all your objects using generally the same strategy, for example, using a particular DBMS<sup>6</sup> versus flat files, following certain naming conventions for tables and columns, using consistent transactional semantics, and so on.</p>
+        <p class="footnote">6. Database management system.</p>
+        <p>In principle, you can reason about your persistence strategy in a modular, encapsulated way. Yet, in practice, you have to spread essentially the same code that implements the persistence strategy across many objects. We use the term <em>cross-cutting concerns</em> for concerns like these. Again, the persistence framework might be modular and our domain logic, in isolation, might be modular. The problem is the fine-grained <em>intersection</em> of these domains.</p>
+        <p>In fact, the way the EJB architecture handled persistence, security, and transactions, “anticipated” <em>aspect-oriented programming</em> (AOP),<sup>7</sup> which is a general-purpose approach to restoring modularity for cross-cutting concerns.</p>
+        <p class="footnote">7. See [<a id="iAOSD"></a><a href="#AOSD">AOSD</a>] for general information on aspects and [<a id="iAspectJ"></a><a href="#AspectJ">AspectJ</a>]] and [<a id="iColyer"></a><a href="#Colyer">Colyer</a>] for AspectJ-specific information.</p>
+        <p>In AOP, modular constructs called <em>aspects</em> specify which points in the system should have their behavior modified in some consistent way to support a particular concern. This specification is done using a succinct declarative or programmatic mechanism.</p>
+        <p><a id="page_161"></a>Using persistence as an example, you would declare which objects and attributes (or <em>patterns</em> thereof) should be persisted and then delegate the persistence tasks to your persistence framework. The behavior modifications are made <em>noninvasively</em><sup>8</sup> to the target code by the AOP framework. Let us look at three aspects or aspect-like mechanisms in Java.</p>
+        <p class="footnote">8. Meaning no manual editing of the target source code is required.</p>
+        <h3 id="ch11lev1sec4"><strong>Java Proxies</strong></h3>
+        <p>Java proxies are suitable for simple situations, such as wrapping method calls in individual objects or classes. However, the dynamic proxies provided in the JDK only work with interfaces. To proxy classes, you have to use a byte-code manipulation library, such as CGLIB, ASM, or Javassist.<sup>9</sup></p>
+        <p class="footnote">9. See [<a id="iCGLIB"></a><a href="#CGLIB">CGLIB</a>], [<a id="iASM"></a><a href="#ASM">ASM</a>], and [<a id="iJavassist"></a><a href="#Javassist">Javassist</a>].</p>
+        <p><a href="#ch11lt3">Listing 11-3</a> shows the skeleton for a JDK proxy to provide persistence support for our <code>Bank</code> application, covering only the methods for getting and setting the list of accounts.</p>
+        <p><a id="ch11lt3"></a></p>
+        <p class="caption"><strong>Listing 11-3 <code>JDK Proxy Example</code></strong></p>
+        <p class="codelink"><a id="pp0161_01a" href="chapter11_ima.xhtml#pp0161_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;// Bank.java (suppressing package names…)<br>
+        &nbsp;&nbsp;&nbsp;import java.utils.*;<br>
+        &nbsp;&nbsp;&nbsp;<br>
+        &nbsp;&nbsp;&nbsp;// The abstraction of a bank.<br>
+        &nbsp;&nbsp;&nbsp;public interface Bank {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collection&lt;Account&gt; getAccounts();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;void setAccounts(Collection&lt;Account&gt; accounts);<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;// BankImpl.java<br>
+        &nbsp;&nbsp;&nbsp;import java.utils.*;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;// The “Plain Old Java Object” (POJO) implementing the abstraction.<br>
+        &nbsp;&nbsp;&nbsp;public class BankImpl implements Bank {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private List&lt;Account&gt; accounts;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public Collection&lt;Account&gt; getAccounts() { <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return accounts; <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void setAccounts(Collection&lt;Account&gt; accounts) { <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.accounts = new ArrayList&lt;Account&gt;(); <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for (Account account: accounts) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.accounts.add(account);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;// BankProxyHandler.java<br>
+        &nbsp;&nbsp;&nbsp;import java.lang.reflect.*;<br>
+        &nbsp;&nbsp;&nbsp;import java.util.*;<br>
+        <br>
+        <a id="page_162"></a>&nbsp;&nbsp;&nbsp;// “InvocationHandler” required by the proxy API.<br>
+        &nbsp;&nbsp;&nbsp;public class BankProxyHandler implements InvocationHandler {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private Bank bank;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public BankHandler (Bank bank) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.bank = bank;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Method defined in InvocationHandler<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public Object invoke(Object proxy, Method method, Object[] args) <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;throws Throwable {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String methodName = method.getName();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (methodName.equals(”getAccounts”)) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bank.setAccounts(getAccountsFromDatabase());<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return bank.getAccounts();<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} else if (methodName.equals(”setAccounts”)) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bank.setAccounts((Collection&lt;Account&gt;) args[0]);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;setAccountsToDatabase(bank.getAccounts());<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return null;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} else {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;…<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Lots of details here:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected Collection&lt;Account&gt; getAccountsFromDatabase() { … }<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected void setAccountsToDatabase(Collection&lt;Account&gt; accounts) { … }<br>
+        &nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;// Somewhere else…<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;Bank bank = (Bank) Proxy.newProxyInstance(<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Bank.class.getClassLoader(), <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;new Class[] { Bank.class },<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;new BankProxyHandler(new BankImpl()));</p>
+        <p>We defined an interface <code>Bank</code>, which will be <em>wrapped</em> by the proxy, and a <em>Plain-Old Java Object</em> (POJO), <code>BankImpl</code>, that implements the business logic. (We will revisit POJOs shortly.)</p>
+        <p>The Proxy API requires an <code>InvocationHandler</code> object that it calls to implement any <code>Bank</code> method calls made to the proxy. Our <code>BankProxyHandler</code> uses the Java reflection API to map the generic method invocations to the corresponding methods in <code>BankImpl</code>, and so on.</p>
+        <p>There is a <em>lot</em> of code here and it is relatively complicated, even for this simple case.<sup>10</sup> Using one of the byte-manipulation libraries is similarly challenging. This code “volume”</p>
+        <p class="footnote">10. For more detailed examples of the Proxy API and examples of its use, see, for example, [<a id="iGoetz"></a><a href="#Goetz">Goetz</a>].</p>
+        <p><a id="page_163"></a>and complexity are two of the drawbacks of proxies. They make it hard to create clean code! Also, proxies don’t provide a mechanism for specifying system-wide execution “points” of interest, which is needed for a true AOP solution.<sup>11</sup></p>
+        <p class="footnote">11. AOP is sometimes confused with techniques used to implement it, such as method interception and “wrapping” through proxies. The real value of an AOP system is the ability to specify systemic behaviors in a concise and modular way.</p>
+        <h3 id="ch11lev1sec5"><strong>Pure Java AOP Frameworks</strong></h3>
+        <p>Fortunately, most of the proxy boilerplate can be handled automatically by tools. Proxies are used internally in several Java frameworks, for example, Spring AOP and JBoss AOP, to implement aspects in pure Java.<sup>12</sup> In Spring, you write your business logic as <em>Plain-Old Java Objects</em>. POJOs are purely focused on their domain. They have no dependencies on enterprise frameworks (or any other domains). Hence, they are conceptually simpler and easier to test drive. The relative simplicity makes it easier to ensure that you are implementing the corresponding user stories correctly and to maintain and evolve the code for future stories.</p>
+        <p class="footnote">12. See [<a href="#Spring">Spring</a>] and [<a id="iJBoss"></a><a href="#JBoss">JBoss</a>]. “Pure Java” means without the use of AspectJ.</p>
+        <p>You incorporate the required application infrastructure, including cross-cutting concerns like persistence, transactions, security, caching, failover, and so on, using declarative configuration files or APIs. In many cases, you are actually specifying Spring or JBoss library aspects, where the framework handles the mechanics of using Java proxies or byte-code libraries transparently to the user. These declarations drive the dependency injection (DI) container, which instantiates the major objects and wires them together on demand.</p>
+        <p><a href="#ch11lt4">Listing 11-4</a> shows a typical fragment of a Spring V2.5 configuration file, app.xml<sup>13</sup>:</p>
+        <p class="footnote">13. Adapted from <span class="WebLink"><a href="http://www.theserverside.com/tt/articles/article.tss?l=IntrotoSpring">http://www.theserverside.com/tt/articles/article.tss?l=IntrotoSpring25</a></span>.</p>
+        <p><a id="ch11lt4"></a></p>
+        <p class="caption"><strong>Listing 11-4 <code>Spring 2.X configuration file</code></strong></p>
+        <p class="codelink"><a id="pp0163_01a" href="chapter11_ima.xhtml#pp0163_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;&lt;beans&gt;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;…<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;bean id=”appDataSource”<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;class=”org.apache.commons.dbcp.BasicDataSource”<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;destroy-method=”close”<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;p:driverClassName=”com.mysql.jdbc.Driver”<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;p:url=”jdbc:mysql://localhost:3306/mydb”<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;p:username=”me”/&gt;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;bean id=”bankDataAccessObject”<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;class=”com.example.banking.persistence.BankDataAccessObject”<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;p:dataSource-ref=”appDataSource”/&gt;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;bean id=”bank”<br>
+        <a id="page_164"></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;class=”com.example.banking.model.Bank”<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;p:dataAccessObject-ref=”bankDataAccessObject”/&gt;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;…<br>
+        &nbsp;&nbsp; &lt;/beans&gt;</p>
+        <p>Each “bean” is like one part of a nested “Russian doll,” with a domain object for a <code>Bank</code> proxied (wrapped) by a data accessor object (DAO), which is itself proxied by a JDBC driver data source. (See <a href="#ch11fig3">Figure 11-3</a>.)</p>
+        <p><a id="ch11fig3"></a></p>
+        <p class="caption"><strong>Figure 11-3</strong> The “Russian doll” of decorators</p>
+        <p class="image"><img src="https://learning.oreilly.com/api/v2/epubs/urn:orm:book:9780136083238/files/images/11_4fig_martin.jpg" alt="Image" width="350" height="107"></p>
+        <p>The client believes it is invoking <code>getAccounts()</code> on a <code>Bank</code> object, but it is actually talking to the outermost of a set of nested D<small>ECORATOR</small><sup>14</sup> objects that extend the basic behavior of the <code>Bank</code> POJO. We could add other decorators for transactions, caching, and so forth.</p>
+        <p class="footnote">14. [<a href="#GOF">GOF</a>].</p>
+        <p>In the application, a few lines are needed to ask the DI container for the top-level objects in the system, as specified in the XML file.</p>
+        <p class="codelink"><a id="pp0164_01a" href="chapter11_ima.xhtml#pp0164_01">Click here to view code image</a></p>
+        <p class="pre">&nbsp;&nbsp;&nbsp;XmlBeanFactory bf =<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;new XmlBeanFactory(new ClassPathResource(”app.xml”, getClass()));<br>
+        &nbsp;&nbsp;&nbsp;Bank bank = (Bank) bf.getBean(”bank”);<br>
+        </p>
+        <p>Because so few lines of Spring-specific Java code are required, <em>the application is almost completely decoupled from Spring</em>, eliminating all the tight-coupling problems of systems like EJB2.</p>
+        <p>Although XML can be verbose and hard to read,<sup>15</sup> the “policy” specified in these configuration files is simpler than the complicated proxy and aspect logic that is hidden from view and created automatically. This type of architecture is so compelling that frameworks like Spring led to a complete overhaul of the EJB standard for version 3. EJB3</p>
+        <p class="footnote">15. The example can be simplified using mechanisms that exploit <em>convention over configuration</em> and Java 5 annotations to reduce the amount of explicit “wiring” logic required.</p>
+        <p><a id="page_165"></a>largely follows the Spring model of declaratively supporting cross-cutting concerns using XML configuration files and/or Java 5 annotations.</p>
+        <p><a href="#ch11lt5">Listing 11-5</a> shows our Bank object rewritten in EJB3<sup>16</sup>.</p>
+        <p class="footnote">16. Adapted from <span class="WebLink"><a href="http://www.onjava.com/pub/a/onjava/2006/05/17/standardizing-with-ejb3-java-persistence-api.html">http://www.onjava.com/pub/a/onjava/2006/05/17/standardizing-with-ejb3-java-persistence-api.html</a></span></p>
+        <p><a id="ch11lt5"></a></p>
+        <p class="caption"><strong>Listing 11-5 <code>An EBJ3 Bank EJB</code></strong></p>
+        <p class="codelink"><a id="pp0165_01a" href="chapter11_ima.xhtml#pp0165_01">Click here to view code image</a></p>
+        <p class="pre"><br>
+        &nbsp;&nbsp;&nbsp;package com.example.banking.model;<br>
+        &nbsp;&nbsp;&nbsp;import javax.persistence.*;<br>
+        &nbsp;&nbsp;&nbsp;import java.util.ArrayList;<br>
+        &nbsp;&nbsp;&nbsp;import java.util.Collection;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;@Entity<br>
+        &nbsp;&nbsp;&nbsp;@Table(name = “BANKS”)<br>
+        &nbsp;&nbsp;&nbsp;public class Bank implements java.io.Serializable {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@Id @GeneratedValue(strategy=GenerationType.AUTO)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private int id;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@Embeddable // An object “inlined” in Bank’s DB row<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public class Address {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected String streetAddr1;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected String streetAddr2;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected String city;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected String state;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;protected String zipCode;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@Embedded<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private Address address;<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mappedBy=”bank”)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;private Collection&lt;Account&gt; accounts = new ArrayList&lt;Account&gt;();<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public int getId() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return id;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void setId(int id) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.id = id;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void addAccount(Account account) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;account.setBank(this);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;accounts.add(account);<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public Collection&lt;Account&gt; getAccounts() {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return accounts;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        <a id="page_166"></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;public void setAccounts(Collection&lt;Account&gt; accounts) {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.accounts = accounts;<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+        &nbsp;&nbsp;&nbsp;}</p>
+        <p>This code is much cleaner than the original EJB2 code. Some of the entity details are still here, contained in the annotations. However, because none of that information is outside of the annotations, the code is clean, clear, and hence easy to test drive, maintain, and so on.</p>
+        <p>Some or all of the persistence information in the annotations can be moved to XML deployment descriptors, if desired, leaving a truly pure POJO. If the persistence mapping details won’t change frequently, many teams may choose to keep the annotations, but with far fewer harmful drawbacks compared to the EJB2 invasiveness.</p>
+        <h3 id="ch11lev1sec6"><strong>AspectJ Aspects</strong></h3>
+        <p>Finally, the most full-featured tool for separating concerns through aspects is the AspectJ language,<sup>17</sup> an extension of Java that provides “first-class” support for aspects as modularity constructs. The pure Java approaches provided by Spring AOP and JBoss AOP are sufficient for 80–90 percent of the cases where aspects are most useful. However, AspectJ provides a very rich and powerful tool set for separating concerns. The drawback of AspectJ is the need to adopt several new tools and to learn new language constructs and usage idioms.</p>
+        <p class="footnote">17. See [<a href="#AspectJ">AspectJ</a>] and [<a href="#Colyer">Colyer</a>].</p>
+        <p>The adoption issues have been partially mitigated by a recently introduced “annotation form” of AspectJ, where Java 5 annotations are used to define aspects using pure Java code. Also, the Spring Framework has a number of features that make incorporation of annotation-based aspects much easier for a team with limited AspectJ experience.</p>
+        <p>A full discussion of AspectJ is beyond the scope of this book. See [<a href="#AspectJ">AspectJ</a>], [<a href="#Colyer">Colyer</a>], and [<a href="#Spring">Spring</a>] for more information.</p>
+        <h3 id="ch11lev1sec7"><strong>Test Drive the System Architecture</strong></h3>
+        <p>The power of separating concerns through aspect-like approaches can’t be overstated. If you can write your application’s domain logic using POJOs, decoupled from any architecture concerns at the code level, then it is possible to truly <em>test drive</em> your architecture. You can evolve it from simple to sophisticated, as needed, by adopting new technologies on <a id="page_167"></a>demand. It is not necessary to do a <em>Big Design Up Front</em><sup>18</sup> (BDUF). In fact, BDUF is even harmful because it inhibits adapting to change, due to the psychological resistance to discarding prior effort and because of the way architecture choices influence subsequent thinking about the design.</p>
+        <p class="footnote">18. Not to be confused with the good practice of up-front design, BDUF is the practice of designing <em>everything</em> up front before implementing anything at all.</p>
+        <p>Building architects have to do BDUF because it is not feasible to make radical architectural changes to a large physical structure once construction is well underway.<sup>19</sup> Although software has its own <em>physics</em>,<sup>20</sup> it is economically feasible to make radical change, <em>if</em> the structure of the software separates its concerns effectively.</p>
+        <p class="footnote">19. There is still a significant amount of iterative exploration and discussion of details, even after construction starts.</p>
+        <p class="footnote">20. The term <em>software physics</em> was first used by [<a id="iKolence"></a><a href="#Kolence">Kolence</a>].</p>
+        <p>This means we can start a software project with a “naively simple” but nicely decoupled architecture, delivering working user stories quickly, then adding more infrastructure as we scale up. Some of the world’s largest Web sites have achieved very high availability and performance, using sophisticated data caching, security, virtualization, and so forth, all done efficiently and flexibly because the minimally coupled designs are appropriately <em>simple</em> at each level of abstraction and scope.</p>
+        <p>Of course, this does not mean that we go into a project “rudderless.” We have some expectations of the general scope, goals, and schedule for the project, as well as the general structure of the resulting system. However, we must maintain the ability to change course in response to evolving circumstances.</p>
+        <p>The early EJB architecture is but one of many well-known APIs that are over-engineered and that compromise separation of concerns. Even well-designed APIs can be overkill when they aren’t really needed. A good API should largely <em>disappear</em> from view most of the time, so the team expends the majority of its creative efforts focused on the user stories being implemented. If not, then the architectural constraints will inhibit the efficient delivery of optimal value to the customer.</p>
+        <p>To recap this long discussion,</p>
+        <p class="blockquote"><em>An optimal system architecture consists of modularized domains of concern, each of which is implemented with Plain Old Java (or other) Objects. The different domains are integrated together with minimally invasive Aspects or Aspect-like tools. This architecture can be test-driven, just like the code.</em></p>
+        <h3 id="ch11lev1sec8"><strong>Optimize Decision Making</strong></h3>
+        <p>Modularity and separation of concerns make decentralized management and decision making possible. In a sufficiently large system, whether it is a city or a software project, no one person can make all the decisions.</p>
+        <p><a id="page_168"></a>We all know it is best to give responsibilities to the most qualified persons. We often forget that it is also best to <em>postpone decisions until the last possible moment</em>. This isn’t lazy or irresponsible; it lets us make informed choices with the best possible information. A premature decision is a decision made with suboptimal knowledge. We will have that much less customer feedback, mental reflection on the project, and experience with our implementation choices if we decide too soon.</p>
+        <p class="blockquote"><em>The agility provided by a POJO system with modularized concerns allows us to make optimal, just-in-time decisions, based on the most recent knowledge. The complexity of these decisions is also reduced.</em></p>
+        <h3 id="ch11lev1sec9"><strong>Use Standards Wisely, When They Add <em>Demonstrable</em> Value</strong></h3>
+        <p>Building construction is a marvel to watch because of the pace at which new buildings are built (even in the dead of winter) and because of the extraordinary designs that are possible with today’s technology. Construction is a mature industry with highly optimized parts, methods, and standards that have evolved under pressure for centuries.</p>
+        <p>Many teams used the EJB2 architecture because it was a standard, even when lighter-weight and more straightforward designs would have been sufficient. I have seen teams become obsessed with various <em>strongly hyped</em> standards and lose focus on implementing value for their customers.</p>
+        <p class="blockquote"><em>Standards make it easier to reuse ideas and components, recruit people with relevant experience, encapsulate good ideas, and wire components together. However, the process of creating standards can sometimes take too long for industry to wait, and some standards lose touch with the real needs of the adopters they are intended to serve.</em></p>
+        <h3 id="ch11lev1sec10"><strong>Systems Need Domain-Specific Languages</strong></h3>
+        <p>Building construction, like most domains, has developed a rich language with a vocabulary, idioms, and patterns<sup>21</sup> that convey essential information clearly and concisely. In software, there has been renewed interest recently in creating <em>Domain-Specific Languages</em> (DSLs),<sup>22</sup> which are separate, small scripting languages or APIs in standard languages that permit code to be written so that it reads like a structured form of prose that a domain expert might write.</p>
+        <p class="footnote">21. The work of [<a id="iAlexander"></a><a href="#Alexander">Alexander</a>] has been particularly influential on the software community.</p>
+        <p class="footnote">22. See, for example, [<a id="iDSL"></a><a href="#DSL">DSL</a>]. [<a id="iJMock"></a><a href="#JMock">JMock</a>] is a good example of a Java API that creates a DSL.</p>
+        <p>A good DSL minimizes the “communication gap” between a domain concept and the code that implements it, just as agile practices optimize the communications within a team and with the project’s stakeholders. If you are implementing domain logic in the <a id="page_169"></a>same language that a domain expert uses, there is less risk that you will incorrectly translate the domain into the implementation.</p>
+        <p>DSLs, when used effectively, raise the abstraction level above code idioms and design patterns. They allow the developer to reveal the intent of the code at the appropriate level of abstraction.</p>
+        <p class="blockquote"><em>Domain-Specific Languages allow all levels of abstraction and all domains in the application to be expressed as POJOs, from high-level policy to low-level details.</em></p>
+        <h3 id="ch11lev1sec11"><strong>Conclusion</strong></h3>
+        <p>Systems must be clean too. An invasive architecture overwhelms the domain logic and impacts agility. When the domain logic is obscured, quality suffers because bugs find it easier to hide and stories become harder to implement. If agility is compromised, productivity suffers and the benefits of TDD are lost.</p>
+        <p>At all levels of abstraction, the intent should be clear. This will only happen if you write POJOs and you use aspect-like mechanisms to incorporate other implementation concerns noninvasively.</p>
+        <p>Whether you are designing systems or individual modules, never forget to <em>use the simplest thing that can possibly work</em>.</p>
+        <h3 id="ch11lev1sec12"><strong>Bibliography</strong></h3>
+        <p><a id="Alexander"></a></p>
+        <p class="bibentry"><strong>[<a href="#iAlexander">Alexander</a>]:</strong> Christopher Alexander, <em>A Timeless Way of Building,</em> Oxford University Press, New York, 1979.</p>
+        <p><a id="AOSD"></a></p>
+        <p class="bibentry"><strong>[<a href="#iAOSD">AOSD</a>]:</strong> Aspect-Oriented Software Development port, <span class="WebLink"><a href="http://aosd.net">http://aosd.net</a></span></p>
+        <p><a id="ASM"></a></p>
+        <p class="bibentry"><strong>[<a href="#iASM">ASM</a>]:</strong> ASM Home Page, <span class="WebLink"><a href="http://asm.objectweb.org/">http://asm.objectweb.org/</a></span></p>
+        <p><a id="AspectJ"></a></p>
+        <p class="bibentry"><strong>[<a href="#iAspectJ">AspectJ</a>]:</strong> <span class="WebLink"><a href="http://eclipse.org/aspectj">http://eclipse.org/aspectj</a></span></p>
+        <p><a id="CGLIB"></a></p>
+        <p class="bibentry"><strong>[<a href="#iCGLIB">CGLIB</a>]:</strong> Code Generation Library, <span class="WebLink"><a href="http://cglib.sourceforge.net/">http://cglib.sourceforge.net/</a></span></p>
+        <p><a id="Colyer"></a></p>
+        <p class="bibentry"><strong>[<a href="#iColyer">Colyer</a>]:</strong> Adrian Colyer, Andy Clement, George Hurley, Mathew Webster, <em>Eclipse AspectJ,</em> Person Education, Inc., Upper Saddle River, NJ, 2005.</p>
+        <p><a id="DSL"></a></p>
+        <p class="bibentry"><strong>[<a href="#iDSL">DSL</a>]:</strong> Domain-specific programming language, <span class="WebLink"><a href="http://en.wikipedia.org/wiki/Domain-specific_programming_language">http://en.wikipedia.org/wiki/Domain-specific_programming_language</a></span></p>
+        <p><a id="Fowler"></a></p>
+        <p class="bibentry"><strong>[<a href="#iFowler">Fowler</a>]:</strong> Inversion of Control Containers and the Dependency Injection pattern, <span class="WebLink"><a href="http://martinfowler.com/articles/injection.html">http://martinfowler.com/articles/injection.html</a></span></p>
+        <p><a id="Goetz"></a></p>
+        <p class="bibentry"><a id="page_170"></a><strong>[<a href="#iGoetz">Goetz</a>]:</strong> Brian Goetz, <em>Java Theory and Practice: Decorating with Dynamic Proxie</em>s, <span class="WebLink"><a href="http://www.ibm.com/developerworks/java/library/j-jtp08305.html">http://www.ibm.com/developerworks/java/library/j-jtp08305.html</a></span></p>
+        <p><a id="Javassist"></a></p>
+        <p class="bibentry"><strong>[<a href="#iJavassist">Javassist</a>]:</strong> Javassist Home Page, <span class="WebLink"><a href="http://www.csg.is.titech.ac.jp/~chiba/javassist/">http://www.csg.is.titech.ac.jp/~chiba/javassist/</a></span></p>
+        <p><a id="JBoss"></a></p>
+        <p class="bibentry"><strong>[<a href="#iJBoss">JBoss</a>]:</strong> JBoss Home Page, <span class="WebLink"><a href="http://jboss.org">http://jboss.org</a></span></p>
+        <p><a id="JMock"></a></p>
+        <p class="bibentry"><strong>[<a href="#iJMock">JMock</a>]:</strong> JMock—A Lightweight Mock Object Library for Java, <span class="WebLink"><a href="http://jmock.org">http://jmock.org</a></span></p>
+        <p><a id="Kolence"></a></p>
+        <p class="bibentry"><strong>[<a href="#iKolence">Kolence</a>]:</strong> Kenneth W. Kolence, Software physics and computer performance measurements, <em>Proceedings of the ACM annual conference—Volume 2</em>, Boston, Massachusetts, pp. 1024–1040, 1972.</p>
+        <p><a id="Spring"></a></p>
+        <p class="bibentry"><strong>[<a href="#iSpring">Spring</a>]:</strong> <em>The Spring Framework</em>, <span class="WebLink"><a href="http://www.springframework.org">http://www.springframework.org</a></span></p>
+        <p><a id="Mezzaros07"></a></p>
+        <p class="bibentry"><strong>[<a href="#iMezzaros07">Mezzaros07</a>]:</strong> <em>XUnit Patterns</em>, Gerard Mezzaros, Addison-Wesley, 2007.</p>
+        <p><a id="GOF"></a></p>
+        <p class="bibentry"><strong>[<a href="#iGOF">GOF</a>]:</strong> <em>Design Patterns: Elements of Reusable Object Oriented Software</em>, Gamma et al., Addison-Wesley, 1996.</p>
+        </div></div><link rel="stylesheet" href="/files/public/epub-reader/override_v1.css" crossorigin="anonymous"><link rel="stylesheet" href="/api/v2/epubs/urn:orm:book:9780136083238/files/9780136083252.css" crossorigin="anonymous"></div></div></section>
+</div>
+
+https://learning.oreilly.com
